@@ -58,10 +58,19 @@ FocusScope {
         return components[pageId] || themePageComponent;
     }
 
+    function pointInside(item: Item, point: point): bool {
+        const local = item.mapFromItem(root, point.x, point.y);
+        return local.x >= 0 && local.y >= 0 && local.x <= item.width && local.y <= item.height;
+    }
+
     Rectangle {
         anchors.fill: parent
         color: Qt.rgba(0, 0, 0, 0.42)
-        TapHandler { onTapped: root.cancelAndClose() }
+        TapHandler {
+            onTapped: eventPoint => {
+                if (!root.pointInside(panel, eventPoint.position)) root.cancelAndClose();
+            }
+        }
     }
 
     Controls.Panel {
@@ -72,8 +81,6 @@ FocusScope {
         anchors.centerIn: parent
         padding: 0
         customColor: Theme.background
-
-        TapHandler {}
 
         ColumnLayout {
             anchors.fill: parent

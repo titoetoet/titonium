@@ -26,9 +26,13 @@
       "visualizerBars": 32
     },
     "launcher": {
+      "username": "",
+      "avatarIcon": "terminal",
       "defaultCategory": "all",
       "resultLimit": 24,
       "columns": 6,
+      "pageTransition": "slide-fade",
+      "transitionDuration": 220,
       "showSubtitles": true,
       "searchAutoFocus": true
     },

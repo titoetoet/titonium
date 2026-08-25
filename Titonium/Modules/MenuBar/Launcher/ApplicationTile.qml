@@ -63,6 +63,8 @@ FocusScope {
             variant: "body"
             strong: true
             horizontalAlignment: Text.AlignHCenter
+            wrapMode: Text.NoWrap
+            maximumLineCount: 1
             elide: Text.ElideRight
         }
 

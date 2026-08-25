@@ -16,24 +16,33 @@
               "props": {}
             },
             {
-              "id": "menubar-workspaces",
-              "type": "widget",
-              "widgetType": "menubar.workspaces",
-              "props": {
-                "count": 5
-              }
+              "id": "menubar-window-context",
+              "type": "group",
+              "padding": 0,
+              "spacing": 0,
+              "surface": false,
+              "children": [
+                {
+                  "id": "menubar-workspaces",
+                  "type": "widget",
+                  "widgetType": "menubar.workspaces",
+                  "props": {
+                    "count": 5
+                  }
+                },
+                {
+                  "id": "menubar-active-window",
+                  "type": "widget",
+                  "widgetType": "menubar.active-window",
+                  "props": {
+                    "maximumWidth": 560,
+                    "activeMaximumWidth": 240
+                  }
+                }
+              ]
             }
           ],
-          "center": [
-            {
-              "id": "menubar-active-window",
-              "type": "widget",
-              "widgetType": "menubar.active-window",
-              "props": {
-                "maximumWidth": 280
-              }
-            }
-          ],
+          "center": [],
           "end": [
             {
               "id": "menubar-input-method",
@@ -54,16 +63,7 @@
       },
       "DP-1": {
         "slots": {
-          "center": [
-            {
-              "id": "dp1-active-window",
-              "type": "widget",
-              "widgetType": "menubar.active-window",
-              "props": {
-                "maximumWidth": 320
-              }
-            }
-          ]
+          "center": []
         }
       }
     }

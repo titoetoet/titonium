@@ -55,12 +55,18 @@
         },
         "launcher": {
           "type": "object",
-          "required": ["defaultCategory", "resultLimit", "columns", "showSubtitles", "searchAutoFocus"],
+          "required": ["username", "avatarIcon", "defaultCategory", "resultLimit", "columns", "pageTransition", "transitionDuration", "showSubtitles", "searchAutoFocus"],
           "additionalProperties": false,
           "properties": {
-            "defaultCategory": { "enum": ["all", "internet", "development", "media", "system"] },
+            "username": { "type": "string", "maxLength": 40 },
+            "avatarIcon": {
+              "enum": ["person", "terminal", "face", "smart_toy", "rocket_launch", "sports_esports", "bolt", "coffee", "palette", "pets", "headphones", "local_fire_department", "code", "music_note", "public", "diamond"]
+            },
+            "defaultCategory": { "enum": ["all", "recent", "internet", "development", "media", "system"] },
             "resultLimit": { "type": "integer", "minimum": 6, "maximum": 48 },
             "columns": { "type": "integer", "minimum": 4, "maximum": 8 },
+            "pageTransition": { "enum": ["none", "slide", "slide-fade", "slide-scale"] },
+            "transitionDuration": { "type": "integer", "minimum": 80, "maximum": 500 },
             "showSubtitles": { "type": "boolean" },
             "searchAutoFocus": { "type": "boolean" }
           }

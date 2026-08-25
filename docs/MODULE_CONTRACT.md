@@ -34,18 +34,36 @@ MenuBar feature widgets are vertical modules. Each folder owns a small state-onl
 `WidgetBase` UI; compositor/service bindings live in a named Platform adapter. Registry types
 currently include `menubar.workspaces`, `menubar.active-window`, `menubar.input-method` and
 `menubar.clock` and `menubar.launcher`.
-Workspace activation is the only compositor mutation in this slice and is routed exclusively
-through `Platform.Hyprland.HyprlandAdapter`.
+Workspace and running-app activation are routed exclusively through
+`Platform.Hyprland.HyprlandAdapter`.
 
-Clock owns one shared `SystemClock` at minute precision. Calendar content is a transient tree:
-`SurfaceCoordinator` selects its screen, `OverlayHost` supplies that screen's logical size, and
-the active Loader creates the 42-day grid only while open. Lunar conversion is pure stateless
-JavaScript fixed to Vietnam UTC+7 and must retain its fixture tests.
+Active Window is a running-app task strip immediately adjacent to Workspaces. Its model groups
+non-minimized Wayland toplevels by app ID, resolves desktop metadata through
+`Platform.Applications.ApplicationCatalog`, and preserves stable discovery order. Inactive apps
+render as compact icons; the active app alone expands to its current title. There is no timer,
+`hyprctl` process, or compositor query in the model/UI.
 
-Launcher creates its catalog model and 24-result application grid only while Dashboard is open.
-Search/category filtering is a pure model operation. Desktop discovery, icon resolution and
-execution remain behind `Platform.Applications.ApplicationCatalog`; a disappearing entry fails
-safely and closes no unrelated surface.
+Clock owns one shared `SystemClock` at minute precision for the MenuBar. Clicking it lazily creates
+an analog-clock panel with a seconds-precision clock; closing the surface destroys that tree, so
+there is no seconds update at idle. Calendar/Lunar remain separate assets reserved for the future
+Notification Center. Lunar conversion is pure stateless JavaScript fixed to Vietnam UTC+7 and
+must retain its fixture tests.
+
+Launcher creates its catalog model and 24-item pages only while Dashboard is open. Its stable
+split is one-third identity/navigation and two-thirds search/app pages. A vertical wheel gesture
+changes the horizontal page index; search/category changes reset to page one without changing
+the overlay dimensions. Launch history is a small atomic state document used to promote the six
+most-used apps before the alphabetical catalog; it is not a settings transaction. Desktop
+discovery, icon resolution and execution remain behind
+`Platform.Applications.ApplicationCatalog`; a disappearing entry fails safely.
+
+Transient surfaces that must dismiss when focus moves to another monitor declare
+`closeOnMonitorChange: true`. `OverlayHost` observes monitor-focus events through the Hyprland
+adapter, without polling or compositor commands.
+
+Session actions are explicit Platform capabilities. Dashboard shows all supported actions but
+requires a second confirmation gesture before dispatch. Automated tests must inspect capability
+and UI contracts only; they never execute logout, suspend, hibernate, reboot or poweroff.
 
 Settings pages never own persisted state. They project `ConfigStore.previewState` and mutate it
 only through typed `patch()` paths. SettingsCenter begins one preview transaction; Apply commits

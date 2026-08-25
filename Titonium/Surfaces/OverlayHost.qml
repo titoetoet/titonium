@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import qs.Titonium.Foundation
+import qs.Titonium.Platform.Hyprland
 
 Scope {
     Variants {
@@ -63,6 +64,19 @@ Scope {
                 property: "screen"
                 value: window.modelData
                 when: overlayLoader.item !== null && overlayLoader.item.hasOwnProperty("screen")
+            }
+
+            Connections {
+                target: HyprlandAdapter
+
+                function onFocusedMonitorNameChanged(): void {
+                    if (!window.ownsSurface
+                            || SurfaceCoordinator.descriptor?.closeOnMonitorChange !== true)
+                        return;
+                    const focusedName = HyprlandAdapter.focusedMonitorName;
+                    if (focusedName.length > 0 && focusedName !== window.modelData.name)
+                        SurfaceCoordinator.close(SurfaceCoordinator.ownerId);
+                }
             }
         }
     }

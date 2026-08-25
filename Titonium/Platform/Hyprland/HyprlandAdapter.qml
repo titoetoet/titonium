@@ -11,6 +11,11 @@ Singleton {
 
     property string observedWindowTitle: ""
     property string observedWindowClass: ""
+    property string focusedMonitorName: ""
+    readonly property var runningToplevels: {
+        const source = ToplevelManager.toplevels?.values || [];
+        return source.filter(toplevel => toplevel && toplevel.minimized !== true);
+    }
     readonly property var hyprlandActiveToplevel: {
         if (Hyprland.activeToplevel)
             return Hyprland.activeToplevel;
@@ -32,6 +37,25 @@ Singleton {
             return state.initialClass || state.class || root.observedWindowClass;
         }
         return root.waylandActiveToplevel?.appId || root.observedWindowClass;
+    }
+
+    function isToplevelActive(toplevel: var): bool {
+        if (!toplevel)
+            return false;
+        if (toplevel.activated === true || ToplevelManager.activeToplevel === toplevel)
+            return true;
+        const appId = (toplevel.appId || "").trim().toLocaleLowerCase();
+        const activeClass = root.activeWindowClass.trim().toLocaleLowerCase();
+        return (appId.length > 0 && activeClass.length > 0
+                && (appId === activeClass || appId.endsWith("." + activeClass)
+                    || activeClass.endsWith("." + appId)))
+            || (toplevel.title && root.activeWindowTitle
+                && toplevel.title === root.activeWindowTitle);
+    }
+
+    function activateToplevel(toplevel: var): void {
+        if (toplevel && typeof toplevel.activate === "function")
+            toplevel.activate();
     }
 
     function monitorFor(screen: var): var {
@@ -95,11 +119,16 @@ Singleton {
         target: Hyprland
 
         function onRawEvent(event: HyprlandEvent): void {
-            if (event.name !== "activewindow")
+            if (event.name === "focusedmon" || event.name === "focusedmonv2") {
+                const monitorFields = event.parse(2);
+                root.focusedMonitorName = monitorFields[0] || "";
                 return;
-            const fields = event.parse(2);
-            root.observedWindowClass = fields[0] || "";
-            root.observedWindowTitle = fields[1] || "";
+            }
+            if (event.name === "activewindow") {
+                const fields = event.parse(2);
+                root.observedWindowClass = fields[0] || "";
+                root.observedWindowTitle = fields[1] || "";
+            }
         }
     }
 }

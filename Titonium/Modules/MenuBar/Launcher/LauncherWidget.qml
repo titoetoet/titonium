@@ -30,6 +30,7 @@ WidgetBase {
             root.context.openSurface(root.surfaceOwnerId, {
                 "source": Qt.resolvedUrl("Dashboard.qml"),
                 "keyboardFocus": "exclusive",
+                "closeOnMonitorChange": true,
                 "ownerId": root.surfaceOwnerId
             });
         }

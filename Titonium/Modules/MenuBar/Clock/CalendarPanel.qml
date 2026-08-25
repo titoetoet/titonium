@@ -21,6 +21,11 @@ FocusScope {
         SurfaceCoordinator.close(root.ownerId);
     }
 
+    function pointInside(item: Item, point: point): bool {
+        const local = item.mapFromItem(root, point.x, point.y);
+        return local.x >= 0 && local.y >= 0 && local.x <= item.width && local.y <= item.height;
+    }
+
     function monthTitle(): string {
         return I18n.tr("calendar.month." + (calendar.displayedMonth + 1))
             + " " + calendar.displayedYear;
@@ -45,7 +50,11 @@ FocusScope {
         anchors.fill: parent
         color: Qt.rgba(0, 0, 0, 0.28)
 
-        TapHandler { onTapped: root.close() }
+        TapHandler {
+            onTapped: eventPoint => {
+                if (!root.pointInside(panel, eventPoint.position)) root.close();
+            }
+        }
     }
 
     Controls.Panel {

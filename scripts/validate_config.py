@@ -80,12 +80,22 @@ def validate_settings(data: Any) -> list[str]:
             if not isinstance(launcher, dict):
                 errors.append("modules.launcher must be an object")
             else:
-                if launcher.get("defaultCategory") not in {"all", "internet", "development", "media", "system"}:
+                if not isinstance(launcher.get("username"), str) or len(launcher["username"]) > 40:
+                    errors.append("modules.launcher.username must be a string up to 40 characters")
+                avatar_icons = {"person", "terminal", "face", "smart_toy", "rocket_launch", "sports_esports", "bolt", "coffee", "palette", "pets", "headphones", "local_fire_department", "code", "music_note", "public", "diamond"}
+                if launcher.get("avatarIcon") not in avatar_icons:
+                    errors.append("modules.launcher.avatarIcon is invalid")
+                if launcher.get("defaultCategory") not in {"all", "recent", "internet", "development", "media", "system"}:
                     errors.append("modules.launcher.defaultCategory is invalid")
                 for key, minimum, maximum in (("resultLimit", 6, 48), ("columns", 4, 8)):
                     value = launcher.get(key)
                     if not isinstance(value, int) or isinstance(value, bool) or not minimum <= value <= maximum:
                         errors.append(f"modules.launcher.{key} must be an integer from {minimum} to {maximum}")
+                if launcher.get("pageTransition") not in {"none", "slide", "slide-fade", "slide-scale"}:
+                    errors.append("modules.launcher.pageTransition is invalid")
+                duration = launcher.get("transitionDuration")
+                if not isinstance(duration, int) or isinstance(duration, bool) or not 80 <= duration <= 500:
+                    errors.append("modules.launcher.transitionDuration must be an integer from 80 to 500")
                 for key in ("showSubtitles", "searchAutoFocus"):
                     if not isinstance(launcher.get(key), bool):
                         errors.append(f"modules.launcher.{key} must be a boolean")

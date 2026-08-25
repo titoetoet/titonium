@@ -26,11 +26,20 @@ Item {
             SurfaceCoordinator.close("design-gallery");
     }
 
+    function pointInside(item: Item, point: point): bool {
+        const local = item.mapFromItem(root, point.x, point.y);
+        return local.x >= 0 && local.y >= 0 && local.x <= item.width && local.y <= item.height;
+    }
+
     Rectangle {
         anchors.fill: parent
         color: Qt.rgba(0, 0, 0, 0.46)
 
-        TapHandler { onTapped: root.cancelAndClose() }
+        TapHandler {
+            onTapped: eventPoint => {
+                if (!root.pointInside(galleryCard, eventPoint.position)) root.cancelAndClose();
+            }
+        }
     }
 
     Controls.Panel {
@@ -42,8 +51,6 @@ Item {
         padding: 0
         outlined: true
         customColor: Theme.background
-
-        TapHandler {}
 
         Column {
             anchors.fill: parent

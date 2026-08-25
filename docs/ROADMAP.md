@@ -18,11 +18,16 @@ and lazy Design Gallery. Future theme reminders: Cupertino Flat and Fluent Solid
 - Tabs and focus/accessibility audit — complete.
 - Visualizer — deferred until the media phase, where its render lifecycle can be tested in context.
 
-## Milestone 1 — MenuBar essentials — Complete
+## Milestone 1 — MenuBar essentials — Active parity review
 
 - Workspaces, Active Window and Input Method — approved and complete.
 - Clock, Calendar and Lunar model — approved and complete.
-- Launcher, Application Catalog and Dashboard — approved and complete.
+- Launcher, Application Catalog and Dashboard — reopening for profile identity, fixed 1/3–2/3
+  composition, Favorites/Recent, 6×4 horizontal paging and confirmed session actions.
+- Active Window — running-app task strip implemented adjacent to Workspaces; awaiting interactive
+  activation and focus-transition acceptance.
+- Clock — lazy analog-clock panel implemented; Calendar remains available for the future
+  Notification Center rather than the clock trigger. Awaiting visual acceptance.
 
 ## Milestone 2 — Theme Engine and Settings Center — Complete
 

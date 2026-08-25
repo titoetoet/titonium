@@ -9,6 +9,7 @@ QtObject {
     id: root
 
     property var applications: []
+    property string catalogSignature: ""
 
     function iconFor(iconName: string): string {
         if (!iconName)
@@ -16,6 +17,40 @@ QtObject {
         if (iconName.indexOf("/") === 0)
             return "file://" + iconName;
         return Quickshell.hasThemeIcon(iconName) ? Quickshell.iconPath(iconName) : "";
+    }
+
+    function desktopEntryForAppId(appId: string): var {
+        if (!appId)
+            return null;
+        const normalized = appId.trim().toLocaleLowerCase();
+        return DesktopEntries.heuristicLookup(appId)
+            || DesktopEntries.heuristicLookup(normalized)
+            || (normalized.includes(".")
+                ? DesktopEntries.heuristicLookup(normalized.split(".").pop())
+                : null);
+    }
+
+    function iconForAppId(appId: string): string {
+        const entry = root.desktopEntryForAppId(appId);
+        if (entry?.icon) {
+            const entryIcon = root.iconFor(entry.icon);
+            if (entryIcon)
+                return entryIcon;
+        }
+        const normalized = (appId || "").trim().toLocaleLowerCase();
+        const candidates = [appId, normalized];
+        if (normalized.includes("."))
+            candidates.push(normalized.split(".").pop());
+        for (let index = 0; index < candidates.length; index++) {
+            const candidate = candidates[index];
+            if (candidate && Quickshell.hasThemeIcon(candidate))
+                return Quickshell.iconPath(candidate);
+        }
+        return "";
+    }
+
+    function nameForAppId(appId: string): string {
+        return root.desktopEntryForAppId(appId)?.name || appId || "Application";
     }
 
     function refresh(): void {
@@ -39,9 +74,11 @@ QtObject {
             });
         }
         next.sort((left, right) => left.name.localeCompare(right.name));
+        const signature = next.map(entry => entry.id).join("\n");
         root.applications = next;
-        if (next.length > 0)
+        if (next.length > 0 && signature !== root.catalogSignature)
             Logger.info("applications", "catalog ready with " + next.length + " visible entries");
+        root.catalogSignature = signature;
     }
 
     function launch(entryId: string): bool {

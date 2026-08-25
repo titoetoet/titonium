@@ -9,7 +9,7 @@ import qs.Titonium.Foundation
 WidgetBase {
     id: root
 
-    readonly property string surfaceOwnerId: "calendar:" + root.screen.name
+    readonly property string surfaceOwnerId: "clock:" + root.screen.name
     readonly property bool use24Hour: ConfigStore.previewState.modules?.clock?.use24Hour
         ?? (root.node.props?.use24Hour !== false)
 
@@ -31,7 +31,7 @@ WidgetBase {
                 return;
             }
             root.context.openSurface(root.surfaceOwnerId, {
-                "source": Qt.resolvedUrl("CalendarPanel.qml"),
+                "source": Qt.resolvedUrl("AnalogClockPanel.qml"),
                 "keyboardFocus": "exclusive",
                 "ownerId": root.surfaceOwnerId
             });

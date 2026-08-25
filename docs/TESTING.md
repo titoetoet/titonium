@@ -58,16 +58,22 @@ configuration copies. Gallery content must disappear from the scene when its Loa
   the layer-shell focus immediately.
 - Workspaces always renders its configured cell count, marks active/occupied state per screen and
   activates both existing and empty numeric workspaces through the Platform adapter.
-- Active Window updates its elided title on focus changes and falls back to Desktop when no
-  toplevel is active; DP-1 may use a wider screen override without changing DP-3.
+- Active Window sits directly beside Workspaces, shows every non-minimized running app once,
+  expands only the active app with an elided title, and activates a grouped app through the
+  Platform adapter. Focus changes must update without polling on both outputs.
 - Input Method follows Fcitx StatusNotifier changes (`Lotus → VI`, keyboard US → `EN`) without a
   process or timer and presents `IM` only when the service state is unavailable.
-- Clock updates at minute precision without a timer/process. Calendar opens on the requested
-  screen, supports previous/next/today, closes by outside click/Escape, and releases the heavy
-  tree when closed. Lunar fixtures cover Tết 2024–2026 and Trung thu 2023.
+- Clock updates at minute precision without a timer/process. Its analog panel opens on the
+  requested screen and creates a seconds-precision clock only while its Loader is active; outside
+  click and Escape close and release it. Calendar is not reachable from the Clock
+  trigger and remains reserved for Notification Center. Lunar fixtures cover Tết 2024–2026 and
+  Trung thu 2023.
 - Launcher discovers only visible desktop entries, searches name/generic name/comment, filters
-  category records and never creates more than 24 tiles. Pointer/Enter opens through
-  `DesktopEntry.execute()`; Escape clears a query before closing the Dashboard.
+  category records and never creates more than 24 tiles per page. Its overlay remains a fixed
+  size during search; the left/right split stays 1/3–2/3; a vertical wheel moves exactly one
+  horizontal page. Names stay on one elided line. The six most-used apps precede the alphabetical
+  All Apps catalog; usage and Recent update only after a successful `DesktopEntry.execute()`.
+  Session actions require confirmation and are never invoked by automated tests.
 - Settings preview updates every surface, but closing by any lifecycle path restores committed
   state. Apply writes only the atomic runtime settings/layout files. Theme metadata is resolved from a
   validated package; Typography font/size overrides reset independently of other appearance.

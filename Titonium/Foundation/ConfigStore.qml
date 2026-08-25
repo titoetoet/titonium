@@ -77,9 +77,13 @@ QtObject {
         let selectedLayout = defaultLayout;
         const runtimeLayout = parseDocument(runtimeLayoutFile, "runtime layout");
         if (runtimeLayout) {
-            const runtimeLayoutErrors = Validator.validateLayout(runtimeLayout);
-            if (runtimeLayoutErrors.length === 0)
-                selectedLayout = runtimeLayout;
+            const migratedLayout = Migrations.migrateLayout(runtimeLayout);
+            const runtimeLayoutErrors = Validator.validateLayout(migratedLayout);
+            if (runtimeLayoutErrors.length === 0) {
+                selectedLayout = migratedLayout;
+                if (JSON.stringify(runtimeLayout) !== JSON.stringify(migratedLayout))
+                    Logger.info("config", "migrated Active Windows composition next to Workspaces");
+            }
             else
                 Logger.warn("config", "runtime layout rejected: " + runtimeLayoutErrors.join("; "));
         }

@@ -58,12 +58,20 @@ function validateSettings(data) {
         if (!launcher || typeof launcher !== "object" || Array.isArray(launcher)) {
             errors.push("modules.launcher must be an object");
         } else {
-            if (["all", "internet", "development", "media", "system"].indexOf(launcher.defaultCategory) < 0)
+            if (typeof launcher.username !== "string" || launcher.username.length > 40)
+                errors.push("modules.launcher.username must be a string up to 40 characters");
+            if (["person", "terminal", "face", "smart_toy", "rocket_launch", "sports_esports", "bolt", "coffee", "palette", "pets", "headphones", "local_fire_department", "code", "music_note", "public", "diamond"].indexOf(launcher.avatarIcon) < 0)
+                errors.push("modules.launcher.avatarIcon is invalid");
+            if (["all", "recent", "internet", "development", "media", "system"].indexOf(launcher.defaultCategory) < 0)
                 errors.push("modules.launcher.defaultCategory is invalid");
             if (!Number.isInteger(launcher.resultLimit) || launcher.resultLimit < 6 || launcher.resultLimit > 48)
                 errors.push("modules.launcher.resultLimit must be an integer from 6 to 48");
             if (!Number.isInteger(launcher.columns) || launcher.columns < 4 || launcher.columns > 8)
                 errors.push("modules.launcher.columns must be an integer from 4 to 8");
+            if (["none", "slide", "slide-fade", "slide-scale"].indexOf(launcher.pageTransition) < 0)
+                errors.push("modules.launcher.pageTransition is invalid");
+            if (!Number.isInteger(launcher.transitionDuration) || launcher.transitionDuration < 80 || launcher.transitionDuration > 500)
+                errors.push("modules.launcher.transitionDuration must be an integer from 80 to 500");
             if (typeof launcher.showSubtitles !== "boolean")
                 errors.push("modules.launcher.showSubtitles must be a boolean");
             if (typeof launcher.searchAutoFocus !== "boolean")

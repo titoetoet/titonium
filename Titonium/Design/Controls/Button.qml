@@ -13,6 +13,7 @@ FocusScope {
     property bool checkable: false
     property bool checked: false
     property bool selected: false
+    property int contentAlignment: Qt.AlignHCenter
     property string accessibleName: root.label.length > 0 ? root.label : root.iconName
     signal triggered()
 
@@ -67,7 +68,10 @@ FocusScope {
 
     Row {
         id: contentRow
-        anchors.centerIn: parent
+        anchors.verticalCenter: parent.verticalCenter
+        x: root.contentAlignment === Qt.AlignLeft
+            ? Metrics.spacingMedium
+            : (parent.width - width) / 2
         spacing: root.label.length > 0 && root.iconName.length > 0 ? Metrics.spacingSmall : 0
 
         Icon {
