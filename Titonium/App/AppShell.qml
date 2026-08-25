@@ -6,6 +6,7 @@ import Quickshell.Io
 import qs.Titonium.Foundation
 import qs.Titonium.Modules.Frame
 import qs.Titonium.Platform
+import qs.Titonium.Platform.Hyprland
 import qs.Titonium.Surfaces
 
 Scope {
@@ -229,6 +230,67 @@ Scope {
 
         function state(): string {
             return SurfaceCoordinator.ownerId.indexOf("launcher:") === 0 ? SurfaceCoordinator.ownerId : "closed";
+        }
+    }
+
+    IpcHandler {
+        id: spotlightIpc
+        target: "spotlight"
+
+        function toggle(): string {
+            const targetScreen = ScreenRouter.screenForName(HyprlandAdapter.focusedMonitorName);
+            if (!targetScreen)
+                return "unavailable:no-screen";
+            const ownerId = "spotlight:" + targetScreen.name;
+            if (SurfaceCoordinator.ownerId === ownerId) {
+                SurfaceCoordinator.close(ownerId);
+                return "closed";
+            }
+            SurfaceCoordinator.open(ownerId, {
+                "source": Qt.resolvedUrl("../Modules/Spotlight/SpotlightSurface.qml"),
+                "keyboardFocus": "exclusive",
+                "closeOnMonitorChange": true,
+                "ownerId": ownerId,
+                "mode": "applications",
+                "query": "",
+                "stateMode": "browse",
+                "selectedIndex": 0
+            }, targetScreen);
+            return "open:applications:" + targetScreen.name;
+        }
+
+        function close(): string {
+            if (SurfaceCoordinator.ownerId.indexOf("spotlight:") === 0)
+                SurfaceCoordinator.close(SurfaceCoordinator.ownerId);
+            return "closed";
+        }
+
+        function state(): string {
+            if (SurfaceCoordinator.ownerId.indexOf("spotlight:") !== 0)
+                return "closed";
+            const screenName = SurfaceCoordinator.screen?.name || "";
+            const descriptor = SurfaceCoordinator.descriptor || {};
+            return "open:applications:" + screenName
+                + ";mode=" + (descriptor.stateMode || "browse")
+                + ";query=" + (descriptor.query || "")
+                + ";selected=" + (descriptor.selectedIndex || 0);
+        }
+
+        function setQuery(query: string): string {
+            if (SurfaceCoordinator.ownerId.indexOf("spotlight:") !== 0)
+                return "unavailable:closed";
+            const ownerId = SurfaceCoordinator.ownerId;
+            SurfaceCoordinator.open(ownerId, {
+                "source": Qt.resolvedUrl("../Modules/Spotlight/SpotlightSurface.qml"),
+                "keyboardFocus": "exclusive",
+                "closeOnMonitorChange": true,
+                "ownerId": ownerId,
+                "mode": "applications",
+                "query": query,
+                "stateMode": query.trim().length > 0 ? "results" : "browse",
+                "selectedIndex": 0
+            }, SurfaceCoordinator.screen);
+            return spotlightIpc.state();
         }
     }
 

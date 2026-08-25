@@ -70,7 +70,7 @@ QtObject {
                 "searchText": (entry.name + " " + (entry.genericName || "") + " "
                     + (entry.comment || "")).toLocaleLowerCase(),
                 "icon": root.iconFor(entry.icon),
-                "categories": entry.categories || []
+                "categories": Array.isArray(entry.categories) ? entry.categories : []
             });
         }
         next.sort((left, right) => left.name.localeCompare(right.name));

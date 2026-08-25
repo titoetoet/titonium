@@ -172,6 +172,56 @@ def main() -> int:
     if "anchors.centerIn: parent" not in application_tile_path.read_text(encoding="utf-8"):
         errors.append("Application icon and name group must be centered inside its tile")
 
+    spotlight_dir = root / "Titonium/Modules/Spotlight"
+    spotlight_files = (
+        "SpotlightModel.qml",
+        "SpotlightSurface.qml",
+        "AppGrid.qml",
+        "ApplicationTile.qml",
+        "SearchResults.qml",
+        "PageIndicator.qml",
+        "qmldir",
+    )
+    for spotlight_file in spotlight_files:
+        if not (spotlight_dir / spotlight_file).is_file():
+            errors.append(f"Spotlight is missing focused component: {spotlight_file}")
+    spotlight_qml = {
+        path.name: path.read_text(encoding="utf-8")
+        for path in spotlight_dir.glob("*.qml")
+    }
+    spotlight_feature = "\n".join(spotlight_qml.values())
+    if re.search(
+        r"\b(Process|FileView|Timer|MultiEffect|ShaderEffect)\s*\{|"
+        r"execDetached|\b(hyprctl|nmcli|wpctl)\b|Animation\.Infinite|"
+        r"loops\s*:\s*Animation\.Infinite",
+        spotlight_feature,
+    ):
+        errors.append("Spotlight must not perform I/O, poll, spawn commands or animate continuously")
+    spotlight_surface = spotlight_qml.get("SpotlightSurface.qml", "")
+    if (
+        "Loader" not in spotlight_surface
+        or 'mode === "browse"' not in spotlight_surface
+        or 'mode === "results"' not in spotlight_surface
+        or "AppGrid.qml" not in spotlight_surface
+        or "SearchResults.qml" not in spotlight_surface
+    ):
+        errors.append("SpotlightSurface must lazy-load browse and results branches")
+    spotlight_accessibility = {
+        "SpotlightSurface.qml": (
+            "activeFocusOnTab:",
+            "Accessible.name:",
+            "Accessible.focusable:",
+            "accessibleName: I18n.tr(\"spotlight.category_accessible\"",
+        ),
+        "ApplicationTile.qml": ("activeFocusOnTab:", "Accessible.name:", "Accessible.focusable:"),
+        "SearchResults.qml": ("activeFocusOnTab:", "Accessible.name:", "Accessible.focusable:"),
+    }
+    for filename, required_fragments in spotlight_accessibility.items():
+        text = spotlight_qml.get(filename, "")
+        for fragment in required_fragments:
+            if fragment not in text:
+                errors.append(f"missing Spotlight accessibility contract {fragment!r}: {filename}")
+
     coordinator_text = (root / "Titonium/Foundation/SurfaceCoordinator.qml").read_text(encoding="utf-8")
     if "cancelPreviewOnClose" not in coordinator_text or "ConfigStore.cancel()" not in coordinator_text:
         errors.append("SurfaceCoordinator must rollback abandoned preview transactions")

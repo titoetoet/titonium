@@ -1,0 +1,2 @@
+module qs.Titonium.Platform.Clipboard
+singleton ClipboardAdapter 1.0 ClipboardAdapter.qml
