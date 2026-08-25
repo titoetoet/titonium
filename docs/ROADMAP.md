@@ -20,8 +20,8 @@ and lazy Design Gallery. Future theme reminders: Cupertino Flat and Fluent Solid
 
 ## Milestone 1 — MenuBar essentials — Active
 
-- Workspaces, Active Window and Input Method — implemented; awaiting visual/interaction approval.
-- Clock, Calendar and Lunar model — next review slice.
+- Workspaces, Active Window and Input Method — approved and complete.
+- Clock, Calendar and Lunar model — implemented; awaiting visual/interaction approval.
 - Launcher, Application Catalog and Dashboard — later review slice.
 
 ## Milestone 2 — Settings and materials

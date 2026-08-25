@@ -47,13 +47,15 @@ def main() -> int:
     registry = (root / "Titonium/Composition/WidgetRegistry.qml").read_text(encoding="utf-8")
     if "unknownSource" not in registry or "sourceFor" not in registry:
         errors.append("WidgetRegistry must provide an unknown widget fallback")
-    for widget_type in ("menubar.workspaces", "menubar.active-window", "menubar.input-method"):
+    for widget_type in ("menubar.workspaces", "menubar.active-window", "menubar.input-method", "menubar.clock"):
         if widget_type not in registry:
             errors.append(f"WidgetRegistry is missing {widget_type}")
 
     overlay = (root / "Titonium/Surfaces/OverlayHost.qml").read_text(encoding="utf-8")
     if "Loader" not in overlay or "active:" not in overlay:
         errors.append("OverlayHost must lazy-load transient UI")
+    if "implicitWidth: window.modelData.width" not in overlay or "implicitHeight: window.modelData.height" not in overlay:
+        errors.append("OverlayHost must expose the target screen's logical size to lazy content")
 
     layout_renderer = (root / "Titonium/Composition/LayoutRenderer.qml").read_text(encoding="utf-8")
     if "Layout.preferredWidth: implicitWidth" not in layout_renderer:
@@ -68,6 +70,16 @@ def main() -> int:
         adapter_text = adapter_path.read_text(encoding="utf-8")
         if re.search(r"\b(Process|Timer)\s*\{", adapter_text):
             errors.append(f"MenuBar adapter must remain event-driven: {adapter_path.relative_to(root)}")
+
+    clock_text = (root / "Titonium/Modules/MenuBar/Clock/ClockModel.qml").read_text(encoding="utf-8")
+    if "SystemClock.Minutes" not in clock_text or "SystemClock.Seconds" in clock_text:
+        errors.append("Clock must update by minute, never by second")
+    clock_feature = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in (root / "Titonium/Modules/MenuBar/Clock").glob("*.qml")
+    )
+    if re.search(r"\b(Timer|Process)\s*\{", clock_feature):
+        errors.append("Clock and calendar must not poll or launch processes")
 
     accessibility_contracts = {
         "Button.qml": ("activeFocusOnTab:", "Accessible.role:", "Accessible.name:", "Accessible.focusable:"),

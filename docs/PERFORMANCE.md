@@ -11,6 +11,8 @@
 - Cache immutable parsing/results; update QML models incrementally to preserve delegates.
 - Workspaces and active-window state subscribe to compositor models; Input Method subscribes to
   the existing Fcitx StatusNotifier item. None of these MenuBar widgets owns a timer or process.
+- Clock uses one shared `SystemClock.Minutes`; seconds precision is forbidden. Calendar and its
+  42 lunar conversions exist only while the transient OverlayHost Loader is active.
 
 Performance review is part of module acceptance. Document every always-on timer with its
 reason and interval; absence of a reason is a defect.

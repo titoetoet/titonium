@@ -51,6 +51,37 @@ Scope {
     }
 
     IpcHandler {
+        target: "calendar"
+
+        function toggle(screenName: string): string {
+            const targetScreen = ScreenRouter.screenForName(screenName);
+            if (!targetScreen)
+                return "unavailable:no-screen";
+            const ownerId = "calendar:" + targetScreen.name;
+            if (SurfaceCoordinator.ownerId === ownerId) {
+                SurfaceCoordinator.close(ownerId);
+                return "closed";
+            }
+            SurfaceCoordinator.open(ownerId, {
+                "source": Qt.resolvedUrl("../Modules/MenuBar/Clock/CalendarPanel.qml"),
+                "keyboardFocus": "exclusive",
+                "ownerId": ownerId
+            }, targetScreen);
+            return "open:" + targetScreen.name;
+        }
+
+        function close(): string {
+            if (SurfaceCoordinator.ownerId.indexOf("calendar:") === 0)
+                SurfaceCoordinator.close(SurfaceCoordinator.ownerId);
+            return "closed";
+        }
+
+        function state(): string {
+            return SurfaceCoordinator.ownerId.indexOf("calendar:") === 0 ? SurfaceCoordinator.ownerId : "closed";
+        }
+    }
+
+    IpcHandler {
         target: "gallery"
 
         function toggle(screenName: string): string {

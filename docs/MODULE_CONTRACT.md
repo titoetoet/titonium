@@ -32,9 +32,15 @@ property for the MenuBar to manage.
 
 MenuBar feature widgets are vertical modules. Each folder owns a small state-only model and a
 `WidgetBase` UI; compositor/service bindings live in a named Platform adapter. Registry types
-currently include `menubar.workspaces`, `menubar.active-window` and `menubar.input-method`.
+currently include `menubar.workspaces`, `menubar.active-window`, `menubar.input-method` and
+`menubar.clock`.
 Workspace activation is the only compositor mutation in this slice and is routed exclusively
 through `Platform.Hyprland.HyprlandAdapter`.
+
+Clock owns one shared `SystemClock` at minute precision. Calendar content is a transient tree:
+`SurfaceCoordinator` selects its screen, `OverlayHost` supplies that screen's logical size, and
+the active Loader creates the 42-day grid only while open. Lunar conversion is pure stateless
+JavaScript fixed to Vietnam UTC+7 and must retain its fixture tests.
 
 ## Failure behavior
 

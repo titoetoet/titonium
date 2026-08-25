@@ -1,0 +1,6 @@
+module qs.Titonium.Modules.MenuBar.Clock
+singleton ClockModel 1.0 ClockModel.qml
+singleton LunarModel 1.0 LunarModel.qml
+CalendarModel 1.0 CalendarModel.qml
+ClockWidget 1.0 ClockWidget.qml
+CalendarPanel 1.0 CalendarPanel.qml

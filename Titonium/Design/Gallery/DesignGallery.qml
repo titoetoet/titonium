@@ -11,6 +11,8 @@ Item {
     property var descriptor: null
     property var screen: null
 
+    anchors.fill: parent
+
     Keys.onEscapePressed: root.cancelAndClose()
 
     function cancelAndClose(): void {

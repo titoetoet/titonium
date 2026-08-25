@@ -10,7 +10,8 @@ QtObject {
         "diagnostic.screen": Qt.resolvedUrl("../Modules/MenuBar/DiagnosticScreen.qml"),
         "menubar.workspaces": Qt.resolvedUrl("../Modules/MenuBar/Workspaces/WorkspacesWidget.qml"),
         "menubar.active-window": Qt.resolvedUrl("../Modules/MenuBar/ActiveWindow/ActiveWindowWidget.qml"),
-        "menubar.input-method": Qt.resolvedUrl("../Modules/MenuBar/InputMethod/InputMethodWidget.qml")
+        "menubar.input-method": Qt.resolvedUrl("../Modules/MenuBar/InputMethod/InputMethodWidget.qml"),
+        "menubar.clock": Qt.resolvedUrl("../Modules/MenuBar/Clock/ClockWidget.qml")
     })
 
     function sourceFor(widgetType: string): url {

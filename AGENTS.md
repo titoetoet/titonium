@@ -7,9 +7,9 @@ changing code.
 ## Current milestone
 
 Milestone 0, Theme Foundation and the first Design Controls slices are complete. Milestone 1 is
-active and features are ported in groups of two or three. Workspaces, Active Window and Input
-Method form the current MenuBar batch. Visualizer remains deferred to the media phase, and the
-next feature batch remains gated behind visual approval.
+active and features are ported in groups of two or three. Workspaces, Active Window, Input
+Method, Clock, Calendar and the Vietnamese Lunar model are implemented. Visualizer remains
+deferred to the media phase, and the next feature batch remains gated behind visual approval.
 
 The legacy reference is read-only:
 

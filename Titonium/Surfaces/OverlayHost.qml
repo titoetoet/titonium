@@ -19,6 +19,8 @@ Scope {
             screen: window.modelData
             visible: window.ownsSurface
             color: "transparent"
+            implicitWidth: window.modelData.width
+            implicitHeight: window.modelData.height
             aboveWindows: true
             WlrLayershell.namespace: "titonium-overlay"
             WlrLayershell.layer: WlrLayer.Overlay

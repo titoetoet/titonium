@@ -2,7 +2,8 @@
 
 ## Static checks
 
-`scripts/check.sh` performs JSON validation, architecture policy checks and `qmllint`.
+`scripts/check.sh` performs JSON validation, lunar conversion fixtures, architecture policy
+checks and `qmllint`.
 Quickshell-specific lint warnings may be narrowly allowlisted in
 `scripts/qmllint_allowlist.txt` with an adjacent explanation. Quickshell 0.3.1 currently
 marks `PanelWindow` uncreatable in lint metadata even though it is the documented runtime
@@ -57,3 +58,6 @@ configuration copies. Gallery content must disappear from the scene when its Loa
   toplevel is active; DP-1 may use a wider screen override without changing DP-3.
 - Input Method follows Fcitx StatusNotifier changes (`Lotus → VI`, keyboard US → `EN`) without a
   process or timer and presents `IM` only when the service state is unavailable.
+- Clock updates at minute precision without a timer/process. Calendar opens on the requested
+  screen, supports previous/next/today, closes by outside click/Escape, and releases the heavy
+  tree when closed. Lunar fixtures cover Tết 2024–2026 and Trung thu 2023.

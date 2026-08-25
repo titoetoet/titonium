@@ -32,6 +32,14 @@
               "type": "widget",
               "widgetType": "menubar.input-method",
               "props": {}
+            },
+            {
+              "id": "menubar-clock",
+              "type": "widget",
+              "widgetType": "menubar.clock",
+              "props": {
+                "use24Hour": true
+              }
             }
           ]
         }
