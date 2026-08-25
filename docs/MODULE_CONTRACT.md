@@ -49,13 +49,16 @@ there is no seconds update at idle. Calendar/Lunar remain separate assets reserv
 Notification Center. Lunar conversion is pure stateless JavaScript fixed to Vietnam UTC+7 and
 must retain its fixture tests.
 
-Launcher creates its catalog model and 24-item pages only while Dashboard is open. Its stable
-split is one-third identity/navigation and two-thirds search/app pages. A vertical wheel gesture
-changes the horizontal page index; search/category changes reset to page one without changing
-the overlay dimensions. Launch history is a small atomic state document used to promote the six
-most-used apps before the alphabetical catalog; it is not a settings transaction. Desktop
-discovery, icon resolution and execution remain behind
+Spotlight owns the keyboard-first application and clipboard surface. It categorizes desktop
+entries from `Platform.Applications.ApplicationCatalog`, renders a fixed 5×4 browse grid with
+occupancy indicators, and keeps query results and clipboard content as separate lazy branches.
+Desktop discovery, icon resolution and execution remain behind
 `Platform.Applications.ApplicationCatalog`; a disappearing entry fails safely.
+
+The compact Arch Menu owns the MenuBar trigger, grouped action dropdown, About surface and local
+confirmation sheet for session actions. Selecting Settings closes or replaces the dropdown with
+the standalone `SettingsCenter`; it does not host Settings pages, which remain owned by
+`SettingsWorkspace`.
 
 Transient surfaces that must dismiss when focus moves to another monitor declare
 `closeOnMonitorChange: true`. `OverlayHost` observes monitor-focus events through the Hyprland
@@ -65,8 +68,9 @@ Session actions are explicit Platform capabilities. Dashboard shows all supporte
 requires a second confirmation gesture before dispatch. Automated tests must inspect capability
 and UI contracts only; they never execute logout, suspend, hibernate, reboot or poweroff.
 
-Settings pages never own persisted state. They project `ConfigStore.previewState` and mutate it
-only through typed `patch()` paths. SettingsCenter begins one preview transaction; Apply commits
+Settings pages never own persisted state. `SettingsCenter` is the sole Settings host and embeds
+the reusable `SettingsWorkspace`, which projects `ConfigStore.previewState` and mutates it only
+through typed `patch()` paths. SettingsCenter begins one preview transaction; Apply commits
 atomically, while Cancel, Escape, outside click, IPC close and surface replacement all rollback.
 Theme metadata shown by UI comes from validated theme documents, not duplicated catalog labels.
 

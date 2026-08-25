@@ -91,32 +91,19 @@ def main() -> int:
     if re.search(r"\b(Timer|Process)\s*\{", clock_feature):
         errors.append("Clock and calendar must not poll or launch processes")
 
-    launcher_feature = "\n".join(
-        path.read_text(encoding="utf-8")
-        for path in (root / "Titonium/Modules/MenuBar/Launcher").glob("*.qml")
-    )
-    if re.search(r"\b(Timer|Process)\s*\{|execDetached|Animation\.Infinite", launcher_feature):
-        errors.append("Launcher UI must not poll, spawn commands or animate continuously")
-    launcher_dir = root / "Titonium/Modules/MenuBar/Launcher"
-    for launcher_file in (
-        "ArchMenu.qml", "LauncherRail.qml", "LauncherSectionRegistry.qml",
-        "AppsPage.qml", "PageIndicator.qml",
-    ):
-        if not (launcher_dir / launcher_file).is_file():
-            errors.append(f"Arch Menu is missing focused component: {launcher_file}")
-    launcher_widget_text = (launcher_dir / "LauncherWidget.qml").read_text(encoding="utf-8")
-    if 'Qt.resolvedUrl("ArchMenu.qml")' not in launcher_widget_text:
-        errors.append("Launcher trigger must open ArchMenu.qml")
-    if re.search(r"\b(query|category|LauncherHistoryStore)\b", launcher_feature):
-        errors.append("Arch Menu Apps must not contain search, categories or usage history")
-    if (launcher_dir / "LauncherSectionRegistry.qml").is_file():
-        registry_text = (launcher_dir / "LauncherSectionRegistry.qml").read_text(encoding="utf-8")
-        if "sourceFor" not in registry_text or "AppsPage.qml" not in registry_text:
-            errors.append("LauncherSectionRegistry must resolve Apps and provide sourceFor")
-    if (launcher_dir / "ArchMenu.qml").is_file():
-        arch_menu_text = (launcher_dir / "ArchMenu.qml").read_text(encoding="utf-8")
-        if "Loader" not in arch_menu_text or "LauncherSectionRegistry.sourceFor" not in arch_menu_text:
-            errors.append("Arch Menu must lazy-load sections through LauncherSectionRegistry")
+    launcher_dir = root / "Titonium/Modules/MenuBar" / "Launcher"
+    if launcher_dir.exists():
+        errors.append("superseded MenuBar/Launcher module directory remains")
+    for legacy_symbol in ("Launcher" + "SettingsPage", "Launcher" + "SectionRegistry"):
+        for path in sorted((root / "Titonium").rglob("*")):
+            if not path.is_file() or (
+                path.suffix not in {".qml", ".js"} and path.name != "qmldir"
+            ):
+                continue
+            if legacy_symbol in path.name or legacy_symbol in path.read_text(encoding="utf-8"):
+                errors.append(
+                    f"superseded Launcher reference remains: {path.relative_to(root)} ({legacy_symbol})"
+                )
 
     compact_menu_dir = root / "Titonium/Modules/MenuBar/ArchMenu"
     compact_menu_files = (
@@ -275,8 +262,10 @@ def main() -> int:
                 f"{target} IPC must map all {expected_count} coordinator mutations "
                 "through guarded result reporting"
             )
-    if 'target: "arch-menu"' not in app_shell or 'target: "launcher"' in app_shell:
-        errors.append("AppShell must replace launcher IPC with arch-menu")
+    if 'target: "arch-menu"' not in app_shell:
+        errors.append("AppShell must expose arch-menu IPC")
+    if re.search(r'target:\s*"launcher"', app_shell):
+        errors.append("superseded launcher IPC target remains")
     arch_menu_ipc = re.search(
         r'IpcHandler\s*\{\s*target:\s*"arch-menu"(?P<body>[\s\S]*?)\n\s*\}\n\s*IpcHandler',
         app_shell,
@@ -288,11 +277,13 @@ def main() -> int:
     if "function section(" in arch_menu_ipc_body:
         errors.append("arch-menu IPC must not expose legacy section navigation")
     if (
-        "ConfigStore.beginPreview()" not in compact_surface
+        "function openSettings()" not in compact_surface
         or '"source": Qt.resolvedUrl("../../Settings/SettingsCenter.qml")' not in compact_surface
-        or '"cancelPreviewOnClose": true' not in compact_surface
+        or 'root.openSettings();' not in compact_surface
     ):
-        errors.append("Arch Menu Settings must replace the menu with a cancellable preview transaction")
+        errors.append("Arch Menu Settings activation must open standalone SettingsCenter")
+    if "cancelPreviewOnClose" in arch_menu_ipc_body:
+        errors.append("Arch Menu descriptor must not own Settings preview cancellation")
 
     session_actions = (root / "Titonium/Platform/System/SessionActions.qml").read_text(encoding="utf-8")
     for contract in (
@@ -350,6 +341,17 @@ def main() -> int:
     ):
         errors.append("Spotlight acceptance IPC must target its spawned shell PID")
 
+    settings_acceptance = (root / "scripts/settings_acceptance.sh").read_text(encoding="utf-8")
+    call_ipc_helper = re.search(
+        r"call_ipc\(\)\s*\{(?P<body>[\s\S]*?)\n\}", settings_acceptance
+    )
+    call_ipc_body = call_ipc_helper.group("body") if call_ipc_helper else ""
+    if not re.search(
+        r'qs\s+-p\s+"\$project_root"\s+ipc\s+--pid\s+"\$shell_pid"\s+call',
+        call_ipc_body,
+    ):
+        errors.append("Settings acceptance IPC must target its spawned shell PID")
+
     settings_feature = "\n".join(
         path.read_text(encoding="utf-8")
         for path in (root / "Titonium/Modules/Settings").glob("*.qml")
@@ -357,49 +359,11 @@ def main() -> int:
     if re.search(r"\b(Timer|Process|FileView)\s*\{|execDetached|MultiEffect|ShaderEffect", settings_feature):
         errors.append("Settings UI must remain transaction-only and effect-free")
     settings_workspace = root / "Titonium/Modules/Settings/SettingsWorkspace.qml"
-    launcher_settings = root / "Titonium/Modules/MenuBar/Launcher/LauncherSettingsPage.qml"
-    if not settings_workspace.is_file() or not launcher_settings.is_file():
-        errors.append("Standalone and embedded Settings require a shared SettingsWorkspace")
-    else:
-        settings_center_text = (root / "Titonium/Modules/Settings/SettingsCenter.qml").read_text(encoding="utf-8")
-        launcher_settings_text = launcher_settings.read_text(encoding="utf-8")
-        if "SettingsWorkspace" not in settings_center_text or "SettingsWorkspace" not in launcher_settings_text:
-            errors.append("Both Settings hosts must instantiate SettingsWorkspace")
-        for host_name, host_text in (("SettingsCenter", settings_center_text), ("LauncherSettingsPage", launcher_settings_text)):
-            if re.search(r"Component\s*\{\s*id:\s*(theme|typography|layout)PageComponent", host_text):
-                errors.append(f"{host_name} must not duplicate Settings page components")
-    launcher_widget_text = (root / "Titonium/Modules/MenuBar/Launcher/LauncherWidget.qml").read_text(encoding="utf-8")
-    if '"cancelPreviewOnClose": true' not in launcher_widget_text:
-        errors.append("Arch Menu descriptor must rollback abandoned Settings preview")
-    power_page = root / "Titonium/Modules/MenuBar/Launcher/PowerPage.qml"
-    if not power_page.is_file():
-        errors.append("Arch Menu requires a lazy PowerPage")
-    else:
-        power_text = power_page.read_text(encoding="utf-8")
-        if "pendingAction" not in power_text or "executeConfirmed" not in power_text:
-            errors.append("PowerPage must require local confirmation before Platform execution")
-        if re.search(r"\b(Process|systemctl|Hyprland\.)", power_text):
-            errors.append("PowerPage must execute only through SessionActions")
-    launcher_registry_path = root / "Titonium/Modules/MenuBar/Launcher/LauncherSectionRegistry.qml"
-    if launcher_registry_path.is_file():
-        launcher_registry_text = launcher_registry_path.read_text(encoding="utf-8")
-        if not re.search(r'"id":\s*"power"[^\n]+"placement":\s*"bottom"', launcher_registry_text):
-            errors.append("Power must be pinned to the bottom of the Launcher rail")
-    launcher_rail_path = root / "Titonium/Modules/MenuBar/Launcher/LauncherRail.qml"
-    if launcher_rail_path.is_file():
-        launcher_rail_text = launcher_rail_path.read_text(encoding="utf-8")
-        centered_primary_sections = re.search(
-            r"Item\s*\{\s*Layout\.fillHeight:\s*true\s*\}"
-            r"\s*Repeater\s*\{\s*model:\s*root\.sections\.filter\(section\s*=>\s*section\.placement\s*!==\s*\"bottom\"\)"
-            r"[\s\S]*?Item\s*\{\s*Layout\.fillHeight:\s*true\s*\}"
-            r"\s*Repeater\s*\{\s*model:\s*root\.sections\.filter\(section\s*=>\s*section\.placement\s*===\s*\"bottom\"\)",
-            launcher_rail_text,
-        )
-        if not centered_primary_sections:
-            errors.append("Apps and Settings must be vertically centered between flexible rail spacers")
-    application_tile_path = root / "Titonium/Modules/MenuBar/Launcher/ApplicationTile.qml"
-    if "anchors.centerIn: parent" not in application_tile_path.read_text(encoding="utf-8"):
-        errors.append("Application icon and name group must be centered inside its tile")
+    settings_center = root / "Titonium/Modules/Settings/SettingsCenter.qml"
+    if not settings_workspace.is_file() or not settings_center.is_file():
+        errors.append("standalone Settings requires SettingsCenter and SettingsWorkspace")
+    elif "SettingsWorkspace" not in settings_center.read_text(encoding="utf-8"):
+        errors.append("SettingsCenter must instantiate SettingsWorkspace")
 
     spotlight_dir = root / "Titonium/Modules/Spotlight"
     spotlight_files = (

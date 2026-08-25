@@ -44,7 +44,17 @@ restore_runtime() {
 trap restore_runtime EXIT
 
 call_ipc() {
-    qs -p "$project_root" ipc call "$@"
+    qs -p "$project_root" ipc --pid "$shell_pid" call "$@"
+}
+
+require_contains() {
+    local actual="$1"
+    local expected="$2"
+    local context="$3"
+    if [[ "$actual" != *"$expected"* ]]; then
+        printf 'FAIL %s: expected %q in %q\n' "$context" "$expected" "$actual" >&2
+        exit 1
+    fi
 }
 
 before_git="$(git -C "$project_root" status --porcelain=v1)"
@@ -69,6 +79,13 @@ if [[ $ready != true ]]; then
     echo "FAIL Settings acceptance shell did not become ready" >&2
     exit 1
 fi
+
+require_contains "$(call_ipc arch-menu toggle "")" "open:" "Arch Menu open"
+require_contains "$(call_ipc arch-menu close)" "closed" "Arch Menu close"
+require_contains "$(call_ipc arch-menu state)" "closed" "Arch Menu closed state"
+require_contains "$(call_ipc settings toggle "")" "open:" "Settings open"
+require_contains "$(call_ipc settings state)" "settings:" "Settings open state"
+require_contains "$(call_ipc settings state)" ":preview" "Settings preview state"
 
 original_settings="$(call_ipc config settingsDocument)"
 original_layout="$(call_ipc config layoutDocument)"
@@ -115,6 +132,9 @@ restored_nonappearance="$(call_ipc config settingsDocument | python3 -c 'import 
 [[ "$(call_ipc config layoutDocument)" == "$original_layout" ]]
 call_ipc config cancel >/dev/null
 echo "PASS Restore Appearance returns Neutral dark/solid and preserves non-appearance state"
+
+require_contains "$(call_ipc settings close)" "closed:cancelled" "Settings close"
+[[ "$(call_ipc settings state)" == "closed" ]]
 
 [[ "$(git -C "$project_root" status --porcelain=v1)" == "$before_git" ]]
 [[ "$(sha256sum "$live_lua" | cut -d' ' -f1)" == "$before_live_hash" ]]

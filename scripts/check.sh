@@ -11,7 +11,6 @@ node "$project_root/scripts/check_config_migrations.js"
 python3 "$project_root/scripts/check_architecture.py"
 node "$project_root/scripts/check_arch_menu.js"
 node "$project_root/scripts/check_lunar.js"
-node "$project_root/scripts/check_launcher_layout.js"
 node "$project_root/scripts/check_spotlight.js"
 node "$project_root/scripts/check_clipboard_history.js"
 

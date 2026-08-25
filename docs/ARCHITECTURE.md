@@ -41,6 +41,12 @@ URIs are `qs.Titonium.*`. `Titonium` remains the project namespace and no legacy
 6. `WidgetRegistry` maps a `widgetType` to one QML URL.
 7. Widget actions travel through signals or `SurfaceCoordinator`, never sibling IDs.
 
+Spotlight, Arch Menu and Settings are distinct transient flows. Spotlight owns keyboard-first
+application and clipboard discovery; the compact Arch Menu owns the MenuBar dropdown and
+confirmed session actions; Settings opens the standalone `SettingsCenter` surface. Arch Menu
+Settings activation replaces the dropdown with SettingsCenter, whose reusable
+`SettingsWorkspace` owns Settings content and preview controls.
+
 ## Multi-monitor policy
 
 All sizes are logical pixels. The default layout applies to every output; an exact output-name
@@ -69,7 +75,7 @@ Hyprland, ToplevelManager or SystemTray directly.
 
 `Platform.Applications.ApplicationCatalog` is the sole desktop-entry boundary. It projects
 visible entries into immutable UI records, resolves theme icons and launches only through
-`DesktopEntry.execute()`. Launcher UI never parses an Exec string or spawns a fallback command.
+`DesktopEntry.execute()`. Spotlight UI never parses an Exec string or spawns a fallback command.
 
 `Modules.Frame` is absent from the window tree unless `modules.frame.enabled` is true. When
 enabled, it creates one bottom-layer, empty-input-region surface per screen and renders only a
