@@ -91,7 +91,8 @@ FocusScope {
                     root.spotlightModel.moveSelection(-1);
                     event.accepted = true;
                 } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
-                    root.activate(resultRow.index);
+                    if (root.spotlightModel.activateSelected())
+                        root.activatedSuccessfully();
                     event.accepted = true;
                 }
             }

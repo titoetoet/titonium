@@ -232,6 +232,27 @@ def main() -> int:
     )
     if not result_key_handler:
         errors.append("Focused Spotlight result rows must forward Up/Down selection to SpotlightModel")
+    result_key_block = re.search(
+        r"Keys\.onPressed:\s*event\s*=>\s*\{[\s\S]*?\n\s*\}"
+        r"(?=\n\s*Accessible\.role)",
+        spotlight_results,
+    )
+    key_block_text = result_key_block.group(0) if result_key_block else ""
+    pointer_activates_row = re.search(
+        r"TapHandler\s*\{\s*onTapped:\s*root\.activate\(resultRow\.index\)\s*\}",
+        spotlight_results,
+    )
+    keyboard_activates_selection = re.search(
+        r"if\s*\(root\.spotlightModel\.activateSelected\(\)\)"
+        r"\s*root\.activatedSuccessfully\(\);",
+        key_block_text,
+    )
+    if (
+        not pointer_activates_row
+        or not keyboard_activates_selection
+        or "root.activate(resultRow.index)" in key_block_text
+    ):
+        errors.append("Spotlight result keyboard activation must use model selection, not focused row index")
 
     coordinator_text = (root / "Titonium/Foundation/SurfaceCoordinator.qml").read_text(encoding="utf-8")
     if "cancelPreviewOnClose" not in coordinator_text or "ConfigStore.cancel()" not in coordinator_text:
