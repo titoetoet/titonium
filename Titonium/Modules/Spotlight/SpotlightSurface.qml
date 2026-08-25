@@ -29,7 +29,7 @@ FocusScope {
     }
 
     function handleEscape(): void {
-        if (spotlightModel.escape())
+        if (spotlightModel.handleEscape())
             root.close();
     }
 
@@ -67,9 +67,9 @@ FocusScope {
 
     Connections {
         target: spotlightModel
-        function onModeChanged(): void { root.publishState(); }
-        function onQueryChanged(): void { root.publishState(); }
-        function onSelectedIndexChanged(): void { root.publishState(); }
+        function onModeChanged(): void { Qt.callLater(root.publishState); }
+        function onQueryChanged(): void { Qt.callLater(root.publishState); }
+        function onSelectedIndexChanged(): void { Qt.callLater(root.publishState); }
     }
 
     Rectangle {

@@ -62,8 +62,8 @@ QtObject {
             "query": root.query,
             "categoryId": root.categoryId
         }, nextQuery);
-        root.mode = next.mode;
         root.query = next.query;
+        root.mode = next.mode;
         root.categoryId = next.categoryId;
         root.selectedIndex = 0;
         root.selectionMoved = false;
@@ -133,7 +133,7 @@ QtObject {
         return ApplicationCatalog.launch(entryId);
     }
 
-    function escape(): bool {
+    function handleEscape(): bool {
         if (root.mode === "clipboard") {
             root.selectedIndex = 0;
             root.selectionMoved = false;
