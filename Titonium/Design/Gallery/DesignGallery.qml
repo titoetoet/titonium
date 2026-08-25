@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Titonium.Design
+import qs.Titonium.Design.Controls as Controls
 import qs.Titonium.Foundation
 
 Item {
@@ -31,8 +32,8 @@ Item {
     MaterialSurface {
         id: galleryCard
         anchors.centerIn: parent
-        width: Math.min(860, parent.width - Metrics.spacingLarge * 4)
-        height: Math.min(540, parent.height - Metrics.spacingLarge * 4)
+        width: Math.min(1000, parent.width - Metrics.spacingLarge * 4)
+        height: Math.min(720, parent.height - Metrics.spacingLarge * 4)
         radius: Metrics.radiusLarge
         outlined: true
         customColor: Theme.background
@@ -53,32 +54,24 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: Metrics.spacingXSmall
 
-                    Text {
+                    Controls.TextLabel {
                         text: I18n.tr("gallery.title")
-                        color: Theme.textPrimary
-                        font.family: Typography.family
-                        font.pixelSize: Typography.titleSize
-                        font.weight: Typography.semiboldWeight
-                        renderType: Text.NativeRendering
+                        variant: "title"
                     }
 
-                    Text {
+                    Controls.TextLabel {
                         text: I18n.tr("gallery.subtitle")
-                        color: Theme.textSecondary
-                        font.family: Typography.family
-                        font.pixelSize: Typography.captionSize
-                        renderType: Text.NativeRendering
+                        variant: "caption"
+                        tone: "secondary"
                     }
                 }
 
-                Text {
+                Controls.TextLabel {
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
                     text: Theme.id + " · " + Theme.mode + " · solid"
-                    color: Theme.textSecondary
-                    font.family: Typography.monoFamily
-                    font.pixelSize: Typography.captionSize
-                    renderType: Text.NativeRendering
+                    variant: "mono"
+                    tone: "secondary"
                 }
             }
 
@@ -87,36 +80,29 @@ Item {
             Row {
                 spacing: Metrics.spacingSmall
 
-                Text {
+                Controls.TextLabel {
                     anchors.verticalCenter: parent.verticalCenter
                     width: 132
                     text: I18n.tr("gallery.mode")
-                    color: Theme.textPrimary
-                    font.family: Typography.family
-                    font.pixelSize: Typography.bodySize
-                    renderType: Text.NativeRendering
                 }
 
-                GalleryAction {
+                Controls.Button {
                     label: I18n.tr("gallery.dark")
-                    kind: Theme.mode === "dark" ? "focus" : "default"
+                    selected: Theme.mode === "dark"
                     onTriggered: ConfigStore.patch("appearance.mode", "dark")
                 }
 
-                GalleryAction {
+                Controls.Button {
                     label: I18n.tr("gallery.light")
-                    kind: Theme.mode === "light" ? "focus" : "default"
+                    selected: Theme.mode === "light"
                     onTriggered: ConfigStore.patch("appearance.mode", "light")
                 }
             }
 
-            Text {
+            Controls.TextLabel {
                 text: I18n.tr("gallery.palette")
-                color: Theme.textPrimary
-                font.family: Typography.family
-                font.pixelSize: Typography.bodySize
-                font.weight: Typography.semiboldWeight
-                renderType: Text.NativeRendering
+                variant: "label"
+                strong: true
             }
 
             Row {
@@ -129,13 +115,10 @@ Item {
                 GallerySwatch { swatchColor: Theme.warning; label: "warning" }
             }
 
-            Text {
+            Controls.TextLabel {
                 text: I18n.tr("gallery.surfaces")
-                color: Theme.textPrimary
-                font.family: Typography.family
-                font.pixelSize: Typography.bodySize
-                font.weight: Typography.semiboldWeight
-                renderType: Text.NativeRendering
+                variant: "label"
+                strong: true
             }
 
             Row {
@@ -146,7 +129,7 @@ Item {
                     height: 72
                     radius: Metrics.radiusMedium
                     outlined: true
-                    Text { anchors.centerIn: parent; text: "Surface · border 1px"; color: Theme.textPrimary; font.family: Typography.family; renderType: Text.NativeRendering }
+                    Controls.TextLabel { anchors.centerIn: parent; text: "Surface · border 1px" }
                 }
 
                 MaterialSurface {
@@ -155,42 +138,12 @@ Item {
                     radius: Metrics.radiusMedium
                     outlined: true
                     customColor: Theme.surfaceElevated
-                    Text { anchors.centerIn: parent; text: "Elevated · tonal only"; color: Theme.textPrimary; font.family: Typography.family; renderType: Text.NativeRendering }
+                    Controls.TextLabel { anchors.centerIn: parent; text: "Elevated · tonal only" }
                 }
             }
 
-            Text {
-                text: I18n.tr("gallery.typography")
-                color: Theme.textPrimary
-                font.family: Typography.family
-                font.pixelSize: Typography.bodySize
-                font.weight: Typography.semiboldWeight
-                renderType: Text.NativeRendering
-            }
-
-            Row {
-                spacing: Metrics.spacingLarge
-                Text { text: "Title / Semibold / 16"; color: Theme.textPrimary; font.family: Typography.family; font.pixelSize: Typography.titleSize; font.weight: Typography.semiboldWeight; renderType: Text.NativeRendering }
-                Text { text: "Body / Regular / 13"; color: Theme.textPrimary; font.family: Typography.family; font.pixelSize: Typography.bodySize; renderType: Text.NativeRendering }
-                Text { text: "Caption / Secondary / 11"; color: Theme.textSecondary; font.family: Typography.family; font.pixelSize: Typography.captionSize; renderType: Text.NativeRendering }
-            }
-
-            Text {
-                text: I18n.tr("gallery.states")
-                color: Theme.textPrimary
-                font.family: Typography.family
-                font.pixelSize: Typography.bodySize
-                font.weight: Typography.semiboldWeight
-                renderType: Text.NativeRendering
-            }
-
-            Row {
-                spacing: Metrics.spacingSmall
-                GalleryAction { label: I18n.tr("gallery.default") }
-                GalleryAction { label: I18n.tr("gallery.focus"); kind: "focus" }
-                GalleryAction { label: I18n.tr("gallery.disabled"); controlEnabled: false }
-                GalleryAction { label: I18n.tr("gallery.error"); kind: "danger" }
-            }
+            GalleryTypographySection { width: parent.width }
+            GalleryControlsSection { width: parent.width }
 
             Item {
                 width: parent.width
@@ -201,7 +154,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: Metrics.spacingSmall
 
-                    GalleryAction {
+                    Controls.Button {
                         label: I18n.tr("gallery.restore")
                         onTriggered: ConfigStore.restoreAppearance()
                     }
@@ -212,8 +165,8 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: Metrics.spacingSmall
 
-                    GalleryAction { label: I18n.tr("gallery.cancel"); onTriggered: root.cancelAndClose() }
-                    GalleryAction { label: I18n.tr("gallery.apply"); kind: "primary"; onTriggered: root.applyAndClose() }
+                    Controls.Button { label: I18n.tr("gallery.cancel"); onTriggered: root.cancelAndClose() }
+                    Controls.Button { label: I18n.tr("gallery.apply"); variant: "primary"; onTriggered: root.applyAndClose() }
                 }
             }
         }

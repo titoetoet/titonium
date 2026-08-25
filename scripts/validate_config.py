@@ -169,6 +169,26 @@ def validate_theme(data: Any) -> list[str]:
     for key in ("typography", "metrics", "motion", "material"):
         if not isinstance(data.get(key), dict):
             errors.append(f"theme.{key} is required")
+    typography = data.get("typography")
+    if isinstance(typography, dict):
+        for key in ("fontFamily", "fallbackFamily", "monoFamily", "iconFamily"):
+            if not isinstance(typography.get(key), str) or not typography[key]:
+                errors.append(f"theme.typography.{key} is required")
+        for key in (
+            "microSize", "captionSize", "bodySmallSize", "bodySize", "bodyLargeSize",
+            "labelSize", "titleSmallSize", "titleSize", "titleLargeSize", "displaySize",
+        ):
+            value = typography.get(key)
+            if not isinstance(value, int) or isinstance(value, bool) or not 8 <= value <= 64:
+                errors.append(f"theme.typography.{key} must be an integer from 8 to 64")
+        weights = typography.get("weights")
+        if not isinstance(weights, dict):
+            errors.append("theme.typography.weights is required")
+        else:
+            for key in ("regular", "medium", "semibold", "bold"):
+                value = weights.get(key)
+                if not isinstance(value, int) or isinstance(value, bool) or not 100 <= value <= 900:
+                    errors.append(f"theme.typography.weights.{key} must be an integer from 100 to 900")
     material = data.get("material")
     if isinstance(material, dict):
         if material.get("defaultBackend") not in BACKENDS:
@@ -256,6 +276,7 @@ def main() -> int:
         (root / "tests/fixtures/layout.invalid-duplicate.json", validate_layout, False),
         (root / "tests/fixtures/layout.invalid-type.json", validate_layout, False),
         (root / "tests/fixtures/settings.invalid.json", validate_settings, False),
+        (root / "tests/fixtures/theme.invalid-typography.json", validate_theme, False),
     )
     return 0 if all(expect(*case) for case in cases) and expect_migration(root / "tests/fixtures/settings.v1.valid.json") else 1
 

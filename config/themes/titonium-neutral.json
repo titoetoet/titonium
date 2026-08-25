@@ -50,10 +50,17 @@
     "fontFamily": "SF Pro Display",
     "fallbackFamily": "Noto Sans",
     "monoFamily": "JetBrains Mono",
+    "iconFamily": "Material Symbols Rounded",
+    "microSize": 10,
     "bodySize": 13,
+    "bodySmallSize": 12,
+    "bodyLargeSize": 14,
     "captionSize": 11,
     "labelSize": 13,
+    "titleSmallSize": 15,
     "titleSize": 16,
+    "titleLargeSize": 20,
+    "displaySize": 28,
     "weights": { "regular": 400, "medium": 500, "semibold": 600, "bold": 700 }
   },
   "metrics": {

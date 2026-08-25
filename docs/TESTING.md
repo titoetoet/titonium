@@ -35,3 +35,7 @@ configuration copies. Gallery content must disappear from the scene when its Loa
 - Neutral Utility resolves to `solid` in both dark and light previews.
 - Restore returns to dark while preserving locale, accessibility, modules and layout.
 - Gallery opens only on its requested screen and closes without leaving preview state active.
+- Typography variants remain legible in dark/light mode and at output scales 1.0/1.5.
+- Icon glyphs resolve through Material Symbols without image or filesystem fallback.
+- Button variants support pointer activation, Tab focus and Enter/Space activation; disabled
+  buttons cannot emit actions.

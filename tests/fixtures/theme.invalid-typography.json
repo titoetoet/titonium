@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 2,
+  "id": "invalid-typography",
+  "version": "1.0.0",
+  "nameKey": "theme.invalid.name",
+  "immutable": false,
+  "modes": { "dark": {}, "light": {} },
+  "typography": {
+    "fontFamily": "SF Pro Display",
+    "fallbackFamily": "Noto Sans",
+    "monoFamily": "JetBrains Mono",
+    "bodySize": 3,
+    "weights": { "regular": 400 }
+  },
+  "metrics": {},
+  "motion": {},
+  "material": {
+    "defaultBackend": "solid",
+    "allowedBackends": ["solid"],
+    "compositorIntegration": false,
+    "opacity": 1.0
+  }
+}

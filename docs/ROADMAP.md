@@ -5,10 +5,17 @@
 Bootable config, schemas, config transactions, i18n/theme tokens, recursive layout renderer,
 registry, surface coordinator and minimal multi-monitor MenuBar.
 
-## Theme Foundation — Active review slice
+## Theme Foundation — Complete
 
 Settings schema v2, immutable Neutral Utility, theme catalog/resolver, appearance-only Restore
 and lazy Design Gallery. Future theme reminders: Cupertino Flat and Fluent Solid.
+
+## Design Controls — Active review slices
+
+- Typography, Icon and Button — implemented; awaiting visual approval.
+- Surface, Card and Panel — next after approval.
+- Switch, Slider and Dropdown.
+- Tabs, focus/accessibility audit and Visualizer when the media phase begins.
 
 ## Milestone 1 — MenuBar essentials
 

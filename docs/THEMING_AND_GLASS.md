@@ -10,6 +10,11 @@ Theme packages contain semantic intent, not component-specific colors. Version 2
 
 UI consumes `Theme.*`, `Typography.*`, `Metrics.*` and `Motion.*` only.
 
+Reusable visual primitives live in `Titonium.Design.Controls`. `TextLabel` resolves a named
+typography variant and semantic tone, `Icon` renders the shipped Material Symbols variable
+font, and `Button` owns pointer, keyboard, focus, disabled, selected and checked states. Feature
+modules consume these contracts instead of restyling raw `Text` and `Rectangle` controls.
+
 `titonium-neutral` is the immutable restore baseline. It uses opaque tonal surfaces, one-pixel
 borders, a 4/8px grid and no gradients, shadows, shaders, glass or compositor integration.
 Its material policy allows only `solid`; unsupported backend requests resolve to the package

@@ -6,9 +6,9 @@ changing code.
 
 ## Current milestone
 
-Milestone 0 is complete. The active slice is Theme Foundation: the immutable Neutral Utility
-baseline, settings schema v2 and a lazy Design Gallery. Feature migration remains gated in
-small review batches.
+Milestone 0 and Theme Foundation are complete. The active review slice is Design Controls,
+ported in groups of two or three components. Typography, Icon and Button form the first
+control batch; feature migration remains gated behind visual approval.
 
 The legacy reference is read-only:
 

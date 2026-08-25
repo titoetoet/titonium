@@ -105,6 +105,27 @@ function validateTheme(data) {
     ["typography", "metrics", "motion", "material"].forEach(key => {
         if (!data[key] || typeof data[key] !== "object") errors.push("theme." + key + " is required");
     });
+    const typography = data.typography;
+    if (typography && typeof typography === "object") {
+        ["fontFamily", "fallbackFamily", "monoFamily", "iconFamily"].forEach(key => {
+            if (typeof typography[key] !== "string" || typography[key].length === 0)
+                errors.push("theme.typography." + key + " is required");
+        });
+        ["microSize", "captionSize", "bodySmallSize", "bodySize", "bodyLargeSize", "labelSize",
+         "titleSmallSize", "titleSize", "titleLargeSize", "displaySize"].forEach(key => {
+            if (!Number.isInteger(typography[key]) || typography[key] < 8 || typography[key] > 64)
+                errors.push("theme.typography." + key + " must be an integer from 8 to 64");
+        });
+        const weights = typography.weights;
+        if (!weights || typeof weights !== "object") {
+            errors.push("theme.typography.weights is required");
+        } else {
+            ["regular", "medium", "semibold", "bold"].forEach(key => {
+                if (!Number.isInteger(weights[key]) || weights[key] < 100 || weights[key] > 900)
+                    errors.push("theme.typography.weights." + key + " must be an integer from 100 to 900");
+            });
+        }
+    }
     if (data.material && backends.indexOf(data.material.defaultBackend) < 0)
         errors.push("theme.material.defaultBackend is invalid");
     if (data.material && (!Array.isArray(data.material.allowedBackends) || data.material.allowedBackends.length === 0))

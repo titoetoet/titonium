@@ -15,7 +15,42 @@
       "type": "object",
       "required": ["dark", "light"]
     },
-    "typography": { "type": "object" },
+    "typography": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fontFamily", "fallbackFamily", "monoFamily", "iconFamily",
+        "microSize", "captionSize", "bodySmallSize", "bodySize", "bodyLargeSize",
+        "labelSize", "titleSmallSize", "titleSize", "titleLargeSize", "displaySize", "weights"
+      ],
+      "properties": {
+        "fontFamily": { "type": "string", "minLength": 1 },
+        "fallbackFamily": { "type": "string", "minLength": 1 },
+        "monoFamily": { "type": "string", "minLength": 1 },
+        "iconFamily": { "type": "string", "minLength": 1 },
+        "microSize": { "$ref": "#/$defs/fontSize" },
+        "captionSize": { "$ref": "#/$defs/fontSize" },
+        "bodySmallSize": { "$ref": "#/$defs/fontSize" },
+        "bodySize": { "$ref": "#/$defs/fontSize" },
+        "bodyLargeSize": { "$ref": "#/$defs/fontSize" },
+        "labelSize": { "$ref": "#/$defs/fontSize" },
+        "titleSmallSize": { "$ref": "#/$defs/fontSize" },
+        "titleSize": { "$ref": "#/$defs/fontSize" },
+        "titleLargeSize": { "$ref": "#/$defs/fontSize" },
+        "displaySize": { "$ref": "#/$defs/fontSize" },
+        "weights": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["regular", "medium", "semibold", "bold"],
+          "properties": {
+            "regular": { "$ref": "#/$defs/fontWeight" },
+            "medium": { "$ref": "#/$defs/fontWeight" },
+            "semibold": { "$ref": "#/$defs/fontWeight" },
+            "bold": { "$ref": "#/$defs/fontWeight" }
+          }
+        }
+      }
+    },
     "metrics": { "type": "object" },
     "motion": { "type": "object" },
     "material": {
@@ -29,5 +64,9 @@
         "opacity": { "type": "number", "minimum": 0, "maximum": 1 }
       }
     }
+  },
+  "$defs": {
+    "fontSize": { "type": "integer", "minimum": 8, "maximum": 64 },
+    "fontWeight": { "type": "integer", "minimum": 100, "maximum": 900 }
   }
 }
