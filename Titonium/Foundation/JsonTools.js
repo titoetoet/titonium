@@ -33,3 +33,16 @@ function setPath(source, path, value) {
     return result;
 }
 
+function mergeDeep(base, override) {
+    const result = clone(base) || {};
+    if (!override || typeof override !== "object" || Array.isArray(override))
+        return result;
+    Object.keys(override).forEach(key => {
+        const value = override[key];
+        if (value && typeof value === "object" && !Array.isArray(value))
+            result[key] = mergeDeep(result[key] || {}, value);
+        else
+            result[key] = clone(value);
+    });
+    return result;
+}

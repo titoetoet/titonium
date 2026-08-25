@@ -14,6 +14,11 @@ QtObject {
     readonly property string monoFamily: values.monoFamily || "JetBrains Mono"
     readonly property int bodySize: values.bodySize || 13
     readonly property int captionSize: values.captionSize || 11
-    readonly property int labelSize: root.bodySize
+    readonly property int labelSize: values.labelSize || root.bodySize
     readonly property int titleSize: values.titleSize || 16
+    readonly property var weights: values.weights || ({})
+    readonly property int regularWeight: weights.regular || Font.Normal
+    readonly property int mediumWeight: weights.medium || Font.Medium
+    readonly property int semiboldWeight: weights.semibold || Font.DemiBold
+    readonly property int boldWeight: weights.bold || Font.Bold
 }

@@ -10,7 +10,7 @@ from typing import Any
 
 
 NODE_TYPES = {"widget", "group", "panel", "tabs", "spacer"}
-BACKENDS = {"auto", "native", "qml", "solid"}
+BACKENDS = {"solid", "qml", "native"}
 
 
 def load_json(path: Path) -> Any:
@@ -24,24 +24,55 @@ def validate_settings(data: Any) -> list[str]:
     errors: list[str] = []
     if not isinstance(data, dict):
         return ["settings must be an object"]
-    if data.get("schemaVersion") != 1:
+    if data.get("schemaVersion") != 2:
         errors.append("unsupported settings schemaVersion")
     if data.get("locale") not in {"vi", "en"}:
         errors.append("locale must be vi or en")
-    theme = data.get("theme")
-    if not isinstance(theme, dict):
-        errors.append("theme is required")
+    appearance = data.get("appearance")
+    if not isinstance(appearance, dict):
+        errors.append("appearance is required")
     else:
-        if not theme.get("id"):
-            errors.append("theme.id is required")
-        if theme.get("mode") not in {"dark", "light"}:
-            errors.append("theme.mode is invalid")
-        if theme.get("materialBackend") not in BACKENDS:
-            errors.append("theme.materialBackend is invalid")
+        if not appearance.get("themeId"):
+            errors.append("appearance.themeId is required")
+        if appearance.get("mode") not in {"dark", "light"}:
+            errors.append("appearance.mode is invalid")
+        if appearance.get("density") not in {"compact", "comfortable"}:
+            errors.append("appearance.density is invalid")
+        if not isinstance(appearance.get("overrides"), dict):
+            errors.append("appearance.overrides must be an object")
     accessibility = data.get("accessibility")
     if not isinstance(accessibility, dict) or not isinstance(accessibility.get("reducedMotion"), bool):
         errors.append("accessibility.reducedMotion is required")
+    if not isinstance(data.get("modules"), dict):
+        errors.append("modules must be an object")
     return errors
+
+
+def migrate_settings(data: Any) -> Any:
+    if not isinstance(data, dict) or data.get("schemaVersion") != 1:
+        return data
+    legacy_theme = data.get("theme") if isinstance(data.get("theme"), dict) else {}
+    accessibility = data.get("accessibility") if isinstance(data.get("accessibility"), dict) else {}
+    modules = data.get("modules") if isinstance(data.get("modules"), dict) else {}
+    return {
+        "$schema": "titonium.settings/v2",
+        "schemaVersion": 2,
+        "locale": "en" if data.get("locale") == "en" else "vi",
+        "appearance": {
+            "themeId": "titonium-neutral",
+            "mode": "light" if legacy_theme.get("mode") == "light" else "dark",
+            "density": "comfortable",
+            "overrides": {},
+        },
+        "accessibility": {"reducedMotion": accessibility.get("reducedMotion") is True},
+        "modules": modules,
+    }
+
+
+def restore_appearance(settings: Any, defaults: Any) -> Any:
+    restored = json.loads(json.dumps(settings))
+    restored["appearance"] = json.loads(json.dumps(defaults["appearance"]))
+    return restored
 
 
 def validate_node(node: Any, path: str, seen: set[str], errors: list[str]) -> None:
@@ -122,17 +153,82 @@ def validate_theme(data: Any) -> list[str]:
     errors: list[str] = []
     if not isinstance(data, dict):
         return ["theme must be an object"]
-    if data.get("schemaVersion") != 1:
+    if data.get("schemaVersion") != 2:
         errors.append("unsupported theme schemaVersion")
     if not data.get("id"):
         errors.append("theme.id is required")
+    if not data.get("version"):
+        errors.append("theme.version is required")
+    if not data.get("nameKey"):
+        errors.append("theme.nameKey is required")
+    if not isinstance(data.get("immutable"), bool):
+        errors.append("theme.immutable is required")
     modes = data.get("modes")
     if not isinstance(modes, dict) or not isinstance(modes.get("dark"), dict) or not isinstance(modes.get("light"), dict):
         errors.append("theme dark/light modes are required")
-    for key in ("typography", "metrics", "motion", "materials"):
+    for key in ("typography", "metrics", "motion", "material"):
         if not isinstance(data.get(key), dict):
             errors.append(f"theme.{key} is required")
+    material = data.get("material")
+    if isinstance(material, dict):
+        if material.get("defaultBackend") not in BACKENDS:
+            errors.append("theme.material.defaultBackend is invalid")
+        if not isinstance(material.get("allowedBackends"), list) or not material.get("allowedBackends"):
+            errors.append("theme.material.allowedBackends is required")
+        if not isinstance(material.get("compositorIntegration"), bool):
+            errors.append("theme.material.compositorIntegration is required")
     return errors
+
+
+def validate_theme_catalog(data: Any) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(data, dict):
+        return ["theme catalog must be an object"]
+    if data.get("schemaVersion") != 1:
+        errors.append("unsupported theme catalog schemaVersion")
+    default_id = data.get("defaultThemeId")
+    entries = data.get("themes")
+    if not default_id:
+        errors.append("theme catalog defaultThemeId is required")
+    if not isinstance(entries, list) or not entries:
+        return errors + ["theme catalog themes are required"]
+    ids: set[str] = set()
+    for index, entry in enumerate(entries):
+        if not isinstance(entry, dict) or not entry.get("id") or not entry.get("file"):
+            errors.append(f"theme catalog entry {index} is invalid")
+        elif "/" in entry["file"] or ".." in entry["file"] or not entry["file"].endswith(".json"):
+            errors.append(f"theme catalog entry {entry['id']} has an invalid file name")
+        elif entry["id"] in ids:
+            errors.append(f"duplicate theme catalog id: {entry['id']}")
+        else:
+            ids.add(entry["id"])
+    if default_id not in ids:
+        errors.append("theme catalog default is not registered")
+    return errors
+
+
+def expect_migration(path: Path) -> bool:
+    source = load_json(path)
+    migrated = migrate_settings(source)
+    errors = validate_settings(migrated)
+    defaults = load_json(path.parents[2] / "config/defaults/settings.json")
+    restored = restore_appearance(migrated, defaults)
+    preserved = (
+        migrated.get("locale") == "en"
+        and migrated.get("appearance", {}).get("themeId") == "titonium-neutral"
+        and migrated.get("appearance", {}).get("mode") == "light"
+        and migrated.get("accessibility", {}).get("reducedMotion") is True
+        and migrated.get("modules", {}).get("sentinel", {}).get("enabled") is True
+        and restored.get("appearance") == defaults.get("appearance")
+        and restored.get("locale") == "en"
+        and restored.get("accessibility", {}).get("reducedMotion") is True
+        and restored.get("modules", {}).get("sentinel", {}).get("enabled") is True
+    )
+    if errors or not preserved:
+        print(f"FAIL {path}: migration errors={errors}; preserved={preserved}", file=sys.stderr)
+        return False
+    print(f"PASS {path.name}: migrated v1 -> v2 with non-appearance state preserved")
+    return True
 
 
 def expect(path: Path, validator: Any, should_pass: bool) -> bool:
@@ -154,13 +250,14 @@ def main() -> int:
     cases = (
         (root / "config/defaults/settings.json", validate_settings, True),
         (root / "config/defaults/layout.json", validate_layout, True),
-        (root / "config/themes/titonium-foundation.json", validate_theme, True),
+        (root / "config/themes/index.json", validate_theme_catalog, True),
+        (root / "config/themes/titonium-neutral.json", validate_theme, True),
         (root / "tests/fixtures/layout.valid.json", validate_layout, True),
         (root / "tests/fixtures/layout.invalid-duplicate.json", validate_layout, False),
         (root / "tests/fixtures/layout.invalid-type.json", validate_layout, False),
         (root / "tests/fixtures/settings.invalid.json", validate_settings, False),
     )
-    return 0 if all(expect(*case) for case in cases) else 1
+    return 0 if all(expect(*case) for case in cases) and expect_migration(root / "tests/fixtures/settings.v1.valid.json") else 1
 
 
 if __name__ == "__main__":

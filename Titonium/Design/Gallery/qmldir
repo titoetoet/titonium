@@ -1,0 +1,4 @@
+module qs.Titonium.Design.Gallery
+DesignGallery 1.0 DesignGallery.qml
+GalleryAction 1.0 GalleryAction.qml
+GallerySwatch 1.0 GallerySwatch.qml

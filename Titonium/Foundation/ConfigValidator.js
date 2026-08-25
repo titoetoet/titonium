@@ -1,22 +1,27 @@
 .pragma library
 
 const nodeTypes = ["widget", "group", "panel", "tabs", "spacer"];
-const backends = ["auto", "native", "qml", "solid"];
+const backends = ["solid", "qml", "native"];
 
 function validateSettings(data) {
     const errors = [];
     if (!data || typeof data !== "object") return ["settings must be an object"];
-    if (data.schemaVersion !== 1) errors.push("unsupported settings schemaVersion");
+    if (data.schemaVersion !== 2) errors.push("unsupported settings schemaVersion");
     if (data.locale !== "vi" && data.locale !== "en") errors.push("locale must be vi or en");
-    if (!data.theme || typeof data.theme !== "object") {
-        errors.push("theme is required");
+    if (!data.appearance || typeof data.appearance !== "object" || Array.isArray(data.appearance)) {
+        errors.push("appearance is required");
     } else {
-        if (!data.theme.id) errors.push("theme.id is required");
-        if (data.theme.mode !== "dark" && data.theme.mode !== "light") errors.push("theme.mode is invalid");
-        if (backends.indexOf(data.theme.materialBackend) < 0) errors.push("theme.materialBackend is invalid");
+        if (!data.appearance.themeId) errors.push("appearance.themeId is required");
+        if (data.appearance.mode !== "dark" && data.appearance.mode !== "light") errors.push("appearance.mode is invalid");
+        if (data.appearance.density !== "compact" && data.appearance.density !== "comfortable")
+            errors.push("appearance.density is invalid");
+        if (!data.appearance.overrides || typeof data.appearance.overrides !== "object" || Array.isArray(data.appearance.overrides))
+            errors.push("appearance.overrides must be an object");
     }
     if (!data.accessibility || typeof data.accessibility.reducedMotion !== "boolean")
         errors.push("accessibility.reducedMotion is required");
+    if (!data.modules || typeof data.modules !== "object" || Array.isArray(data.modules))
+        errors.push("modules must be an object");
     return errors;
 }
 
@@ -91,11 +96,41 @@ function validateLayout(data) {
 function validateTheme(data) {
     const errors = [];
     if (!data || typeof data !== "object") return ["theme must be an object"];
-    if (data.schemaVersion !== 1) errors.push("unsupported theme schemaVersion");
+    if (data.schemaVersion !== 2) errors.push("unsupported theme schemaVersion");
     if (!data.id) errors.push("theme.id is required");
+    if (!data.version) errors.push("theme.version is required");
+    if (!data.nameKey) errors.push("theme.nameKey is required");
+    if (typeof data.immutable !== "boolean") errors.push("theme.immutable is required");
     if (!data.modes || !data.modes.dark || !data.modes.light) errors.push("theme dark/light modes are required");
-    ["typography", "metrics", "motion", "materials"].forEach(key => {
+    ["typography", "metrics", "motion", "material"].forEach(key => {
         if (!data[key] || typeof data[key] !== "object") errors.push("theme." + key + " is required");
     });
+    if (data.material && backends.indexOf(data.material.defaultBackend) < 0)
+        errors.push("theme.material.defaultBackend is invalid");
+    if (data.material && (!Array.isArray(data.material.allowedBackends) || data.material.allowedBackends.length === 0))
+        errors.push("theme.material.allowedBackends is required");
+    if (data.material && typeof data.material.compositorIntegration !== "boolean")
+        errors.push("theme.material.compositorIntegration is required");
+    return errors;
+}
+
+function validateThemeCatalog(data) {
+    const errors = [];
+    if (!data || typeof data !== "object") return ["theme catalog must be an object"];
+    if (data.schemaVersion !== 1) errors.push("unsupported theme catalog schemaVersion");
+    if (!data.defaultThemeId) errors.push("theme catalog defaultThemeId is required");
+    if (!Array.isArray(data.themes) || data.themes.length === 0) {
+        errors.push("theme catalog themes are required");
+        return errors;
+    }
+    const seen = {};
+    data.themes.forEach((entry, index) => {
+        if (!entry || !entry.id || !entry.file) errors.push("theme catalog entry " + index + " is invalid");
+        else if (entry.file.indexOf("/") >= 0 || entry.file.indexOf("..") >= 0 || !entry.file.endsWith(".json"))
+            errors.push("theme catalog entry " + entry.id + " has an invalid file name");
+        else if (seen[entry.id]) errors.push("duplicate theme catalog id: " + entry.id);
+        else seen[entry.id] = true;
+    });
+    if (!seen[data.defaultThemeId]) errors.push("theme catalog default is not registered");
     return errors;
 }

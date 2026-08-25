@@ -6,12 +6,14 @@ import Quickshell
 import Quickshell.Io
 import "JsonTools.js" as JsonTools
 import "ConfigValidator.js" as Validator
+import "ConfigMigrations.js" as Migrations
 
 QtObject {
     id: root
 
     property var committedState: ({})
     property var previewState: ({})
+    property var shippedDefaults: ({})
     property var layoutState: ({})
     property var themeState: ({})
     property bool ready: false
@@ -36,10 +38,15 @@ QtObject {
     function initialize(): void {
         const defaultSettings = parseDocument(defaultSettingsFile, "default settings");
         const defaultLayout = parseDocument(defaultLayoutFile, "default layout");
-        const defaultTheme = parseDocument(defaultThemeFile, "default theme");
 
         const settingsErrors = Validator.validateSettings(defaultSettings);
         const layoutErrors = Validator.validateLayout(defaultLayout);
+        if (!ThemeCatalog.initialize()) {
+            root.lastError = ThemeCatalog.lastError;
+            Logger.error("config", "theme catalog is invalid: " + root.lastError);
+            return;
+        }
+        const defaultTheme = ThemeCatalog.themeFor(defaultSettings?.appearance?.themeId || ThemeCatalog.defaultThemeId);
         const themeErrors = Validator.validateTheme(defaultTheme);
         if (settingsErrors.length || layoutErrors.length || themeErrors.length) {
             root.lastError = settingsErrors.concat(layoutErrors, themeErrors).join("; ");
@@ -50,9 +57,13 @@ QtObject {
         let selectedSettings = defaultSettings;
         const runtimeSettings = parseDocument(runtimeSettingsFile, "runtime settings");
         if (runtimeSettings) {
-            const runtimeErrors = Validator.validateSettings(runtimeSettings);
-            if (runtimeErrors.length === 0)
-                selectedSettings = runtimeSettings;
+            const migratedSettings = Migrations.migrateSettings(runtimeSettings);
+            const runtimeErrors = Validator.validateSettings(migratedSettings);
+            if (runtimeErrors.length === 0) {
+                selectedSettings = migratedSettings;
+                if (runtimeSettings.schemaVersion !== migratedSettings.schemaVersion)
+                    Logger.info("config", "migrated runtime settings v" + runtimeSettings.schemaVersion + " to v" + migratedSettings.schemaVersion);
+            }
             else
                 Logger.warn("config", "runtime settings rejected: " + runtimeErrors.join("; "));
         }
@@ -67,13 +78,20 @@ QtObject {
                 Logger.warn("config", "runtime layout rejected: " + runtimeLayoutErrors.join("; "));
         }
 
+        root.shippedDefaults = JsonTools.clone(defaultSettings);
         root.committedState = JsonTools.clone(selectedSettings);
         root.previewState = JsonTools.clone(selectedSettings);
         root.layoutState = JsonTools.clone(selectedLayout);
-        root.themeState = JsonTools.clone(defaultTheme);
+        root.resolveTheme();
         root.lastError = "";
         root.ready = true;
-        Logger.info("config", "schema v1 loaded from defaults/runtime data directory");
+        Logger.info("config", "settings schema v2 loaded from defaults/runtime data directory");
+    }
+
+    function resolveTheme(): void {
+        const appearance = root.previewState.appearance || {};
+        const baseTheme = ThemeCatalog.themeFor(appearance.themeId || ThemeCatalog.defaultThemeId);
+        root.themeState = JsonTools.mergeDeep(baseTheme, appearance.overrides || {});
     }
 
     function beginPreview(): void {
@@ -85,6 +103,25 @@ QtObject {
         if (!root.previewActive)
             root.beginPreview();
         const candidate = JsonTools.setPath(root.previewState, path, value);
+        const errors = Validator.validateSettings(candidate);
+        if (errors.length > 0) {
+            root.lastError = errors.join("; ");
+            return false;
+        }
+        root.previewState = candidate;
+        root.lastError = "";
+        return true;
+    }
+
+    function restoreAppearance(): bool {
+        if (!root.previewActive)
+            root.beginPreview();
+        if (!root.shippedDefaults.appearance) {
+            root.lastError = "shipped appearance defaults are unavailable";
+            return false;
+        }
+        const candidate = JsonTools.clone(root.previewState);
+        candidate.appearance = JsonTools.clone(root.shippedDefaults.appearance);
         const errors = Validator.validateSettings(candidate);
         if (errors.length > 0) {
             root.lastError = errors.join("; ");
@@ -128,6 +165,8 @@ QtObject {
         return base;
     }
 
+    onPreviewStateChanged: root.resolveTheme()
+
     Component.onCompleted: root.initialize()
 
     property FileView defaultSettingsFile: FileView {
@@ -138,12 +177,6 @@ QtObject {
 
     property FileView defaultLayoutFile: FileView {
         path: Quickshell.shellPath("config/defaults/layout.json")
-        preload: false
-        blockLoading: true
-    }
-
-    property FileView defaultThemeFile: FileView {
-        path: Quickshell.shellPath("config/themes/titonium-foundation.json")
         preload: false
         blockLoading: true
     }

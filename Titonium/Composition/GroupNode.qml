@@ -21,7 +21,7 @@ Item {
         backend: "solid"
         outlined: false
         radius: Metrics.radiusSmall
-        customColor: Qt.alpha(Theme.surfaceElevated, 0.72)
+        customColor: Theme.surfaceElevated
     }
 
     LayoutRenderer {

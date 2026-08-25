@@ -18,7 +18,7 @@ def main() -> int:
 
     forbidden_ui = re.compile(r"\b(Process|FileView)\s*\{")
     forbidden_commands = re.compile(r"\b(hyprctl|nmcli|wpctl)\b")
-    forbidden_perf = re.compile(r"\bMultiEffect\b|Animation\.Infinite|loops\s*:\s*Animation\.Infinite")
+    forbidden_perf = re.compile(r"\b(MultiEffect|ShaderEffect)\b|Animation\.Infinite|loops\s*:\s*Animation\.Infinite")
     allowed_io = {"Foundation", "Platform"}
 
     for path in sorted((root / "Titonium").rglob("*.qml")):
@@ -33,6 +33,8 @@ def main() -> int:
             errors.append(f"forbidden always-on visual cost: {relative}")
         if "/home/" in text or "~/" in text:
             errors.append(f"hardcoded home path in QML: {relative}")
+        if ".config/quickshell/titonium" in text or ".local/share/Trash/files/titonium" in text:
+            errors.append(f"legacy source reference in runtime QML: {relative}")
 
     registry = (root / "Titonium/Composition/WidgetRegistry.qml").read_text(encoding="utf-8")
     if "unknownSource" not in registry or "sourceFor" not in registry:

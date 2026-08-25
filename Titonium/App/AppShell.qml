@@ -24,6 +24,8 @@ Scope {
         }
 
         function closeTransient(): void {
+            if (SurfaceCoordinator.ownerId === "design-gallery" && ConfigStore.previewActive)
+                ConfigStore.cancel();
             SurfaceCoordinator.close("");
         }
     }
@@ -41,6 +43,50 @@ Scope {
 
         function cancel(): void {
             ConfigStore.cancel();
+        }
+
+        function restoreAppearance(): bool {
+            return ConfigStore.restoreAppearance();
+        }
+    }
+
+    IpcHandler {
+        target: "gallery"
+
+        function toggle(screenName: string): string {
+            if (SurfaceCoordinator.ownerId === "design-gallery") {
+                if (ConfigStore.previewActive)
+                    ConfigStore.cancel();
+                SurfaceCoordinator.close("design-gallery");
+                return "closed";
+            }
+            const targetScreen = ScreenRouter.screenForName(screenName);
+            if (!targetScreen)
+                return "unavailable:no-screen";
+            ConfigStore.beginPreview();
+            SurfaceCoordinator.open("design-gallery", {
+                "source": Qt.resolvedUrl("../Design/Gallery/DesignGallery.qml")
+            }, targetScreen);
+            return "open:" + targetScreen.name;
+        }
+
+        function close(): string {
+            if (ConfigStore.previewActive)
+                ConfigStore.cancel();
+            SurfaceCoordinator.close("design-gallery");
+            return "closed";
+        }
+
+        function state(): string {
+            return SurfaceCoordinator.ownerId === "design-gallery" ? "open" : "closed";
+        }
+
+        function previewMode(mode: string): bool {
+            if (SurfaceCoordinator.ownerId !== "design-gallery")
+                return false;
+            if (mode !== "dark" && mode !== "light")
+                return false;
+            return ConfigStore.patch("appearance.mode", mode);
         }
     }
 

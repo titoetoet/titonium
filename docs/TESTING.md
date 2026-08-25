@@ -19,6 +19,10 @@ log and fails on QML errors, type errors, duplicate IDs or missing members. It m
 verifies invalid data falls back and unknown widget types render through the diagnostic
 component, then restores the previous runtime layout exactly.
 
+Theme acceptance additionally verifies the settings v1→v2 migration, appearance-only restore,
+Neutral Utility solid policy, Gallery open/close IPC and unchanged hashes for both Hyprland
+configuration copies. Gallery content must disappear from the scene when its Loader is inactive.
+
 ## Manual acceptance
 
 - One MenuBar appears on DP-1 and DP-3.
@@ -28,3 +32,6 @@ component, then restores the previous runtime layout exactly.
 - An unknown registry type renders a diagnostic item without crashing.
 - Applying settings does not modify the repository.
 - `hyprctl configerrors` is empty.
+- Neutral Utility resolves to `solid` in both dark and light previews.
+- Restore returns to dark while preserving locale, accessibility, modules and layout.
+- Gallery opens only on its requested screen and closes without leaving preview state active.

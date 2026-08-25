@@ -6,12 +6,13 @@ changing code.
 
 ## Current milestone
 
-Milestone 0 is a bootable architectural foundation. It intentionally contains only a
-minimal MenuBar and diagnostic widgets. Do not migrate feature code from the legacy shell.
+Milestone 0 is complete. The active slice is Theme Foundation: the immutable Neutral Utility
+baseline, settings schema v2 and a lazy Design Gallery. Feature migration remains gated in
+small review batches.
 
 The legacy reference is read-only:
 
-`~/.config/quickshell/titonium`
+`~/.local/share/Trash/files/titonium`
 
 The greenfield repository and runtime source is:
 
@@ -41,6 +42,7 @@ The greenfield repository and runtime source is:
   namespace at runtime as `qs.Titonium.*`.
 - New settings are declared once in the schema/defaults and changed through `ConfigStore`.
 - Never edit the legacy shell while implementing a greenfield milestone.
+- The Neutral Utility package is always solid and must never invoke compositor integration.
 
 ## Definition of done
 

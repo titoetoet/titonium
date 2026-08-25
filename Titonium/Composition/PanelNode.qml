@@ -17,7 +17,7 @@ Item {
 
     MaterialSurface {
         anchors.fill: parent
-        backend: "qml"
+        backend: "solid"
         radius: Metrics.radiusMedium
     }
 

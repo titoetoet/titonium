@@ -10,7 +10,24 @@
     "foundation.screen": "Screen {name}",
     "foundation.unknown_widget": "Unregistered widget: {type}",
     "foundation.invalid_node": "Invalid configuration node",
-    "foundation.overlay_placeholder": "Surface awaiting module"
+    "foundation.overlay_placeholder": "Surface awaiting module",
+    "theme.neutral.name": "Titonium Neutral",
+    "theme.neutral.description": "The solid, neutral, lightweight base theme",
+    "gallery.title": "Neutral Utility — Design Gallery",
+    "gallery.subtitle": "Default theme test baseline · no glass · no compositor integration",
+    "gallery.mode": "Color mode",
+    "gallery.dark": "Dark",
+    "gallery.light": "Light",
+    "gallery.palette": "Semantic palette",
+    "gallery.surfaces": "Surface hierarchy",
+    "gallery.typography": "Typography",
+    "gallery.states": "Interaction states",
+    "gallery.default": "Default",
+    "gallery.focus": "Focus",
+    "gallery.disabled": "Disabled",
+    "gallery.error": "Error",
+    "gallery.restore": "Restore Default",
+    "gallery.cancel": "Cancel",
+    "gallery.apply": "Apply"
   }
 }
-

@@ -5,15 +5,20 @@
 Bootable config, schemas, config transactions, i18n/theme tokens, recursive layout renderer,
 registry, surface coordinator and minimal multi-monitor MenuBar.
 
+## Theme Foundation — Active review slice
+
+Settings schema v2, immutable Neutral Utility, theme catalog/resolver, appearance-only Restore
+and lazy Design Gallery. Future theme reminders: Cupertino Flat and Fluent Solid.
+
 ## Milestone 1 — MenuBar essentials
 
-Launcher trigger, Workspaces, Active Window, Input Method and Clock, delivered one widget at
-a time with module-level acceptance.
+Migrate in review batches: Workspaces/Active Window/Input Method; Clock/Calendar/Lunar;
+Launcher/Application Catalog/Dashboard.
 
 ## Milestone 2 — Settings and materials
 
-Settings Center, Preview/Apply/Cancel, theme packages, deep overrides and hybrid
-hyprglass/QML material backend.
+Settings shell, Theme/Typography pages, Preview/Apply/Cancel and deep overrides. A material
+editor is shown only for compatible non-default themes.
 
 ## Milestone 3 — Spotlight
 
@@ -25,9 +30,8 @@ Safe Alt+Tab lifecycle with compositor submap recovery.
 
 ## Milestone 5 — System modules
 
-Audio, Wi-Fi, Bluetooth, task manager and media.
+Media/Audio/Visualizer; Wi-Fi/Bluetooth; Monitor/Status/System Info.
 
 ## Milestone 6 — Notifications and information
 
-Toasts, Notification Center, calendar, news and further extension modules.
-
+Notification widget/toasts/center; News/Weather cards and further extension modules.

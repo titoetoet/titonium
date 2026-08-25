@@ -10,7 +10,24 @@
     "foundation.screen": "Màn hình {name}",
     "foundation.unknown_widget": "Widget chưa đăng ký: {type}",
     "foundation.invalid_node": "Node cấu hình không hợp lệ",
-    "foundation.overlay_placeholder": "Surface đang chờ module"
+    "foundation.overlay_placeholder": "Surface đang chờ module",
+    "theme.neutral.name": "Titonium Neutral",
+    "theme.neutral.description": "Theme gốc solid, trung tính và nhẹ",
+    "gallery.title": "Neutral Utility — Design Gallery",
+    "gallery.subtitle": "Mốc kiểm thử theme gốc · không glass · không compositor integration",
+    "gallery.mode": "Chế độ màu",
+    "gallery.dark": "Tối",
+    "gallery.light": "Sáng",
+    "gallery.palette": "Semantic palette",
+    "gallery.surfaces": "Surface hierarchy",
+    "gallery.typography": "Typography",
+    "gallery.states": "Interaction states",
+    "gallery.default": "Mặc định",
+    "gallery.focus": "Focus",
+    "gallery.disabled": "Vô hiệu",
+    "gallery.error": "Lỗi",
+    "gallery.restore": "Restore Default",
+    "gallery.cancel": "Hủy",
+    "gallery.apply": "Áp dụng"
   }
 }
-

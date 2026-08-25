@@ -1,14 +1,15 @@
 {
-  "$schema": "titonium.settings/v1",
-  "schemaVersion": 1,
+  "$schema": "titonium.settings/v2",
+  "schemaVersion": 2,
   "locale": "vi",
-  "theme": {
-    "id": "titonium-foundation",
+  "appearance": {
+    "themeId": "titonium-neutral",
     "mode": "dark",
-    "materialBackend": "auto"
+    "density": "comfortable",
+    "overrides": {}
   },
   "accessibility": {
     "reducedMotion": false
-  }
+  },
+  "modules": {}
 }
-

@@ -1,12 +1,14 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "locale": "xx",
-  "theme": {
-    "id": "broken",
+  "appearance": {
+    "themeId": "broken",
     "mode": "neon",
-    "materialBackend": "expensive"
+    "density": "huge",
+    "overrides": []
   },
   "accessibility": {
     "reducedMotion": "no"
-  }
+  },
+  "modules": []
 }

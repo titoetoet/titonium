@@ -1,0 +1,81 @@
+{
+  "$schema": "titonium.theme/v2",
+  "schemaVersion": 2,
+  "id": "titonium-neutral",
+  "version": "1.0.0",
+  "nameKey": "theme.neutral.name",
+  "descriptionKey": "theme.neutral.description",
+  "immutable": true,
+  "modes": {
+    "dark": {
+      "colors": {
+        "background": "#111318",
+        "surface": "#181b20",
+        "surfaceElevated": "#20242b",
+        "surfaceInteractive": "#292e37",
+        "textPrimary": "#f2f4f7",
+        "textSecondary": "#a9b0ba",
+        "textDisabled": "#707985",
+        "border": "#343a44",
+        "borderStrong": "#4a5360",
+        "accent": "#5b9cff",
+        "accentText": "#07111f",
+        "focus": "#8bb8ff",
+        "success": "#3ccb8e",
+        "warning": "#e8b44f",
+        "danger": "#f06a75"
+      }
+    },
+    "light": {
+      "colors": {
+        "background": "#f3f5f7",
+        "surface": "#ffffff",
+        "surfaceElevated": "#f8f9fb",
+        "surfaceInteractive": "#eceff3",
+        "textPrimary": "#1b1f24",
+        "textSecondary": "#5e6773",
+        "textDisabled": "#929aa5",
+        "border": "#d7dce2",
+        "borderStrong": "#b7bec8",
+        "accent": "#1769e0",
+        "accentText": "#ffffff",
+        "focus": "#0f5fcf",
+        "success": "#16825d",
+        "warning": "#a76000",
+        "danger": "#c43145"
+      }
+    }
+  },
+  "typography": {
+    "fontFamily": "SF Pro Display",
+    "fallbackFamily": "Noto Sans",
+    "monoFamily": "JetBrains Mono",
+    "bodySize": 13,
+    "captionSize": 11,
+    "labelSize": 13,
+    "titleSize": 16,
+    "weights": { "regular": 400, "medium": 500, "semibold": 600, "bold": 700 }
+  },
+  "metrics": {
+    "grid": 4,
+    "barHeight": 40,
+    "barPadding": 8,
+    "controlHeightSmall": 28,
+    "controlHeight": 32,
+    "spacingXSmall": 4,
+    "spacingSmall": 8,
+    "spacingMedium": 12,
+    "spacingLarge": 16,
+    "radiusSmall": 4,
+    "radiusMedium": 8,
+    "radiusLarge": 12,
+    "borderWidth": 1
+  },
+  "motion": { "fast": 100, "normal": 160, "slow": 220 },
+  "material": {
+    "defaultBackend": "solid",
+    "allowedBackends": ["solid"],
+    "compositorIntegration": false,
+    "opacity": 1.0
+  }
+}
