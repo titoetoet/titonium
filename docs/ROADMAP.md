@@ -34,7 +34,7 @@ and lazy Design Gallery. Future theme reminders: Cupertino Flat and Fluent Solid
 
 - Settings shell, Theme/Typography pages and Preview/Apply/Cancel — approved and complete.
 - Panel/Layout and Frame scoped-reset flow — complete.
-- Audio, System and Launcher settings — complete; expensive runtime features remain owned by their later module phases.
+- Audio, System and Spotlight settings — complete; expensive runtime features remain owned by their later module phases.
 - Hybrid Glass package, optional one-shot hyprglass capability, QML/solid fallback and compatible-theme-only Material editor — complete.
 - Preview/Apply/Cancel, appearance restore and page-scoped resets share one atomic runtime transaction; Neutral Utility remains the immutable solid baseline.
 

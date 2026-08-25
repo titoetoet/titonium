@@ -64,9 +64,11 @@ Transient surfaces that must dismiss when focus moves to another monitor declare
 `closeOnMonitorChange: true`. `OverlayHost` observes monitor-focus events through the Hyprland
 adapter, without polling or compositor commands.
 
-Session actions are explicit Platform capabilities. Dashboard shows all supported actions but
-requires a second confirmation gesture before dispatch. Automated tests must inspect capability
-and UI contracts only; they never execute logout, suspend, hibernate, reboot or poweroff.
+Session actions are explicit Platform capabilities. The compact Arch Menu shows each implemented
+session action and requires a second confirmation gesture before dispatch. Its confirmation stays
+open until the Platform adapter reports meaningful success and shows a localized failure otherwise.
+Automated tests use injected lifecycle events only; they never execute lock, logout, suspend,
+hibernate, reboot or poweroff.
 
 Settings pages never own persisted state. `SettingsCenter` is the sole Settings host and embeds
 the reusable `SettingsWorkspace`, which projects `ConfigStore.previewState` and mutates it only

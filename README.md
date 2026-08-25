@@ -7,11 +7,11 @@ human or coding agent.
 Milestone 0 provides a schema-driven, multi-monitor MenuBar foundation. The immutable
 `titonium-neutral` baseline and lazy Design Gallery are complete. Milestone 1 now includes the
 first production MenuBar slices: Workspaces, Active Window, event-driven Fcitx Input Method,
-and a minute-precision Clock with a lazy Vietnamese lunar Calendar. The Launcher now discovers
-and executes desktop entries through a dedicated Platform adapter and renders a lazy Dashboard.
-Settings Center now provides transactional Theme and Typography pages with live global preview.
-Panel/Layout metrics and the optional geometry-only Screen Frame share the same safe transaction.
-Settings Center, Spotlight, Window Switcher and notifications remain phased.
+and a minute-precision Clock with a lazy analog panel. Spotlight discovers and executes desktop
+entries through a dedicated Platform adapter, renders a fixed 5×4 browse grid and opens Clipboard
+history separately. The Arch logo owns a compact system menu with confirmed session actions.
+Settings Center provides transactional appearance, layout, frame, system, audio and Spotlight
+pages with live global preview. Window Switcher and notifications remain phased.
 
 ## Run
 
@@ -24,6 +24,7 @@ Run the checks first:
 ```bash
 ./scripts/check.sh
 ./scripts/smoke.sh
+./scripts/spotlight_acceptance.sh
 ./scripts/runtime_acceptance.sh
 ./scripts/settings_acceptance.sh
 ```
@@ -54,11 +55,19 @@ qs -p "$HOME/Projects/titonium" ipc call calendar toggle DP-3
 qs -p "$HOME/Projects/titonium" ipc call calendar close
 ```
 
-Open or close the application Dashboard:
+Open Spotlight Applications or Clipboard, or close the active Spotlight surface:
 
 ```bash
-qs -p "$HOME/Projects/titonium" ipc call launcher toggle DP-3
-qs -p "$HOME/Projects/titonium" ipc call launcher close
+qs -p "$HOME/Projects/titonium" ipc call spotlight toggle
+qs -p "$HOME/Projects/titonium" ipc call spotlight clipboard
+qs -p "$HOME/Projects/titonium" ipc call spotlight close
+```
+
+Open or close the compact Arch Menu on a named output:
+
+```bash
+qs -p "$HOME/Projects/titonium" ipc call arch-menu toggle DP-3
+qs -p "$HOME/Projects/titonium" ipc call arch-menu close
 ```
 
 Open a Settings page directly for testing:

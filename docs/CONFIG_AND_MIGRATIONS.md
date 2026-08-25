@@ -31,6 +31,12 @@ Settings schema v2 owns a dedicated `appearance` subtree. The pure v1→v2 migra
 locale, accessibility and module state, maps the retired foundation theme to
 `titonium-neutral`, and never persists until the user applies a transaction.
 
+Settings v2→v3 normalized the former Launcher profile and transition fields as an intermediate
+migration step. Settings v3→v4 removes `modules.launcher`, creates `modules.spotlight` and carries
+forward only `pageTransition` and `transitionDuration`; profile, embedded-Settings and retired
+catalog-control fields are discarded. Older documents run each pure step in order and are not
+written until Apply.
+
 `restoreAppearance()` replaces only preview appearance state with shipped defaults. It always
 selects Neutral Utility dark/comfortable with empty overrides. Locale, accessibility, module
 state and the separate layout document remain untouched; Apply persists and Cancel rolls back.

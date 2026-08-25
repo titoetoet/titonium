@@ -1,7 +1,7 @@
 # Spotlight Launcher and Arch Menu Design
 
 **Date:** 2026-08-26  
-**Status:** Approved in conversation; awaiting written-spec review
+**Status:** Approved and implemented
 
 ## Purpose
 
@@ -131,14 +131,16 @@ Query, selected category, page and result selection are ephemeral. A normal reop
 to `All`, page one and an empty query. Clipboard direct-open resets its own selection and query.
 
 Only durable user preferences belong in settings, such as transition style, transition duration
-and reduced motion. The migration removes settings that exist solely for the retired Arch Menu
-rail or embedded Settings host. Runtime settings continue to live outside Git and Apply remains
-atomic.
+and reduced motion. The settings v3→v4 migration removes `modules.launcher`, carries only its
+transition style/duration into `modules.spotlight`, and discards fields tied to the retired rail,
+profile and embedded Settings host. Runtime settings continue to live outside Git and Apply
+remains atomic.
 
 ## Motion and performance
 
-Grid-to-results transitions use short opacity and position animations. Existing Launcher motion
-preferences may be migrated to the Spotlight namespace. Reduced motion resolves all such
+Grid-to-results transitions use a single loaded branch with short opacity and position entry
+animations capped at 220 ms; the outgoing Loader item is never retained for animation. Existing
+Launcher motion preferences migrate to the Spotlight namespace. Reduced motion resolves all such
 durations to zero.
 
 Application browsing and search operate on the event-updated application catalog cache and do
