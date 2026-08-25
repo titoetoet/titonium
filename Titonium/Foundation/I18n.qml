@@ -41,13 +41,14 @@ QtObject {
     Component.onCompleted: root.reload()
 
     property FileView viFile: FileView {
-        path: Quickshell.configPath("config/i18n/vi.json")
-        preload: true
+        path: Quickshell.shellPath("config/i18n/vi.json")
+        preload: false
+        blockLoading: true
     }
 
     property FileView enFile: FileView {
-        path: Quickshell.configPath("config/i18n/en.json")
-        preload: true
+        path: Quickshell.shellPath("config/i18n/en.json")
+        preload: false
+        blockLoading: true
     }
 }
-

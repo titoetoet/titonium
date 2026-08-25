@@ -1,8 +1,8 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import Titonium.Composition
-import Titonium.Design
+import qs.Titonium.Composition
+import qs.Titonium.Design
 
 WidgetBase {
     id: root

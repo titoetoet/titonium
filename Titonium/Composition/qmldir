@@ -1,4 +1,4 @@
-module Titonium.Composition
+module qs.Titonium.Composition
 singleton WidgetRegistry 1.0 WidgetRegistry.qml
 WidgetBase 1.0 WidgetBase.qml
 WidgetNode 1.0 WidgetNode.qml

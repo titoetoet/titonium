@@ -2,7 +2,7 @@ pragma Singleton
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import Titonium.Foundation
+import qs.Titonium.Foundation
 
 QtObject {
     id: root

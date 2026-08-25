@@ -1,4 +1,4 @@
-module Titonium.Modules.MenuBar
+module qs.Titonium.Modules.MenuBar
 MenuBar 1.0 MenuBar.qml
 DiagnosticLabel 1.0 DiagnosticLabel.qml
 DiagnosticScreen 1.0 DiagnosticScreen.qml

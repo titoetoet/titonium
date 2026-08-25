@@ -2,7 +2,7 @@
 //@ pragma StateDir $BASE/titonium
 
 import Quickshell
-import Titonium.App
+import qs.Titonium.App
 
 ShellRoot {
     AppShell {}

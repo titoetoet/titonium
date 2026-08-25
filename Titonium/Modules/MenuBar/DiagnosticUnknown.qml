@@ -1,14 +1,20 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import Titonium.Composition
-import Titonium.Design
+import qs.Titonium.Composition
+import qs.Titonium.Design
+import qs.Titonium.Foundation
 
 WidgetBase {
     id: root
 
     implicitWidth: label.implicitWidth + Metrics.spacingSmall * 2
     implicitHeight: Metrics.controlHeightSmall
+
+    Component.onCompleted: Logger.warn(
+        "composition",
+        "unknown widget type: " + (root.node.widgetType || root.node.type || "node")
+    )
 
     Rectangle {
         anchors.fill: parent

@@ -3,8 +3,8 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
-import Titonium.Design
-import Titonium.Modules.MenuBar
+import qs.Titonium.Design
+import qs.Titonium.Modules.MenuBar
 
 PanelWindow {
     id: root

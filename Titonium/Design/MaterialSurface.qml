@@ -1,8 +1,8 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import Titonium.Foundation
-import Titonium.Platform
+import qs.Titonium.Foundation
+import qs.Titonium.Platform
 
 Item {
     id: root

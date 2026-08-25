@@ -2,12 +2,15 @@
 set -euo pipefail
 
 project_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+qml_import_root="$(mktemp -d --tmpdir titonium-qml-import.XXXXXX)"
+trap 'rm -f -- "$qml_import_root/qs"; rmdir -- "$qml_import_root"' EXIT
+ln -s -- "$project_root" "$qml_import_root/qs"
 
 python3 "$project_root/scripts/validate_config.py"
 python3 "$project_root/scripts/check_architecture.py"
 
 mapfile -d '' qml_files < <(find "$project_root" -type f -name '*.qml' -print0 | sort -z)
-qml_output="$(/usr/lib/qt6/bin/qmllint -I "$project_root" "${qml_files[@]}" 2>&1)"
+qml_output="$(/usr/lib/qt6/bin/qmllint -I "$qml_import_root" "${qml_files[@]}" 2>&1)"
 printf '%s\n' "$qml_output"
 
 unexpected_warnings="$(printf '%s\n' "$qml_output" \

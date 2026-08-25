@@ -37,7 +37,8 @@ The greenfield repository and runtime source is:
 - Runtime data never lives in the repository. Defaults and schemas in `config/` are read-only.
 - Every long-running timer, animation, poller or effect must be gated by an explicit consumer.
 - Unknown configuration must degrade to a diagnostic component instead of crashing the shell.
-- Every QML directory is a named `Titonium.*` module with a `qmldir` file.
+- Every QML directory has a `qmldir`; Quickshell exposes the logical `Titonium.*`
+  namespace at runtime as `qs.Titonium.*`.
 - New settings are declared once in the schema/defaults and changed through `ConfigStore`.
 - Never edit the legacy shell while implementing a greenfield milestone.
 
@@ -46,4 +47,3 @@ The greenfield repository and runtime source is:
 Run `scripts/check.sh`, then `scripts/smoke.sh`. A milestone is not done while static checks
 fail, the foreground log contains QML errors, Hyprland reports config errors, or rollback is
 undocumented.
-

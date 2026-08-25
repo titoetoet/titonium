@@ -1,2 +1,2 @@
-module Titonium.App
+module qs.Titonium.App
 AppShell 1.0 AppShell.qml

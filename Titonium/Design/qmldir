@@ -1,4 +1,4 @@
-module Titonium.Design
+module qs.Titonium.Design
 singleton Theme 1.0 Theme.qml
 singleton Metrics 1.0 Metrics.qml
 singleton Typography 1.0 Typography.qml

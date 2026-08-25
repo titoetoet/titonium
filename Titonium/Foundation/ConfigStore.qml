@@ -131,23 +131,27 @@ QtObject {
     Component.onCompleted: root.initialize()
 
     property FileView defaultSettingsFile: FileView {
-        path: Quickshell.configPath("config/defaults/settings.json")
-        preload: true
+        path: Quickshell.shellPath("config/defaults/settings.json")
+        preload: false
+        blockLoading: true
     }
 
     property FileView defaultLayoutFile: FileView {
-        path: Quickshell.configPath("config/defaults/layout.json")
-        preload: true
+        path: Quickshell.shellPath("config/defaults/layout.json")
+        preload: false
+        blockLoading: true
     }
 
     property FileView defaultThemeFile: FileView {
-        path: Quickshell.configPath("config/themes/titonium-foundation.json")
-        preload: true
+        path: Quickshell.shellPath("config/themes/titonium-foundation.json")
+        preload: false
+        blockLoading: true
     }
 
     property FileView runtimeSettingsFile: FileView {
         path: root.runtimeSettingsPath
-        preload: true
+        preload: false
+        blockLoading: true
         printErrors: false
         atomicWrites: true
         onSaveFailed: error => Logger.error("config", "settings save failed: " + error)
@@ -155,9 +159,9 @@ QtObject {
 
     property FileView runtimeLayoutFile: FileView {
         path: root.runtimeLayoutPath
-        preload: true
+        preload: false
+        blockLoading: true
         printErrors: false
         atomicWrites: true
     }
 }
-

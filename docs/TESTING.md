@@ -15,6 +15,10 @@ missing members and duplicate IDs are never allowlisted.
 log and fails on QML errors, type errors, duplicate IDs or missing members. It must observe
 `Configuration Loaded`.
 
+`scripts/runtime_acceptance.sh` temporarily installs isolated runtime-layout fixtures,
+verifies invalid data falls back and unknown widget types render through the diagnostic
+component, then restores the previous runtime layout exactly.
+
 ## Manual acceptance
 
 - One MenuBar appears on DP-1 and DP-3.

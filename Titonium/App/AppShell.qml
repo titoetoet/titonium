@@ -3,8 +3,8 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import Titonium.Foundation
-import Titonium.Surfaces
+import qs.Titonium.Foundation
+import qs.Titonium.Surfaces
 
 Scope {
     id: root
@@ -24,9 +24,30 @@ Scope {
         }
 
         function closeTransient(): void {
-            SurfaceCoordinator.close();
+            SurfaceCoordinator.close("");
         }
     }
 
-    Component.onCompleted: Logger.info("app", "Configuration Loaded")
+    IpcHandler {
+        target: "config"
+
+        function beginPreview(): void {
+            ConfigStore.beginPreview();
+        }
+
+        function apply(): bool {
+            return ConfigStore.apply();
+        }
+
+        function cancel(): void {
+            ConfigStore.cancel();
+        }
+    }
+
+    Component.onCompleted: {
+        if (ConfigStore.ready)
+            Logger.info("app", "Configuration Loaded");
+        else
+            Logger.error("app", "Configuration failed: " + ConfigStore.lastError);
+    }
 }

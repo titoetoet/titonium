@@ -3,7 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
-import Titonium.Foundation
+import qs.Titonium.Foundation
 
 Scope {
     Variants {

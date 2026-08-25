@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import Titonium.Design
+import qs.Titonium.Design
 
 Item {
     id: root

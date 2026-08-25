@@ -1,4 +1,4 @@
-module Titonium.Foundation
+module qs.Titonium.Foundation
 singleton Logger 1.0 Logger.qml
 singleton ConfigStore 1.0 ConfigStore.qml
 singleton I18n 1.0 I18n.qml

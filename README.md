@@ -19,7 +19,7 @@ Run the checks first:
 ```bash
 ./scripts/check.sh
 ./scripts/smoke.sh
+./scripts/runtime_acceptance.sh
 ```
 
 Start with [AGENTS.md](AGENTS.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
-

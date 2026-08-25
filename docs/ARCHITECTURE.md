@@ -27,6 +27,10 @@ Platform
 - `Platform` is the only layer allowed to execute commands or bind directly to compositor and
   hardware APIs.
 
+Quickshell exposes local modules through its root-relative `qs` namespace, so their runtime
+URIs are `qs.Titonium.*`. `Titonium` remains the project namespace and no legacy
+`ColeShell.*` URI is used.
+
 ## Runtime flow
 
 1. `shell.qml` creates `AppShell` and fixes Titonium data/state directories.
@@ -49,4 +53,3 @@ target screen via `Loader.active`.
 - `ConfigStore.previewState` is the state currently rendered.
 - `SurfaceCoordinator` is the only owner of transient surface state.
 - Module services own feature data; UI is a projection of that data.
-
