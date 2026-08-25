@@ -221,6 +221,17 @@ def main() -> int:
         for fragment in required_fragments:
             if fragment not in text:
                 errors.append(f"missing Spotlight accessibility contract {fragment!r}: {filename}")
+    spotlight_results = spotlight_qml.get("SearchResults.qml", "")
+    result_key_handler = re.search(
+        r"Keys\.onPressed:\s*event\s*=>\s*\{"
+        r"[\s\S]*?event\.key\s*===\s*Qt\.Key_Down"
+        r"[\s\S]*?moveSelection\(1\)"
+        r"[\s\S]*?event\.key\s*===\s*Qt\.Key_Up"
+        r"[\s\S]*?moveSelection\(-1\)",
+        spotlight_results,
+    )
+    if not result_key_handler:
+        errors.append("Focused Spotlight result rows must forward Up/Down selection to SpotlightModel")
 
     coordinator_text = (root / "Titonium/Foundation/SurfaceCoordinator.qml").read_text(encoding="utf-8")
     if "cancelPreviewOnClose" not in coordinator_text or "ConfigStore.cancel()" not in coordinator_text:

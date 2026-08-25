@@ -84,7 +84,13 @@ FocusScope {
             HoverHandler { id: hoverHandler; cursorShape: Qt.PointingHandCursor }
             TapHandler { onTapped: root.activate(resultRow.index) }
             Keys.onPressed: event => {
-                if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
+                if (event.key === Qt.Key_Down) {
+                    root.spotlightModel.moveSelection(1);
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_Up) {
+                    root.spotlightModel.moveSelection(-1);
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
                     root.activate(resultRow.index);
                     event.accepted = true;
                 }
