@@ -116,6 +116,9 @@ QtObject {
     property FileView packageFile: FileView {
         path: ""
         preload: false
-        blockLoading: true
+        // The path changes while walking the catalog. blockLoading may return
+        // the previously loaded package after a path change; blockAllReads
+        // guarantees this startup-only reader parses the requested tiny file.
+        blockAllReads: true
     }
 }

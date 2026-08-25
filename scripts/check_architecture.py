@@ -124,6 +124,9 @@ def main() -> int:
     surface_text = (root / "Titonium/Design/Controls/Surface.qml").read_text(encoding="utf-8")
     if 'backend: "solid"' in surface_text:
         errors.append("semantic Surface must not override the active theme material policy")
+    catalog_text = (root / "Titonium/Foundation/ThemeCatalog.qml").read_text(encoding="utf-8")
+    if "blockAllReads: true" not in catalog_text:
+        errors.append("dynamic theme package reads must not return stale FileView content")
 
     capability_text = (root / "Titonium/Platform/Hyprland/HyprglassCapability.qml").read_text(encoding="utf-8")
     if '["hyprctl", "plugin", "list"]' not in capability_text or "running: true" not in capability_text:
