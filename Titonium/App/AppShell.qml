@@ -211,6 +211,22 @@ Scope {
             return "closed";
         }
 
+        function section(screenName: string, sectionId: string): string {
+            const targetScreen = ScreenRouter.screenForName(screenName);
+            if (!targetScreen)
+                return "unavailable:no-screen";
+            const ownerId = "launcher:" + targetScreen.name;
+            SurfaceCoordinator.open(ownerId, {
+                "source": Qt.resolvedUrl("../Modules/MenuBar/Launcher/ArchMenu.qml"),
+                "keyboardFocus": "exclusive",
+                "closeOnMonitorChange": true,
+                "cancelPreviewOnClose": true,
+                "ownerId": ownerId,
+                "section": sectionId
+            }, targetScreen);
+            return "open:" + targetScreen.name + ":" + sectionId;
+        }
+
         function state(): string {
             return SurfaceCoordinator.ownerId.indexOf("launcher:") === 0 ? SurfaceCoordinator.ownerId : "closed";
         }

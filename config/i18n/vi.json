@@ -27,6 +27,7 @@
     "launcher.title": "Ứng dụng",
     "launcher.launch_accessible": "Mở {name}",
     "launcher.section.apps": "Ứng dụng",
+    "launcher.section.settings": "Cài đặt",
     "launcher.page_go": "Đi tới trang {page}",
     "launcher.action.sleep": "Ngủ",
     "launcher.action.hibernate": "Ngủ đông",

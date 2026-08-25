@@ -1,5 +1,6 @@
 module qs.Titonium.Modules.Settings
 SettingsCenter 1.0 SettingsCenter.qml
+SettingsWorkspace 1.0 SettingsWorkspace.qml
 ThemePage 1.0 ThemePage.qml
 TypographyPage 1.0 TypographyPage.qml
 PanelLayoutPage 1.0 PanelLayoutPage.qml

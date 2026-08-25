@@ -127,6 +127,21 @@ def main() -> int:
     )
     if re.search(r"\b(Timer|Process|FileView)\s*\{|execDetached|MultiEffect|ShaderEffect", settings_feature):
         errors.append("Settings UI must remain transaction-only and effect-free")
+    settings_workspace = root / "Titonium/Modules/Settings/SettingsWorkspace.qml"
+    launcher_settings = root / "Titonium/Modules/MenuBar/Launcher/LauncherSettingsPage.qml"
+    if not settings_workspace.is_file() or not launcher_settings.is_file():
+        errors.append("Standalone and embedded Settings require a shared SettingsWorkspace")
+    else:
+        settings_center_text = (root / "Titonium/Modules/Settings/SettingsCenter.qml").read_text(encoding="utf-8")
+        launcher_settings_text = launcher_settings.read_text(encoding="utf-8")
+        if "SettingsWorkspace" not in settings_center_text or "SettingsWorkspace" not in launcher_settings_text:
+            errors.append("Both Settings hosts must instantiate SettingsWorkspace")
+        for host_name, host_text in (("SettingsCenter", settings_center_text), ("LauncherSettingsPage", launcher_settings_text)):
+            if re.search(r"Component\s*\{\s*id:\s*(theme|typography|layout)PageComponent", host_text):
+                errors.append(f"{host_name} must not duplicate Settings page components")
+    launcher_widget_text = (root / "Titonium/Modules/MenuBar/Launcher/LauncherWidget.qml").read_text(encoding="utf-8")
+    if '"cancelPreviewOnClose": true' not in launcher_widget_text:
+        errors.append("Arch Menu descriptor must rollback abandoned Settings preview")
     coordinator_text = (root / "Titonium/Foundation/SurfaceCoordinator.qml").read_text(encoding="utf-8")
     if "cancelPreviewOnClose" not in coordinator_text or "ConfigStore.cancel()" not in coordinator_text:
         errors.append("SurfaceCoordinator must rollback abandoned preview transactions")

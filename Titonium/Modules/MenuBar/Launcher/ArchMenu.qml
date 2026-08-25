@@ -11,7 +11,7 @@ FocusScope {
 
     property var descriptor: ({})
     property var screen: null
-    property string selectedSection: "apps"
+    property string selectedSection: root.descriptor?.section || "apps"
     readonly property string ownerId: root.descriptor?.ownerId || ""
 
     anchors.fill: parent
