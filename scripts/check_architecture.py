@@ -156,6 +156,18 @@ def main() -> int:
         launcher_registry_text = launcher_registry_path.read_text(encoding="utf-8")
         if not re.search(r'"id":\s*"power"[^\n]+"placement":\s*"bottom"', launcher_registry_text):
             errors.append("Power must be pinned to the bottom of the Launcher rail")
+    launcher_rail_path = root / "Titonium/Modules/MenuBar/Launcher/LauncherRail.qml"
+    if launcher_rail_path.is_file():
+        launcher_rail_text = launcher_rail_path.read_text(encoding="utf-8")
+        centered_primary_sections = re.search(
+            r"Item\s*\{\s*Layout\.fillHeight:\s*true\s*\}"
+            r"\s*Repeater\s*\{\s*model:\s*root\.sections\.filter\(section\s*=>\s*section\.placement\s*!==\s*\"bottom\"\)"
+            r"[\s\S]*?Item\s*\{\s*Layout\.fillHeight:\s*true\s*\}"
+            r"\s*Repeater\s*\{\s*model:\s*root\.sections\.filter\(section\s*=>\s*section\.placement\s*===\s*\"bottom\"\)",
+            launcher_rail_text,
+        )
+        if not centered_primary_sections:
+            errors.append("Apps and Settings must be vertically centered between flexible rail spacers")
     application_tile_path = root / "Titonium/Modules/MenuBar/Launcher/ApplicationTile.qml"
     if "anchors.centerIn: parent" not in application_tile_path.read_text(encoding="utf-8"):
         errors.append("Application icon and name group must be centered inside its tile")

@@ -38,6 +38,8 @@ FocusScope {
             }
         }
 
+        Item { Layout.fillHeight: true }
+
         Repeater {
             model: root.sections.filter(section => section.placement !== "bottom")
 
