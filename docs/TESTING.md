@@ -51,3 +51,9 @@ configuration copies. Gallery content must disappear from the scene when its Loa
 - Disabled controls stay outside the keyboard focus chain; Dropdown closes when focus leaves it.
 - Gallery requests exclusive keyboard focus only while open; Escape cancels preview and releases
   the layer-shell focus immediately.
+- Workspaces always renders its configured cell count, marks active/occupied state per screen and
+  activates both existing and empty numeric workspaces through the Platform adapter.
+- Active Window updates its elided title on focus changes and falls back to Desktop when no
+  toplevel is active; DP-1 may use a wider screen override without changing DP-3.
+- Input Method follows Fcitx StatusNotifier changes (`Lotus → VI`, keyboard US → `EN`) without a
+  process or timer and presents `IM` only when the service state is unavailable.

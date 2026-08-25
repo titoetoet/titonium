@@ -18,6 +18,10 @@ def main() -> int:
 
     forbidden_ui = re.compile(r"\b(Process|FileView)\s*\{")
     forbidden_commands = re.compile(r"\b(hyprctl|nmcli|wpctl)\b")
+    forbidden_platform_imports = re.compile(
+        r"^import Quickshell\.(Hyprland|Services\.SystemTray)\b", re.MULTILINE
+    )
+    forbidden_platform_objects = re.compile(r"\b(Hyprland|ToplevelManager|SystemTray)\.")
     forbidden_perf = re.compile(r"\b(MultiEffect|ShaderEffect)\b|Animation\.Infinite|loops\s*:\s*Animation\.Infinite")
     allowed_io = {"Foundation", "Platform"}
 
@@ -29,6 +33,10 @@ def main() -> int:
             errors.append(f"platform I/O in UI layer: {relative}")
         if layer not in allowed_io and forbidden_commands.search(text):
             errors.append(f"raw platform command in UI layer: {relative}")
+        if layer != "Platform" and forbidden_platform_imports.search(text):
+            errors.append(f"direct platform API import outside Platform: {relative}")
+        if layer != "Platform" and forbidden_platform_objects.search(text):
+            errors.append(f"direct platform object access outside Platform: {relative}")
         if forbidden_perf.search(text):
             errors.append(f"forbidden always-on visual cost: {relative}")
         if "/home/" in text or "~/" in text:
@@ -39,10 +47,27 @@ def main() -> int:
     registry = (root / "Titonium/Composition/WidgetRegistry.qml").read_text(encoding="utf-8")
     if "unknownSource" not in registry or "sourceFor" not in registry:
         errors.append("WidgetRegistry must provide an unknown widget fallback")
+    for widget_type in ("menubar.workspaces", "menubar.active-window", "menubar.input-method"):
+        if widget_type not in registry:
+            errors.append(f"WidgetRegistry is missing {widget_type}")
 
     overlay = (root / "Titonium/Surfaces/OverlayHost.qml").read_text(encoding="utf-8")
     if "Loader" not in overlay or "active:" not in overlay:
         errors.append("OverlayHost must lazy-load transient UI")
+
+    layout_renderer = (root / "Titonium/Composition/LayoutRenderer.qml").read_text(encoding="utf-8")
+    if "Layout.preferredWidth: implicitWidth" not in layout_renderer:
+        errors.append("LayoutRenderer must propagate asynchronously loaded widget width")
+    if re.search(r"columns\s*:\s*[^\n?]+\?\s*0\b", layout_renderer):
+        errors.append("LayoutRenderer horizontal columns must never resolve to zero")
+
+    for adapter_path in (
+        root / "Titonium/Platform/Hyprland/HyprlandAdapter.qml",
+        root / "Titonium/Platform/Input/FcitxAdapter.qml",
+    ):
+        adapter_text = adapter_path.read_text(encoding="utf-8")
+        if re.search(r"\b(Process|Timer)\s*\{", adapter_text):
+            errors.append(f"MenuBar adapter must remain event-driven: {adapter_path.relative_to(root)}")
 
     accessibility_contracts = {
         "Button.qml": ("activeFocusOnTab:", "Accessible.role:", "Accessible.name:", "Accessible.focusable:"),

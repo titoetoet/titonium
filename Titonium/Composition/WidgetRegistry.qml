@@ -7,7 +7,10 @@ QtObject {
 
     readonly property var sources: ({
         "diagnostic.label": Qt.resolvedUrl("../Modules/MenuBar/DiagnosticLabel.qml"),
-        "diagnostic.screen": Qt.resolvedUrl("../Modules/MenuBar/DiagnosticScreen.qml")
+        "diagnostic.screen": Qt.resolvedUrl("../Modules/MenuBar/DiagnosticScreen.qml"),
+        "menubar.workspaces": Qt.resolvedUrl("../Modules/MenuBar/Workspaces/WorkspacesWidget.qml"),
+        "menubar.active-window": Qt.resolvedUrl("../Modules/MenuBar/ActiveWindow/ActiveWindowWidget.qml"),
+        "menubar.input-method": Qt.resolvedUrl("../Modules/MenuBar/InputMethod/InputMethodWidget.qml")
     })
 
     function sourceFor(widgetType: string): url {

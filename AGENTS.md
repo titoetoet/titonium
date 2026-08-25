@@ -6,11 +6,10 @@ changing code.
 
 ## Current milestone
 
-Milestone 0 and Theme Foundation are complete. The active review slice is Design Controls,
-ported in groups of two or three components. Typography/Icon/Button and Surface/Card/Panel are
-approved for continued work, including Switch/Slider/Dropdown. Tabs plus the focus/accessibility
-audit form the current batch. Visualizer remains deferred to the media phase, and feature
-migration remains gated behind visual approval.
+Milestone 0, Theme Foundation and the first Design Controls slices are complete. Milestone 1 is
+active and features are ported in groups of two or three. Workspaces, Active Window and Input
+Method form the current MenuBar batch. Visualizer remains deferred to the media phase, and the
+next feature batch remains gated behind visual approval.
 
 The legacy reference is read-only:
 

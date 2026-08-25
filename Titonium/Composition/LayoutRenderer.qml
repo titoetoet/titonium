@@ -22,8 +22,8 @@ Item {
         id: layout
         anchors.fill: parent
         flow: root.orientation === Qt.Horizontal ? GridLayout.LeftToRight : GridLayout.TopToBottom
-        rows: root.orientation === Qt.Horizontal ? 1 : 0
-        columns: root.orientation === Qt.Horizontal ? 0 : 1
+        rows: root.orientation === Qt.Horizontal ? 1 : Math.max(1, (root.nodes || []).length)
+        columns: root.orientation === Qt.Horizontal ? Math.max(1, (root.nodes || []).length) : 1
         rowSpacing: root.spacing
         columnSpacing: root.spacing
 
@@ -32,6 +32,8 @@ Item {
 
             NodeHost {
                 required property var modelData
+                Layout.preferredWidth: implicitWidth
+                Layout.preferredHeight: implicitHeight
                 node: modelData
                 screen: root.screen
                 context: root.context

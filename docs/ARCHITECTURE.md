@@ -55,3 +55,11 @@ target screen via `Loader.active`.
 - Transient descriptors declare keyboard focus intent; `OverlayHost` translates the supported
   `exclusive` policy to layer-shell focus and otherwise remains non-focusable.
 - Module services own feature data; UI is a projection of that data.
+
+## MenuBar platform boundaries
+
+`Platform.Hyprland.HyprlandAdapter` projects compositor workspaces and focused-window state;
+workspace activation is its only mutation. `Platform.Input.FcitxAdapter` observes Fcitx through
+its StatusNotifier item, so engine changes are signal-driven and require no command or timer.
+Feature models translate those platform values into semantic UI state. MenuBar QML never imports
+Hyprland, ToplevelManager or SystemTray directly.

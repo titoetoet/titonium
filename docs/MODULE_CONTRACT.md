@@ -30,8 +30,13 @@ They emit:
 Widgets expose implicit size and accessibility metadata. They do not expose an `expanded`
 property for the MenuBar to manage.
 
+MenuBar feature widgets are vertical modules. Each folder owns a small state-only model and a
+`WidgetBase` UI; compositor/service bindings live in a named Platform adapter. Registry types
+currently include `menubar.workspaces`, `menubar.active-window` and `menubar.input-method`.
+Workspace activation is the only compositor mutation in this slice and is routed exclusively
+through `Platform.Hyprland.HyprlandAdapter`.
+
 ## Failure behavior
 
 Missing registry entries and invalid node content render `DiagnosticWidget` with a concise
 message. Sibling nodes continue to render. Errors are logged with node and screen IDs.
-

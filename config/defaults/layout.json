@@ -8,46 +8,29 @@
         "slots": {
           "start": [
             {
-              "id": "foundation-label",
+              "id": "menubar-workspaces",
               "type": "widget",
-              "widgetType": "diagnostic.label",
+              "widgetType": "menubar.workspaces",
               "props": {
-                "textKey": "foundation.ready"
+                "count": 5
               }
             }
           ],
           "center": [
             {
-              "id": "foundation-group",
-              "type": "group",
-              "orientation": "row",
-              "spacing": 8,
-              "surface": true,
-              "children": [
-                {
-                  "id": "foundation-name",
-                  "type": "widget",
-                  "widgetType": "diagnostic.label",
-                  "props": {
-                    "textKey": "foundation.name"
-                  }
-                },
-                {
-                  "id": "foundation-version",
-                  "type": "widget",
-                  "widgetType": "diagnostic.label",
-                  "props": {
-                    "textKey": "foundation.schema"
-                  }
-                }
-              ]
+              "id": "menubar-active-window",
+              "type": "widget",
+              "widgetType": "menubar.active-window",
+              "props": {
+                "maximumWidth": 280
+              }
             }
           ],
           "end": [
             {
-              "id": "foundation-screen",
+              "id": "menubar-input-method",
               "type": "widget",
-              "widgetType": "diagnostic.screen",
+              "widgetType": "menubar.input-method",
               "props": {}
             }
           ]
@@ -57,29 +40,12 @@
         "slots": {
           "center": [
             {
-              "id": "dp1-density",
-              "type": "group",
-              "orientation": "row",
-              "spacing": 8,
-              "surface": true,
-              "children": [
-                {
-                  "id": "dp1-foundation-name",
-                  "type": "widget",
-                  "widgetType": "diagnostic.label",
-                  "props": {
-                    "textKey": "foundation.name"
-                  }
-                },
-                {
-                  "id": "dp1-high-dpi",
-                  "type": "widget",
-                  "widgetType": "diagnostic.label",
-                  "props": {
-                    "textKey": "foundation.high_dpi"
-                  }
-                }
-              ]
+              "id": "dp1-active-window",
+              "type": "widget",
+              "widgetType": "menubar.active-window",
+              "props": {
+                "maximumWidth": 320
+              }
             }
           ]
         }
@@ -87,4 +53,3 @@
     }
   }
 }
-

@@ -9,7 +9,8 @@
 - MenuBar idle state must not contain a frame-driven animation.
 - Multi-monitor surfaces may duplicate lightweight hosts, not heavy feature trees.
 - Cache immutable parsing/results; update QML models incrementally to preserve delegates.
+- Workspaces and active-window state subscribe to compositor models; Input Method subscribes to
+  the existing Fcitx StatusNotifier item. None of these MenuBar widgets owns a timer or process.
 
 Performance review is part of module acceptance. Document every always-on timer with its
 reason and interval; absence of a reason is a defect.
-

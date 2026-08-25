@@ -26,25 +26,25 @@ Item {
     }
 
     LayoutRenderer {
-        anchors.left: parent.left
+        anchors.left: root.left
         anchors.leftMargin: Metrics.barPadding
-        anchors.verticalCenter: parent.verticalCenter
+        anchors.verticalCenter: root.verticalCenter
         nodes: root.slots.start || []
         screen: root.screenModel
         context: root.widgetContext
     }
 
     LayoutRenderer {
-        anchors.centerIn: parent
+        anchors.centerIn: root
         nodes: root.slots.center || []
         screen: root.screenModel
         context: root.widgetContext
     }
 
     LayoutRenderer {
-        anchors.right: parent.right
+        anchors.right: root.right
         anchors.rightMargin: Metrics.barPadding
-        anchors.verticalCenter: parent.verticalCenter
+        anchors.verticalCenter: root.verticalCenter
         nodes: root.slots.end || []
         screen: root.screenModel
         context: root.widgetContext

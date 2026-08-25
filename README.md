@@ -4,9 +4,10 @@ Titonium is a modular Quickshell desktop shell for Hyprland. This repository is 
 rewrite focused on predictable extension points, low idle cost and safe takeover by another
 human or coding agent.
 
-Milestone 0 provides a schema-driven, multi-monitor MenuBar foundation. The current theme
-slice adds the immutable `titonium-neutral` baseline and a lazy Design Gallery. Settings
-Center, Spotlight, Window Switcher, notifications and production widgets remain phased.
+Milestone 0 provides a schema-driven, multi-monitor MenuBar foundation. The immutable
+`titonium-neutral` baseline and lazy Design Gallery are complete. Milestone 1 now includes the
+first production MenuBar slice: Workspaces, Active Window and event-driven Fcitx Input Method.
+Settings Center, Spotlight, Window Switcher and notifications remain phased.
 
 ## Run
 

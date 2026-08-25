@@ -1,0 +1,3 @@
+module qs.Titonium.Modules.MenuBar.Workspaces
+WorkspacesModel 1.0 WorkspacesModel.qml
+WorkspacesWidget 1.0 WorkspacesWidget.qml

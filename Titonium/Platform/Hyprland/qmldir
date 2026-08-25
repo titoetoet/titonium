@@ -1,0 +1,2 @@
+module qs.Titonium.Platform.Hyprland
+singleton HyprlandAdapter 1.0 HyprlandAdapter.qml

@@ -1,0 +1,3 @@
+module qs.Titonium.Modules.MenuBar.ActiveWindow
+ActiveWindowModel 1.0 ActiveWindowModel.qml
+ActiveWindowWidget 1.0 ActiveWindowWidget.qml
