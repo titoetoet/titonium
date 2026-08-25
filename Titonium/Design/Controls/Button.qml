@@ -110,6 +110,7 @@ FocusScope {
 
     Accessible.role: Accessible.Button
     Accessible.name: root.accessibleName
+    Accessible.focusable: root.enabled
     Accessible.checkable: root.checkable
     Accessible.checked: root.checked
     Accessible.selected: root.selected

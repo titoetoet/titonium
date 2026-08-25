@@ -8,8 +8,9 @@ changing code.
 
 Milestone 0 and Theme Foundation are complete. The active review slice is Design Controls,
 ported in groups of two or three components. Typography/Icon/Button and Surface/Card/Panel are
-approved for continued work; Switch/Slider/Dropdown form the current batch. Feature migration
-remains gated behind visual approval.
+approved for continued work, including Switch/Slider/Dropdown. Tabs plus the focus/accessibility
+audit form the current batch. Visualizer remains deferred to the media phase, and feature
+migration remains gated behind visual approval.
 
 The legacy reference is read-only:
 

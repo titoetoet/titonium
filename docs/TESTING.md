@@ -46,5 +46,8 @@ configuration copies. Gallery content must disappear from the scene when its Loa
   disabled controls cannot mutate state.
 - Dropdown option content is absent while collapsed, supports arrow/Enter/Escape navigation and
   emits the selected index/value without persistence or platform access.
+- Tabs form one Tab stop, wrap with arrow keys, support Home/End, and expose page-tab-list/page-tab
+  roles with a selected state. Focus must remain visible in dark/light mode and at both scales.
+- Disabled controls stay outside the keyboard focus chain; Dropdown closes when focus leaves it.
 - Gallery requests exclusive keyboard focus only while open; Escape cancels preview and releases
   the layer-shell focus immediately.

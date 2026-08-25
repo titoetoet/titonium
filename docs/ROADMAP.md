@@ -14,8 +14,9 @@ and lazy Design Gallery. Future theme reminders: Cupertino Flat and Fluent Solid
 
 - Typography, Icon and Button — complete.
 - Surface, Card and Panel — complete.
-- Switch, Slider and Dropdown — implemented; awaiting visual approval.
-- Tabs, focus/accessibility audit and Visualizer when the media phase begins.
+- Switch, Slider and Dropdown — complete.
+- Tabs and focus/accessibility audit — implemented; awaiting visual approval.
+- Visualizer — deferred until the media phase, where its render lifecycle can be tested in context.
 
 ## Milestone 1 — MenuBar essentials
 

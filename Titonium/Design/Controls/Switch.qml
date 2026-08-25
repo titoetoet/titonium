@@ -69,6 +69,7 @@ FocusScope {
 
     Accessible.role: Accessible.CheckBox
     Accessible.name: root.accessibleName
+    Accessible.focusable: root.enabled
     Accessible.checkable: true
     Accessible.checked: root.checked
 }

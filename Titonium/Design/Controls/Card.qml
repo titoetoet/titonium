@@ -47,5 +47,6 @@ Surface {
 
     Accessible.role: root.interactive ? Accessible.Button : Accessible.Pane
     Accessible.name: root.accessibleName
+    Accessible.focusable: root.interactive && root.enabled
     Accessible.selected: root.selected
 }

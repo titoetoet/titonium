@@ -118,4 +118,5 @@ FocusScope {
 
     Accessible.role: Accessible.Slider
     Accessible.name: root.accessibleName + ", " + String(root.value)
+    Accessible.focusable: root.enabled && root.range > 0
 }

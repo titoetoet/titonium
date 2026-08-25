@@ -78,7 +78,7 @@ FocusScope {
 
     implicitWidth: 220
     implicitHeight: Metrics.controlHeight
-    activeFocusOnTab: root.enabled
+    activeFocusOnTab: root.enabled && root.modelCount > 0
     opacity: root.enabled ? 1.0 : 0.55
     z: root.expanded ? 100 : 0
 
@@ -192,6 +192,12 @@ FocusScope {
         event.accepted = true;
     }
 
+    onActiveFocusChanged: {
+        if (!root.activeFocus)
+            root.close();
+    }
+
     Accessible.role: Accessible.ComboBox
     Accessible.name: root.accessibleName + ", " + root.currentText
+    Accessible.focusable: root.enabled && root.modelCount > 0
 }

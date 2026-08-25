@@ -2,6 +2,8 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Titonium.Design
+import qs.Titonium.Design.Controls as Controls
+import qs.Titonium.Foundation
 
 Item {
     id: root
@@ -9,49 +11,29 @@ Item {
     required property var node
     required property var screen
     required property var context
-    property int currentIndex: 0
+    property alias currentIndex: tabsControl.currentIndex
 
     readonly property var tabs: root.node.pages || []
     readonly property var activeTab: root.tabs[root.currentIndex] || ({})
+    readonly property var displayTabs: root.tabs.map(tab => ({
+        label: tab.labelKey ? I18n.tr(tab.labelKey) : (tab.label || tab.id),
+        value: tab.id
+    }))
 
-    implicitWidth: Math.max(tabRow.implicitWidth, page.implicitWidth)
-    implicitHeight: tabRow.implicitHeight + Metrics.spacingXSmall + page.implicitHeight
+    implicitWidth: Math.max(tabsControl.implicitWidth, page.implicitWidth)
+    implicitHeight: tabsControl.implicitHeight + Metrics.spacingXSmall + page.implicitHeight
 
-    Row {
-        id: tabRow
+    Controls.Tabs {
+        id: tabsControl
         anchors.top: parent.top
         anchors.horizontalCenter: parent.horizontalCenter
-        spacing: Metrics.spacingXSmall
-
-        Repeater {
-            model: root.tabs
-
-            Rectangle {
-                id: tabButton
-                required property var modelData
-                required property int index
-                implicitWidth: label.implicitWidth + Metrics.spacingSmall * 2
-                implicitHeight: Metrics.controlHeightSmall
-                radius: Metrics.radiusSmall
-                color: index === root.currentIndex ? Theme.surfaceElevated : "transparent"
-
-                Text {
-                    id: label
-                    anchors.centerIn: parent
-                    text: tabButton.modelData.label || tabButton.modelData.id
-                    color: Theme.textPrimary
-                    font.family: Typography.family
-                    font.pixelSize: Typography.labelSize
-                }
-
-                TapHandler { onTapped: root.currentIndex = tabButton.index }
-            }
-        }
+        model: root.displayTabs
+        accessibleName: root.node.id
     }
 
     NodeHost {
         id: page
-        anchors.top: tabRow.bottom
+        anchors.top: tabsControl.bottom
         anchors.topMargin: Metrics.spacingXSmall
         anchors.horizontalCenter: parent.horizontalCenter
         node: root.activeTab.child || {

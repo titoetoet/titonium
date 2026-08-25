@@ -44,6 +44,21 @@ def main() -> int:
     if "Loader" not in overlay or "active:" not in overlay:
         errors.append("OverlayHost must lazy-load transient UI")
 
+    accessibility_contracts = {
+        "Button.qml": ("activeFocusOnTab:", "Accessible.role:", "Accessible.name:", "Accessible.focusable:"),
+        "Card.qml": ("activeFocusOnTab:", "Accessible.role:", "Accessible.name:", "Accessible.focusable:"),
+        "Switch.qml": ("activeFocusOnTab:", "Accessible.role:", "Accessible.name:", "Accessible.focusable:"),
+        "Slider.qml": ("activeFocusOnTab:", "Accessible.role:", "Accessible.name:", "Accessible.focusable:"),
+        "Dropdown.qml": ("activeFocusOnTab:", "Accessible.role:", "Accessible.name:", "Accessible.focusable:"),
+        "Tabs.qml": ("activeFocusOnTab:", "Accessible.PageTabList", "Accessible.name:", "Accessible.focusable:"),
+    }
+    controls = root / "Titonium/Design/Controls"
+    for filename, required_fragments in accessibility_contracts.items():
+        text = (controls / filename).read_text(encoding="utf-8")
+        for fragment in required_fragments:
+            if fragment not in text:
+                errors.append(f"missing accessibility contract {fragment!r}: Titonium/Design/Controls/{filename}")
+
     if errors:
         print("\n".join(f"FAIL {error}" for error in errors), file=sys.stderr)
         return 1

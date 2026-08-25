@@ -32,4 +32,5 @@ Text {
     verticalAlignment: Text.AlignVCenter
 
     Accessible.name: root.text
+    Accessible.role: Accessible.StaticText
 }

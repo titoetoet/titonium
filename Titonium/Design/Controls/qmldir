@@ -8,3 +8,4 @@ Panel 1.0 Panel.qml
 Switch 1.0 Switch.qml
 Slider 1.0 Slider.qml
 Dropdown 1.0 Dropdown.qml
+Tabs 1.0 Tabs.qml

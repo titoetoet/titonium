@@ -26,6 +26,12 @@ range with moved/committed signals, and `Dropdown` resolves data through text/va
 lazy-loading its option list. They never persist settings themselves. A module model or
 `ConfigStore` transaction owns the value and decides what to do with emitted changes.
 
+`Tabs` follows the same data-only rule: a model supplies label/icon/value roles and the control
+emits the selected index/value. It is one keyboard tab stop; arrow keys wrap through pages while
+Home/End select the first/last page. The tab list and each page tab publish native accessibility
+roles. Interactive controls must expose an accessible name, role and focusability; disabled
+controls are removed from the Tab chain.
+
 `titonium-neutral` is the immutable restore baseline. It uses opaque tonal surfaces, one-pixel
 borders, a 4/8px grid and no gradients, shadows, shaders, glass or compositor integration.
 Its material policy allows only `solid`; unsupported backend requests resolve to the package
