@@ -51,10 +51,29 @@ qs -p "$HOME/Projects/titonium" ipc call settings close
 
 ## Spotlight cutover rollback
 
-Restore the recorded pre-cutover Spotlight block in both
+Rollback commit `8fdb106` has no Spotlight IPC handler. Before reloading Hyprland, edit both
 `$HOME/.config/hypr/hyprland.lua` and
-`$HOME/Projects/titonium-hyprland/config/hypr/hyprland.lua`, then reload Hyprland. Do not overwrite
-either file wholesale or disturb its other local changes.
+`$HOME/Projects/titonium-hyprland/config/hypr/hyprland.lua`. In each file, replace only the two
+active Spotlight `hl.bind` lines for `Super + V` and `Super + Space` with this exact Lua comment
+block; do not add a `Super + R` Spotlight binding and do not restore the old `qs -c titonium`
+commands:
+
+```lua
+-- Rollback shell 8fdb106 has no Spotlight IPC handler.
+-- Super + V, Super + R and Super + Space intentionally have no Spotlight binding.
+```
+
+Verify that neither file contains a Spotlight Clipboard/toggle command. The following command must
+print nothing and exit with status 1:
+
+```bash
+rg -n 'spotlight (clipboard|toggle)' \
+  "$HOME/.config/hypr/hyprland.lua" \
+  "$HOME/Projects/titonium-hyprland/config/hypr/hyprland.lua"
+```
+
+Only after that no-match result, reload Hyprland and start the rollback shell. Do not overwrite
+either Lua file wholesale or disturb its other local changes.
 
 ```bash
 hyprctl reload
@@ -64,9 +83,8 @@ git -C /home/cole/Projects/titonium switch --detach 8fdb106
 qs -d -p /home/cole/Projects/titonium
 ```
 
-The restored block disables the three legacy `qs -c titonium` Spotlight bindings behind
-`if false then ... end`. This removes the live V/Space cutover and restores the recorded rollback
-state without using `git reset --hard`.
+This removes the live V/Space cutover and leaves V, R and Space unable to call missing Spotlight
+IPC while `8fdb106` is running, without using `git reset --hard`.
 
 ## Legacy rollback
 
