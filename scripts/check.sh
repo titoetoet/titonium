@@ -11,6 +11,7 @@ node "$project_root/scripts/check_config_migrations.js"
 python3 "$project_root/scripts/check_architecture.py"
 node "$project_root/scripts/check_lunar.js"
 node "$project_root/scripts/check_launcher_layout.js"
+node "$project_root/scripts/check_spotlight.js"
 
 mapfile -d '' qml_files < <(find "$project_root" -type f -name '*.qml' -print0 | sort -z)
 qml_output="$(/usr/lib/qt6/bin/qmllint -I "$qml_import_root" "${qml_files[@]}" 2>&1)"
