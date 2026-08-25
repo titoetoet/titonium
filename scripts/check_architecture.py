@@ -241,6 +241,40 @@ def main() -> int:
             errors.append(f"AboutTitonium must project Foundation metadata: {contract}")
 
     app_shell = (root / "Titonium/App/AppShell.qml").read_text(encoding="utf-8")
+    for contract in (
+        "function coordinatorIpcResult(accepted: bool, successResult: string): string",
+        'return "blocked:guarded:" + SurfaceCoordinator.ownerId',
+        "return successResult",
+    ):
+        if contract not in app_shell:
+            errors.append(f"AppShell is missing guarded IPC result contract: {contract}")
+    ipc_blocks = re.findall(
+        r"\n    IpcHandler\s*\{(?P<body>[\s\S]*?)"
+        r"(?=\n    IpcHandler\s*\{|\n    Component\.onCompleted:)",
+        app_shell,
+    )
+    ipc_bodies: dict[str, str] = {}
+    for ipc_block in ipc_blocks:
+        target_match = re.search(r'target:\s*"(?P<target>[^"]+)"', ipc_block)
+        if target_match:
+            ipc_bodies[target_match.group("target")] = ipc_block
+    reporting_mutation_counts = {
+        "settings": 4,
+        "arch-menu": 3,
+        "spotlight": 5,
+        "clock": 3,
+        "calendar": 3,
+        "gallery": 3,
+    }
+    for target, expected_count in reporting_mutation_counts.items():
+        ipc_body = ipc_bodies.get(target, "")
+        mutation_count = len(re.findall(r"SurfaceCoordinator\.(?:open|close)\(", ipc_body))
+        result_count = ipc_body.count("root.coordinatorIpcResult(")
+        if mutation_count != expected_count or result_count != expected_count:
+            errors.append(
+                f"{target} IPC must map all {expected_count} coordinator mutations "
+                "through guarded result reporting"
+            )
     if 'target: "arch-menu"' not in app_shell or 'target: "launcher"' in app_shell:
         errors.append("AppShell must replace launcher IPC with arch-menu")
     arch_menu_ipc = re.search(

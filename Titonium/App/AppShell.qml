@@ -14,6 +14,12 @@ Scope {
 
     readonly property var clipboardHistory: ClipboardHistoryStore
 
+    function coordinatorIpcResult(accepted: bool, successResult: string): string {
+        if (!accepted && SurfaceCoordinator.ownerGuarded)
+            return "blocked:guarded:" + SurfaceCoordinator.ownerId;
+        return successResult;
+    }
+
     MenuBarHost {}
     FrameHost {}
     OverlayHost {}
@@ -112,22 +118,24 @@ Scope {
                 return "unavailable:no-screen";
             const ownerId = "settings:" + targetScreen.name;
             if (SurfaceCoordinator.ownerId === ownerId) {
-                SurfaceCoordinator.close(ownerId);
-                return "closed:cancelled";
+                const closed = SurfaceCoordinator.close(ownerId);
+                return root.coordinatorIpcResult(closed, "closed:cancelled");
             }
             ConfigStore.beginPreview();
-            SurfaceCoordinator.open(ownerId, {
+            const opened = SurfaceCoordinator.open(ownerId, {
                 "source": Qt.resolvedUrl("../Modules/Settings/SettingsCenter.qml"),
                 "keyboardFocus": "exclusive",
                 "ownerId": ownerId,
                 "cancelPreviewOnClose": true
             }, targetScreen);
-            return "open:" + targetScreen.name;
+            return root.coordinatorIpcResult(opened, "open:" + targetScreen.name);
         }
 
         function close(): string {
-            if (SurfaceCoordinator.ownerId.indexOf("settings:") === 0)
-                SurfaceCoordinator.close(SurfaceCoordinator.ownerId);
+            if (SurfaceCoordinator.ownerId.indexOf("settings:") === 0) {
+                const closed = SurfaceCoordinator.close(SurfaceCoordinator.ownerId);
+                return root.coordinatorIpcResult(closed, "closed:cancelled");
+            }
             return "closed:cancelled";
         }
 
@@ -149,14 +157,14 @@ Scope {
             const ownerId = "settings:" + targetScreen.name;
             if (SurfaceCoordinator.ownerId !== ownerId)
                 ConfigStore.beginPreview();
-            SurfaceCoordinator.open(ownerId, {
+            const opened = SurfaceCoordinator.open(ownerId, {
                 "source": Qt.resolvedUrl("../Modules/Settings/SettingsCenter.qml"),
                 "keyboardFocus": "exclusive",
                 "ownerId": ownerId,
                 "page": page,
                 "cancelPreviewOnClose": true
             }, targetScreen);
-            return "open:" + page + ":" + targetScreen.name;
+            return root.coordinatorIpcResult(opened, "open:" + page + ":" + targetScreen.name);
         }
 
         function previewMode(mode: string): bool {
@@ -195,21 +203,23 @@ Scope {
                 return "unavailable:no-screen";
             const ownerId = "arch-menu:" + targetScreen.name;
             if (SurfaceCoordinator.ownerId === ownerId) {
-                SurfaceCoordinator.close(ownerId);
-                return "closed";
+                const closed = SurfaceCoordinator.close(ownerId);
+                return root.coordinatorIpcResult(closed, "closed");
             }
-            SurfaceCoordinator.open(ownerId, {
+            const opened = SurfaceCoordinator.open(ownerId, {
                 "source": Qt.resolvedUrl("../Modules/MenuBar/ArchMenu/ArchMenu.qml"),
                 "keyboardFocus": "exclusive",
                 "closeOnMonitorChange": true,
                 "ownerId": ownerId
             }, targetScreen);
-            return "open:" + targetScreen.name;
+            return root.coordinatorIpcResult(opened, "open:" + targetScreen.name);
         }
 
         function close(): string {
-            if (SurfaceCoordinator.ownerId.indexOf("arch-menu:") === 0)
-                SurfaceCoordinator.close(SurfaceCoordinator.ownerId);
+            if (SurfaceCoordinator.ownerId.indexOf("arch-menu:") === 0) {
+                const closed = SurfaceCoordinator.close(SurfaceCoordinator.ownerId);
+                return root.coordinatorIpcResult(closed, "closed");
+            }
             return "closed";
         }
 
@@ -229,10 +239,10 @@ Scope {
                 return "unavailable:no-screen";
             const ownerId = "spotlight:" + targetScreen.name;
             if (SurfaceCoordinator.ownerId === ownerId) {
-                SurfaceCoordinator.close(ownerId);
-                return "closed";
+                const closed = SurfaceCoordinator.close(ownerId);
+                return root.coordinatorIpcResult(closed, "closed");
             }
-            SurfaceCoordinator.open(ownerId, {
+            const opened = SurfaceCoordinator.open(ownerId, {
                 "source": Qt.resolvedUrl("../Modules/Spotlight/SpotlightSurface.qml"),
                 "keyboardFocus": "exclusive",
                 "closeOnMonitorChange": true,
@@ -242,7 +252,7 @@ Scope {
                 "stateMode": "browse",
                 "selectedIndex": 0
             }, targetScreen);
-            return "open:applications:" + targetScreen.name;
+            return root.coordinatorIpcResult(opened, "open:applications:" + targetScreen.name);
         }
 
         function clipboard(): string {
@@ -250,7 +260,7 @@ Scope {
             if (!targetScreen)
                 return "unavailable:no-screen";
             const ownerId = "spotlight:" + targetScreen.name;
-            SurfaceCoordinator.open(ownerId, {
+            const opened = SurfaceCoordinator.open(ownerId, {
                 "source": Qt.resolvedUrl("../Modules/Spotlight/SpotlightSurface.qml"),
                 "keyboardFocus": "exclusive",
                 "closeOnMonitorChange": true,
@@ -260,12 +270,14 @@ Scope {
                 "stateMode": "clipboard",
                 "selectedIndex": 0
             }, targetScreen);
-            return "open:clipboard:" + targetScreen.name;
+            return root.coordinatorIpcResult(opened, "open:clipboard:" + targetScreen.name);
         }
 
         function close(): string {
-            if (SurfaceCoordinator.ownerId.indexOf("spotlight:") === 0)
-                SurfaceCoordinator.close(SurfaceCoordinator.ownerId);
+            if (SurfaceCoordinator.ownerId.indexOf("spotlight:") === 0) {
+                const closed = SurfaceCoordinator.close(SurfaceCoordinator.ownerId);
+                return root.coordinatorIpcResult(closed, "closed");
+            }
             return "closed";
         }
 
@@ -285,7 +297,7 @@ Scope {
                 return "unavailable:closed";
             const ownerId = SurfaceCoordinator.ownerId;
             const descriptorMode = SurfaceCoordinator.descriptor?.mode || "applications";
-            SurfaceCoordinator.open(ownerId, {
+            const opened = SurfaceCoordinator.open(ownerId, {
                 "source": Qt.resolvedUrl("../Modules/Spotlight/SpotlightSurface.qml"),
                 "keyboardFocus": "exclusive",
                 "closeOnMonitorChange": true,
@@ -296,7 +308,7 @@ Scope {
                     : (query.trim().length > 0 ? "results" : "browse"),
                 "selectedIndex": 0
             }, SurfaceCoordinator.screen);
-            return spotlightIpc.state();
+            return root.coordinatorIpcResult(opened, spotlightIpc.state());
         }
     }
 
@@ -309,20 +321,22 @@ Scope {
                 return "unavailable:no-screen";
             const ownerId = "clock:" + targetScreen.name;
             if (SurfaceCoordinator.ownerId === ownerId) {
-                SurfaceCoordinator.close(ownerId);
-                return "closed";
+                const closed = SurfaceCoordinator.close(ownerId);
+                return root.coordinatorIpcResult(closed, "closed");
             }
-            SurfaceCoordinator.open(ownerId, {
+            const opened = SurfaceCoordinator.open(ownerId, {
                 "source": Qt.resolvedUrl("../Modules/MenuBar/Clock/AnalogClockPanel.qml"),
                 "keyboardFocus": "exclusive",
                 "ownerId": ownerId
             }, targetScreen);
-            return "open:" + targetScreen.name;
+            return root.coordinatorIpcResult(opened, "open:" + targetScreen.name);
         }
 
         function close(): string {
-            if (SurfaceCoordinator.ownerId.indexOf("clock:") === 0)
-                SurfaceCoordinator.close(SurfaceCoordinator.ownerId);
+            if (SurfaceCoordinator.ownerId.indexOf("clock:") === 0) {
+                const closed = SurfaceCoordinator.close(SurfaceCoordinator.ownerId);
+                return root.coordinatorIpcResult(closed, "closed");
+            }
             return "closed";
         }
 
@@ -341,20 +355,22 @@ Scope {
                 return "unavailable:no-screen";
             const ownerId = "calendar:" + targetScreen.name;
             if (SurfaceCoordinator.ownerId === ownerId) {
-                SurfaceCoordinator.close(ownerId);
-                return "closed";
+                const closed = SurfaceCoordinator.close(ownerId);
+                return root.coordinatorIpcResult(closed, "closed");
             }
-            SurfaceCoordinator.open(ownerId, {
+            const opened = SurfaceCoordinator.open(ownerId, {
                 "source": Qt.resolvedUrl("../Modules/MenuBar/Clock/CalendarPanel.qml"),
                 "keyboardFocus": "exclusive",
                 "ownerId": ownerId
             }, targetScreen);
-            return "open:" + targetScreen.name;
+            return root.coordinatorIpcResult(opened, "open:" + targetScreen.name);
         }
 
         function close(): string {
-            if (SurfaceCoordinator.ownerId.indexOf("calendar:") === 0)
-                SurfaceCoordinator.close(SurfaceCoordinator.ownerId);
+            if (SurfaceCoordinator.ownerId.indexOf("calendar:") === 0) {
+                const closed = SurfaceCoordinator.close(SurfaceCoordinator.ownerId);
+                return root.coordinatorIpcResult(closed, "closed");
+            }
             return "closed";
         }
 
@@ -368,28 +384,24 @@ Scope {
 
         function toggle(screenName: string): string {
             if (SurfaceCoordinator.ownerId === "design-gallery") {
-                if (ConfigStore.previewActive)
-                    ConfigStore.cancel();
-                SurfaceCoordinator.close("design-gallery");
-                return "closed";
+                const closed = SurfaceCoordinator.close("design-gallery");
+                return root.coordinatorIpcResult(closed, "closed");
             }
             const targetScreen = ScreenRouter.screenForName(screenName);
             if (!targetScreen)
                 return "unavailable:no-screen";
             ConfigStore.beginPreview();
-            SurfaceCoordinator.open("design-gallery", {
+            const opened = SurfaceCoordinator.open("design-gallery", {
                 "source": Qt.resolvedUrl("../Design/Gallery/DesignGallery.qml"),
                 "keyboardFocus": "exclusive",
                 "cancelPreviewOnClose": true
             }, targetScreen);
-            return "open:" + targetScreen.name;
+            return root.coordinatorIpcResult(opened, "open:" + targetScreen.name);
         }
 
         function close(): string {
-            if (ConfigStore.previewActive)
-                ConfigStore.cancel();
-            SurfaceCoordinator.close("design-gallery");
-            return "closed";
+            const closed = SurfaceCoordinator.close("design-gallery");
+            return root.coordinatorIpcResult(closed, "closed");
         }
 
         function state(): string {
