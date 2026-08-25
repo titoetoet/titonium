@@ -83,16 +83,20 @@ FocusScope {
     }
 
     function activateItem(item: var): void {
-        if (item.requiresConfirmation === true) {
+        const route = ArchMenuModel.routeFor(item);
+        if (route === "confirm") {
             root.requestSessionAction(item.id);
             return;
         }
-        if (item.id === "settings") {
+        if (route === "settings") {
             root.openSettings();
             return;
         }
-        if (item.id === "about")
+        if (route === "about") {
             root.openAbout();
+            return;
+        }
+        Logger.warn("arch-menu", "unknown item id: " + (item?.id || "<missing>"));
     }
 
     Rectangle {

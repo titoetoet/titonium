@@ -5,14 +5,16 @@ import QtQuick
 import Quickshell.Hyprland
 import Quickshell.Io
 import qs.Titonium.Foundation
+import "SessionActionLifecycle.js" as SessionActionLifecycle
 
 QtObject {
     id: root
 
-    property string activeAction: ""
+    property var lifecycleState: SessionActionLifecycle.idle()
     property string lastError: ""
-    property bool processStarted: false
-    readonly property bool busy: root.activeAction.length > 0 || actionProcess.running
+    readonly property string activeAction: root.lifecycleState.phase === "accepted"
+        ? "" : root.lifecycleState.action
+    readonly property bool busy: root.lifecycleState.action.length > 0 || actionProcess.running
     readonly property var supportedActions: ["lock", "sleep", "hibernate", "restart", "shutdown", "logout"]
 
     signal actionStarted(string action)
@@ -39,55 +41,66 @@ QtObject {
             return false;
         }
         root.lastError = "";
-        root.activeAction = action;
+        root.lifecycleState = SessionActionLifecycle.begin(action);
         if (action === "logout") {
-            Hyprland.dispatch("exit");
-            root.activeAction = "";
-            root.actionStarted(action);
-            return true;
+            try {
+                Hyprland.dispatch("exit");
+                root.commitTransition(SessionActionLifecycle.exited(root.lifecycleState, 0));
+                return true;
+            } catch (error) {
+                root.commitTransition(SessionActionLifecycle.exited(root.lifecycleState, 1));
+                return false;
+            }
         }
         const command = root.commandFor(action);
         if (command.length === 0) {
             root.lastError = "session.error.unknown";
-            root.activeAction = "";
+            root.lifecycleState = SessionActionLifecycle.idle();
             return false;
         }
-        root.processStarted = false;
         actionProcess.command = command;
         actionProcess.running = true;
         return true;
     }
 
-    function failActiveAction(error: string): void {
-        const action = root.activeAction;
-        if (action.length === 0)
+    function commitTransition(result: var): void {
+        if (!result)
             return;
-        root.lastError = error;
-        root.activeAction = "";
-        root.processStarted = false;
-        Logger.warn("session", action + ": " + error);
-        root.actionFailed(action, error);
+        root.lifecycleState = result.state;
+        if (result.effect === "accepted") {
+            root.lockStartupGate.stop();
+            root.lastError = "";
+            root.actionStarted(result.action);
+        } else if (result.effect === "failed") {
+            root.lockStartupGate.stop();
+            root.lastError = result.error;
+            Logger.warn("session", result.action + ": " + result.error);
+            root.actionFailed(result.action, result.error);
+        }
+    }
+
+    property Timer lockStartupGate: Timer {
+        interval: 500
+        repeat: false
+        running: false
+        onTriggered: root.commitTransition(SessionActionLifecycle.settled(root.lifecycleState))
     }
 
     property Process actionProcess: Process {
         running: false
 
         onStarted: {
-            const action = root.activeAction;
-            root.processStarted = true;
-            root.activeAction = "";
-            root.actionStarted(action);
+            root.commitTransition(SessionActionLifecycle.started(root.lifecycleState));
+            if (root.lifecycleState.kind === "lock" && root.lifecycleState.phase === "settling")
+                root.lockStartupGate.restart();
         }
 
-        onExited: exitCode => {
-            if (!root.processStarted && root.activeAction.length > 0)
-                root.failActiveAction("session.error.start_failed");
-            root.processStarted = false;
-        }
+        onExited: exitCode => root.commitTransition(
+            SessionActionLifecycle.exited(root.lifecycleState, exitCode))
 
         onRunningChanged: {
-            if (!running && !root.processStarted && root.activeAction.length > 0)
-                root.failActiveAction("session.error.start_failed");
+            if (!running)
+                root.commitTransition(SessionActionLifecycle.stopped(root.lifecycleState));
         }
     }
 }

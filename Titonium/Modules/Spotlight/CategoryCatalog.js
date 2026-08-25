@@ -1,4 +1,5 @@
 .pragma library
+.import "StableOrder.js" as StableOrder
 
 const CATEGORY_DEFINITIONS = [
     { id: "all", title: "All", aliases: [] },
@@ -17,7 +18,7 @@ function idsFor(categories) {
     const source = Array.isArray(categories) ? categories : [];
     const aliases = {};
     for (let index = 0; index < source.length; index++)
-        aliases[String(source[index] || "").trim().toLocaleLowerCase()] = true;
+        aliases[String(source[index] || "").trim().toLowerCase()] = true;
 
     const ids = [];
     for (let index = 1; index < CATEGORY_DEFINITIONS.length - 1; index++) {
@@ -35,10 +36,10 @@ function idsFor(categories) {
 function compareApps(left, right) {
     const leftName = String(left?.name || left?.title || left?.id || "");
     const rightName = String(right?.name || right?.title || right?.id || "");
-    const comparison = leftName.localeCompare(rightName);
+    const comparison = StableOrder.compare(leftName, rightName);
     if (comparison !== 0)
         return comparison;
-    return String(left?.id || "").localeCompare(String(right?.id || ""));
+    return StableOrder.compare(String(left?.id || ""), String(right?.id || ""));
 }
 
 function catalogFor(apps) {

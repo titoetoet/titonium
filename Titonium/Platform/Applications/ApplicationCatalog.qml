@@ -4,12 +4,16 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import qs.Titonium.Foundation
+import "ApplicationLaunch.js" as ApplicationLaunch
 
 QtObject {
     id: root
 
     property var applications: []
     property string catalogSignature: ""
+    property string lastLaunchError: ""
+
+    signal launchFailed(string entryId, string error)
 
     function iconFor(iconName: string): string {
         if (!iconName)
@@ -83,11 +87,15 @@ QtObject {
 
     function launch(entryId: string): bool {
         const entry = DesktopEntries.byId(entryId);
-        if (!entry) {
-            Logger.warn("applications", "desktop entry disappeared: " + entryId);
+        const result = ApplicationLaunch.request(entry);
+        if (!result.accepted) {
+            root.lastLaunchError = result.error;
+            const detail = result.detail.length > 0 ? ": " + result.detail : "";
+            Logger.warn("applications", entryId + ": " + result.error + detail);
+            root.launchFailed(entryId, result.error);
             return false;
         }
-        entry.execute();
+        root.lastLaunchError = "";
         return true;
     }
 

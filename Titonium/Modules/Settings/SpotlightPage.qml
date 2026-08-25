@@ -62,7 +62,9 @@ Item {
                         Controls.TextLabel { text: I18n.tr("settings.spotlight.transition_duration"); strong: true }
                         Item { Layout.fillWidth: true }
                         Controls.TextLabel {
-                            text: (root.spotlightState.transitionDuration || 220) + " ms"
+                            text: I18n.tr("settings.spotlight.transition_duration_value", {
+                                "duration": root.spotlightState.transitionDuration || 220
+                            })
                             variant: "mono"; tone: "accent"
                         }
                     }

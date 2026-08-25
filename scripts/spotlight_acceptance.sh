@@ -48,6 +48,23 @@ require_contains() {
     fi
 }
 
+wait_for_spotlight_state() {
+    local expected="$1"
+    local context="$2"
+    local actual=""
+    for _ in {1..40}; do
+        actual="$(call_ipc spotlight state 2>/dev/null || true)"
+        if [[ "$actual" == *";$expected" ]]; then
+            printf '%s\n' "$actual"
+            return 0
+        fi
+        sleep 0.05
+    done
+    printf 'FAIL %s: state did not settle at %q; last state %q\n' \
+        "$context" "$expected" "$actual" >&2
+    return 1
+}
+
 qs -p "$project_root" --no-color >"$log_file" 2>&1 &
 shell_pid=$!
 
@@ -70,7 +87,8 @@ require_contains "$open_state" "open:applications:" "Spotlight toggle"
 require_contains "$(call_ipc spotlight state)" "open:applications:" "Spotlight open state"
 
 call_ipc spotlight setQuery fire >/dev/null
-results_state="$(call_ipc spotlight state)"
+results_state="$(wait_for_spotlight_state \
+    "mode=results;query=fire;selected=0" "Spotlight search state")"
 require_contains "$results_state" "mode=results;query=fire;selected=0" "Spotlight search state"
 
 require_contains "$(call_ipc spotlight close)" "closed" "Spotlight close"
@@ -93,7 +111,8 @@ if ! rg -q 'Configuration Loaded' "$log_file"; then
     echo "FAIL missing Configuration Loaded" >&2
     exit 1
 fi
-if rg -i '\b(ERROR|TypeError|duplicate id|missing method|Illegal method name)\b|Type .* unavailable' "$log_file"; then
+runtime_rejection_pattern="\\b(ERROR|TypeError|duplicate id|missing method|Illegal method name)\\b|Type .* unavailable|Property 'spotlightSurface' does not exist on AppGrid"
+if rg -i "$runtime_rejection_pattern" "$log_file"; then
     sed -n '1,240p' "$log_file" >&2
     echo "FAIL runtime error found" >&2
     exit 1

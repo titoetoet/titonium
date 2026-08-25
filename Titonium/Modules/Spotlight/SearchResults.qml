@@ -51,11 +51,31 @@ FocusScope {
                 anchors.rightMargin: Metrics.spacingMedium
                 spacing: Metrics.spacingMedium
 
-                Controls.Icon {
-                    name: resultRow.modelData.icon || (resultRow.modelData.type === "calculator" ? "calculate" : "apps")
-                    size: 24
-                    tone: resultRow.modelData.type === "calculator" ? "accent" : "primary"
-                    accessibleName: ""
+                Item {
+                    Layout.preferredWidth: 24
+                    Layout.preferredHeight: 24
+
+                    Image {
+                        id: resultApplicationIcon
+                        anchors.fill: parent
+                        visible: resultRow.modelData.type === "application"
+                        source: resultRow.modelData.type === "application" ? (resultRow.modelData.icon || "") : ""
+                        sourceSize.width: 32
+                        sourceSize.height: 32
+                        fillMode: Image.PreserveAspectFit
+                        asynchronous: true
+                        cache: false
+                    }
+
+                    Controls.Icon {
+                        anchors.centerIn: parent
+                        visible: resultRow.modelData.type !== "application"
+                            || resultApplicationIcon.status !== Image.Ready
+                        name: resultRow.modelData.type === "calculator" ? "calculate" : "apps"
+                        size: 24
+                        tone: resultRow.modelData.type === "calculator" ? "accent" : "secondary"
+                        accessibleName: ""
+                    }
                 }
 
                 ColumnLayout {

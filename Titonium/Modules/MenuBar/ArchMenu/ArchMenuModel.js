@@ -60,3 +60,13 @@ var groups = [
         }
     ]
 ];
+
+function routeFor(item) {
+    if (!item || typeof item.id !== "string")
+        return "unknown";
+    if (item.requiresConfirmation === true)
+        return "confirm";
+    if (item.id === "settings" || item.id === "about")
+        return item.id;
+    return "unknown";
+}

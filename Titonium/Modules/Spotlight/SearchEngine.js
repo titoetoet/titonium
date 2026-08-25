@@ -1,7 +1,8 @@
 .pragma library
+.import "StableOrder.js" as StableOrder
 
 function normalizedText(value) {
-    return String(value || "").toLocaleLowerCase();
+    return String(value || "").toLowerCase();
 }
 
 function resultFor(app, score) {
@@ -31,10 +32,10 @@ function scoreFor(app, query) {
 function compareResults(left, right) {
     if (left.score !== right.score)
         return right.score - left.score;
-    const titleComparison = left.title.localeCompare(right.title);
+    const titleComparison = StableOrder.compare(left.title, right.title);
     if (titleComparison !== 0)
         return titleComparison;
-    return left.id.localeCompare(right.id);
+    return StableOrder.compare(left.id, right.id);
 }
 
 function search(apps, query) {

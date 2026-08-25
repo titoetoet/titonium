@@ -446,20 +446,50 @@ def expect_theme_contracts(root: Path) -> bool:
     return True
 
 
-def expect_derived_rejections(root: Path) -> bool:
+def expect_spotlight_unknown_rejection(root: Path) -> bool:
     settings = load_json(root / "config/defaults/settings.json")
-    settings["modules"]["audio"]["volumeStep"] = 0
     settings["modules"]["spotlight"]["unknown"] = True
-    settings["modules"]["clock"]["showLunar"] = "yes"
+    errors = validate_settings(settings)
+    valid = errors == ["modules.spotlight.unknown is invalid"]
+    if not valid:
+        print(f"FAIL unknown Spotlight key rejection was not isolated: {errors}", file=sys.stderr)
+        return False
+    print("PASS unknown Spotlight key rejected independently")
+    return True
+
+
+def expect_other_derived_rejections(root: Path) -> bool:
+    audio = load_json(root / "config/defaults/settings.json")
+    audio["modules"]["audio"]["volumeStep"] = 0
+    clock = load_json(root / "config/defaults/settings.json")
+    clock["modules"]["clock"]["showLunar"] = "yes"
+    audio_errors = validate_settings(audio)
+    clock_errors = validate_settings(clock)
+    valid = (
+        audio_errors == ["modules.audio.volumeStep must be an integer from 1 to 20"]
+        and clock_errors == ["modules.clock.showLunar must be a boolean"]
+    )
+    if not valid:
+        print(
+            f"FAIL isolated Audio/Clock derivatives: audio={audio_errors}; clock={clock_errors}",
+            file=sys.stderr,
+        )
+        return False
+    print("PASS invalid Audio and Clock derivatives rejected independently")
+    return True
+
+
+def expect_theme_derivative_rejections(root: Path) -> bool:
     theme = load_json(root / "config/themes/titonium-hybrid-glass.json")
     theme["material"]["defaultBackend"] = "native"
     theme["material"]["allowedBackends"] = ["solid"]
     theme["material"]["tintOpacity"] = 2
-    rejected = bool(validate_settings(settings)) and bool(validate_theme(theme))
+    errors = validate_theme(theme)
+    rejected = bool(errors)
     if not rejected:
-        print("FAIL invalid module/material derivatives were accepted", file=sys.stderr)
+        print("FAIL invalid material derivative was accepted", file=sys.stderr)
         return False
-    print("PASS invalid Audio/Spotlight/Clock and material derivatives rejected")
+    print("PASS invalid material derivative rejected")
     return True
 
 
@@ -485,7 +515,9 @@ def main() -> int:
         expect_spotlight_v2_migration(root / "tests/fixtures/settings.v2.launcher.json"),
         expect_spotlight_v3_migration(root / "tests/fixtures/settings.v3.spotlight.json"),
         expect_theme_contracts(root),
-        expect_derived_rejections(root),
+        expect_spotlight_unknown_rejection(root),
+        expect_other_derived_rejections(root),
+        expect_theme_derivative_rejections(root),
     ]
     passed = all(checks)
     return 0 if passed else 1

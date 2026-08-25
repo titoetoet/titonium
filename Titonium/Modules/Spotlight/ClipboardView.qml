@@ -43,7 +43,8 @@ FocusScope {
     }
 
     function activateSelected(): bool {
-        return root.selectedItem !== null && ClipboardHistoryStore.copy(root.selectedItem.id);
+        return ClipboardHistoryStore.available && root.selectedItem !== null
+            && ClipboardHistoryStore.copy(root.selectedItem.id);
     }
 
     function deleteSelected(): void {
@@ -97,6 +98,14 @@ FocusScope {
                     enabled: ClipboardHistoryStore.items.length > 0
                     onTriggered: ClipboardHistoryStore.clear()
                 }
+            }
+
+            Controls.TextLabel {
+                Layout.fillWidth: true
+                visible: !ClipboardHistoryStore.available
+                text: I18n.tr("spotlight.clipboard.unavailable")
+                tone: "danger"
+                wrapMode: Text.WordWrap
             }
 
             ListView {
@@ -201,7 +210,7 @@ FocusScope {
 
                 Controls.TextLabel {
                     anchors.centerIn: parent
-                    visible: historyList.count === 0
+                    visible: ClipboardHistoryStore.available && historyList.count === 0
                     text: I18n.tr(ClipboardHistoryStore.items.length === 0
                         ? "spotlight.clipboard.empty" : "spotlight.clipboard.no_results")
                     tone: "secondary"
@@ -237,7 +246,7 @@ FocusScope {
                         label: I18n.tr("spotlight.clipboard.copy")
                         iconName: "content_copy"
                         size: "small"
-                        enabled: root.selectedItem !== null
+                        enabled: ClipboardHistoryStore.available && root.selectedItem !== null
                         onTriggered: {
                             if (root.activateSelected())
                                 root.activatedSuccessfully();

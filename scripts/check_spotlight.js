@@ -6,15 +6,17 @@ const vm = require("vm");
 
 const spotlightRoot = path.join(__dirname, "..", "Titonium", "Modules", "Spotlight");
 
-function loadDomain(name) {
+function loadDomain(name, globals = {}) {
     const sourcePath = path.join(spotlightRoot, name + ".js");
     if (!fs.existsSync(sourcePath)) {
         console.error(`FAIL spotlight domain: ${name}.js is missing`);
         process.exit(1);
     }
-    const context = { Math };
+    const context = { Math, ...globals };
     vm.createContext(context);
-    const source = fs.readFileSync(sourcePath, "utf8").replace(/^\.pragma library\s*/, "");
+    const source = fs.readFileSync(sourcePath, "utf8")
+        .replace(/^\.pragma library\s*/, "")
+        .replace(/^\.import .*$/gm, "");
     vm.runInContext(source, context, { filename: sourcePath });
     return context;
 }
@@ -44,8 +46,10 @@ function groupFor(catalog, categoryId) {
 }
 
 const layout = loadDomain("SpotlightLayout");
-const categories = loadDomain("CategoryCatalog");
-const search = loadDomain("SearchEngine");
+const stableOrder = loadDomain("StableOrder");
+const transition = loadDomain("SpotlightTransition");
+const categories = loadDomain("CategoryCatalog", { StableOrder: stableOrder });
+const search = loadDomain("SearchEngine", { StableOrder: stableOrder });
 const calculator = loadDomain("Calculator");
 const state = loadDomain("SpotlightState");
 
@@ -69,12 +73,14 @@ const catalogApps = [
     { id: "player.desktop", name: "Player", categories: ["AudioVideo"] },
     { id: "writer.desktop", name: "Writer", categories: ["Office"] },
     { id: "monitor.desktop", name: "Monitor", categories: ["System"] },
-    { id: "misc.desktop", name: "Misc", categories: ["Unrecognized"] }
+    { id: "misc.desktop", name: "Misc", categories: ["Unrecognized"] },
+    { id: "accent.desktop", name: "Álpha", categories: ["Development"] },
+    { id: "eclair.desktop", name: "Éclair", categories: ["Office"] }
 ];
 const catalog = categories.catalogFor(catalogApps);
 assertDeepEqual(Array.from(catalog, group => group.id), ["all", "development", "games", "internet", "multimedia", "office", "system", "utilities", "other"], "category order omits empty graphics");
-assertDeepEqual(Array.from(groupFor(catalog, "all").apps, app => app.name), ["Alpha", "Browser", "Misc", "Monitor", "Omega", "Player", "Writer", "Zeta"], "all category alphabetizes names");
-assertDeepEqual(Array.from(groupFor(catalog, "development").apps, app => app.name), ["Alpha", "Zeta"], "development category alphabetizes names");
+assertDeepEqual(Array.from(groupFor(catalog, "all").apps, app => app.name), ["Alpha", "Browser", "Misc", "Monitor", "Omega", "Player", "Writer", "Zeta", "Álpha", "Éclair"], "all category uses stable code-point order for accented names");
+assertDeepEqual(Array.from(groupFor(catalog, "development").apps, app => app.name), ["Alpha", "Zeta", "Álpha"], "development category uses stable code-point order");
 assertDeepEqual(Array.from(groupFor(catalog, "utilities").apps, app => app.name), ["Zeta"], "multi-category app appears in utilities");
 assertDeepEqual(Array.from(categories.catalogFor([])), [], "empty catalog has no categories");
 
@@ -102,16 +108,67 @@ const apps = [
         searchText: "terminology terminal emulator",
         icon: "utilities-terminal",
         categories: ["System"]
+    },
+    {
+        id: "alpha-editor.desktop",
+        name: "Alpha",
+        subtitle: "Editor",
+        searchText: "alpha editor",
+        icon: "accessories-text-editor",
+        categories: ["Utility"]
+    },
+    {
+        id: "accent-editor.desktop",
+        name: "Álpha",
+        subtitle: "Editor",
+        searchText: "álpha editor",
+        icon: "accessories-text-editor",
+        categories: ["Utility"]
+    },
+    {
+        id: "zulu-editor.desktop",
+        name: "Zulu",
+        subtitle: "Editor",
+        searchText: "zulu editor",
+        icon: "accessories-text-editor",
+        categories: ["Utility"]
     }
 ];
 assertDeepEqual(Array.from(search.search(apps, "fire"), item => item.id), ["firefox.desktop"], "search finds Firefox");
+assertEqual(search.search(apps, "fire")[0].score, 3, "title-prefix matches use ranking tier three");
+assertEqual(search.search(apps, "fox")[0].score, 2, "title-substring matches use ranking tier two");
+assertEqual(search.search(apps, "browser")[0].score, 1, "metadata-only matches use ranking tier one");
+assertDeepEqual(Array.from(search.search(apps, "no-match")), [], "unmatched applications do not enter a ranking tier");
 assertEqual(search.search(apps, "term")[0].type, "application", "search normalizes application type");
 assertDeepEqual(Object.keys(search.search(apps, "fire")[0]).sort(), ["executionId", "icon", "id", "score", "subtitle", "title", "type"], "search result record shape");
 assertDeepEqual(Array.from(search.search(apps, "term"), item => item.id), ["terminal.desktop", "terminology.desktop"], "prefix rank breaks ties alphabetically");
 assertDeepEqual(Array.from(search.search(apps, "browser"), item => item.id), ["firefox.desktop"], "search matches complete catalog subtitles");
+assertDeepEqual(Array.from(search.search(apps, "editor"), item => item.title), ["Alpha", "Zulu", "Álpha"], "search ties use stable code-point order for accented names");
+assertEqual(stableOrder.compare("Zulu", "Álpha"), -1, "stable comparator is locale independent");
+
+assertDeepEqual(transition.plan("browse", "results", false, "slide-fade", 500), {
+    animated: true,
+    duration: 220,
+    startOpacity: 0,
+    startOffset: 8
+}, "grid-to-results transition is short and bounded");
+assertEqual(transition.plan("results", "browse", false, "slide", 120).startOffset, -8, "results-to-grid reverses position offset");
+assertEqual(transition.plan("browse", "results", true, "slide-fade", 220).animated, false, "reduced motion disables grid-result motion");
+assertEqual(transition.plan("browse", "results", false, "none", 220).duration, 0, "none transition has zero duration");
+assertEqual(transition.plan("results", "clipboard", false, "slide-fade", 220).animated, false, "Clipboard branch does not inherit grid-result motion");
 
 assertEqual(calculator.evaluate("2 + 3 * 4").value, "14", "calculator respects multiplication precedence");
 assertEqual(calculator.evaluate("sqrt(81) + 1").value, "10", "calculator evaluates square roots");
+assertEqual(calculator.evaluate("10 % 4").value, "2", "calculator evaluates remainder");
+assertEqual(calculator.evaluate("2 ^ 3").value, "8", "calculator evaluates exponentiation");
+assertEqual(calculator.evaluate("-2 ^ 2").value, "-4", "unary minus follows exponent precedence");
+assertEqual(calculator.evaluate("pi").value, "3.141592653589793", "calculator exposes pi");
+assertEqual(calculator.evaluate("sin(0)").value, "0", "calculator evaluates sine");
+assertEqual(calculator.evaluate("cos(0)").value, "1", "calculator evaluates cosine");
+assertEqual(calculator.evaluate("(2 + 3) * 4").value, "20", "calculator evaluates parentheses");
+assertEqual(calculator.evaluate("2 +").matched, false, "calculator rejects incomplete expressions");
+assertEqual(calculator.evaluate("1 / 0").matched, false, "calculator rejects infinite results");
+assertEqual(calculator.evaluate("sqrt(-1)").matched, false, "calculator rejects non-finite results");
 assertEqual(calculator.evaluate("process.exit()").matched, false, "calculator rejects unsafe syntax");
 assertEqual(calculator.evaluate("hello").matched, false, "calculator rejects non-expressions");
 
@@ -120,4 +177,4 @@ assertEqual(state.escape({ mode: "results", query: "fire", categoryId: "games" }
 assertEqual(state.escape({ mode: "browse", query: "", categoryId: "games" }).closeRequested, true, "escape requests close from browse mode");
 assertDeepEqual(state.initial("browse"), { mode: "browse", query: "", categoryId: "all", closeRequested: false }, "initial browse state");
 
-console.log("PASS spotlight domain fixtures (28)");
+console.log("PASS spotlight domain fixtures (49)");

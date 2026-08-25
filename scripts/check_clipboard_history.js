@@ -40,6 +40,15 @@ const normalized = Array.from(context.normalizeDocument(valid));
 assertEqual(normalized.length, 2, "well-typed records are retained and invalid records are dropped");
 assertDeepEqual(Array.from(normalized, item => item.id), ["valid-url", "valid-plain"], "valid record order is retained");
 
+const protoFirst = context.createRecord("__proto__", 2000);
+const protoSecond = { ...context.createRecord("__proto__", 1000), id: "older-proto" };
+const normalizedProto = Array.from(context.normalizeDocument({
+    schemaVersion: 1,
+    items: [protoFirst, protoSecond],
+}));
+assertEqual(normalizedProto.length, 1, "exact __proto__ text dedupes safely");
+assertEqual(normalizedProto[0].id, protoFirst.id, "__proto__ dedupe retains the newest record");
+
 const moved = Array.from(context.record(normalized, "https://example.com", 3000));
 assertEqual(moved.length, 2, "exact duplicate remains unique");
 assertEqual(moved[0].id, "valid-url", "exact duplicate moves existing record to front");
@@ -62,4 +71,4 @@ assertEqual(context.preview("first line\nsecond\tline"), "first line second line
 assertEqual(context.preview("x".repeat(80)), "x".repeat(80), "preview retains exactly eighty characters");
 assertEqual(context.preview("x".repeat(81)), "x".repeat(79) + "…", "preview truncates after the exact eighty-character boundary");
 
-console.log("PASS clipboard history fixtures (18)");
+console.log("PASS clipboard history fixtures (20)");

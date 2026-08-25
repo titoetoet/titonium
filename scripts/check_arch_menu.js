@@ -33,6 +33,15 @@ const groups = deepPlain(context.groups);
 if (!Array.isArray(groups))
     fail("Arch Menu model must export groups");
 
+if (typeof context.routeFor !== "function")
+    fail("Arch Menu model must export routeFor");
+if (context.routeFor({ id: "future-tool", requiresConfirmation: false }) !== "unknown")
+    fail("unknown non-confirming Arch Menu IDs must route to the warning path");
+if (context.routeFor({ id: "settings", requiresConfirmation: false }) !== "settings")
+    fail("Settings must retain its standalone route");
+if (context.routeFor({ id: "lock", requiresConfirmation: true }) !== "confirm")
+    fail("confirming session IDs must retain the confirmation route");
+
 const expectedIds = [
     ["about"],
     ["settings"],
@@ -56,5 +65,12 @@ for (const group of groups) {
             fail(`${item.id} must require confirmation`);
     }
 }
+
+const viStrings = JSON.parse(fs.readFileSync(
+    path.join(projectRoot, "config/i18n/vi.json"),
+    "utf8",
+)).strings;
+if (!/^Giao diện\s*·\s*\{theme\}$/.test(viStrings["arch_menu.about.theme"] || ""))
+    fail("Vietnamese About theme prefix must be localized");
 
 console.log("PASS Arch Menu model contract (8 items, 5 groups)");

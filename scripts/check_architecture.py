@@ -153,6 +153,11 @@ def main() -> int:
         errors.append("Arch Menu group boundaries must render semantic one-pixel separators")
     if compact_surface.count("SessionActions.executeConfirmed(") != 1:
         errors.append("Arch Menu must have exactly one confirmed Platform execution path")
+    if (
+        "ArchMenuModel.routeFor(item)" not in compact_surface
+        or 'Logger.warn("arch-menu", "unknown item id: "' not in compact_surface
+    ):
+        errors.append("unknown non-confirming Arch Menu items must log a warning and do nothing")
     pending_assignment = compact_surface.find("pendingAction = actionId")
     confirmed_execution = compact_surface.find("SessionActions.executeConfirmed(actionId)")
     if pending_assignment < 0 or confirmed_execution < 0 or pending_assignment > confirmed_execution:
@@ -307,8 +312,14 @@ def main() -> int:
     application_adapter = (
         root / "Titonium/Platform/Applications/ApplicationCatalog.qml"
     ).read_text(encoding="utf-8")
-    if "DesktopEntries.applications" not in application_adapter or "entry.execute()" not in application_adapter:
-        errors.append("ApplicationCatalog must use Quickshell desktop-entry discovery and execution")
+    for contract in (
+        "DesktopEntries.applications",
+        "ApplicationLaunch.request(entry)",
+        "signal launchFailed(string entryId, string error)",
+        "root.launchFailed(entryId, result.error)",
+    ):
+        if contract not in application_adapter:
+            errors.append(f"ApplicationCatalog is missing guarded launch contract: {contract}")
 
     clipboard_adapter_path = root / "Titonium/Platform/Clipboard/ClipboardAdapter.qml"
     clipboard_adapter = clipboard_adapter_path.read_text(encoding="utf-8")
@@ -317,6 +328,14 @@ def main() -> int:
             errors.append(f"ClipboardAdapter is missing event boundary: {contract}")
     if re.search(r"\b(Timer|Process)\s*\{|wl-paste|wl-copy", clipboard_adapter):
         errors.append("ClipboardAdapter must observe Quickshell clipboard events without polling or processes")
+    for contract in (
+        "property bool available:",
+        "property string error:",
+        "ClipboardAccess.observe(",
+        "ClipboardAccess.copy(",
+    ):
+        if contract not in clipboard_adapter:
+            errors.append(f"ClipboardAdapter is missing availability/error contract: {contract}")
 
     clipboard_store_path = root / "Titonium/Foundation/ClipboardHistoryStore.qml"
     if not clipboard_store_path.is_file():
@@ -329,11 +348,25 @@ def main() -> int:
             "atomicWrites: true",
             "setText(",
             "ClipboardAdapter",
+            "readonly property bool available:",
+            "readonly property string error:",
         ):
             if contract not in clipboard_store:
                 errors.append(f"ClipboardHistoryStore is missing persistence/event contract: {contract}")
         if re.search(r"\b(Timer|Process)\s*\{|wl-paste|wl-copy", clipboard_store):
             errors.append("ClipboardHistoryStore must remain event-driven and process-free")
+        adapter_starts_observation = bool(re.search(
+            r"Component\.onCompleted\s*:\s*root\.observeCurrent\(\)",
+            clipboard_adapter,
+        ))
+        store_starts_observation = bool(re.search(
+            r"Component\.onCompleted\s*:\s*\{[\s\S]*?ClipboardAdapter\.observeCurrent\(\)",
+            clipboard_store,
+        ))
+        if adapter_starts_observation or not store_starts_observation:
+            errors.append(
+                "ClipboardHistoryStore must be the sole initial observation owner; adapter changes remain event-driven"
+            )
 
     spotlight_acceptance = (
         root / "scripts/spotlight_acceptance.sh"
@@ -347,6 +380,16 @@ def main() -> int:
         call_ipc_body,
     ):
         errors.append("Spotlight acceptance IPC must target its spawned shell PID")
+    for polling_contract in (
+        "wait_for_spotlight_state()",
+        "for _ in {1..40}",
+        'mode=results;query=fire;selected=0',
+        'sleep 0.05',
+    ):
+        if polling_contract not in spotlight_acceptance:
+            errors.append(
+                f"Spotlight acceptance must poll the exact settled results state: {polling_contract}"
+            )
 
     settings_acceptance = (root / "scripts/settings_acceptance.sh").read_text(encoding="utf-8")
     call_ipc_helper = re.search(
@@ -369,8 +412,37 @@ def main() -> int:
     settings_center = root / "Titonium/Modules/Settings/SettingsCenter.qml"
     if not settings_workspace.is_file() or not settings_center.is_file():
         errors.append("standalone Settings requires SettingsCenter and SettingsWorkspace")
-    elif "SettingsWorkspace" not in settings_center.read_text(encoding="utf-8"):
-        errors.append("SettingsCenter must instantiate SettingsWorkspace")
+    else:
+        settings_workspace_hosts = []
+        for qml_path in sorted((root / "Titonium").rglob("*.qml")):
+            count = len(re.findall(
+                r"\bSettingsWorkspace\s*\{",
+                qml_path.read_text(encoding="utf-8"),
+            ))
+            if count > 0:
+                settings_workspace_hosts.append((qml_path, count))
+        total_settings_workspaces = sum(count for _, count in settings_workspace_hosts)
+        if total_settings_workspaces != 1:
+            errors.append(
+                f"SettingsWorkspace must have exactly one QML instantiation; found {total_settings_workspaces}"
+            )
+        invalid_settings_hosts = [
+            path.relative_to(root)
+            for path, _ in settings_workspace_hosts
+            if path != settings_center
+        ]
+        if invalid_settings_hosts:
+            errors.append(
+                "SettingsWorkspace must not be instantiated outside SettingsCenter: "
+                + ", ".join(str(path) for path in invalid_settings_hosts)
+            )
+    spotlight_settings = (
+        root / "Titonium/Modules/Settings/SpotlightPage.qml"
+    ).read_text(encoding="utf-8")
+    if '+ " ms"' in spotlight_settings:
+        errors.append("Spotlight duration must not render a raw millisecond suffix")
+    if 'I18n.tr("settings.spotlight.transition_duration_value"' not in spotlight_settings:
+        errors.append("Spotlight duration value must use its localized formatter")
 
     spotlight_dir = root / "Titonium/Modules/Spotlight"
     spotlight_files = (
@@ -398,6 +470,12 @@ def main() -> int:
         spotlight_feature,
     ):
         errors.append("Spotlight must not perform I/O, poll, spawn commands or animate continuously")
+    for ordering_file in ("CategoryCatalog.js", "SearchEngine.js"):
+        ordering_text = (spotlight_dir / ordering_file).read_text(encoding="utf-8")
+        if "localeCompare" in ordering_text:
+            errors.append(f"Spotlight ordering must not use host locale collation: {ordering_file}")
+        if '.import "StableOrder.js" as StableOrder' not in ordering_text:
+            errors.append(f"Spotlight ordering must share StableOrder.compare: {ordering_file}")
     spotlight_surface = spotlight_qml.get("SpotlightSurface.qml", "")
     if (
         "Loader" not in spotlight_surface
@@ -414,6 +492,12 @@ def main() -> int:
         errors.append("ClipboardView must project ClipboardHistoryStore intents")
     if "ClipboardAdapter" in clipboard_view or "clipboardTextChanged" in clipboard_view:
         errors.append("Clipboard UI must not own clipboard observation")
+    for contract in (
+        'I18n.tr("spotlight.clipboard.unavailable")',
+        "ClipboardHistoryStore.available",
+    ):
+        if contract not in clipboard_view:
+            errors.append(f"ClipboardView must distinguish unavailable from empty: {contract}")
     spotlight_accessibility = {
         "SpotlightSurface.qml": (
             "activeFocusOnTab:",
@@ -430,6 +514,15 @@ def main() -> int:
             if fragment not in text:
                 errors.append(f"missing Spotlight accessibility contract {fragment!r}: {filename}")
     spotlight_results = spotlight_qml.get("SearchResults.qml", "")
+    for contract in (
+        "Image {",
+        'source: resultRow.modelData.type === "application" ? (resultRow.modelData.icon || "") : ""',
+        'visible: resultRow.modelData.type === "application"',
+        "resultApplicationIcon.status !== Image.Ready",
+        'name: resultRow.modelData.type === "calculator" ? "calculate" : "apps"',
+    ):
+        if contract not in spotlight_results:
+            errors.append(f"Spotlight results are missing URL icon/fallback contract: {contract}")
     result_key_handler = re.search(
         r"Keys\.onPressed:\s*event\s*=>\s*\{"
         r"[\s\S]*?event\.key\s*===\s*Qt\.Key_Down"

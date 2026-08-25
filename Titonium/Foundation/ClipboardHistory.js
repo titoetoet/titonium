@@ -53,9 +53,10 @@ function normalizeDocument(document) {
     var seen = {};
     for (var index = 0; index < document.items.length && normalized.length < MAX_ITEMS; index++) {
         var item = document.items[index];
-        if (!isRecord(item) || seen[item.text] === true)
+        var dedupeKey = "$text:" + (item && typeof item.text === "string" ? item.text : "");
+        if (!isRecord(item) || seen[dedupeKey] === true)
             continue;
-        seen[item.text] = true;
+        seen[dedupeKey] = true;
         normalized.push({
             id: item.id,
             text: item.text,

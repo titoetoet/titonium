@@ -12,6 +12,8 @@ QtObject {
 
     property var items: []
     readonly property string runtimePath: Quickshell.dataPath("clipboard-history.json")
+    readonly property bool available: ClipboardAdapter.available
+    readonly property string error: ClipboardAdapter.error
     property bool warnedMalformed: false
 
     function warnMalformed(message: string): void {

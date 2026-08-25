@@ -6,13 +6,17 @@ import QtQuick.Layouts
 import qs.Titonium.Design
 import qs.Titonium.Design.Controls as Controls
 import qs.Titonium.Foundation
+import "SpotlightTransition.js" as SpotlightTransition
 
 FocusScope {
     id: root
 
     property var descriptor: ({})
     property var screen: null
+    property string loadedBodyMode: ""
+    property int activeBodyTransitionDuration: 0
     readonly property string ownerId: root.descriptor?.ownerId || ""
+    readonly property var spotlightSettings: ConfigStore.previewState.modules?.spotlight || ({})
     signal clipboardMoveRequested(int delta)
     signal clipboardActivateRequested()
 
@@ -50,6 +54,51 @@ FocusScope {
             "stateMode": spotlightModel.mode,
             "selectedIndex": spotlightModel.selectedIndex
         }, root.screen);
+    }
+
+    function configureLoadedBody(item: var): void {
+        if (!item)
+            return;
+        root.bodyTransition.stop();
+        const nextMode = spotlightModel.mode;
+        const transitionPlan = SpotlightTransition.plan(
+            root.loadedBodyMode,
+            nextMode,
+            ConfigStore.previewState.accessibility?.reducedMotion === true,
+            root.spotlightSettings.pageTransition || "slide-fade",
+            root.spotlightSettings.transitionDuration || 220
+        );
+        root.loadedBodyMode = nextMode;
+        root.activeBodyTransitionDuration = transitionPlan.duration;
+        item.opacity = transitionPlan.startOpacity;
+        item.y = transitionPlan.startOffset;
+        if ("spotlightModel" in item)
+            item.spotlightModel = spotlightModel;
+        if ("spotlightSurface" in item)
+            item.spotlightSurface = root;
+        if (transitionPlan.animated) {
+            Qt.callLater(() => {
+                if (bodyLoader.item === item)
+                    root.bodyTransition.restart();
+            });
+        }
+    }
+
+    property ParallelAnimation bodyTransition: ParallelAnimation {
+        NumberAnimation {
+            target: bodyLoader.item
+            property: "opacity"
+            to: 1
+            duration: root.activeBodyTransitionDuration
+            easing.type: Easing.OutCubic
+        }
+        NumberAnimation {
+            target: bodyLoader.item
+            property: "y"
+            to: 0
+            duration: root.activeBodyTransitionDuration
+            easing.type: Easing.OutCubic
+        }
     }
 
     onDescriptorChanged: {
@@ -192,20 +241,7 @@ FocusScope {
                     ? Qt.resolvedUrl("AppGrid.qml")
                     : (spotlightModel.mode === "results" ? Qt.resolvedUrl("SearchResults.qml")
                         : (spotlightModel.mode === "clipboard" ? Qt.resolvedUrl("ClipboardView.qml") : ""))
-            }
-
-            Binding {
-                target: bodyLoader.item || null
-                property: "spotlightModel"
-                value: spotlightModel
-                when: bodyLoader.item !== null
-            }
-
-            Binding {
-                target: bodyLoader.item || null
-                property: "spotlightSurface"
-                value: root
-                when: spotlightModel.mode === "clipboard" && bodyLoader.item !== null
+                onLoaded: root.configureLoadedBody(item)
             }
 
             Connections {

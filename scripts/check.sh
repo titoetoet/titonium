@@ -10,9 +10,12 @@ python3 "$project_root/scripts/validate_config.py"
 node "$project_root/scripts/check_config_migrations.js"
 python3 "$project_root/scripts/check_architecture.py"
 node "$project_root/scripts/check_arch_menu.js"
+node "$project_root/scripts/check_session_actions.js"
+node "$project_root/scripts/check_application_launch.js"
 node "$project_root/scripts/check_lunar.js"
 node "$project_root/scripts/check_spotlight.js"
 node "$project_root/scripts/check_clipboard_history.js"
+node "$project_root/scripts/check_clipboard_access.js"
 
 mapfile -d '' qml_files < <(find "$project_root" -type f -name '*.qml' -print0 | sort -z)
 qml_output="$(/usr/lib/qt6/bin/qmllint -I "$qml_import_root" "${qml_files[@]}" 2>&1)"
