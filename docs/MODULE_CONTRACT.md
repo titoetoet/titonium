@@ -52,6 +52,10 @@ only through typed `patch()` paths. SettingsCenter begins one preview transactio
 atomically, while Cancel, Escape, outside click, IPC close and surface replacement all rollback.
 Theme metadata shown by UI comes from validated theme documents, not duplicated catalog labels.
 
+Panel metrics live in the versioned layout document: `menubar.height`, `padding` and `spacing`.
+They preview live on all outputs, including the layer-shell exclusive zone. Frame configuration
+lives under `settings.modules.frame`, remains disabled by default and is reset independently.
+
 ## Failure behavior
 
 Missing registry entries and invalid node content render `DiagnosticWidget` with a concise

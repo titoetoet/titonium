@@ -3,6 +3,8 @@
   "schemaVersion": 1,
   "menubar": {
     "height": 40,
+    "padding": 8,
+    "spacing": 8,
     "screens": {
       "default": {
         "slots": {

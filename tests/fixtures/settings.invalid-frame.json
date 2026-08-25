@@ -1,5 +1,4 @@
 {
-  "$schema": "titonium.settings/v2",
   "schemaVersion": 2,
   "locale": "vi",
   "appearance": {
@@ -8,15 +7,13 @@
     "density": "comfortable",
     "overrides": {}
   },
-  "accessibility": {
-    "reducedMotion": false
-  },
+  "accessibility": { "reducedMotion": false },
   "modules": {
     "frame": {
-      "enabled": false,
-      "thickness": 2,
-      "cornerRadius": 12,
-      "opacity": 0.85
+      "enabled": "yes",
+      "thickness": 12,
+      "cornerRadius": -1,
+      "opacity": 2
     }
   }
 }

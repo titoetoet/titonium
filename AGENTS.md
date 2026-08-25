@@ -10,8 +10,9 @@ Milestone 0, Theme Foundation and the first Design Controls slices are complete.
 active and features are ported in groups of two or three. Workspaces, Active Window, Input
 Method, Clock, Calendar and the Vietnamese Lunar model are implemented. Visualizer remains
 deferred to the media phase. Launcher, Application Catalog and Dashboard are complete. The
-Settings Center shell plus Theme and Typography pages form the current review batch; further
-Settings pages remain gated behind visual approval.
+Settings Center shell plus Theme and Typography pages are complete. Panel/Layout, the optional
+Screen Frame and scoped reset flows form the current review batch; further Settings pages remain
+gated behind visual approval.
 
 The legacy reference is read-only:
 

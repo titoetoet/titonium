@@ -14,7 +14,10 @@ QtObject {
     property var committedState: ({})
     property var previewState: ({})
     property var shippedDefaults: ({})
-    property var layoutState: ({})
+    property var shippedLayoutDefaults: ({})
+    property var committedLayout: ({})
+    property var previewLayout: ({})
+    readonly property var layoutState: root.previewLayout
     property var themeState: ({})
     property bool ready: false
     property bool previewActive: false
@@ -79,9 +82,11 @@ QtObject {
         }
 
         root.shippedDefaults = JsonTools.clone(defaultSettings);
+        root.shippedLayoutDefaults = JsonTools.clone(defaultLayout);
         root.committedState = JsonTools.clone(selectedSettings);
         root.previewState = JsonTools.clone(selectedSettings);
-        root.layoutState = JsonTools.clone(selectedLayout);
+        root.committedLayout = JsonTools.clone(selectedLayout);
+        root.previewLayout = JsonTools.clone(selectedLayout);
         root.resolveTheme();
         root.lastError = "";
         root.ready = true;
@@ -96,6 +101,7 @@ QtObject {
 
     function beginPreview(): void {
         root.previewState = JsonTools.clone(root.committedState);
+        root.previewLayout = JsonTools.clone(root.committedLayout);
         root.previewActive = true;
     }
 
@@ -132,6 +138,34 @@ QtObject {
         return true;
     }
 
+    function patchLayout(path: string, value: var): bool {
+        if (!root.previewActive)
+            root.beginPreview();
+        const candidate = JsonTools.setPath(root.previewLayout, path, value);
+        const errors = Validator.validateLayout(candidate);
+        if (errors.length > 0) {
+            root.lastError = errors.join("; ");
+            return false;
+        }
+        root.previewLayout = candidate;
+        root.lastError = "";
+        return true;
+    }
+
+    function restoreLayout(): bool {
+        if (!root.previewActive)
+            root.beginPreview();
+        const candidate = JsonTools.clone(root.shippedLayoutDefaults);
+        const errors = Validator.validateLayout(candidate);
+        if (errors.length > 0) {
+            root.lastError = errors.join("; ");
+            return false;
+        }
+        root.previewLayout = candidate;
+        root.lastError = "";
+        return true;
+    }
+
     function apply(): bool {
         const errors = Validator.validateSettings(root.previewState);
         if (errors.length > 0) {
@@ -140,7 +174,10 @@ QtObject {
         }
         const payload = JSON.stringify(root.previewState, null, 2) + "\n";
         runtimeSettingsFile.setText(payload);
+        const layoutPayload = JSON.stringify(root.previewLayout, null, 2) + "\n";
+        runtimeLayoutFile.setText(layoutPayload);
         root.committedState = JsonTools.clone(root.previewState);
+        root.committedLayout = JsonTools.clone(root.previewLayout);
         root.previewActive = false;
         root.lastError = "";
         return true;
@@ -148,6 +185,7 @@ QtObject {
 
     function cancel(): void {
         root.previewState = JsonTools.clone(root.committedState);
+        root.previewLayout = JsonTools.clone(root.committedLayout);
         root.previewActive = false;
         root.lastError = "";
     }

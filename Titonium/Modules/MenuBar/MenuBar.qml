@@ -32,6 +32,7 @@ Item {
         nodes: root.slots.start || []
         screen: root.screenModel
         context: root.widgetContext
+        spacing: Metrics.barSpacing
     }
 
     LayoutRenderer {
@@ -39,6 +40,7 @@ Item {
         nodes: root.slots.center || []
         screen: root.screenModel
         context: root.widgetContext
+        spacing: Metrics.barSpacing
     }
 
     LayoutRenderer {
@@ -48,5 +50,6 @@ Item {
         nodes: root.slots.end || []
         screen: root.screenModel
         context: root.widgetContext
+        spacing: Metrics.barSpacing
     }
 }

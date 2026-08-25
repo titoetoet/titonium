@@ -4,12 +4,14 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import qs.Titonium.Foundation
+import qs.Titonium.Modules.Frame
 import qs.Titonium.Surfaces
 
 Scope {
     id: root
 
     MenuBarHost {}
+    FrameHost {}
     OverlayHost {}
 
     IpcHandler {
@@ -52,6 +54,10 @@ Scope {
         function appearanceState(): string {
             return JSON.stringify(ConfigStore.previewState.appearance || {});
         }
+
+        function layoutDocument(): string {
+            return JSON.stringify(ConfigStore.previewLayout || {});
+        }
     }
 
     IpcHandler {
@@ -89,7 +95,7 @@ Scope {
         }
 
         function openPage(page: string, screenName: string): string {
-            if (page !== "theme" && page !== "typography")
+            if (page !== "theme" && page !== "typography" && page !== "layout" && page !== "frame")
                 return "unavailable:unknown-page";
             const targetScreen = ScreenRouter.screenForName(screenName);
             if (!targetScreen)
@@ -119,6 +125,18 @@ Scope {
             if (SurfaceCoordinator.ownerId.indexOf("settings:") !== 0 || size < 11 || size > 18)
                 return false;
             return ConfigStore.patch("appearance.overrides.typography.bodySize", size);
+        }
+
+        function previewBarHeight(height: int): bool {
+            if (SurfaceCoordinator.ownerId.indexOf("settings:") !== 0 || height < 32 || height > 52)
+                return false;
+            return ConfigStore.patchLayout("menubar.height", height);
+        }
+
+        function previewFrame(enabled: bool): bool {
+            if (SurfaceCoordinator.ownerId.indexOf("settings:") !== 0)
+                return false;
+            return ConfigStore.patch("modules.frame.enabled", enabled);
         }
     }
 

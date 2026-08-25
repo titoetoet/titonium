@@ -18,9 +18,10 @@ document and retain the last valid/default state.
 
 ## Transactions
 
-`beginPreview()` copies committed state into preview state. `patch(path, value)` changes only
-preview state. `apply()` validates, atomically persists and promotes preview state. `cancel()`
-restores preview from committed state without writing.
+`beginPreview()` copies both committed settings and committed layout into their preview states.
+`patch(path, value)` changes settings; `patchLayout(path, value)` changes the separately validated
+layout document. `apply()` atomically writes each runtime document and promotes both previews.
+`cancel()` restores both previews without writing. `restoreLayout()` is explicit and separate.
 
 ## Migrations
 
@@ -33,3 +34,4 @@ locale, accessibility and module state, maps the retired foundation theme to
 `restoreAppearance()` replaces only preview appearance state with shipped defaults. It always
 selects Neutral Utility dark/comfortable with empty overrides. Locale, accessibility, module
 state and the separate layout document remain untouched; Apply persists and Cancel rolls back.
+Frame reset changes only `modules.frame`; layout reset changes only the layout document.

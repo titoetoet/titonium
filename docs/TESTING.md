@@ -65,5 +65,8 @@ configuration copies. Gallery content must disappear from the scene when its Loa
   category records and never creates more than 24 tiles. Pointer/Enter opens through
   `DesktopEntry.execute()`; Escape clears a query before closing the Dashboard.
 - Settings preview updates every surface, but closing by any lifecycle path restores committed
-  state. Apply writes only the atomic runtime settings file. Theme metadata is resolved from a
+  state. Apply writes only the atomic runtime settings/layout files. Theme metadata is resolved from a
   validated package; Typography font/size overrides reset independently of other appearance.
+- Layout height/padding/spacing preview on both outputs and Cancel restores the exact document.
+  Enabling Frame creates one click-through layer per output; disabling or cancelling removes all
+  frame layers. Appearance, Layout and Frame reset actions must not modify each other's state.

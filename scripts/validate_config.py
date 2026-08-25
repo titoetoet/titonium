@@ -45,6 +45,23 @@ def validate_settings(data: Any) -> list[str]:
         errors.append("accessibility.reducedMotion is required")
     if not isinstance(data.get("modules"), dict):
         errors.append("modules must be an object")
+    else:
+        frame = data["modules"].get("frame")
+        if frame is not None:
+            if not isinstance(frame, dict):
+                errors.append("modules.frame must be an object")
+            else:
+                if not isinstance(frame.get("enabled"), bool):
+                    errors.append("modules.frame.enabled must be a boolean")
+                thickness = frame.get("thickness")
+                if not isinstance(thickness, int) or isinstance(thickness, bool) or not 1 <= thickness <= 8:
+                    errors.append("modules.frame.thickness must be an integer from 1 to 8")
+                radius = frame.get("cornerRadius")
+                if not isinstance(radius, int) or isinstance(radius, bool) or not 0 <= radius <= 32:
+                    errors.append("modules.frame.cornerRadius must be an integer from 0 to 32")
+                opacity = frame.get("opacity")
+                if not isinstance(opacity, (int, float)) or isinstance(opacity, bool) or not 0.3 <= opacity <= 1.0:
+                    errors.append("modules.frame.opacity must be a number from 0.3 to 1.0")
     return errors
 
 
@@ -129,6 +146,10 @@ def validate_layout(data: Any) -> list[str]:
     height = menubar.get("height")
     if not isinstance(height, int) or isinstance(height, bool) or not 28 <= height <= 72:
         errors.append("menubar.height must be an integer from 28 to 72")
+    for key in ("padding", "spacing"):
+        value = menubar.get(key)
+        if value is not None and (not isinstance(value, int) or isinstance(value, bool) or not 0 <= value <= 24):
+            errors.append(f"menubar.{key} must be an integer from 0 to 24")
     screens = menubar.get("screens")
     if not isinstance(screens, dict) or "default" not in screens:
         return errors + ["menubar.screens.default is required"]
@@ -275,7 +296,9 @@ def main() -> int:
         (root / "tests/fixtures/layout.valid.json", validate_layout, True),
         (root / "tests/fixtures/layout.invalid-duplicate.json", validate_layout, False),
         (root / "tests/fixtures/layout.invalid-type.json", validate_layout, False),
+        (root / "tests/fixtures/layout.invalid-metrics.json", validate_layout, False),
         (root / "tests/fixtures/settings.invalid.json", validate_settings, False),
+        (root / "tests/fixtures/settings.invalid-frame.json", validate_settings, False),
         (root / "tests/fixtures/theme.invalid-typography.json", validate_theme, False),
     )
     return 0 if all(expect(*case) for case in cases) and expect_migration(root / "tests/fixtures/settings.v1.valid.json") else 1

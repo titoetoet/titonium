@@ -15,9 +15,12 @@ FocusScope {
     readonly property string ownerId: root.descriptor?.ownerId || ""
     readonly property bool dirty: JSON.stringify(ConfigStore.previewState)
         !== JSON.stringify(ConfigStore.committedState)
+        || JSON.stringify(ConfigStore.previewLayout) !== JSON.stringify(ConfigStore.committedLayout)
     readonly property var pages: [
         { "id": "theme", "labelKey": "settings.nav.theme", "icon": "palette" },
-        { "id": "typography", "labelKey": "settings.nav.typography", "icon": "text_fields" }
+        { "id": "typography", "labelKey": "settings.nav.typography", "icon": "text_fields" },
+        { "id": "layout", "labelKey": "settings.nav.layout", "icon": "view_quilt" },
+        { "id": "frame", "labelKey": "settings.nav.frame", "icon": "crop_free" }
     ]
 
     anchors.fill: parent
@@ -177,7 +180,11 @@ FocusScope {
                     Layout.minimumWidth: 640
                     Layout.fillHeight: true
                     Layout.margins: Metrics.spacingLarge
-                    sourceComponent: root.currentPage === "theme" ? themePageComponent : typographyPageComponent
+                    sourceComponent: root.currentPage === "theme"
+                        ? themePageComponent
+                        : (root.currentPage === "typography"
+                            ? typographyPageComponent
+                            : (root.currentPage === "layout" ? layoutPageComponent : framePageComponent))
                 }
             }
 
@@ -195,7 +202,7 @@ FocusScope {
                 spacing: Metrics.spacingSmall
 
                 Controls.Button {
-                    label: I18n.tr("settings.restore")
+                    label: I18n.tr("settings.restore_appearance")
                     iconName: "restart_alt"
                     variant: "secondary"
                     onTriggered: ConfigStore.restoreAppearance()
@@ -229,6 +236,8 @@ FocusScope {
 
     Component { id: themePageComponent; ThemePage {} }
     Component { id: typographyPageComponent; TypographyPage {} }
+    Component { id: layoutPageComponent; PanelLayoutPage {} }
+    Component { id: framePageComponent; FramePage {} }
 
     Keys.onEscapePressed: event => {
         root.cancelAndClose();

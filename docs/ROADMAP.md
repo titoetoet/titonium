@@ -26,9 +26,8 @@ and lazy Design Gallery. Future theme reminders: Cupertino Flat and Fluent Solid
 
 ## Milestone 2 — Settings and materials — Active
 
-- Settings shell, Theme/Typography pages and Preview/Apply/Cancel — implemented; awaiting
-  visual/interaction approval.
-- Panel/Layout and Frame appearance-reset flow — next review slice.
+- Settings shell, Theme/Typography pages and Preview/Apply/Cancel — approved and complete.
+- Panel/Layout and Frame scoped-reset flow — implemented; awaiting visual/interaction approval.
 - Audio, System and Launcher settings — later review slice.
 - A material editor is shown only for compatible non-default themes; Neutral Utility exposes
   only its immutable solid policy.

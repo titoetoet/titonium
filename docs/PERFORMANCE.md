@@ -17,6 +17,8 @@
   animation or background monitor; the entire search/category/grid tree is Loader-owned.
 - Settings Center is Loader-owned; only its selected page exists. Theme and Typography pages
   have no poller, effect layer or compositor integration, and live preview is signal-driven.
+- Frame owns zero surfaces while disabled. Its enabled path uses one Rectangle per output with an
+  empty input region; Canvas, shader, animation and timer-based repaint are prohibited.
 
 Performance review is part of module acceptance. Document every always-on timer with its
 reason and interval; absence of a reason is a defect.

@@ -22,6 +22,20 @@ function validateSettings(data) {
         errors.push("accessibility.reducedMotion is required");
     if (!data.modules || typeof data.modules !== "object" || Array.isArray(data.modules))
         errors.push("modules must be an object");
+    else if (data.modules.frame !== undefined) {
+        const frame = data.modules.frame;
+        if (!frame || typeof frame !== "object" || Array.isArray(frame)) {
+            errors.push("modules.frame must be an object");
+        } else {
+            if (typeof frame.enabled !== "boolean") errors.push("modules.frame.enabled must be a boolean");
+            if (!Number.isInteger(frame.thickness) || frame.thickness < 1 || frame.thickness > 8)
+                errors.push("modules.frame.thickness must be an integer from 1 to 8");
+            if (!Number.isInteger(frame.cornerRadius) || frame.cornerRadius < 0 || frame.cornerRadius > 32)
+                errors.push("modules.frame.cornerRadius must be an integer from 0 to 32");
+            if (typeof frame.opacity !== "number" || frame.opacity < 0.3 || frame.opacity > 1.0)
+                errors.push("modules.frame.opacity must be a number from 0.3 to 1.0");
+        }
+    }
     return errors;
 }
 
@@ -72,6 +86,10 @@ function validateLayout(data) {
     if (!menubar || typeof menubar !== "object") return errors.concat(["menubar is required"]);
     if (!Number.isInteger(menubar.height) || menubar.height < 28 || menubar.height > 72)
         errors.push("menubar.height must be an integer from 28 to 72");
+    if (menubar.padding !== undefined && (!Number.isInteger(menubar.padding) || menubar.padding < 0 || menubar.padding > 24))
+        errors.push("menubar.padding must be an integer from 0 to 24");
+    if (menubar.spacing !== undefined && (!Number.isInteger(menubar.spacing) || menubar.spacing < 0 || menubar.spacing > 24))
+        errors.push("menubar.spacing must be an integer from 0 to 24");
     if (!menubar.screens || !menubar.screens.default)
         return errors.concat(["menubar.screens.default is required"]);
     Object.keys(menubar.screens).forEach(screenName => {

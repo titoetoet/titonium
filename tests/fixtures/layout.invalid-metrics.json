@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "menubar": {
+    "height": 40,
+    "padding": 25,
+    "spacing": -1,
+    "screens": {
+      "default": {
+        "slots": {
+          "start": [],
+          "center": [],
+          "end": []
+        }
+      }
+    }
+  }
+}

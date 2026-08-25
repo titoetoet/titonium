@@ -27,6 +27,21 @@
         "reducedMotion": { "type": "boolean" }
       }
     },
-    "modules": { "type": "object" }
+    "modules": {
+      "type": "object",
+      "properties": {
+        "frame": {
+          "type": "object",
+          "required": ["enabled", "thickness", "cornerRadius", "opacity"],
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "thickness": { "type": "integer", "minimum": 1, "maximum": 8 },
+            "cornerRadius": { "type": "integer", "minimum": 0, "maximum": 32 },
+            "opacity": { "type": "number", "minimum": 0.3, "maximum": 1.0 }
+          }
+        }
+      }
+    }
   }
 }

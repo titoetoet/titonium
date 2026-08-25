@@ -10,6 +10,7 @@ first production MenuBar slices: Workspaces, Active Window, event-driven Fcitx I
 and a minute-precision Clock with a lazy Vietnamese lunar Calendar. The Launcher now discovers
 and executes desktop entries through a dedicated Platform adapter and renders a lazy Dashboard.
 Settings Center now provides transactional Theme and Typography pages with live global preview.
+Panel/Layout metrics and the optional geometry-only Screen Frame share the same safe transaction.
 Settings Center, Spotlight, Window Switcher and notifications remain phased.
 
 ## Run
@@ -52,6 +53,8 @@ Open a Settings page directly for testing:
 ```bash
 qs -p "$HOME/Projects/titonium" ipc call settings openPage theme DP-3
 qs -p "$HOME/Projects/titonium" ipc call settings openPage typography DP-3
+qs -p "$HOME/Projects/titonium" ipc call settings openPage layout DP-3
+qs -p "$HOME/Projects/titonium" ipc call settings openPage frame DP-3
 qs -p "$HOME/Projects/titonium" ipc call settings close
 ```
 

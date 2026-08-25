@@ -111,6 +111,20 @@ def main() -> int:
     if "cancelPreviewOnClose" not in coordinator_text or "ConfigStore.cancel()" not in coordinator_text:
         errors.append("SurfaceCoordinator must rollback abandoned preview transactions")
 
+    config_store_text = (root / "Titonium/Foundation/ConfigStore.qml").read_text(encoding="utf-8")
+    for contract in ("committedLayout", "previewLayout", "patchLayout", "restoreLayout", "runtimeLayoutFile.setText"):
+        if contract not in config_store_text:
+            errors.append(f"ConfigStore is missing layout transaction contract: {contract}")
+
+    frame_feature = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in (root / "Titonium/Modules/Frame").glob("*.qml")
+    )
+    if re.search(r"\b(Canvas|Timer|Process|MultiEffect|ShaderEffect)\s*\{", frame_feature):
+        errors.append("Frame must remain geometry-only and event-driven")
+    if "mask: Region {}" not in frame_feature or "FrameModel.enabled ? Quickshell.screens : []" not in frame_feature:
+        errors.append("Frame must be click-through and absent while disabled")
+
     accessibility_contracts = {
         "Button.qml": ("activeFocusOnTab:", "Accessible.role:", "Accessible.name:", "Accessible.focusable:"),
         "Card.qml": ("activeFocusOnTab:", "Accessible.role:", "Accessible.name:", "Accessible.focusable:"),

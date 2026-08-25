@@ -33,7 +33,11 @@ Settings lifecycle and page endpoints:
 ```bash
 qs -p "$HOME/Projects/titonium" ipc call settings openPage theme DP-3
 qs -p "$HOME/Projects/titonium" ipc call settings openPage typography DP-3
+qs -p "$HOME/Projects/titonium" ipc call settings openPage layout DP-3
+qs -p "$HOME/Projects/titonium" ipc call settings openPage frame DP-3
 qs -p "$HOME/Projects/titonium" ipc call settings previewMode light
+qs -p "$HOME/Projects/titonium" ipc call settings previewBarHeight 48
+qs -p "$HOME/Projects/titonium" ipc call settings previewFrame true
 qs -p "$HOME/Projects/titonium" ipc call settings close
 ```
 

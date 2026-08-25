@@ -70,3 +70,7 @@ Hyprland, ToplevelManager or SystemTray directly.
 `Platform.Applications.ApplicationCatalog` is the sole desktop-entry boundary. It projects
 visible entries into immutable UI records, resolves theme icons and launches only through
 `DesktopEntry.execute()`. Launcher UI never parses an Exec string or spawns a fallback command.
+
+`Modules.Frame` is absent from the window tree unless `modules.frame.enabled` is true. When
+enabled, it creates one bottom-layer, empty-input-region surface per screen and renders only a
+semantic Rectangle border. Canvas, effects and repaint loops are forbidden.

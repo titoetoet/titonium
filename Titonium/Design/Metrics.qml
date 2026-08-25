@@ -10,7 +10,8 @@ QtObject {
     readonly property var values: ConfigStore.themeState.metrics || ({})
     readonly property int barHeight: ConfigStore.layoutState.menubar?.height || values.barHeight || 40
     readonly property int grid: values.grid || 4
-    readonly property int barPadding: values.barPadding || 8
+    readonly property int barPadding: ConfigStore.layoutState.menubar?.padding ?? values.barPadding ?? 8
+    readonly property int barSpacing: ConfigStore.layoutState.menubar?.spacing ?? root.spacingSmall
     readonly property int controlHeightSmall: values.controlHeightSmall || 28
     readonly property int controlHeight: values.controlHeight || 32
     readonly property int widgetHeight: root.controlHeightSmall

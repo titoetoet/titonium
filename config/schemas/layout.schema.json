@@ -11,6 +11,8 @@
       "required": ["height", "screens"],
       "properties": {
         "height": { "type": "integer", "minimum": 28, "maximum": 72 },
+        "padding": { "type": "integer", "minimum": 0, "maximum": 24 },
+        "spacing": { "type": "integer", "minimum": 0, "maximum": 24 },
         "screens": {
           "type": "object",
           "required": ["default"],
