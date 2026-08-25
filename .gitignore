@@ -1,0 +1,12 @@
+# Runtime and generated files
+settings.json
+layout.json
+*.log
+*.qmlc
+__pycache__/
+
+# Editor files
+.idea/
+.vscode/
+*~
+
