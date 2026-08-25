@@ -1,5 +1,9 @@
 # Arch Menu Launcher Implementation Plan
 
+> **Status:** Superseded on 2026-08-26 by the approved Spotlight Launcher and compact Arch Menu
+> redesign. Completed commits remain valid history, but unchecked tasks in this plan must not be
+> executed. See `docs/superpowers/specs/2026-08-26-spotlight-launcher-and-arch-menu-design.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace the existing Launcher dashboard with a left-anchored, icon-rail Arch Menu containing fixed 6×4 Apps, shared Settings, Info and Power sections while leaving Spotlight untouched.

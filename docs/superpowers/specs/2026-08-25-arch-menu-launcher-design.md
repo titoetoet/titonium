@@ -1,7 +1,11 @@
 # Arch Menu Launcher Design
 
 **Date:** 2026-08-25  
-**Status:** Approved in conversation; awaiting written-spec review
+**Status:** Superseded on 2026-08-26 by
+`2026-08-26-spotlight-launcher-and-arch-menu-design.md`
+
+> This document remains as implementation history for the completed large Arch Menu prototype.
+> Do not use its surface responsibilities for new work.
 
 ## Purpose
 
