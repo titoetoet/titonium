@@ -17,7 +17,7 @@ WidgetBase {
     Controls.Button {
         id: trigger
         anchors.fill: parent
-        iconName: "apps"
+        iconName: ""
         variant: "quiet"
         size: "small"
         selected: SurfaceCoordinator.ownerId === root.surfaceOwnerId
@@ -28,11 +28,22 @@ WidgetBase {
                 return;
             }
             root.context.openSurface(root.surfaceOwnerId, {
-                "source": Qt.resolvedUrl("Dashboard.qml"),
+                "source": Qt.resolvedUrl("ArchMenu.qml"),
                 "keyboardFocus": "exclusive",
                 "closeOnMonitorChange": true,
+                "cancelPreviewOnClose": true,
                 "ownerId": root.surfaceOwnerId
             });
         }
+    }
+
+    Image {
+        anchors.centerIn: trigger
+        width: 22
+        height: 22
+        source: Qt.resolvedUrl("../../../../assets/icons/archlinux.svg")
+        sourceSize.width: 32
+        sourceSize.height: 32
+        fillMode: Image.PreserveAspectFit
     }
 }

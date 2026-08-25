@@ -95,6 +95,26 @@ def main() -> int:
     )
     if re.search(r"\b(Timer|Process)\s*\{|execDetached|Animation\.Infinite", launcher_feature):
         errors.append("Launcher UI must not poll, spawn commands or animate continuously")
+    launcher_dir = root / "Titonium/Modules/MenuBar/Launcher"
+    for launcher_file in (
+        "ArchMenu.qml", "LauncherRail.qml", "LauncherSectionRegistry.qml",
+        "AppsPage.qml", "PageIndicator.qml",
+    ):
+        if not (launcher_dir / launcher_file).is_file():
+            errors.append(f"Arch Menu is missing focused component: {launcher_file}")
+    launcher_widget_text = (launcher_dir / "LauncherWidget.qml").read_text(encoding="utf-8")
+    if 'Qt.resolvedUrl("ArchMenu.qml")' not in launcher_widget_text:
+        errors.append("Launcher trigger must open ArchMenu.qml")
+    if re.search(r"\b(query|category|LauncherHistoryStore)\b", launcher_feature):
+        errors.append("Arch Menu Apps must not contain search, categories or usage history")
+    if (launcher_dir / "LauncherSectionRegistry.qml").is_file():
+        registry_text = (launcher_dir / "LauncherSectionRegistry.qml").read_text(encoding="utf-8")
+        if "sourceFor" not in registry_text or "AppsPage.qml" not in registry_text:
+            errors.append("LauncherSectionRegistry must resolve Apps and provide sourceFor")
+    if (launcher_dir / "ArchMenu.qml").is_file():
+        arch_menu_text = (launcher_dir / "ArchMenu.qml").read_text(encoding="utf-8")
+        if "Loader" not in arch_menu_text or "LauncherSectionRegistry.sourceFor" not in arch_menu_text:
+            errors.append("Arch Menu must lazy-load sections through LauncherSectionRegistry")
     application_adapter = (
         root / "Titonium/Platform/Applications/ApplicationCatalog.qml"
     ).read_text(encoding="utf-8")

@@ -5,4 +5,3 @@ singleton ThemeCatalog 1.0 ThemeCatalog.qml
 singleton I18n 1.0 I18n.qml
 singleton SurfaceCoordinator 1.0 SurfaceCoordinator.qml
 singleton ScreenRouter 1.0 ScreenRouter.qml
-singleton LauncherHistoryStore 1.0 LauncherHistoryStore.qml

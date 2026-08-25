@@ -9,7 +9,6 @@ FocusScope {
     id: root
 
     required property var application
-    property bool showSubtitle: true
     signal triggered()
 
     readonly property bool hovered: hoverHandler.hovered
@@ -28,11 +27,11 @@ FocusScope {
     Column {
         anchors.fill: parent
         anchors.margins: Metrics.spacingSmall
-        spacing: Metrics.spacingSmall
+        spacing: Metrics.spacingXSmall
 
         Item {
             width: parent.width
-            height: 42
+            height: Math.min(48, Math.max(32, parent.height - nameLabel.implicitHeight - Metrics.spacingSmall * 3))
 
             Image {
                 id: appIcon
@@ -58,25 +57,17 @@ FocusScope {
         }
 
         Controls.TextLabel {
+            id: nameLabel
             width: parent.width
             text: root.application.name
-            variant: "body"
-            strong: true
+            variant: "label"
+            strong: false
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.NoWrap
             maximumLineCount: 1
             elide: Text.ElideRight
         }
 
-        Controls.TextLabel {
-            visible: root.showSubtitle
-            width: parent.width
-            text: root.application.subtitle || I18n.tr("launcher.application")
-            variant: "caption"
-            tone: "secondary"
-            horizontalAlignment: Text.AlignHCenter
-            elide: Text.ElideRight
-        }
     }
 
     HoverHandler {

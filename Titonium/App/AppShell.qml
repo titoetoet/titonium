@@ -196,9 +196,10 @@ Scope {
                 return "closed";
             }
             SurfaceCoordinator.open(ownerId, {
-                "source": Qt.resolvedUrl("../Modules/MenuBar/Launcher/Dashboard.qml"),
+                "source": Qt.resolvedUrl("../Modules/MenuBar/Launcher/ArchMenu.qml"),
                 "keyboardFocus": "exclusive",
                 "closeOnMonitorChange": true,
+                "cancelPreviewOnClose": true,
                 "ownerId": ownerId
             }, targetScreen);
             return "open:" + targetScreen.name;
