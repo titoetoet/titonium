@@ -8,3 +8,4 @@ LauncherRail 1.0 LauncherRail.qml
 AppsPage 1.0 AppsPage.qml
 PageIndicator 1.0 PageIndicator.qml
 LauncherSettingsPage 1.0 LauncherSettingsPage.qml
+PowerPage 1.0 PowerPage.qml

@@ -25,3 +25,7 @@ function fillRatio(page, capacity) {
     const safeCapacity = Math.max(1, Math.floor(Number(capacity) || 1));
     return Math.min(1, Math.max(0, (Array.isArray(page) ? page.length : 0) / safeCapacity));
 }
+
+function indicatorWidth(page, capacity) {
+    return 8 + Math.round(32 * fillRatio(page, capacity));
+}

@@ -37,6 +37,13 @@ FocusScope {
             strong: true
         }
 
+        Rectangle {
+            Layout.fillWidth: true
+            implicitHeight: Metrics.borderWidth
+            color: Theme.border
+            opacity: 0.55
+        }
+
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true

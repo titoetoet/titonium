@@ -12,7 +12,7 @@ FocusScope {
     required property bool current
     signal triggered()
 
-    width: root.current ? 12 + Math.round(28 * root.fillRatio) : 8
+    width: 8 + Math.round(32 * root.fillRatio)
     height: 20
     activeFocusOnTab: true
 

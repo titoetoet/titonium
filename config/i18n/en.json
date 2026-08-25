@@ -28,6 +28,7 @@
     "launcher.launch_accessible": "Launch {name}",
     "launcher.section.apps": "Applications",
     "launcher.section.settings": "Settings",
+    "launcher.section.power": "Power",
     "launcher.page_go": "Go to page {page}",
     "launcher.action.sleep": "Sleep",
     "launcher.action.hibernate": "Hibernate",

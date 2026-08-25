@@ -25,13 +25,13 @@ FocusScope {
     }
 
     Column {
-        anchors.fill: parent
-        anchors.margins: Metrics.spacingSmall
+        anchors.centerIn: parent
+        width: parent.width - Metrics.spacingSmall * 2
         spacing: Metrics.spacingXSmall
 
         Item {
             width: parent.width
-            height: Math.min(48, Math.max(32, parent.height - nameLabel.implicitHeight - Metrics.spacingSmall * 3))
+            height: 48
 
             Image {
                 id: appIcon

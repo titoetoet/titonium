@@ -38,14 +38,13 @@ FocusScope {
             }
         }
 
-        Rectangle { Layout.fillWidth: true; implicitHeight: Metrics.borderWidth; color: Theme.border }
-
         Repeater {
             model: root.sections.filter(section => section.placement !== "bottom")
 
             Controls.Button {
                 required property var modelData
-                Layout.fillWidth: true
+                Layout.preferredWidth: 48
+                Layout.alignment: Qt.AlignHCenter
                 implicitHeight: 48
                 iconName: modelData.icon
                 variant: "quiet"
@@ -62,7 +61,8 @@ FocusScope {
 
             Controls.Button {
                 required property var modelData
-                Layout.fillWidth: true
+                Layout.preferredWidth: 48
+                Layout.alignment: Qt.AlignHCenter
                 implicitHeight: 48
                 iconName: modelData.icon
                 variant: modelData.id === "power" ? "danger" : "quiet"

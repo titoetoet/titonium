@@ -142,6 +142,23 @@ def main() -> int:
     launcher_widget_text = (root / "Titonium/Modules/MenuBar/Launcher/LauncherWidget.qml").read_text(encoding="utf-8")
     if '"cancelPreviewOnClose": true' not in launcher_widget_text:
         errors.append("Arch Menu descriptor must rollback abandoned Settings preview")
+    power_page = root / "Titonium/Modules/MenuBar/Launcher/PowerPage.qml"
+    if not power_page.is_file():
+        errors.append("Arch Menu requires a lazy PowerPage")
+    else:
+        power_text = power_page.read_text(encoding="utf-8")
+        if "pendingAction" not in power_text or "executeConfirmed" not in power_text:
+            errors.append("PowerPage must require local confirmation before Platform execution")
+        if re.search(r"\b(Process|systemctl|Hyprland\.)", power_text):
+            errors.append("PowerPage must execute only through SessionActions")
+    launcher_registry_path = root / "Titonium/Modules/MenuBar/Launcher/LauncherSectionRegistry.qml"
+    if launcher_registry_path.is_file():
+        launcher_registry_text = launcher_registry_path.read_text(encoding="utf-8")
+        if not re.search(r'"id":\s*"power"[^\n]+"placement":\s*"bottom"', launcher_registry_text):
+            errors.append("Power must be pinned to the bottom of the Launcher rail")
+    application_tile_path = root / "Titonium/Modules/MenuBar/Launcher/ApplicationTile.qml"
+    if "anchors.centerIn: parent" not in application_tile_path.read_text(encoding="utf-8"):
+        errors.append("Application icon and name group must be centered inside its tile")
 
     coordinator_text = (root / "Titonium/Foundation/SurfaceCoordinator.qml").read_text(encoding="utf-8")
     if "cancelPreviewOnClose" not in coordinator_text or "ConfigStore.cancel()" not in coordinator_text:
