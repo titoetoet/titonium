@@ -29,12 +29,13 @@ Item {
         TapHandler { onTapped: root.cancelAndClose() }
     }
 
-    MaterialSurface {
+    Controls.Panel {
         id: galleryCard
         anchors.centerIn: parent
         width: Math.min(1000, parent.width - Metrics.spacingLarge * 4)
-        height: Math.min(720, parent.height - Metrics.spacingLarge * 4)
+        height: Math.min(780, parent.height - Metrics.spacingLarge * 4)
         radius: Metrics.radiusLarge
+        padding: 0
         outlined: true
         customColor: Theme.background
 
@@ -115,32 +116,7 @@ Item {
                 GallerySwatch { swatchColor: Theme.warning; label: "warning" }
             }
 
-            Controls.TextLabel {
-                text: I18n.tr("gallery.surfaces")
-                variant: "label"
-                strong: true
-            }
-
-            Row {
-                spacing: Metrics.spacingSmall
-
-                MaterialSurface {
-                    width: 240
-                    height: 72
-                    radius: Metrics.radiusMedium
-                    outlined: true
-                    Controls.TextLabel { anchors.centerIn: parent; text: "Surface · border 1px" }
-                }
-
-                MaterialSurface {
-                    width: 240
-                    height: 72
-                    radius: Metrics.radiusMedium
-                    outlined: true
-                    customColor: Theme.surfaceElevated
-                    Controls.TextLabel { anchors.centerIn: parent; text: "Elevated · tonal only" }
-                }
-            }
+            GallerySurfaceSection { width: parent.width }
 
             GalleryTypographySection { width: parent.width }
             GalleryControlsSection { width: parent.width }

@@ -10,6 +10,7 @@ Item {
     property string backend: ""
     property int radius: Metrics.radiusMedium
     property bool outlined: true
+    property color borderColor: Theme.border
     property color customColor: "transparent"
     default property alias contentData: contentItem.data
 
@@ -41,7 +42,7 @@ Item {
         }
         opacity: root.materialPolicy.opacity === undefined ? 1.0 : root.materialPolicy.opacity
         border.width: root.outlined && root.resolvedBackend !== "native" ? Metrics.borderWidth : 0
-        border.color: Theme.border
+        border.color: root.borderColor
     }
 
     Item {

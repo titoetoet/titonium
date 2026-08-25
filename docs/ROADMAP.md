@@ -12,8 +12,8 @@ and lazy Design Gallery. Future theme reminders: Cupertino Flat and Fluent Solid
 
 ## Design Controls — Active review slices
 
-- Typography, Icon and Button — implemented; awaiting visual approval.
-- Surface, Card and Panel — next after approval.
+- Typography, Icon and Button — complete.
+- Surface, Card and Panel — implemented; awaiting visual approval.
 - Switch, Slider and Dropdown.
 - Tabs, focus/accessibility audit and Visualizer when the media phase begins.
 

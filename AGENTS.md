@@ -7,8 +7,9 @@ changing code.
 ## Current milestone
 
 Milestone 0 and Theme Foundation are complete. The active review slice is Design Controls,
-ported in groups of two or three components. Typography, Icon and Button form the first
-control batch; feature migration remains gated behind visual approval.
+ported in groups of two or three components. Typography/Icon/Button are approved for continued
+work; Surface/Card/Panel form the current batch. Feature migration remains gated behind visual
+approval.
 
 The legacy reference is read-only:
 

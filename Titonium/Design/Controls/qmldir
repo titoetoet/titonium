@@ -2,3 +2,6 @@ module qs.Titonium.Design.Controls
 TextLabel 1.0 TextLabel.qml
 Icon 1.0 Icon.qml
 Button 1.0 Button.qml
+Surface 1.0 Surface.qml
+Card 1.0 Card.qml
+Panel 1.0 Panel.qml

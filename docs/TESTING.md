@@ -39,3 +39,6 @@ configuration copies. Gallery content must disappear from the scene when its Loa
 - Icon glyphs resolve through Material Symbols without image or filesystem fallback.
 - Button variants support pointer activation, Tab focus and Enter/Space activation; disabled
   buttons cannot emit actions.
+- Surface/Card/Panel remain opaque under Neutral Utility and never allocate an effect layer.
+- Interactive Card responds to pointer and keyboard while non-interactive containers remain
+  passive. Nested Card content stays inside Panel padding at both target output scales.

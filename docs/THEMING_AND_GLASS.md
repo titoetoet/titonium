@@ -15,6 +15,12 @@ typography variant and semantic tone, `Icon` renders the shipped Material Symbol
 font, and `Button` owns pointer, keyboard, focus, disabled, selected and checked states. Feature
 modules consume these contracts instead of restyling raw `Text` and `Rectangle` controls.
 
+Container hierarchy is equally semantic: `Surface` selects a tonal role and owns the material
+backend, `Card` adds optional pointer/keyboard interaction, and `Panel` provides the larger
+popup/section radius and padding. Cards and panels compose arbitrary child content; they do not
+import module state or own a Wayland window. `MaterialSurface` remains an internal renderer,
+not a feature-level component.
+
 `titonium-neutral` is the immutable restore baseline. It uses opaque tonal surfaces, one-pixel
 borders, a 4/8px grid and no gradients, shadows, shaders, glass or compositor integration.
 Its material policy allows only `solid`; unsupported backend requests resolve to the package

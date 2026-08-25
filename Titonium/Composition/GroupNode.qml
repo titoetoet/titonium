@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Titonium.Design
+import qs.Titonium.Design.Controls as Controls
 
 Item {
     id: root
@@ -16,12 +17,11 @@ Item {
     implicitWidth: content.implicitWidth + root.padding * 2
     implicitHeight: content.implicitHeight + root.padding * 2
 
-    MaterialSurface {
+    Controls.Surface {
         anchors.fill: parent
-        backend: "solid"
         outlined: false
         radius: Metrics.radiusSmall
-        customColor: Theme.surfaceElevated
+        tone: "elevated"
     }
 
     LayoutRenderer {

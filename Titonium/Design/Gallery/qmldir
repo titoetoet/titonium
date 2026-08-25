@@ -3,3 +3,4 @@ DesignGallery 1.0 DesignGallery.qml
 GallerySwatch 1.0 GallerySwatch.qml
 GalleryTypographySection 1.0 GalleryTypographySection.qml
 GalleryControlsSection 1.0 GalleryControlsSection.qml
+GallerySurfaceSection 1.0 GallerySurfaceSection.qml
