@@ -282,8 +282,15 @@ def main() -> int:
         or 'root.openSettings();' not in compact_surface
     ):
         errors.append("Arch Menu Settings activation must open standalone SettingsCenter")
-    if "cancelPreviewOnClose" in arch_menu_ipc_body:
-        errors.append("Arch Menu descriptor must not own Settings preview cancellation")
+    arch_menu_opening_paths = {
+        "AppShell arch-menu IPC": arch_menu_ipc_body,
+        "ArchMenuWidget": compact_menu_qml.get("ArchMenuWidget.qml", ""),
+    }
+    for path_name, opening_path in arch_menu_opening_paths.items():
+        if "ArchMenu.qml" not in opening_path:
+            errors.append(f"Arch Menu opening path is missing its ArchMenu.qml source: {path_name}")
+        if "cancelPreviewOnClose" in opening_path:
+            errors.append(f"Arch Menu descriptor must not own Settings preview cancellation: {path_name}")
 
     session_actions = (root / "Titonium/Platform/System/SessionActions.qml").read_text(encoding="utf-8")
     for contract in (
