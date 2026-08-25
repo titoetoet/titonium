@@ -13,6 +13,7 @@ Item {
     property color borderColor: Theme.border
     property bool clipContent: false
     property color customColor: "transparent"
+    property string materialBackend: ""
     default property alias contentData: contentItem.data
     readonly property alias contentItem: contentItem
 
@@ -33,7 +34,7 @@ Item {
 
     MaterialSurface {
         anchors.fill: parent
-        backend: "solid"
+        backend: root.materialBackend
         radius: root.radius
         outlined: root.outlined
         borderColor: root.borderColor

@@ -165,7 +165,7 @@ Item {
                 spacing: Metrics.spacingMedium
 
                 Controls.Icon {
-                    name: "layers_clear"
+                    name: root.themeId === "titonium-neutral" ? "layers_clear" : "blur_on"
                     tone: "accent"
                     accessibleName: ""
                 }
@@ -181,14 +181,16 @@ Item {
                     }
 
                     Controls.TextLabel {
-                        text: I18n.tr("settings.theme.material_solid")
+                        text: root.themeId === "titonium-neutral"
+                            ? I18n.tr("settings.theme.material_solid")
+                            : I18n.tr("settings.theme.material_hybrid")
                         variant: "caption"
                         tone: "secondary"
                     }
                 }
 
                 Controls.TextLabel {
-                    text: "SOLID"
+                    text: (ConfigStore.themeState.material?.defaultBackend || "solid").toUpperCase()
                     variant: "mono"
                     tone: "accent"
                     strong: true

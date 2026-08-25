@@ -115,6 +115,21 @@ def main() -> int:
     for contract in ("committedLayout", "previewLayout", "patchLayout", "restoreLayout", "runtimeLayoutFile.setText"):
         if contract not in config_store_text:
             errors.append(f"ConfigStore is missing layout transaction contract: {contract}")
+    if ".concat(Validator.validateLayout(root.previewLayout))" not in config_store_text:
+        errors.append("ConfigStore Apply must revalidate both transaction documents")
+
+    material_text = (root / "Titonium/Design/MaterialSurface.qml").read_text(encoding="utf-8")
+    if 'requested === "auto"' not in material_text or 'allowed.indexOf("qml")' not in material_text:
+        errors.append("MaterialSurface must resolve auto/native through the QML fallback")
+    surface_text = (root / "Titonium/Design/Controls/Surface.qml").read_text(encoding="utf-8")
+    if 'backend: "solid"' in surface_text:
+        errors.append("semantic Surface must not override the active theme material policy")
+
+    capability_text = (root / "Titonium/Platform/Hyprland/HyprglassCapability.qml").read_text(encoding="utf-8")
+    if '["hyprctl", "plugin", "list"]' not in capability_text or "running: true" not in capability_text:
+        errors.append("hyprglass capability must use exactly one startup probe")
+    if re.search(r"\bTimer\s*\{|restart|execDetached", capability_text):
+        errors.append("hyprglass capability probe must never poll, mutate or retry")
 
     frame_feature = "\n".join(
         path.read_text(encoding="utf-8")

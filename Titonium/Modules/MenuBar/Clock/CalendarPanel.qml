@@ -12,6 +12,7 @@ FocusScope {
     property var descriptor: ({})
     property var screen: null
     readonly property string ownerId: root.descriptor?.ownerId || ""
+    readonly property bool showLunar: ConfigStore.previewState.modules?.clock?.showLunar !== false
 
     anchors.fill: parent
     focus: true
@@ -94,7 +95,8 @@ FocusScope {
             Controls.Surface {
                 Layout.fillWidth: true
                 implicitWidth: 1
-                implicitHeight: 54
+                implicitHeight: root.showLunar ? 54 : 0
+                visible: root.showLunar
                 tone: "elevated"
                 radius: Metrics.radiusMedium
                 outlined: true
@@ -191,9 +193,8 @@ FocusScope {
                         opacity: dayInfo.currentMonth ? 1.0 : 0.45
 
                         Controls.TextLabel {
-                            anchors.top: parent.top
-                            anchors.topMargin: 4
                             anchors.horizontalCenter: parent.horizontalCenter
+                            y: root.showLunar ? 4 : (parent.height - height) / 2
                             text: dayCell.dayInfo.day
                             variant: "body"
                             strong: dayCell.dayInfo.today
@@ -201,6 +202,7 @@ FocusScope {
                         }
 
                         Controls.TextLabel {
+                            visible: root.showLunar
                             anchors.bottom: parent.bottom
                             anchors.bottomMargin: 3
                             anchors.horizontalCenter: parent.horizontalCenter

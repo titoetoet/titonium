@@ -4,3 +4,7 @@ ThemePage 1.0 ThemePage.qml
 TypographyPage 1.0 TypographyPage.qml
 PanelLayoutPage 1.0 PanelLayoutPage.qml
 FramePage 1.0 FramePage.qml
+AudioPage 1.0 AudioPage.qml
+SystemPage 1.0 SystemPage.qml
+LauncherPage 1.0 LauncherPage.qml
+MaterialPage 1.0 MaterialPage.qml

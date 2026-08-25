@@ -1,2 +1,3 @@
 module qs.Titonium.Platform.Hyprland
 singleton HyprlandAdapter 1.0 HyprlandAdapter.qml
+singleton HyprglassCapability 1.0 HyprglassCapability.qml

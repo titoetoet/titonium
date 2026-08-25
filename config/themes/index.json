@@ -3,6 +3,7 @@
   "schemaVersion": 1,
   "defaultThemeId": "titonium-neutral",
   "themes": [
-    { "id": "titonium-neutral", "file": "titonium-neutral.json" }
+    { "id": "titonium-neutral", "file": "titonium-neutral.json" },
+    { "id": "titonium-hybrid-glass", "file": "titonium-hybrid-glass.json" }
   ]
 }

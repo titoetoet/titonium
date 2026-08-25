@@ -61,9 +61,12 @@ QtObject {
         const runtimeSettings = parseDocument(runtimeSettingsFile, "runtime settings");
         if (runtimeSettings) {
             const migratedSettings = Migrations.migrateSettings(runtimeSettings);
-            const runtimeErrors = Validator.validateSettings(migratedSettings);
+            // Fill newly shipped module defaults without overwriting user values.
+            // This keeps older v2 runtime files forward compatible with new pages.
+            const mergedSettings = JsonTools.mergeDeep(defaultSettings, migratedSettings);
+            const runtimeErrors = Validator.validateSettings(mergedSettings);
             if (runtimeErrors.length === 0) {
-                selectedSettings = migratedSettings;
+                selectedSettings = mergedSettings;
                 if (runtimeSettings.schemaVersion !== migratedSettings.schemaVersion)
                     Logger.info("config", "migrated runtime settings v" + runtimeSettings.schemaVersion + " to v" + migratedSettings.schemaVersion);
             }
@@ -167,7 +170,8 @@ QtObject {
     }
 
     function apply(): bool {
-        const errors = Validator.validateSettings(root.previewState);
+        const errors = Validator.validateSettings(root.previewState)
+            .concat(Validator.validateLayout(root.previewLayout));
         if (errors.length > 0) {
             root.lastError = errors.join("; ");
             return false;

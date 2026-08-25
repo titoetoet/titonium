@@ -20,8 +20,12 @@ log and fails on QML errors, type errors, duplicate IDs or missing members. It m
 verifies invalid data falls back and unknown widget types render through the diagnostic
 component, then restores the previous runtime layout exactly.
 
+`scripts/settings_acceptance.sh` backs up both runtime documents, exercises Preview, Cancel,
+Apply, Restore Appearance and hybrid backend resolution through live IPC, verifies repository
+state plus both `hyprland.lua` hashes, and restores the original runtime files on every exit path.
+
 Theme acceptance additionally verifies the settings v1→v2 migration, appearance-only restore,
-Neutral Utility solid policy, Gallery open/close IPC and unchanged hashes for both Hyprland
+Neutral Utility solid policy, hybrid `auto/native → qml` fallback, Gallery open/close IPC and unchanged hashes for both Hyprland
 configuration copies. Gallery content must disappear from the scene when its Loader is inactive.
 
 ## Manual acceptance
@@ -70,3 +74,10 @@ configuration copies. Gallery content must disappear from the scene when its Loa
 - Layout height/padding/spacing preview on both outputs and Cancel restores the exact document.
   Enabling Frame creates one click-through layer per output; disabling or cancelling removes all
   frame layers. Appearance, Layout and Frame reset actions must not modify each other's state.
+- Audio, System and Launcher pages write only their owned settings subtree. The Audio visualizer
+  controls store future preferences but never create an audio stream or animation in Settings.
+  System exposes no power/session command, and Launcher preferences immediately affect catalog
+  category, tile limit, columns, subtitles and search focus.
+- Hybrid Glass `auto` resolves to native only when the one-shot Platform probe confirms hyprglass
+  is loaded. Otherwise it resolves to QML without error. Selecting Neutral immediately removes
+  the Material page and every surface resolves solid. QML glass uses no shader/effect/idle loop.

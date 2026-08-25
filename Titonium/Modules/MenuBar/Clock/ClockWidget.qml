@@ -10,7 +10,8 @@ WidgetBase {
     id: root
 
     readonly property string surfaceOwnerId: "calendar:" + root.screen.name
-    readonly property bool use24Hour: root.node.props?.use24Hour !== false
+    readonly property bool use24Hour: ConfigStore.previewState.modules?.clock?.use24Hour
+        ?? (root.node.props?.use24Hour !== false)
 
     implicitWidth: trigger.implicitWidth
     implicitHeight: Metrics.widgetHeight

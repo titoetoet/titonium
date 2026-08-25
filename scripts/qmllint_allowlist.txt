@@ -2,3 +2,6 @@
 # though PanelWindow is the documented layer-shell window type and is created by
 # Quickshell at runtime. Runtime smoke coverage is mandatory for these two sites.
 Type PanelWindow is not creatable
+# Quickshell's Process signal exposes QProcess::ExitStatus at runtime, but the
+# foreign enum is absent from its generated qmllint metadata.
+Type QProcess::ExitStatus of parameter exitStatus

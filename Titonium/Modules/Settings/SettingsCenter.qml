@@ -16,11 +16,19 @@ FocusScope {
     readonly property bool dirty: JSON.stringify(ConfigStore.previewState)
         !== JSON.stringify(ConfigStore.committedState)
         || JSON.stringify(ConfigStore.previewLayout) !== JSON.stringify(ConfigStore.committedLayout)
+    readonly property bool materialCompatible: {
+        const allowed = ConfigStore.themeState.material?.allowedBackends || [];
+        return Theme.id !== "titonium-neutral" && (allowed.indexOf("qml") >= 0 || allowed.indexOf("native") >= 0);
+    }
     readonly property var pages: [
         { "id": "theme", "labelKey": "settings.nav.theme", "icon": "palette" },
         { "id": "typography", "labelKey": "settings.nav.typography", "icon": "text_fields" },
+        ...(root.materialCompatible ? [{ "id": "material", "labelKey": "settings.nav.material", "icon": "blur_on" }] : []),
         { "id": "layout", "labelKey": "settings.nav.layout", "icon": "view_quilt" },
-        { "id": "frame", "labelKey": "settings.nav.frame", "icon": "crop_free" }
+        { "id": "frame", "labelKey": "settings.nav.frame", "icon": "crop_free" },
+        { "id": "audio", "labelKey": "settings.nav.audio", "icon": "volume_up" },
+        { "id": "system", "labelKey": "settings.nav.system", "icon": "tune" },
+        { "id": "launcher", "labelKey": "settings.nav.launcher", "icon": "apps" }
     ]
 
     anchors.fill: parent
@@ -34,6 +42,20 @@ FocusScope {
     function applyAndClose(): void {
         if (ConfigStore.apply())
             SurfaceCoordinator.close(root.ownerId);
+    }
+
+    function componentFor(pageId: string): Component {
+        const components = {
+            "theme": themePageComponent,
+            "typography": typographyPageComponent,
+            "layout": layoutPageComponent,
+            "frame": framePageComponent,
+            "audio": audioPageComponent,
+            "system": systemPageComponent,
+            "launcher": launcherPageComponent,
+            "material": materialPageComponent
+        };
+        return components[pageId] || themePageComponent;
     }
 
     Rectangle {
@@ -120,7 +142,7 @@ FocusScope {
                     Layout.minimumWidth: 208
                     Layout.maximumWidth: 208
                     Layout.fillHeight: true
-                    Layout.margins: Metrics.spacingLarge
+                    Layout.margins: Metrics.spacingMedium
                     spacing: Metrics.spacingSmall
 
                     Repeater {
@@ -154,14 +176,16 @@ FocusScope {
 
                             Controls.TextLabel {
                                 anchors.horizontalCenter: parent.horizontalCenter
-                                text: "Titonium Neutral"
+                                text: I18n.tr(ConfigStore.themeState.nameKey || "theme.neutral.name")
                                 variant: "label"
                                 strong: true
                             }
 
                             Controls.TextLabel {
                                 anchors.horizontalCenter: parent.horizontalCenter
-                                text: I18n.tr("settings.solid_baseline")
+                                text: root.materialCompatible
+                                    ? I18n.tr("settings.hybrid_material")
+                                    : I18n.tr("settings.solid_baseline")
                                 variant: "caption"
                                 tone: "secondary"
                             }
@@ -180,11 +204,7 @@ FocusScope {
                     Layout.minimumWidth: 640
                     Layout.fillHeight: true
                     Layout.margins: Metrics.spacingLarge
-                    sourceComponent: root.currentPage === "theme"
-                        ? themePageComponent
-                        : (root.currentPage === "typography"
-                            ? typographyPageComponent
-                            : (root.currentPage === "layout" ? layoutPageComponent : framePageComponent))
+                    sourceComponent: root.componentFor(root.currentPage)
                 }
             }
 
@@ -238,11 +258,24 @@ FocusScope {
     Component { id: typographyPageComponent; TypographyPage {} }
     Component { id: layoutPageComponent; PanelLayoutPage {} }
     Component { id: framePageComponent; FramePage {} }
+    Component { id: audioPageComponent; AudioPage {} }
+    Component { id: systemPageComponent; SystemPage {} }
+    Component { id: launcherPageComponent; LauncherPage {} }
+    Component { id: materialPageComponent; MaterialPage {} }
+
+    onMaterialCompatibleChanged: {
+        if (!root.materialCompatible && root.currentPage === "material")
+            root.currentPage = "theme";
+    }
 
     Keys.onEscapePressed: event => {
         root.cancelAndClose();
         event.accepted = true;
     }
 
-    Component.onCompleted: root.forceActiveFocus(Qt.PopupFocusReason)
+    Component.onCompleted: {
+        if (root.currentPage === "material" && !root.materialCompatible)
+            root.currentPage = "theme";
+        root.forceActiveFocus(Qt.PopupFocusReason);
+    }
 }

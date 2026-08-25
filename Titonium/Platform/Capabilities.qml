@@ -2,11 +2,11 @@ pragma Singleton
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.Titonium.Platform.Hyprland
 
 QtObject {
-    // Milestone 0 deliberately has no command probe. A future Hyprland adapter
-    // updates this property from an event/one-shot capability check.
-    property bool hyprglassLoaded: false
+    readonly property bool hyprglassLoaded: HyprglassCapability.loaded
+    readonly property bool hyprglassProbed: HyprglassCapability.probed
+    readonly property string hyprglassDetail: HyprglassCapability.detail
     readonly property bool nativeGlassAvailable: hyprglassLoaded
 }
-

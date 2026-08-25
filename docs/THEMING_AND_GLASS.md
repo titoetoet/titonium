@@ -37,9 +37,23 @@ borders, a 4/8px grid and no gradients, shadows, shaders, glass or compositor in
 Its material policy allows only `solid`; unsupported backend requests resolve to the package
 default.
 
-The theme catalog is data-only and never references QML components. Future compositor-aware
-themes require a dedicated Platform capability and explicit acceptance; theme selection and
-Restore Default never read, edit or reload `hyprland.lua`.
+`titonium-hybrid-glass` is the first compatible material package. Its `auto` backend resolves
+in this order: loaded native hyprglass capability, static QML optical fallback, then solid.
+The QML renderer uses only translucent tonal geometry, a border and a one-pixel static
+specular highlight. It does not allocate blur, a shader, `MultiEffect`, an animation or a render
+loop. This fallback suggests glass but cannot sample/blur content behind the layer.
+
+Native capability discovery is a single `hyprctl plugin list` call owned by the Platform layer.
+It never retries, loads a plugin or changes compositor state. Selecting `native` while the
+capability is unavailable resolves to QML safely. Actual hyprglass layer behavior remains
+version-sensitive and externally configured; Titonium treats it as an optional enhancement.
+
+The Material page appears only for a non-default package allowing QML/native backends. It edits
+semantic policy values in the same preview transaction as all other Settings pages. Switching
+back to Neutral removes the page and forces solid rendering regardless of old material overrides.
+
+The theme catalog is data-only and never references QML components. Theme selection, preview,
+Apply, Cancel and Restore Default never read, edit or reload `hyprland.lua`.
 
 Future packages recorded for later review are `titonium-cupertino-flat` and
 `titonium-fluent-solid`.

@@ -10,7 +10,7 @@ from typing import Any
 
 
 NODE_TYPES = {"widget", "group", "panel", "tabs", "spacer"}
-BACKENDS = {"solid", "qml", "native"}
+BACKENDS = {"auto", "solid", "qml", "native"}
 
 
 def load_json(path: Path) -> Any:
@@ -62,6 +62,41 @@ def validate_settings(data: Any) -> list[str]:
                 opacity = frame.get("opacity")
                 if not isinstance(opacity, (int, float)) or isinstance(opacity, bool) or not 0.3 <= opacity <= 1.0:
                     errors.append("modules.frame.opacity must be a number from 0.3 to 1.0")
+        audio = data["modules"].get("audio")
+        if audio is not None:
+            if not isinstance(audio, dict):
+                errors.append("modules.audio must be an object")
+            else:
+                for key, minimum, maximum in (("volumeStep", 1, 20), ("maxVolume", 50, 150), ("visualizerBars", 16, 64)):
+                    value = audio.get(key)
+                    if not isinstance(value, int) or isinstance(value, bool) or not minimum <= value <= maximum:
+                        errors.append(f"modules.audio.{key} must be an integer from {minimum} to {maximum}")
+                if not isinstance(audio.get("visualizerEnabled"), bool):
+                    errors.append("modules.audio.visualizerEnabled must be a boolean")
+                if audio.get("visualizerStyle") not in {"bars", "wave", "dots"}:
+                    errors.append("modules.audio.visualizerStyle is invalid")
+        launcher = data["modules"].get("launcher")
+        if launcher is not None:
+            if not isinstance(launcher, dict):
+                errors.append("modules.launcher must be an object")
+            else:
+                if launcher.get("defaultCategory") not in {"all", "internet", "development", "media", "system"}:
+                    errors.append("modules.launcher.defaultCategory is invalid")
+                for key, minimum, maximum in (("resultLimit", 6, 48), ("columns", 4, 8)):
+                    value = launcher.get(key)
+                    if not isinstance(value, int) or isinstance(value, bool) or not minimum <= value <= maximum:
+                        errors.append(f"modules.launcher.{key} must be an integer from {minimum} to {maximum}")
+                for key in ("showSubtitles", "searchAutoFocus"):
+                    if not isinstance(launcher.get(key), bool):
+                        errors.append(f"modules.launcher.{key} must be a boolean")
+        clock = data["modules"].get("clock")
+        if clock is not None:
+            if not isinstance(clock, dict):
+                errors.append("modules.clock must be an object")
+            else:
+                for key in ("use24Hour", "showLunar"):
+                    if not isinstance(clock.get(key), bool):
+                        errors.append(f"modules.clock.{key} must be a boolean")
     return errors
 
 
@@ -216,8 +251,16 @@ def validate_theme(data: Any) -> list[str]:
             errors.append("theme.material.defaultBackend is invalid")
         if not isinstance(material.get("allowedBackends"), list) or not material.get("allowedBackends"):
             errors.append("theme.material.allowedBackends is required")
+        elif any(backend not in {"solid", "qml", "native"} for backend in material["allowedBackends"]):
+            errors.append("theme.material.allowedBackends contains an invalid backend")
+        elif material.get("defaultBackend") != "auto" and material.get("defaultBackend") not in material["allowedBackends"]:
+            errors.append("theme.material.defaultBackend must be allowed")
         if not isinstance(material.get("compositorIntegration"), bool):
             errors.append("theme.material.compositorIntegration is required")
+        for key in ("opacity", "tintOpacity", "borderOpacity", "specularOpacity"):
+            value = material.get(key)
+            if value is not None and (not isinstance(value, (int, float)) or isinstance(value, bool) or not 0 <= value <= 1):
+                errors.append(f"theme.material.{key} must be a number from 0 to 1")
     return errors
 
 
@@ -286,6 +329,44 @@ def expect(path: Path, validator: Any, should_pass: bool) -> bool:
     return True
 
 
+def expect_theme_contracts(root: Path) -> bool:
+    neutral = load_json(root / "config/themes/titonium-neutral.json")
+    hybrid = load_json(root / "config/themes/titonium-hybrid-glass.json")
+    valid = (
+        neutral.get("immutable") is True
+        and neutral.get("material") == {
+            "defaultBackend": "solid",
+            "allowedBackends": ["solid"],
+            "compositorIntegration": False,
+            "opacity": 1.0,
+        }
+        and hybrid.get("material", {}).get("defaultBackend") == "auto"
+        and {"native", "qml", "solid"}.issubset(set(hybrid.get("material", {}).get("allowedBackends", [])))
+    )
+    if not valid:
+        print("FAIL immutable Neutral or hybrid fallback material contract", file=sys.stderr)
+        return False
+    print("PASS Neutral solid restore and hybrid fallback material contracts")
+    return True
+
+
+def expect_derived_rejections(root: Path) -> bool:
+    settings = load_json(root / "config/defaults/settings.json")
+    settings["modules"]["audio"]["volumeStep"] = 0
+    settings["modules"]["launcher"]["columns"] = "six"
+    settings["modules"]["clock"]["showLunar"] = "yes"
+    theme = load_json(root / "config/themes/titonium-hybrid-glass.json")
+    theme["material"]["defaultBackend"] = "native"
+    theme["material"]["allowedBackends"] = ["solid"]
+    theme["material"]["tintOpacity"] = 2
+    rejected = bool(validate_settings(settings)) and bool(validate_theme(theme))
+    if not rejected:
+        print("FAIL invalid module/material derivatives were accepted", file=sys.stderr)
+        return False
+    print("PASS invalid Audio/Launcher/Clock and material derivatives rejected")
+    return True
+
+
 def main() -> int:
     root = Path(__file__).resolve().parents[1]
     cases = (
@@ -293,6 +374,7 @@ def main() -> int:
         (root / "config/defaults/layout.json", validate_layout, True),
         (root / "config/themes/index.json", validate_theme_catalog, True),
         (root / "config/themes/titonium-neutral.json", validate_theme, True),
+        (root / "config/themes/titonium-hybrid-glass.json", validate_theme, True),
         (root / "tests/fixtures/layout.valid.json", validate_layout, True),
         (root / "tests/fixtures/layout.invalid-duplicate.json", validate_layout, False),
         (root / "tests/fixtures/layout.invalid-type.json", validate_layout, False),
@@ -301,7 +383,13 @@ def main() -> int:
         (root / "tests/fixtures/settings.invalid-frame.json", validate_settings, False),
         (root / "tests/fixtures/theme.invalid-typography.json", validate_theme, False),
     )
-    return 0 if all(expect(*case) for case in cases) and expect_migration(root / "tests/fixtures/settings.v1.valid.json") else 1
+    passed = (
+        all(expect(*case) for case in cases)
+        and expect_migration(root / "tests/fixtures/settings.v1.valid.json")
+        and expect_theme_contracts(root)
+        and expect_derived_rejections(root)
+    )
+    return 0 if passed else 1
 
 
 if __name__ == "__main__":

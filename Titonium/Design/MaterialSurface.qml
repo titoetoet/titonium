@@ -21,13 +21,16 @@ Item {
         "opacity": 1.0
     })
     readonly property string resolvedBackend: {
-        const fallback = root.materialPolicy.defaultBackend || "solid";
-        const requested = root.backend.length > 0 ? root.backend : fallback;
+        const requested = root.backend.length > 0 ? root.backend : (root.materialPolicy.defaultBackend || "solid");
         const allowed = root.materialPolicy.allowedBackends || ["solid"];
+        const qmlFallback = allowed.indexOf("qml") >= 0 ? "qml" : "solid";
+        if (requested === "auto")
+            return root.materialPolicy.compositorIntegration && Capabilities.nativeGlassAvailable
+                && allowed.indexOf("native") >= 0 ? "native" : qmlFallback;
         if (allowed.indexOf(requested) < 0)
-            return fallback;
+            return qmlFallback;
         if (requested === "native" && (!root.materialPolicy.compositorIntegration || !Capabilities.nativeGlassAvailable))
-            return allowed.indexOf("solid") >= 0 ? "solid" : fallback;
+            return qmlFallback;
         return requested;
     }
 
@@ -40,9 +43,30 @@ Item {
                 return root.customColor;
             return Theme.surface;
         }
-        opacity: root.materialPolicy.opacity === undefined ? 1.0 : root.materialPolicy.opacity
+        opacity: root.resolvedBackend === "solid" ? 1.0
+            : (root.materialPolicy.opacity === undefined ? 0.82 : root.materialPolicy.opacity)
         border.width: root.outlined && root.resolvedBackend !== "native" ? Metrics.borderWidth : 0
-        border.color: root.borderColor
+        border.color: Qt.rgba(root.borderColor.r, root.borderColor.g, root.borderColor.b,
+            root.resolvedBackend === "qml" ? (root.materialPolicy.borderOpacity ?? 0.7) : root.borderColor.a)
+    }
+
+    // Static optical highlight for the QML fallback. It has no shader, blur,
+    // animation or render loop and disappears completely for solid/native.
+    Rectangle {
+        visible: root.resolvedBackend === "qml"
+        anchors.fill: parent
+        anchors.margins: Metrics.borderWidth
+        radius: Math.max(0, root.radius - Metrics.borderWidth)
+        color: Theme.surfaceElevated
+        opacity: (root.materialPolicy.tintOpacity ?? 0.78) * 0.18
+    }
+
+    Rectangle {
+        visible: root.resolvedBackend === "qml"
+        anchors { left: parent.left; right: parent.right; top: parent.top; margins: Metrics.borderWidth }
+        height: 1
+        radius: root.radius
+        color: Qt.rgba(1, 1, 1, root.materialPolicy.specularOpacity ?? 0.2)
     }
 
     Item {

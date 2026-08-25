@@ -40,6 +40,39 @@
             "cornerRadius": { "type": "integer", "minimum": 0, "maximum": 32 },
             "opacity": { "type": "number", "minimum": 0.3, "maximum": 1.0 }
           }
+        },
+        "audio": {
+          "type": "object",
+          "required": ["volumeStep", "maxVolume", "visualizerEnabled", "visualizerStyle", "visualizerBars"],
+          "additionalProperties": false,
+          "properties": {
+            "volumeStep": { "type": "integer", "minimum": 1, "maximum": 20 },
+            "maxVolume": { "type": "integer", "minimum": 50, "maximum": 150 },
+            "visualizerEnabled": { "type": "boolean" },
+            "visualizerStyle": { "enum": ["bars", "wave", "dots"] },
+            "visualizerBars": { "type": "integer", "minimum": 16, "maximum": 64 }
+          }
+        },
+        "launcher": {
+          "type": "object",
+          "required": ["defaultCategory", "resultLimit", "columns", "showSubtitles", "searchAutoFocus"],
+          "additionalProperties": false,
+          "properties": {
+            "defaultCategory": { "enum": ["all", "internet", "development", "media", "system"] },
+            "resultLimit": { "type": "integer", "minimum": 6, "maximum": 48 },
+            "columns": { "type": "integer", "minimum": 4, "maximum": 8 },
+            "showSubtitles": { "type": "boolean" },
+            "searchAutoFocus": { "type": "boolean" }
+          }
+        },
+        "clock": {
+          "type": "object",
+          "required": ["use24Hour", "showLunar"],
+          "additionalProperties": false,
+          "properties": {
+            "use24Hour": { "type": "boolean" },
+            "showLunar": { "type": "boolean" }
+          }
         }
       }
     }

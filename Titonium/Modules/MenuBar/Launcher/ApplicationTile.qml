@@ -9,6 +9,7 @@ FocusScope {
     id: root
 
     required property var application
+    property bool showSubtitle: true
     signal triggered()
 
     readonly property bool hovered: hoverHandler.hovered
@@ -66,6 +67,7 @@ FocusScope {
         }
 
         Controls.TextLabel {
+            visible: root.showSubtitle
             width: parent.width
             text: root.application.subtitle || I18n.tr("launcher.application")
             variant: "caption"

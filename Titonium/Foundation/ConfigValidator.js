@@ -1,7 +1,7 @@
 .pragma library
 
 const nodeTypes = ["widget", "group", "panel", "tabs", "spacer"];
-const backends = ["solid", "qml", "native"];
+const backends = ["auto", "solid", "qml", "native"];
 
 function validateSettings(data) {
     const errors = [];
@@ -34,6 +34,49 @@ function validateSettings(data) {
                 errors.push("modules.frame.cornerRadius must be an integer from 0 to 32");
             if (typeof frame.opacity !== "number" || frame.opacity < 0.3 || frame.opacity > 1.0)
                 errors.push("modules.frame.opacity must be a number from 0.3 to 1.0");
+        }
+    }
+    if (data.modules && data.modules.audio !== undefined) {
+        const audio = data.modules.audio;
+        if (!audio || typeof audio !== "object" || Array.isArray(audio)) {
+            errors.push("modules.audio must be an object");
+        } else {
+            if (!Number.isInteger(audio.volumeStep) || audio.volumeStep < 1 || audio.volumeStep > 20)
+                errors.push("modules.audio.volumeStep must be an integer from 1 to 20");
+            if (!Number.isInteger(audio.maxVolume) || audio.maxVolume < 50 || audio.maxVolume > 150)
+                errors.push("modules.audio.maxVolume must be an integer from 50 to 150");
+            if (typeof audio.visualizerEnabled !== "boolean")
+                errors.push("modules.audio.visualizerEnabled must be a boolean");
+            if (["bars", "wave", "dots"].indexOf(audio.visualizerStyle) < 0)
+                errors.push("modules.audio.visualizerStyle is invalid");
+            if (!Number.isInteger(audio.visualizerBars) || audio.visualizerBars < 16 || audio.visualizerBars > 64)
+                errors.push("modules.audio.visualizerBars must be an integer from 16 to 64");
+        }
+    }
+    if (data.modules && data.modules.launcher !== undefined) {
+        const launcher = data.modules.launcher;
+        if (!launcher || typeof launcher !== "object" || Array.isArray(launcher)) {
+            errors.push("modules.launcher must be an object");
+        } else {
+            if (["all", "internet", "development", "media", "system"].indexOf(launcher.defaultCategory) < 0)
+                errors.push("modules.launcher.defaultCategory is invalid");
+            if (!Number.isInteger(launcher.resultLimit) || launcher.resultLimit < 6 || launcher.resultLimit > 48)
+                errors.push("modules.launcher.resultLimit must be an integer from 6 to 48");
+            if (!Number.isInteger(launcher.columns) || launcher.columns < 4 || launcher.columns > 8)
+                errors.push("modules.launcher.columns must be an integer from 4 to 8");
+            if (typeof launcher.showSubtitles !== "boolean")
+                errors.push("modules.launcher.showSubtitles must be a boolean");
+            if (typeof launcher.searchAutoFocus !== "boolean")
+                errors.push("modules.launcher.searchAutoFocus must be a boolean");
+        }
+    }
+    if (data.modules && data.modules.clock !== undefined) {
+        const clock = data.modules.clock;
+        if (!clock || typeof clock !== "object" || Array.isArray(clock)) {
+            errors.push("modules.clock must be an object");
+        } else {
+            if (typeof clock.use24Hour !== "boolean") errors.push("modules.clock.use24Hour must be a boolean");
+            if (typeof clock.showLunar !== "boolean") errors.push("modules.clock.showLunar must be a boolean");
         }
     }
     return errors;
@@ -148,8 +191,24 @@ function validateTheme(data) {
         errors.push("theme.material.defaultBackend is invalid");
     if (data.material && (!Array.isArray(data.material.allowedBackends) || data.material.allowedBackends.length === 0))
         errors.push("theme.material.allowedBackends is required");
+    if (data.material && Array.isArray(data.material.allowedBackends)) {
+        data.material.allowedBackends.forEach(backend => {
+            if (["solid", "qml", "native"].indexOf(backend) < 0)
+                errors.push("theme.material.allowedBackends contains an invalid backend");
+        });
+        if (data.material.defaultBackend !== "auto"
+                && data.material.allowedBackends.indexOf(data.material.defaultBackend) < 0)
+            errors.push("theme.material.defaultBackend must be allowed");
+    }
     if (data.material && typeof data.material.compositorIntegration !== "boolean")
         errors.push("theme.material.compositorIntegration is required");
+    if (data.material) {
+        ["opacity", "tintOpacity", "borderOpacity", "specularOpacity"].forEach(key => {
+            if (data.material[key] !== undefined
+                    && (typeof data.material[key] !== "number" || data.material[key] < 0 || data.material[key] > 1))
+                errors.push("theme.material." + key + " must be a number from 0 to 1");
+        });
+    }
     return errors;
 }
 

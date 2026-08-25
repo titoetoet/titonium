@@ -17,6 +17,24 @@
       "thickness": 2,
       "cornerRadius": 12,
       "opacity": 0.85
+    },
+    "audio": {
+      "volumeStep": 5,
+      "maxVolume": 100,
+      "visualizerEnabled": false,
+      "visualizerStyle": "bars",
+      "visualizerBars": 32
+    },
+    "launcher": {
+      "defaultCategory": "all",
+      "resultLimit": 24,
+      "columns": 6,
+      "showSubtitles": true,
+      "searchAutoFocus": true
+    },
+    "clock": {
+      "use24Hour": true,
+      "showLunar": true
     }
   }
 }

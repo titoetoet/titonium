@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Io
 import qs.Titonium.Foundation
 import qs.Titonium.Modules.Frame
+import qs.Titonium.Platform
 import qs.Titonium.Surfaces
 
 Scope {
@@ -55,6 +56,45 @@ Scope {
             return JSON.stringify(ConfigStore.previewState.appearance || {});
         }
 
+        function settingsDocument(): string {
+            return JSON.stringify(ConfigStore.previewState || {});
+        }
+
+        function committedSettingsDocument(): string {
+            return JSON.stringify(ConfigStore.committedState || {});
+        }
+
+        function previewTheme(themeId: string): bool {
+            if (!ThemeCatalog.entryFor(themeId))
+                return false;
+            return ConfigStore.patch("appearance.themeId", themeId);
+        }
+
+        function previewMaterialBackend(backend: string): bool {
+            if (["auto", "qml", "solid", "native"].indexOf(backend) < 0)
+                return false;
+            return ConfigStore.patch("appearance.overrides.material.defaultBackend", backend);
+        }
+
+        function materialState(): string {
+            const policy = ConfigStore.themeState.material || {};
+            const allowed = policy.allowedBackends || ["solid"];
+            const requested = policy.defaultBackend || "solid";
+            let resolved = requested;
+            if (requested === "auto")
+                resolved = policy.compositorIntegration && Capabilities.nativeGlassAvailable
+                    && allowed.indexOf("native") >= 0 ? "native" : (allowed.indexOf("qml") >= 0 ? "qml" : "solid");
+            else if (requested === "native" && !Capabilities.nativeGlassAvailable)
+                resolved = allowed.indexOf("qml") >= 0 ? "qml" : "solid";
+            return JSON.stringify({
+                "themeId": ConfigStore.themeState.id || ThemeCatalog.defaultThemeId,
+                "requested": requested,
+                "resolved": resolved,
+                "nativeAvailable": Capabilities.nativeGlassAvailable,
+                "nativeProbe": Capabilities.hyprglassDetail
+            });
+        }
+
         function layoutDocument(): string {
             return JSON.stringify(ConfigStore.previewLayout || {});
         }
@@ -95,8 +135,11 @@ Scope {
         }
 
         function openPage(page: string, screenName: string): string {
-            if (page !== "theme" && page !== "typography" && page !== "layout" && page !== "frame")
+            const availablePages = ["theme", "typography", "layout", "frame", "audio", "system", "launcher", "material"];
+            if (availablePages.indexOf(page) < 0)
                 return "unavailable:unknown-page";
+            if (page === "material" && ConfigStore.themeState.id === "titonium-neutral")
+                return "unavailable:incompatible-theme";
             const targetScreen = ScreenRouter.screenForName(screenName);
             if (!targetScreen)
                 return "unavailable:no-screen";

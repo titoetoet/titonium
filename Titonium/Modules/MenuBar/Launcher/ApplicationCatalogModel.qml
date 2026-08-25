@@ -1,16 +1,17 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.Titonium.Foundation
 import qs.Titonium.Platform.Applications
 
 QtObject {
     id: root
 
     property string query: ""
-    property string category: "all"
+    property string category: ConfigStore.previewState.modules?.launcher?.defaultCategory || "all"
     readonly property var applications: ApplicationCatalog.applications
     readonly property var filteredApplications: root.filterApplications()
-    readonly property int visibleLimit: 24
+    readonly property int visibleLimit: ConfigStore.previewState.modules?.launcher?.resultLimit || 24
     readonly property var visibleApplications: root.filteredApplications.slice(0, root.visibleLimit)
 
     function categoryMatches(app: var): bool {

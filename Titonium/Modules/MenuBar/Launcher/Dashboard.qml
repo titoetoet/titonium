@@ -19,6 +19,7 @@ FocusScope {
         { "id": "media", "labelKey": "launcher.category.media", "icon": "movie" },
         { "id": "system", "labelKey": "launcher.category.system", "icon": "settings" }
     ]
+    readonly property var launcherSettings: ConfigStore.previewState.modules?.launcher || ({})
 
     anchors.fill: parent
     focus: true
@@ -224,7 +225,7 @@ FocusScope {
                     clip: true
                     interactive: contentHeight > height
                     boundsBehavior: Flickable.StopAtBounds
-                    cellWidth: width / 6
+                    cellWidth: width / (root.launcherSettings.columns || 6)
                     cellHeight: 112
                     model: catalog.visibleApplications
 
@@ -233,6 +234,7 @@ FocusScope {
                         width: applicationGrid.cellWidth - Metrics.spacingSmall
                         height: applicationGrid.cellHeight - Metrics.spacingSmall
                         application: modelData
+                        showSubtitle: root.launcherSettings.showSubtitles !== false
                         onTriggered: {
                             if (catalog.launch(modelData))
                                 root.close();
@@ -262,5 +264,8 @@ FocusScope {
         event.accepted = true;
     }
 
-    Component.onCompleted: Qt.callLater(() => searchInput.forceActiveFocus(Qt.PopupFocusReason))
+    Component.onCompleted: {
+        if (root.launcherSettings.searchAutoFocus !== false)
+            Qt.callLater(() => searchInput.forceActiveFocus(Qt.PopupFocusReason));
+    }
 }
