@@ -6,7 +6,7 @@ const vm = require("vm");
 
 const sourcePath = path.join(__dirname, "..", "Titonium", "Modules", "MenuBar", "Launcher", "LauncherLayout.js");
 if (!fs.existsSync(sourcePath)) {
-    console.error("FAIL adaptive launcher layout: LauncherLayout.js is missing");
+    console.error("FAIL fixed launcher layout: LauncherLayout.js is missing");
     process.exit(1);
 }
 const context = { Math };
@@ -30,11 +30,11 @@ function assertDeepEqual(actual, expected, label) {
     }
 }
 
-assertEqual(context.columnCount(840, 120, 8), 6, "wide column count");
-assertEqual(context.columnCount(612, 120, 8), 4, "constrained column count");
-assertEqual(context.rowCount(500, 112, 8), 4, "row count");
-assertDeepEqual(Array.from(context.pages([1, 2, 3, 4, 5], 4), page => Array.from(page)), [[1, 2, 3, 4], [5]], "pagination");
-assertEqual(context.fillRatio([5], 4), 0.25, "partial-page fill ratio");
-assertDeepEqual(Array.from(context.pages([], 4), page => Array.from(page)), [[]], "empty catalog page");
+assertEqual(context.columnCount(), 6, "fixed column count");
+assertEqual(context.rowCount(), 4, "fixed row count");
+assertEqual(context.pageSize(), 24, "fixed page capacity");
+assertDeepEqual(Array.from(context.pages(Array.from({ length: 25 }, (_, index) => index + 1), 24), page => Array.from(page).length), [24, 1], "fixed pagination");
+assertEqual(context.fillRatio([25], 24), 1 / 24, "partial-page fill ratio");
+assertDeepEqual(Array.from(context.pages([], 24), page => Array.from(page)), [[]], "empty catalog page");
 
-console.log("PASS adaptive launcher layout fixtures (6)");
+console.log("PASS fixed 6x4 launcher layout fixtures (6)");

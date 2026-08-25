@@ -14,11 +14,9 @@ FocusScope {
 
     readonly property var launcherSettings: ConfigStore.previewState.modules?.launcher || ({})
     readonly property int gap: Metrics.spacingSmall
-    readonly property int minimumTileWidth: 112
-    readonly property int minimumTileHeight: 96
-    readonly property int columns: LauncherLayout.columnCount(pageView.width, root.minimumTileWidth, root.gap)
-    readonly property int rows: LauncherLayout.rowCount(pageView.height, root.minimumTileHeight, root.gap)
-    readonly property int capacity: Math.max(1, root.columns * root.rows)
+    readonly property int columns: LauncherLayout.columnCount()
+    readonly property int rows: LauncherLayout.rowCount()
+    readonly property int capacity: LauncherLayout.pageSize()
     readonly property int transitionDuration: ConfigStore.previewState.accessibility?.reducedMotion === true
         || root.launcherSettings.pageTransition === "none" ? 0 : (root.launcherSettings.transitionDuration || 220)
 
@@ -132,5 +130,4 @@ FocusScope {
         }
     }
 
-    onCapacityChanged: pageView.currentIndex = 0
 }

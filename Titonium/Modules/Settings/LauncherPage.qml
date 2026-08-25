@@ -103,7 +103,7 @@ Item {
                 Layout.fillWidth: true
                 Controls.TextLabel { text: I18n.tr("settings.launcher.grid"); strong: true }
                 Item { Layout.fillWidth: true }
-                Controls.TextLabel { text: I18n.tr("settings.launcher.grid_adaptive"); variant: "caption"; tone: "accent" }
+                Controls.TextLabel { text: I18n.tr("settings.launcher.grid_size"); variant: "caption"; tone: "accent" }
             }
             Controls.TextLabel {
                 Layout.fillWidth: true

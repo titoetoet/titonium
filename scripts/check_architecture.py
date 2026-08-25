@@ -142,6 +142,7 @@ def main() -> int:
     launcher_widget_text = (root / "Titonium/Modules/MenuBar/Launcher/LauncherWidget.qml").read_text(encoding="utf-8")
     if '"cancelPreviewOnClose": true' not in launcher_widget_text:
         errors.append("Arch Menu descriptor must rollback abandoned Settings preview")
+
     coordinator_text = (root / "Titonium/Foundation/SurfaceCoordinator.qml").read_text(encoding="utf-8")
     if "cancelPreviewOnClose" not in coordinator_text or "ConfigStore.cancel()" not in coordinator_text:
         errors.append("SurfaceCoordinator must rollback abandoned preview transactions")

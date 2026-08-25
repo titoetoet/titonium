@@ -2,7 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Replace the existing Launcher dashboard with a left-anchored, icon-rail Arch Menu containing adaptive Apps, shared Settings, read-only Yazi-like Places, Info and Power sections while leaving Spotlight untouched.
+**Goal:** Replace the existing Launcher dashboard with a left-anchored, icon-rail Arch Menu containing fixed 6×4 Apps, shared Settings, Info and Power sections while leaving Spotlight untouched.
+
+> **Revision 2026-08-26:** The user removed Places because Yazi is already installed and changed Apps from adaptive sizing to a fixed 6×4 grid. Task 4 below is cancelled and must not be executed; later tasks continue without a Places section.
 
 **Architecture:** `ArchMenu.qml` remains a single `SurfaceCoordinator` transient and delegates section resolution to `LauncherSectionRegistry.qml`; each section is lazy and owns presentation only. Application, filesystem, system information, settings persistence and session execution stay behind existing Foundation/Platform boundaries.
 
@@ -18,7 +20,6 @@
 - Runtime settings live outside Git and writes remain atomic through `ConfigStore`.
 - The popup has stable Settings-sized geometry and a 64–72 logical-pixel icon-only rail on the left.
 - Apps has no search, favorites, recent list, usage ranking or categories.
-- Places v1 is read-only: navigate, preview and open only.
 - Hidden section trees do not exist; no hidden timer, poller, shader or `MultiEffect` is allowed.
 - All text uses `I18n.tr()` and all geometry uses logical pixels at DP-3 scale 1.0 and DP-1 scale 1.5.
 - Existing dirty-worktree changes belong to the current Titonium milestone and must be preserved.
@@ -271,7 +272,7 @@ git commit -m "refactor: share settings workspace with arch menu"
 
 ---
 
-### Task 4: Read-only Yazi-like Places
+### Task 4: Cancelled — use installed Yazi
 
 **Files:**
 - Create: `Titonium/Platform/Filesystem/DirectoryModel.qml`
@@ -428,7 +429,7 @@ git commit -m "feat: add confirmed arch menu power actions"
 
 - [ ] **Step 1: Update docs to the implemented state**
 
-Replace the old 1/3–2/3/search/history Launcher description with the Arch Menu shell, registry, adaptive grid, shared Settings lifecycle, Places read-only boundary, Info activation policy and confirmed Power actions. Keep Spotlight as Milestone 3 and explicitly unaffected.
+Replace the old 1/3–2/3/search/history Launcher description with the Arch Menu shell, registry, fixed 6×4 grid, shared Settings lifecycle, Info activation policy and confirmed Power actions. Keep Spotlight as Milestone 3 and explicitly unaffected.
 
 - [ ] **Step 2: Run the complete static/runtime suite**
 
@@ -447,7 +448,7 @@ Expected: every script passes; `hyprctl configerrors` is empty; repo source and 
 
 - [ ] **Step 3: Run final live acceptance on both outputs**
 
-Restart using `qs -p /home/cole/Projects/titonium`. On DP-3 and DP-1 verify: one MenuBar and 40px reserve; Arch trigger left of Workspaces; stable left-anchored popup; icon-only rail; Apps adaptive paging; Settings Preview/Apply/Cancel; Places navigation/preview; Info only while visible; Power confirmation without execution; outside click/Escape/cross-monitor close.
+Restart using `qs -p /home/cole/Projects/titonium`. On DP-3 and DP-1 verify: one MenuBar and 40px reserve; Arch trigger left of Workspaces; stable left-anchored popup; icon-only rail; Apps fixed 6×4 paging; Settings Preview/Apply/Cancel; Info only while visible; Power confirmation without execution; outside click/Escape/cross-monitor close.
 
 - [ ] **Step 4: Inspect runtime health and commit docs**
 
