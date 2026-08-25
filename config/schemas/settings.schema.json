@@ -1,12 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "titonium.settings/v3",
+  "$id": "titonium.settings/v4",
   "type": "object",
   "required": ["schemaVersion", "locale", "appearance", "accessibility", "modules"],
   "additionalProperties": false,
   "properties": {
     "$schema": { "type": "string" },
-    "schemaVersion": { "const": 3 },
+    "schemaVersion": { "const": 4 },
     "locale": { "enum": ["vi", "en"] },
     "appearance": {
       "type": "object",
@@ -53,15 +53,11 @@
             "visualizerBars": { "type": "integer", "minimum": 16, "maximum": 64 }
           }
         },
-        "launcher": {
+        "spotlight": {
           "type": "object",
-          "required": ["username", "avatarIcon", "pageTransition", "transitionDuration"],
+          "required": ["pageTransition", "transitionDuration"],
           "additionalProperties": false,
           "properties": {
-            "username": { "type": "string", "maxLength": 40 },
-            "avatarIcon": {
-              "enum": ["person", "terminal", "face", "smart_toy", "rocket_launch", "sports_esports", "bolt", "coffee", "palette", "pets", "headphones", "local_fire_department", "code", "music_note", "public", "diamond"]
-            },
             "pageTransition": { "enum": ["none", "slide", "slide-fade", "slide-scale"] },
             "transitionDuration": { "type": "integer", "minimum": 80, "maximum": 500 }
           }

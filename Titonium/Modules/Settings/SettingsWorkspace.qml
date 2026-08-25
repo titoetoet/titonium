@@ -27,13 +27,13 @@ FocusScope {
         { "id": "frame", "labelKey": "settings.nav.frame", "icon": "crop_free" },
         { "id": "audio", "labelKey": "settings.nav.audio", "icon": "volume_up" },
         { "id": "system", "labelKey": "settings.nav.system", "icon": "tune" },
-        { "id": "launcher", "labelKey": "settings.nav.launcher", "icon": "apps" }
+        { "id": "spotlight", "labelKey": "settings.nav.spotlight", "icon": "apps" }
     ]
 
     function componentFor(pageId: string): Component {
         const map = { "theme": themePage, "typography": typographyPage, "material": materialPage,
             "layout": layoutPage, "frame": framePage, "audio": audioPage,
-            "system": systemPage, "launcher": launcherPage };
+            "system": systemPage, "spotlight": spotlightPage };
         return map[pageId] || themePage;
     }
     function selectPage(pageId: string): void {
@@ -103,7 +103,7 @@ FocusScope {
     Component { id: framePage; FramePage {} }
     Component { id: audioPage; AudioPage {} }
     Component { id: systemPage; SystemPage {} }
-    Component { id: launcherPage; LauncherPage {} }
+    Component { id: spotlightPage; SpotlightPage {} }
     Component { id: materialPage; MaterialPage {} }
     onMaterialCompatibleChanged: if (!root.materialCompatible && root.currentPage === "material") root.currentPage = "theme"
 }

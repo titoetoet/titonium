@@ -1,0 +1,46 @@
+{
+  "$schema": "titonium.settings/v3",
+  "schemaVersion": 3,
+  "locale": "en",
+  "appearance": {
+    "themeId": "titonium-hybrid-glass",
+    "mode": "light",
+    "density": "compact",
+    "overrides": {
+      "metrics": {
+        "spacingMedium": 14
+      }
+    }
+  },
+  "accessibility": {
+    "reducedMotion": true
+  },
+  "modules": {
+    "frame": {
+      "enabled": true,
+      "thickness": 4,
+      "cornerRadius": 18,
+      "opacity": 0.7
+    },
+    "audio": {
+      "volumeStep": 9,
+      "maxVolume": 125,
+      "visualizerEnabled": true,
+      "visualizerStyle": "wave",
+      "visualizerBars": 48
+    },
+    "clock": {
+      "use24Hour": false,
+      "showLunar": false
+    },
+    "sentinel": {
+      "enabled": true
+    },
+    "launcher": {
+      "username": "Cole",
+      "avatarIcon": "terminal",
+      "pageTransition": "slide-scale",
+      "transitionDuration": 280
+    }
+  }
+}

@@ -135,7 +135,7 @@ Scope {
         }
 
         function openPage(page: string, screenName: string): string {
-            const availablePages = ["theme", "typography", "layout", "frame", "audio", "system", "launcher", "material"];
+            const availablePages = ["theme", "typography", "layout", "frame", "audio", "system", "spotlight", "material"];
             if (availablePages.indexOf(page) < 0)
                 return "unavailable:unknown-page";
             if (page === "material" && ConfigStore.themeState.id === "titonium-neutral")

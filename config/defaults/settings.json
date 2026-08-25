@@ -1,6 +1,6 @@
 {
-  "$schema": "titonium.settings/v3",
-  "schemaVersion": 3,
+  "$schema": "titonium.settings/v4",
+  "schemaVersion": 4,
   "locale": "vi",
   "appearance": {
     "themeId": "titonium-neutral",
@@ -25,9 +25,7 @@
       "visualizerStyle": "bars",
       "visualizerBars": 32
     },
-    "launcher": {
-      "username": "",
-      "avatarIcon": "terminal",
+    "spotlight": {
       "pageTransition": "slide-fade",
       "transitionDuration": 220
     },

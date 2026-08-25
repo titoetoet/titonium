@@ -7,7 +7,7 @@ function clone(value) {
 function migrateSettings(data) {
     if (!data || typeof data !== "object")
         return data;
-    if (data.schemaVersion !== 1 && data.schemaVersion !== 2 && data.schemaVersion !== 3)
+    if (data.schemaVersion !== 1 && data.schemaVersion !== 2 && data.schemaVersion !== 3 && data.schemaVersion !== 4)
         return clone(data);
     let current = clone(data);
     if (current.schemaVersion === 1) {
@@ -43,6 +43,17 @@ function migrateSettings(data) {
         }
         current.$schema = "titonium.settings/v3";
         current.schemaVersion = 3;
+    }
+    if (current.schemaVersion === 3) {
+        const launcher = current.modules?.launcher || {};
+        current.modules.spotlight = {
+            "pageTransition": launcher.pageTransition || "slide-fade",
+            "transitionDuration": Number.isInteger(launcher.transitionDuration)
+                ? launcher.transitionDuration : 220
+        };
+        delete current.modules.launcher;
+        current.$schema = "titonium.settings/v4";
+        current.schemaVersion = 4;
     }
     return current;
 }

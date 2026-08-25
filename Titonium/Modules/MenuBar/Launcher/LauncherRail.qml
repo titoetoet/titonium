@@ -31,7 +31,7 @@ FocusScope {
 
             Controls.Icon {
                 anchors.centerIn: parent
-                name: ConfigStore.previewState.modules?.launcher?.avatarIcon || "terminal"
+                name: "terminal"
                 size: 26
                 tone: "accent"
                 accessibleName: ""

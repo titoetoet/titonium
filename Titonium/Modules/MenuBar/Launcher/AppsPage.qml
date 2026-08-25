@@ -12,13 +12,13 @@ FocusScope {
 
     signal applicationLaunched()
 
-    readonly property var launcherSettings: ConfigStore.previewState.modules?.launcher || ({})
+    readonly property var spotlightSettings: ConfigStore.previewState.modules?.spotlight || ({})
     readonly property int gap: Metrics.spacingSmall
     readonly property int columns: LauncherLayout.columnCount()
     readonly property int rows: LauncherLayout.rowCount()
     readonly property int capacity: LauncherLayout.pageSize()
     readonly property int transitionDuration: ConfigStore.previewState.accessibility?.reducedMotion === true
-        || root.launcherSettings.pageTransition === "none" ? 0 : (root.launcherSettings.transitionDuration || 220)
+        || root.spotlightSettings.pageTransition === "none" ? 0 : (root.spotlightSettings.transitionDuration || 220)
 
     ApplicationCatalogModel {
         id: catalog
@@ -68,9 +68,9 @@ FocusScope {
                     required property var modelData
                     width: pageView.width
                     height: pageView.height
-                    opacity: root.launcherSettings.pageTransition === "slide-fade"
+                    opacity: root.spotlightSettings.pageTransition === "slide-fade"
                         ? (ListView.isCurrentItem ? 1.0 : 0.18) : 1.0
-                    scale: root.launcherSettings.pageTransition === "slide-scale"
+                    scale: root.spotlightSettings.pageTransition === "slide-scale"
                         ? (ListView.isCurrentItem ? 1.0 : 0.94) : 1.0
 
                     Behavior on opacity { NumberAnimation { duration: root.transitionDuration; easing.type: Easing.OutCubic } }

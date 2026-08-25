@@ -24,7 +24,7 @@ def validate_settings(data: Any) -> list[str]:
     errors: list[str] = []
     if not isinstance(data, dict):
         return ["settings must be an object"]
-    if data.get("schemaVersion") != 3:
+    if data.get("schemaVersion") != 4:
         errors.append("unsupported settings schemaVersion")
     if data.get("locale") not in {"vi", "en"}:
         errors.append("locale must be vi or en")
@@ -75,24 +75,19 @@ def validate_settings(data: Any) -> list[str]:
                     errors.append("modules.audio.visualizerEnabled must be a boolean")
                 if audio.get("visualizerStyle") not in {"bars", "wave", "dots"}:
                     errors.append("modules.audio.visualizerStyle is invalid")
-        launcher = data["modules"].get("launcher")
-        if launcher is not None:
-            if not isinstance(launcher, dict):
-                errors.append("modules.launcher must be an object")
+        spotlight = data["modules"].get("spotlight")
+        if spotlight is not None:
+            if not isinstance(spotlight, dict):
+                errors.append("modules.spotlight must be an object")
             else:
-                if not isinstance(launcher.get("username"), str) or len(launcher["username"]) > 40:
-                    errors.append("modules.launcher.username must be a string up to 40 characters")
-                avatar_icons = {"person", "terminal", "face", "smart_toy", "rocket_launch", "sports_esports", "bolt", "coffee", "palette", "pets", "headphones", "local_fire_department", "code", "music_note", "public", "diamond"}
-                if launcher.get("avatarIcon") not in avatar_icons:
-                    errors.append("modules.launcher.avatarIcon is invalid")
-                if launcher.get("pageTransition") not in {"none", "slide", "slide-fade", "slide-scale"}:
-                    errors.append("modules.launcher.pageTransition is invalid")
-                duration = launcher.get("transitionDuration")
+                if spotlight.get("pageTransition") not in {"none", "slide", "slide-fade", "slide-scale"}:
+                    errors.append("modules.spotlight.pageTransition is invalid")
+                duration = spotlight.get("transitionDuration")
                 if not isinstance(duration, int) or isinstance(duration, bool) or not 80 <= duration <= 500:
-                    errors.append("modules.launcher.transitionDuration must be an integer from 80 to 500")
-                allowed = {"username", "avatarIcon", "pageTransition", "transitionDuration"}
-                for key in launcher.keys() - allowed:
-                    errors.append(f"modules.launcher.{key} is retired")
+                    errors.append("modules.spotlight.transitionDuration must be an integer from 80 to 500")
+                allowed = {"pageTransition", "transitionDuration"}
+                for key in spotlight.keys() - allowed:
+                    errors.append(f"modules.spotlight.{key} is invalid")
         clock = data["modules"].get("clock")
         if clock is not None:
             if not isinstance(clock, dict):
@@ -105,7 +100,7 @@ def validate_settings(data: Any) -> list[str]:
 
 
 def migrate_settings(data: Any) -> Any:
-    if not isinstance(data, dict) or data.get("schemaVersion") not in {1, 2, 3}:
+    if not isinstance(data, dict) or data.get("schemaVersion") not in {1, 2, 3, 4}:
         return data
     current = json.loads(json.dumps(data))
     if current.get("schemaVersion") == 1:
@@ -138,6 +133,18 @@ def migrate_settings(data: Any) -> Any:
             }
         current["$schema"] = "titonium.settings/v3"
         current["schemaVersion"] = 3
+    if current.get("schemaVersion") == 3:
+        modules = current.get("modules") if isinstance(current.get("modules"), dict) else {}
+        launcher = modules.get("launcher") if isinstance(modules.get("launcher"), dict) else {}
+        modules["spotlight"] = {
+            "pageTransition": launcher.get("pageTransition") or "slide-fade",
+            "transitionDuration": launcher.get("transitionDuration")
+            if isinstance(launcher.get("transitionDuration"), int) and not isinstance(launcher.get("transitionDuration"), bool) else 220,
+        }
+        modules.pop("launcher", None)
+        current["modules"] = modules
+        current["$schema"] = "titonium.settings/v4"
+        current["schemaVersion"] = 4
     return current
 
 
@@ -318,8 +325,8 @@ def expect_migration(path: Path) -> bool:
     defaults = load_json(path.parents[2] / "config/defaults/settings.json")
     restored = restore_appearance(migrated, defaults)
     preserved = (
-        migrated.get("schemaVersion") == 3
-        and migrated.get("$schema") == "titonium.settings/v3"
+        migrated.get("schemaVersion") == 4
+        and migrated.get("$schema") == "titonium.settings/v4"
         and migrated.get("locale") == "en"
         and migrated.get("appearance", {}).get("themeId") == "titonium-neutral"
         and migrated.get("appearance", {}).get("mode") == "light"
@@ -333,30 +340,74 @@ def expect_migration(path: Path) -> bool:
     if errors or not preserved:
         print(f"FAIL {path}: migration errors={errors}; preserved={preserved}", file=sys.stderr)
         return False
-    print(f"PASS {path.name}: migrated v1 -> v3 with non-appearance state preserved")
+    print(f"PASS {path.name}: migrated v1 -> v4 with non-appearance state preserved")
     return True
 
 
-def expect_launcher_v2_migration(path: Path) -> bool:
+def expect_spotlight_v2_migration(path: Path) -> bool:
     migrated = migrate_settings(load_json(path))
-    launcher = migrated.get("modules", {}).get("launcher", {})
+    spotlight = migrated.get("modules", {}).get("spotlight", {})
     retired = {"defaultCategory", "resultLimit", "columns", "showSubtitles", "searchAutoFocus"}
     valid = (
-        migrated.get("schemaVersion") == 3
-        and migrated.get("$schema") == "titonium.settings/v3"
-        and launcher == {
-            "username": "Cole",
-            "avatarIcon": "rocket_launch",
+        migrated.get("schemaVersion") == 4
+        and migrated.get("$schema") == "titonium.settings/v4"
+        and spotlight == {
             "pageTransition": "slide-scale",
             "transitionDuration": 280,
         }
-        and retired.isdisjoint(launcher)
+        and retired.isdisjoint(spotlight)
+        and "launcher" not in migrated.get("modules", {})
         and migrated.get("modules", {}).get("sentinel", {}).get("enabled") is True
     )
     if not valid:
-        print(f"FAIL {path}: v2 launcher migration produced {launcher}", file=sys.stderr)
+        print(f"FAIL {path}: v2 spotlight migration produced {spotlight}", file=sys.stderr)
         return False
-    print(f"PASS {path.name}: migrated v2 -> v3 and removed retired Launcher fields")
+    print(f"PASS {path.name}: migrated v2 -> v4 and removed retired Launcher fields")
+    return True
+
+
+def expect_spotlight_v3_migration(path: Path) -> bool:
+    source = load_json(path)
+    migrated = migrate_settings(source)
+    preserved = (
+        migrated.get("$schema") == "titonium.settings/v4"
+        and migrated.get("schemaVersion") == 4
+        and migrated.get("locale") == "en"
+        and migrated.get("appearance") == {
+            "themeId": "titonium-hybrid-glass",
+            "mode": "light",
+            "density": "compact",
+            "overrides": {"metrics": {"spacingMedium": 14}},
+        }
+        and migrated.get("accessibility") == {"reducedMotion": True}
+        and migrated.get("modules", {}).get("frame") == {
+            "enabled": True,
+            "thickness": 4,
+            "cornerRadius": 18,
+            "opacity": 0.7,
+        }
+        and migrated.get("modules", {}).get("audio") == {
+            "volumeStep": 9,
+            "maxVolume": 125,
+            "visualizerEnabled": True,
+            "visualizerStyle": "wave",
+            "visualizerBars": 48,
+        }
+        and migrated.get("modules", {}).get("clock") == {
+            "use24Hour": False,
+            "showLunar": False,
+        }
+        and migrated.get("modules", {}).get("sentinel") == {"enabled": True}
+        and "launcher" not in migrated.get("modules", {})
+        and migrated.get("modules", {}).get("spotlight") == {
+            "pageTransition": "slide-scale",
+            "transitionDuration": 280,
+        }
+    )
+    if not preserved:
+        print(f"FAIL {path}: v3 spotlight migration produced {migrated}", file=sys.stderr)
+        return False
+    print(f"PASS {path.name}: migrated v3 -> v4 with Spotlight preferences and unrelated state preserved")
     return True
 
 
@@ -398,7 +449,7 @@ def expect_theme_contracts(root: Path) -> bool:
 def expect_derived_rejections(root: Path) -> bool:
     settings = load_json(root / "config/defaults/settings.json")
     settings["modules"]["audio"]["volumeStep"] = 0
-    settings["modules"]["launcher"]["searchAutoFocus"] = True
+    settings["modules"]["spotlight"]["unknown"] = True
     settings["modules"]["clock"]["showLunar"] = "yes"
     theme = load_json(root / "config/themes/titonium-hybrid-glass.json")
     theme["material"]["defaultBackend"] = "native"
@@ -408,7 +459,7 @@ def expect_derived_rejections(root: Path) -> bool:
     if not rejected:
         print("FAIL invalid module/material derivatives were accepted", file=sys.stderr)
         return False
-    print("PASS invalid Audio/Launcher/Clock and material derivatives rejected")
+    print("PASS invalid Audio/Spotlight/Clock and material derivatives rejected")
     return True
 
 
@@ -431,7 +482,8 @@ def main() -> int:
     checks = [
         all(expect(*case) for case in cases),
         expect_migration(root / "tests/fixtures/settings.v1.valid.json"),
-        expect_launcher_v2_migration(root / "tests/fixtures/settings.v2.launcher.json"),
+        expect_spotlight_v2_migration(root / "tests/fixtures/settings.v2.launcher.json"),
+        expect_spotlight_v3_migration(root / "tests/fixtures/settings.v3.spotlight.json"),
         expect_theme_contracts(root),
         expect_derived_rejections(root),
     ]

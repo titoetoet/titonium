@@ -6,7 +6,7 @@ const backends = ["auto", "solid", "qml", "native"];
 function validateSettings(data) {
     const errors = [];
     if (!data || typeof data !== "object") return ["settings must be an object"];
-    if (data.schemaVersion !== 3) errors.push("unsupported settings schemaVersion");
+    if (data.schemaVersion !== 4) errors.push("unsupported settings schemaVersion");
     if (data.locale !== "vi" && data.locale !== "en") errors.push("locale must be vi or en");
     if (!data.appearance || typeof data.appearance !== "object" || Array.isArray(data.appearance)) {
         errors.push("appearance is required");
@@ -53,23 +53,19 @@ function validateSettings(data) {
                 errors.push("modules.audio.visualizerBars must be an integer from 16 to 64");
         }
     }
-    if (data.modules && data.modules.launcher !== undefined) {
-        const launcher = data.modules.launcher;
-        if (!launcher || typeof launcher !== "object" || Array.isArray(launcher)) {
-            errors.push("modules.launcher must be an object");
+    if (data.modules && data.modules.spotlight !== undefined) {
+        const spotlight = data.modules.spotlight;
+        if (!spotlight || typeof spotlight !== "object" || Array.isArray(spotlight)) {
+            errors.push("modules.spotlight must be an object");
         } else {
-            if (typeof launcher.username !== "string" || launcher.username.length > 40)
-                errors.push("modules.launcher.username must be a string up to 40 characters");
-            if (["person", "terminal", "face", "smart_toy", "rocket_launch", "sports_esports", "bolt", "coffee", "palette", "pets", "headphones", "local_fire_department", "code", "music_note", "public", "diamond"].indexOf(launcher.avatarIcon) < 0)
-                errors.push("modules.launcher.avatarIcon is invalid");
-            if (["none", "slide", "slide-fade", "slide-scale"].indexOf(launcher.pageTransition) < 0)
-                errors.push("modules.launcher.pageTransition is invalid");
-            if (!Number.isInteger(launcher.transitionDuration) || launcher.transitionDuration < 80 || launcher.transitionDuration > 500)
-                errors.push("modules.launcher.transitionDuration must be an integer from 80 to 500");
-            const allowed = ["username", "avatarIcon", "pageTransition", "transitionDuration"];
-            Object.keys(launcher).forEach(key => {
+            if (["none", "slide", "slide-fade", "slide-scale"].indexOf(spotlight.pageTransition) < 0)
+                errors.push("modules.spotlight.pageTransition is invalid");
+            if (!Number.isInteger(spotlight.transitionDuration) || spotlight.transitionDuration < 80 || spotlight.transitionDuration > 500)
+                errors.push("modules.spotlight.transitionDuration must be an integer from 80 to 500");
+            const allowed = ["pageTransition", "transitionDuration"];
+            Object.keys(spotlight).forEach(key => {
                 if (allowed.indexOf(key) < 0)
-                    errors.push("modules.launcher." + key + " is retired");
+                    errors.push("modules.spotlight." + key + " is invalid");
             });
         }
     }
