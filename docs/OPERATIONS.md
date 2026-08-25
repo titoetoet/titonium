@@ -28,6 +28,15 @@ qs -p "$HOME/Projects/titonium" ipc call launcher toggle DP-3
 qs -p "$HOME/Projects/titonium" ipc call launcher close
 ```
 
+Settings lifecycle and page endpoints:
+
+```bash
+qs -p "$HOME/Projects/titonium" ipc call settings openPage theme DP-3
+qs -p "$HOME/Projects/titonium" ipc call settings openPage typography DP-3
+qs -p "$HOME/Projects/titonium" ipc call settings previewMode light
+qs -p "$HOME/Projects/titonium" ipc call settings close
+```
+
 ## Legacy rollback
 
 The legacy source is retained read-only in Trash at

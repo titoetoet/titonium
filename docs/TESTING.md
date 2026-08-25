@@ -64,3 +64,6 @@ configuration copies. Gallery content must disappear from the scene when its Loa
 - Launcher discovers only visible desktop entries, searches name/generic name/comment, filters
   category records and never creates more than 24 tiles. Pointer/Enter opens through
   `DesktopEntry.execute()`; Escape clears a query before closing the Dashboard.
+- Settings preview updates every surface, but closing by any lifecycle path restores committed
+  state. Apply writes only the atomic runtime settings file. Theme metadata is resolved from a
+  validated package; Typography font/size overrides reset independently of other appearance.

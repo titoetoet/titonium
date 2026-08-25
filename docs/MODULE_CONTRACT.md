@@ -47,6 +47,11 @@ Search/category filtering is a pure model operation. Desktop discovery, icon res
 execution remain behind `Platform.Applications.ApplicationCatalog`; a disappearing entry fails
 safely and closes no unrelated surface.
 
+Settings pages never own persisted state. They project `ConfigStore.previewState` and mutate it
+only through typed `patch()` paths. SettingsCenter begins one preview transaction; Apply commits
+atomically, while Cancel, Escape, outside click, IPC close and surface replacement all rollback.
+Theme metadata shown by UI comes from validated theme documents, not duplicated catalog labels.
+
 ## Failure behavior
 
 Missing registry entries and invalid node content render `DiagnosticWidget` with a concise

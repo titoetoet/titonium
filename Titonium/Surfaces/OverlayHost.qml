@@ -50,6 +50,20 @@ Scope {
                         overlayLoader.item.screen = window.modelData;
                 }
             }
+
+            Binding {
+                target: overlayLoader.item || null
+                property: "descriptor"
+                value: SurfaceCoordinator.descriptor
+                when: overlayLoader.item !== null && overlayLoader.item.hasOwnProperty("descriptor")
+            }
+
+            Binding {
+                target: overlayLoader.item || null
+                property: "screen"
+                value: window.modelData
+                when: overlayLoader.item !== null && overlayLoader.item.hasOwnProperty("screen")
+            }
         }
     }
 }

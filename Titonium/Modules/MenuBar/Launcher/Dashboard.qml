@@ -88,6 +88,23 @@ FocusScope {
 
                 Item { Layout.fillHeight: true }
 
+                Controls.Button {
+                    Layout.fillWidth: true
+                    label: I18n.tr("settings.title")
+                    iconName: "settings"
+                    variant: "secondary"
+                    onTriggered: {
+                        const settingsOwnerId = "settings:" + root.screen.name;
+                        ConfigStore.beginPreview();
+                        SurfaceCoordinator.open(settingsOwnerId, {
+                            "source": Qt.resolvedUrl("../../Settings/SettingsCenter.qml"),
+                            "keyboardFocus": "exclusive",
+                            "ownerId": settingsOwnerId,
+                            "cancelPreviewOnClose": true
+                        }, root.screen);
+                    }
+                }
+
                 Controls.TextLabel {
                     Layout.fillWidth: true
                     text: I18n.tr("launcher.keyboard_hint")

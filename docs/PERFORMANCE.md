@@ -15,6 +15,8 @@
   42 lunar conversions exist only while the transient OverlayHost Loader is active.
 - Dashboard caps its instantiated application tiles at 24. It has no debounce timer, page
   animation or background monitor; the entire search/category/grid tree is Loader-owned.
+- Settings Center is Loader-owned; only its selected page exists. Theme and Typography pages
+  have no poller, effect layer or compositor integration, and live preview is signal-driven.
 
 Performance review is part of module acceptance. Document every always-on timer with its
 reason and interval; absence of a reason is a defect.

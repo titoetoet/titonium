@@ -1,0 +1,4 @@
+module qs.Titonium.Modules.Settings
+SettingsCenter 1.0 SettingsCenter.qml
+ThemePage 1.0 ThemePage.qml
+TypographyPage 1.0 TypographyPage.qml

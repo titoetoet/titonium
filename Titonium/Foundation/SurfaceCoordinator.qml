@@ -14,9 +14,16 @@ QtObject {
     signal opened(string ownerId, var descriptor, var screen)
     signal closed(string ownerId)
 
+    function cancelPreviewIfOwned(surfaceDescriptor: var): void {
+        if (surfaceDescriptor?.cancelPreviewOnClose === true && ConfigStore.previewActive)
+            ConfigStore.cancel();
+    }
+
     function open(requestOwnerId: string, requestDescriptor: var, requestScreen: var): void {
         if (!requestOwnerId || !requestDescriptor)
             return;
+        if (root.active && root.ownerId !== requestOwnerId)
+            root.cancelPreviewIfOwned(root.descriptor);
         root.ownerId = requestOwnerId;
         root.descriptor = requestDescriptor;
         root.screen = requestScreen;
@@ -27,10 +34,11 @@ QtObject {
         if (requestOwnerId && requestOwnerId !== root.ownerId)
             return;
         const previousOwner = root.ownerId;
+        const previousDescriptor = root.descriptor;
         root.ownerId = "";
         root.descriptor = null;
         root.screen = null;
+        root.cancelPreviewIfOwned(previousDescriptor);
         root.closed(previousOwner);
     }
 }
-

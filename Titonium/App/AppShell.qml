@@ -48,6 +48,78 @@ Scope {
         function restoreAppearance(): bool {
             return ConfigStore.restoreAppearance();
         }
+
+        function appearanceState(): string {
+            return JSON.stringify(ConfigStore.previewState.appearance || {});
+        }
+    }
+
+    IpcHandler {
+        target: "settings"
+
+        function toggle(screenName: string): string {
+            const targetScreen = ScreenRouter.screenForName(screenName);
+            if (!targetScreen)
+                return "unavailable:no-screen";
+            const ownerId = "settings:" + targetScreen.name;
+            if (SurfaceCoordinator.ownerId === ownerId) {
+                SurfaceCoordinator.close(ownerId);
+                return "closed:cancelled";
+            }
+            ConfigStore.beginPreview();
+            SurfaceCoordinator.open(ownerId, {
+                "source": Qt.resolvedUrl("../Modules/Settings/SettingsCenter.qml"),
+                "keyboardFocus": "exclusive",
+                "ownerId": ownerId,
+                "cancelPreviewOnClose": true
+            }, targetScreen);
+            return "open:" + targetScreen.name;
+        }
+
+        function close(): string {
+            if (SurfaceCoordinator.ownerId.indexOf("settings:") === 0)
+                SurfaceCoordinator.close(SurfaceCoordinator.ownerId);
+            return "closed:cancelled";
+        }
+
+        function state(): string {
+            if (SurfaceCoordinator.ownerId.indexOf("settings:") !== 0)
+                return "closed";
+            return SurfaceCoordinator.ownerId + (ConfigStore.previewActive ? ":preview" : "");
+        }
+
+        function openPage(page: string, screenName: string): string {
+            if (page !== "theme" && page !== "typography")
+                return "unavailable:unknown-page";
+            const targetScreen = ScreenRouter.screenForName(screenName);
+            if (!targetScreen)
+                return "unavailable:no-screen";
+            const ownerId = "settings:" + targetScreen.name;
+            if (SurfaceCoordinator.ownerId !== ownerId)
+                ConfigStore.beginPreview();
+            SurfaceCoordinator.open(ownerId, {
+                "source": Qt.resolvedUrl("../Modules/Settings/SettingsCenter.qml"),
+                "keyboardFocus": "exclusive",
+                "ownerId": ownerId,
+                "page": page,
+                "cancelPreviewOnClose": true
+            }, targetScreen);
+            return "open:" + page + ":" + targetScreen.name;
+        }
+
+        function previewMode(mode: string): bool {
+            if (SurfaceCoordinator.ownerId.indexOf("settings:") !== 0)
+                return false;
+            if (mode !== "dark" && mode !== "light")
+                return false;
+            return ConfigStore.patch("appearance.mode", mode);
+        }
+
+        function previewBodySize(size: int): bool {
+            if (SurfaceCoordinator.ownerId.indexOf("settings:") !== 0 || size < 11 || size > 18)
+                return false;
+            return ConfigStore.patch("appearance.overrides.typography.bodySize", size);
+        }
     }
 
     IpcHandler {
@@ -128,7 +200,8 @@ Scope {
             ConfigStore.beginPreview();
             SurfaceCoordinator.open("design-gallery", {
                 "source": Qt.resolvedUrl("../Design/Gallery/DesignGallery.qml"),
-                "keyboardFocus": "exclusive"
+                "keyboardFocus": "exclusive",
+                "cancelPreviewOnClose": true
             }, targetScreen);
             return "open:" + targetScreen.name;
         }

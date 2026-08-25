@@ -9,6 +9,7 @@ Milestone 0 provides a schema-driven, multi-monitor MenuBar foundation. The immu
 first production MenuBar slices: Workspaces, Active Window, event-driven Fcitx Input Method,
 and a minute-precision Clock with a lazy Vietnamese lunar Calendar. The Launcher now discovers
 and executes desktop entries through a dedicated Platform adapter and renders a lazy Dashboard.
+Settings Center now provides transactional Theme and Typography pages with live global preview.
 Settings Center, Spotlight, Window Switcher and notifications remain phased.
 
 ## Run
@@ -44,6 +45,14 @@ Open or close the application Dashboard:
 ```bash
 qs -p "$HOME/Projects/titonium" ipc call launcher toggle DP-3
 qs -p "$HOME/Projects/titonium" ipc call launcher close
+```
+
+Open a Settings page directly for testing:
+
+```bash
+qs -p "$HOME/Projects/titonium" ipc call settings openPage theme DP-3
+qs -p "$HOME/Projects/titonium" ipc call settings openPage typography DP-3
+qs -p "$HOME/Projects/titonium" ipc call settings close
 ```
 
 Start with [AGENTS.md](AGENTS.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

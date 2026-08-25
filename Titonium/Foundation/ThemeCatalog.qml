@@ -12,6 +12,7 @@ QtObject {
 
     property var catalogState: ({})
     property var themeCache: ({})
+    property var availableThemes: []
     property bool ready: false
     property string lastError: ""
 
@@ -44,6 +45,20 @@ QtObject {
         root.themeCache = {};
         root.lastError = "";
         root.ready = true;
+        const available = [];
+        const entries = root.catalogState.themes || [];
+        for (let index = 0; index < entries.length; index++) {
+            const theme = root.loadEntry(entries[index]);
+            if (theme) {
+                available.push({
+                    "id": theme.id,
+                    "nameKey": theme.nameKey,
+                    "descriptionKey": theme.descriptionKey || "",
+                    "immutable": theme.immutable
+                });
+            }
+        }
+        root.availableThemes = available;
         return true;
     }
 

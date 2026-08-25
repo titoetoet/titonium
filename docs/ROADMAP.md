@@ -22,12 +22,16 @@ and lazy Design Gallery. Future theme reminders: Cupertino Flat and Fluent Solid
 
 - Workspaces, Active Window and Input Method — approved and complete.
 - Clock, Calendar and Lunar model — approved and complete.
-- Launcher, Application Catalog and Dashboard — implemented; awaiting visual/interaction approval.
+- Launcher, Application Catalog and Dashboard — approved and complete.
 
-## Milestone 2 — Settings and materials
+## Milestone 2 — Settings and materials — Active
 
-Settings shell, Theme/Typography pages, Preview/Apply/Cancel and deep overrides. A material
-editor is shown only for compatible non-default themes.
+- Settings shell, Theme/Typography pages and Preview/Apply/Cancel — implemented; awaiting
+  visual/interaction approval.
+- Panel/Layout and Frame appearance-reset flow — next review slice.
+- Audio, System and Launcher settings — later review slice.
+- A material editor is shown only for compatible non-default themes; Neutral Utility exposes
+  only its immutable solid policy.
 
 ## Milestone 3 — Spotlight
 

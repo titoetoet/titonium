@@ -101,6 +101,16 @@ def main() -> int:
     if "DesktopEntries.applications" not in application_adapter or "entry.execute()" not in application_adapter:
         errors.append("ApplicationCatalog must use Quickshell desktop-entry discovery and execution")
 
+    settings_feature = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in (root / "Titonium/Modules/Settings").glob("*.qml")
+    )
+    if re.search(r"\b(Timer|Process|FileView)\s*\{|execDetached|MultiEffect|ShaderEffect", settings_feature):
+        errors.append("Settings UI must remain transaction-only and effect-free")
+    coordinator_text = (root / "Titonium/Foundation/SurfaceCoordinator.qml").read_text(encoding="utf-8")
+    if "cancelPreviewOnClose" not in coordinator_text or "ConfigStore.cancel()" not in coordinator_text:
+        errors.append("SurfaceCoordinator must rollback abandoned preview transactions")
+
     accessibility_contracts = {
         "Button.qml": ("activeFocusOnTab:", "Accessible.role:", "Accessible.name:", "Accessible.focusable:"),
         "Card.qml": ("activeFocusOnTab:", "Accessible.role:", "Accessible.name:", "Accessible.focusable:"),
