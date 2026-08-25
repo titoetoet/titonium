@@ -13,12 +13,16 @@ missing members and duplicate IDs are never allowlisted.
 ## Runtime smoke test
 
 `scripts/smoke.sh` starts the project in the foreground for a bounded interval, captures the
-log and fails on QML errors, type errors, duplicate IDs or missing members. It must observe
-`Configuration Loaded`.
+log and fails on QML errors, type errors, duplicate IDs, missing members, illegal method names or
+unavailable lazy-loaded types. It must observe `Configuration Loaded`.
 
 `scripts/runtime_acceptance.sh` temporarily installs isolated runtime-layout fixtures,
 verifies invalid data falls back and unknown widget types render through the diagnostic
 component, then restores the previous runtime layout exactly.
+
+`scripts/spotlight_acceptance.sh` starts a PID-targeted shell, verifies application and Clipboard
+open/state/close IPC plus settled search state, rejects unavailable lazy types and restores the
+previous Clipboard history exactly. It never launches an application or mutates the user shell.
 
 `scripts/settings_acceptance.sh` backs up both runtime documents, exercises Preview, Cancel,
 Apply, Restore Appearance and hybrid backend resolution through live IPC, verifies repository
@@ -68,12 +72,16 @@ configuration copies. Gallery content must disappear from the scene when its Loa
   click and Escape close and release it. Calendar is not reachable from the Clock
   trigger and remains reserved for Notification Center. Lunar fixtures cover Tết 2024–2026 and
   Trung thu 2023.
-- Launcher discovers only visible desktop entries, searches name/generic name/comment, filters
-  category records and never creates more than 24 tiles per page. Its overlay remains a fixed
-  size during search; the left/right split stays 1/3–2/3; a vertical wheel moves exactly one
-  horizontal page. Names stay on one elided line. The six most-used apps precede the alphabetical
-  All Apps catalog; usage and Recent update only after a successful `DesktopEntry.execute()`.
-  Session actions require confirmation and are never invoked by automated tests.
+- `Super + Space` opens Spotlight Applications on the focused output and `Super + V` opens its
+  Clipboard list/preview. The centered panel remains 800×620 logical pixels at scales 1.0 and 1.5.
+  Browse mode renders a 5×4 page, vertical wheel input moves exactly one horizontal page and the
+  occupancy indicators reflect partial pages. Typing switches to a result list without resizing;
+  Escape clears a query before closing, and reduced motion removes transition duration.
+- Clipboard copy closes Spotlight after a successful copy. Outside click closes Spotlight, Arch
+  Menu and Settings, and the coordinator permits only one transient per screen. The compact Arch
+  Menu stays under the MenuBar trigger with text, icons and separators; Settings always opens as a
+  separate preview transaction. Every session action must show confirmation. Manual acceptance may
+  activate Cancel only; automated tests never invoke or confirm a session action.
 - Settings preview updates every surface, but closing by any lifecycle path restores committed
   state. Apply writes only the atomic runtime settings/layout files. Theme metadata is resolved from a
   validated package; Typography font/size overrides reset independently of other appearance.

@@ -6,13 +6,13 @@ changing code.
 
 ## Current milestone
 
-Milestone 0, Theme Foundation and the first Design Controls slices are complete. Milestone 1 is
-active and features are ported in groups of two or three. Workspaces, Active Window, Input
-Method, Clock, Calendar and the Vietnamese Lunar model are implemented. Visualizer remains
-deferred to the media phase. Launcher, Application Catalog and Dashboard are complete. The
-Settings Center shell plus Theme and Typography pages are complete. Panel/Layout, the optional
-Screen Frame and scoped reset flows form the current review batch; further Settings pages remain
-gated behind visual approval.
+Milestone 0, Theme Foundation, Design Controls and the Settings Center are complete. Milestone 1
+is in final parity review: Workspaces, Active Window, Input Method, Clock, Calendar, the Vietnamese
+Lunar model and the compact Arch Menu are implemented. The superseded Launcher/Dashboard has been
+removed. Milestone 3 Spotlight is complete and live at `Super + Space` for Applications and
+`Super + V` for Clipboard, while Settings remains a separate transactional surface. Visualizer
+remains deferred to the media phase; Active Window and Clock retain their documented interactive
+review items.
 
 The legacy reference is read-only:
 

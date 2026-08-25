@@ -22,9 +22,9 @@ and lazy Design Gallery. Future theme reminders: Cupertino Flat and Fluent Solid
 
 - Workspaces, Active Window and Input Method — approved and complete.
 - Clock, Calendar and Lunar model — approved and complete.
-- Arch Menu — the large Launcher prototype is superseded. Replace it with a compact macOS-style
-  text-and-icon system dropdown; Settings returns to its standalone surface and every session
-  action requires confirmation.
+- Arch Menu — complete. The superseded large Launcher prototype is removed; the Arch trigger now
+  opens a compact text-and-icon system dropdown, Settings remains a standalone surface and every
+  session action requires confirmation.
 - Active Window — running-app task strip implemented adjacent to Workspaces; awaiting interactive
   activation and focus-transition acceptance.
 - Clock — lazy analog-clock panel implemented; Calendar remains available for the future
@@ -38,11 +38,12 @@ and lazy Design Gallery. Future theme reminders: Cupertino Flat and Fluent Solid
 - Hybrid Glass package, optional one-shot hyprglass capability, QML/solid fallback and compatible-theme-only Material editor — complete.
 - Preview/Apply/Cancel, appearance restore and page-scoped resets share one atomic runtime transaction; Neutral Utility remains the immutable solid baseline.
 
-## Milestone 3 — Spotlight Launcher
+## Milestone 3 — Spotlight Launcher — Complete
 
 Keyboard-first application launcher with a categorized 5×4 browse grid and stable search-result
 layout. `Super + Space` opens Applications plus calculator search; `Super + V` opens Clipboard.
-File search remains a later provider slice.
+The compact Arch Menu and standalone Settings Center remain separate surfaces. File search remains
+a later provider slice.
 
 ## Milestone 4 — Window Switcher
 

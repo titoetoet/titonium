@@ -24,9 +24,17 @@ MenuBar transient surfaces expose test-only lifecycle endpoints without requirin
 
 ```bash
 qs -p "$HOME/Projects/titonium" ipc call calendar toggle DP-3
-qs -p "$HOME/Projects/titonium" ipc call launcher toggle DP-3
-qs -p "$HOME/Projects/titonium" ipc call launcher close
+qs -p "$HOME/Projects/titonium" ipc call arch-menu toggle DP-3
+qs -p "$HOME/Projects/titonium" ipc call arch-menu close
+qs -p "$HOME/Projects/titonium" ipc call spotlight toggle
+qs -p "$HOME/Projects/titonium" ipc call spotlight clipboard
+qs -p "$HOME/Projects/titonium" ipc call spotlight close
 ```
+
+The live Hyprland shortcuts are `Super + Space` for Spotlight Applications and `Super + V` for
+Spotlight Clipboard. Both call the project path directly. The MenuBar Arch trigger owns only the
+compact system menu; its Settings row opens the same standalone Settings Center used by Settings
+IPC. Arch Menu, Spotlight and Settings are separate coordinator owners and never nest their UI.
 
 Settings lifecycle and page endpoints:
 
@@ -40,6 +48,25 @@ qs -p "$HOME/Projects/titonium" ipc call settings previewBarHeight 48
 qs -p "$HOME/Projects/titonium" ipc call settings previewFrame true
 qs -p "$HOME/Projects/titonium" ipc call settings close
 ```
+
+## Spotlight cutover rollback
+
+Restore the recorded pre-cutover Spotlight block in both
+`$HOME/.config/hypr/hyprland.lua` and
+`$HOME/Projects/titonium-hyprland/config/hypr/hyprland.lua`, then reload Hyprland. Do not overwrite
+either file wholesale or disturb its other local changes.
+
+```bash
+hyprctl reload
+hyprctl configerrors
+qs kill -p /home/cole/Projects/titonium
+git -C /home/cole/Projects/titonium switch --detach 8fdb106
+qs -d -p /home/cole/Projects/titonium
+```
+
+The restored block disables the three legacy `qs -c titonium` Spotlight bindings behind
+`if false then ... end`. This removes the live V/Space cutover and restores the recorded rollback
+state without using `git reset --hard`.
 
 ## Legacy rollback
 
