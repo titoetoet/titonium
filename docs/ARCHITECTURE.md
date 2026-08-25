@@ -63,3 +63,7 @@ workspace activation is its only mutation. `Platform.Input.FcitxAdapter` observe
 its StatusNotifier item, so engine changes are signal-driven and require no command or timer.
 Feature models translate those platform values into semantic UI state. MenuBar QML never imports
 Hyprland, ToplevelManager or SystemTray directly.
+
+`Platform.Applications.ApplicationCatalog` is the sole desktop-entry boundary. It projects
+visible entries into immutable UI records, resolves theme icons and launches only through
+`DesktopEntry.execute()`. Launcher UI never parses an Exec string or spawns a fallback command.

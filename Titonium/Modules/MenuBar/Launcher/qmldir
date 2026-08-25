@@ -1,0 +1,5 @@
+module qs.Titonium.Modules.MenuBar.Launcher
+ApplicationCatalogModel 1.0 ApplicationCatalogModel.qml
+LauncherWidget 1.0 LauncherWidget.qml
+Dashboard 1.0 Dashboard.qml
+ApplicationTile 1.0 ApplicationTile.qml

@@ -20,6 +20,14 @@ qs -p "$HOME/Projects/titonium" ipc call gallery previewMode light
 qs -p "$HOME/Projects/titonium" ipc call gallery close
 ```
 
+MenuBar transient surfaces expose test-only lifecycle endpoints without requiring a keybinding:
+
+```bash
+qs -p "$HOME/Projects/titonium" ipc call calendar toggle DP-3
+qs -p "$HOME/Projects/titonium" ipc call launcher toggle DP-3
+qs -p "$HOME/Projects/titonium" ipc call launcher close
+```
+
 ## Legacy rollback
 
 The legacy source is retained read-only in Trash at

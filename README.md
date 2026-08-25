@@ -7,7 +7,8 @@ human or coding agent.
 Milestone 0 provides a schema-driven, multi-monitor MenuBar foundation. The immutable
 `titonium-neutral` baseline and lazy Design Gallery are complete. Milestone 1 now includes the
 first production MenuBar slices: Workspaces, Active Window, event-driven Fcitx Input Method,
-and a minute-precision Clock with a lazy Vietnamese lunar Calendar.
+and a minute-precision Clock with a lazy Vietnamese lunar Calendar. The Launcher now discovers
+and executes desktop entries through a dedicated Platform adapter and renders a lazy Dashboard.
 Settings Center, Spotlight, Window Switcher and notifications remain phased.
 
 ## Run
@@ -36,6 +37,13 @@ Open or close Calendar on a named output:
 ```bash
 qs -p "$HOME/Projects/titonium" ipc call calendar toggle DP-3
 qs -p "$HOME/Projects/titonium" ipc call calendar close
+```
+
+Open or close the application Dashboard:
+
+```bash
+qs -p "$HOME/Projects/titonium" ipc call launcher toggle DP-3
+qs -p "$HOME/Projects/titonium" ipc call launcher close
 ```
 
 Start with [AGENTS.md](AGENTS.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

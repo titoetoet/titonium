@@ -61,3 +61,6 @@ configuration copies. Gallery content must disappear from the scene when its Loa
 - Clock updates at minute precision without a timer/process. Calendar opens on the requested
   screen, supports previous/next/today, closes by outside click/Escape, and releases the heavy
   tree when closed. Lunar fixtures cover Tết 2024–2026 and Trung thu 2023.
+- Launcher discovers only visible desktop entries, searches name/generic name/comment, filters
+  category records and never creates more than 24 tiles. Pointer/Enter opens through
+  `DesktopEntry.execute()`; Escape clears a query before closing the Dashboard.

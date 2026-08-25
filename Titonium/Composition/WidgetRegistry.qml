@@ -11,7 +11,8 @@ QtObject {
         "menubar.workspaces": Qt.resolvedUrl("../Modules/MenuBar/Workspaces/WorkspacesWidget.qml"),
         "menubar.active-window": Qt.resolvedUrl("../Modules/MenuBar/ActiveWindow/ActiveWindowWidget.qml"),
         "menubar.input-method": Qt.resolvedUrl("../Modules/MenuBar/InputMethod/InputMethodWidget.qml"),
-        "menubar.clock": Qt.resolvedUrl("../Modules/MenuBar/Clock/ClockWidget.qml")
+        "menubar.clock": Qt.resolvedUrl("../Modules/MenuBar/Clock/ClockWidget.qml"),
+        "menubar.launcher": Qt.resolvedUrl("../Modules/MenuBar/Launcher/LauncherWidget.qml")
     })
 
     function sourceFor(widgetType: string): url {

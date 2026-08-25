@@ -13,6 +13,8 @@
   the existing Fcitx StatusNotifier item. None of these MenuBar widgets owns a timer or process.
 - Clock uses one shared `SystemClock.Minutes`; seconds precision is forbidden. Calendar and its
   42 lunar conversions exist only while the transient OverlayHost Loader is active.
+- Dashboard caps its instantiated application tiles at 24. It has no debounce timer, page
+  animation or background monitor; the entire search/category/grid tree is Loader-owned.
 
 Performance review is part of module acceptance. Document every always-on timer with its
 reason and interval; absence of a reason is a defect.

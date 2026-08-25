@@ -37,6 +37,8 @@ def main() -> int:
             errors.append(f"direct platform API import outside Platform: {relative}")
         if layer != "Platform" and forbidden_platform_objects.search(text):
             errors.append(f"direct platform object access outside Platform: {relative}")
+        if layer != "Platform" and re.search(r"\bDesktopEntries\b", text):
+            errors.append(f"direct desktop-entry access outside Platform: {relative}")
         if forbidden_perf.search(text):
             errors.append(f"forbidden always-on visual cost: {relative}")
         if "/home/" in text or "~/" in text:
@@ -47,7 +49,13 @@ def main() -> int:
     registry = (root / "Titonium/Composition/WidgetRegistry.qml").read_text(encoding="utf-8")
     if "unknownSource" not in registry or "sourceFor" not in registry:
         errors.append("WidgetRegistry must provide an unknown widget fallback")
-    for widget_type in ("menubar.workspaces", "menubar.active-window", "menubar.input-method", "menubar.clock"):
+    for widget_type in (
+        "menubar.workspaces",
+        "menubar.active-window",
+        "menubar.input-method",
+        "menubar.clock",
+        "menubar.launcher",
+    ):
         if widget_type not in registry:
             errors.append(f"WidgetRegistry is missing {widget_type}")
 
@@ -80,6 +88,18 @@ def main() -> int:
     )
     if re.search(r"\b(Timer|Process)\s*\{", clock_feature):
         errors.append("Clock and calendar must not poll or launch processes")
+
+    launcher_feature = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in (root / "Titonium/Modules/MenuBar/Launcher").glob("*.qml")
+    )
+    if re.search(r"\b(Timer|Process)\s*\{|execDetached|Animation\.Infinite", launcher_feature):
+        errors.append("Launcher UI must not poll, spawn commands or animate continuously")
+    application_adapter = (
+        root / "Titonium/Platform/Applications/ApplicationCatalog.qml"
+    ).read_text(encoding="utf-8")
+    if "DesktopEntries.applications" not in application_adapter or "entry.execute()" not in application_adapter:
+        errors.append("ApplicationCatalog must use Quickshell desktop-entry discovery and execution")
 
     accessibility_contracts = {
         "Button.qml": ("activeFocusOnTab:", "Accessible.role:", "Accessible.name:", "Accessible.focusable:"),
