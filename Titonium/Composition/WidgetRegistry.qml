@@ -12,7 +12,7 @@ QtObject {
         "menubar.active-window": Qt.resolvedUrl("../Modules/MenuBar/ActiveWindow/ActiveWindowWidget.qml"),
         "menubar.input-method": Qt.resolvedUrl("../Modules/MenuBar/InputMethod/InputMethodWidget.qml"),
         "menubar.clock": Qt.resolvedUrl("../Modules/MenuBar/Clock/ClockWidget.qml"),
-        "menubar.launcher": Qt.resolvedUrl("../Modules/MenuBar/Launcher/LauncherWidget.qml")
+        "menubar.launcher": Qt.resolvedUrl("../Modules/MenuBar/ArchMenu/ArchMenuWidget.qml")
     })
 
     function sourceFor(widgetType: string): url {

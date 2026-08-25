@@ -187,51 +187,35 @@ Scope {
     }
 
     IpcHandler {
-        target: "launcher"
+        target: "arch-menu"
 
         function toggle(screenName: string): string {
             const targetScreen = ScreenRouter.screenForName(screenName);
             if (!targetScreen)
                 return "unavailable:no-screen";
-            const ownerId = "launcher:" + targetScreen.name;
+            const ownerId = "arch-menu:" + targetScreen.name;
             if (SurfaceCoordinator.ownerId === ownerId) {
                 SurfaceCoordinator.close(ownerId);
                 return "closed";
             }
             SurfaceCoordinator.open(ownerId, {
-                "source": Qt.resolvedUrl("../Modules/MenuBar/Launcher/ArchMenu.qml"),
+                "source": Qt.resolvedUrl("../Modules/MenuBar/ArchMenu/ArchMenu.qml"),
                 "keyboardFocus": "exclusive",
                 "closeOnMonitorChange": true,
-                "cancelPreviewOnClose": true,
                 "ownerId": ownerId
             }, targetScreen);
             return "open:" + targetScreen.name;
         }
 
         function close(): string {
-            if (SurfaceCoordinator.ownerId.indexOf("launcher:") === 0)
+            if (SurfaceCoordinator.ownerId.indexOf("arch-menu:") === 0)
                 SurfaceCoordinator.close(SurfaceCoordinator.ownerId);
             return "closed";
         }
 
-        function section(screenName: string, sectionId: string): string {
-            const targetScreen = ScreenRouter.screenForName(screenName);
-            if (!targetScreen)
-                return "unavailable:no-screen";
-            const ownerId = "launcher:" + targetScreen.name;
-            SurfaceCoordinator.open(ownerId, {
-                "source": Qt.resolvedUrl("../Modules/MenuBar/Launcher/ArchMenu.qml"),
-                "keyboardFocus": "exclusive",
-                "closeOnMonitorChange": true,
-                "cancelPreviewOnClose": true,
-                "ownerId": ownerId,
-                "section": sectionId
-            }, targetScreen);
-            return "open:" + targetScreen.name + ":" + sectionId;
-        }
-
         function state(): string {
-            return SurfaceCoordinator.ownerId.indexOf("launcher:") === 0 ? SurfaceCoordinator.ownerId : "closed";
+            return SurfaceCoordinator.ownerId.indexOf("arch-menu:") === 0
+                ? SurfaceCoordinator.ownerId : "closed";
         }
     }
 

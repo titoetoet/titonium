@@ -58,6 +58,8 @@ def main() -> int:
     ):
         if widget_type not in registry:
             errors.append(f"WidgetRegistry is missing {widget_type}")
+    if '"menubar.launcher": Qt.resolvedUrl("../Modules/MenuBar/ArchMenu/ArchMenuWidget.qml")' not in registry:
+        errors.append("menubar.launcher must resolve to the compact ArchMenuWidget")
 
     overlay = (root / "Titonium/Surfaces/OverlayHost.qml").read_text(encoding="utf-8")
     if "Loader" not in overlay or "active:" not in overlay:
@@ -115,6 +117,136 @@ def main() -> int:
         arch_menu_text = (launcher_dir / "ArchMenu.qml").read_text(encoding="utf-8")
         if "Loader" not in arch_menu_text or "LauncherSectionRegistry.sourceFor" not in arch_menu_text:
             errors.append("Arch Menu must lazy-load sections through LauncherSectionRegistry")
+
+    compact_menu_dir = root / "Titonium/Modules/MenuBar/ArchMenu"
+    compact_menu_files = (
+        "ArchMenuWidget.qml",
+        "ArchMenu.qml",
+        "ArchMenuModel.js",
+        "ArchMenuItem.qml",
+        "SessionConfirmation.qml",
+        "AboutTitonium.qml",
+        "qmldir",
+    )
+    for compact_menu_file in compact_menu_files:
+        if not (compact_menu_dir / compact_menu_file).is_file():
+            errors.append(f"compact Arch Menu is missing focused component: {compact_menu_file}")
+
+    compact_menu_qml = {
+        path.name: path.read_text(encoding="utf-8")
+        for path in compact_menu_dir.glob("*.qml")
+    } if compact_menu_dir.is_dir() else {}
+    compact_menu_feature = "\n".join(compact_menu_qml.values())
+    if re.search(
+        r"\b(Grid|GridLayout|LauncherRail|SearchResults|TextInput|TextField|search|query)\b",
+        compact_menu_feature,
+        re.IGNORECASE,
+    ):
+        errors.append("compact Arch Menu must not contain grid, rail or search UI")
+    if re.search(r"\b(Process|FileView|Timer)\s*\{|execDetached|Animation\.Infinite", compact_menu_feature):
+        errors.append("compact Arch Menu must remain event-driven and platform-I/O free")
+
+    compact_item = compact_menu_qml.get("ArchMenuItem.qml", "")
+    for contract in (
+        "Controls.Icon",
+        "Controls.TextLabel",
+        "activeFocusOnTab:",
+        "Accessible.role: Accessible.MenuItem",
+        "Accessible.name:",
+        "Accessible.focusable:",
+    ):
+        if contract not in compact_item:
+            errors.append(f"ArchMenuItem is missing icon/text/accessibility contract: {contract}")
+
+    compact_surface = compact_menu_qml.get("ArchMenu.qml", "")
+    if (
+        "Accessible.role: Accessible.Separator" not in compact_surface
+        or "implicitHeight: Metrics.borderWidth" not in compact_surface
+    ):
+        errors.append("Arch Menu group boundaries must render semantic one-pixel separators")
+    if compact_surface.count("SessionActions.executeConfirmed(") != 1:
+        errors.append("Arch Menu must have exactly one confirmed Platform execution path")
+    pending_assignment = compact_surface.find("pendingAction = actionId")
+    confirmed_execution = compact_surface.find("SessionActions.executeConfirmed(actionId)")
+    if pending_assignment < 0 or confirmed_execution < 0 or pending_assignment > confirmed_execution:
+        errors.append("Arch Menu must set pendingAction before confirmed session execution")
+    for leaf_name in ("ArchMenuItem.qml", "SessionConfirmation.qml"):
+        if "SessionActions" in compact_menu_qml.get(leaf_name, ""):
+            errors.append(f"{leaf_name} must emit intent without calling SessionActions")
+
+    confirmation = compact_menu_qml.get("SessionConfirmation.qml", "")
+    if confirmation.count("Controls.Button {") != 2:
+        errors.append("SessionConfirmation must expose exactly Cancel and confirm controls")
+    for contract in ("accessibleName:", "activeFocusOnTab:", "Accessible.role: Accessible.Button"):
+        if confirmation.count(contract) < 2:
+            errors.append(f"each confirmation control must expose {contract}")
+    if "cancelButton.forceActiveFocus" not in confirmation:
+        errors.append("SessionConfirmation must give Cancel initial keyboard focus")
+    if "signal cancelled()" not in confirmation or "onTriggered: root.cancelled()" not in confirmation:
+        errors.append("SessionConfirmation Cancel must emit only the cancelled intent")
+    cancel_path = re.search(
+        r"function cancelPendingAction\(\): void\s*\{(?P<body>[\s\S]*?)\n\s*\}",
+        compact_surface,
+    )
+    cancel_path_body = cancel_path.group("body") if cancel_path else ""
+    if (
+        "onCancelled: root.cancelPendingAction()" not in compact_surface
+        or 'root.pendingAction = ""' not in cancel_path_body
+        or "SessionActions" in cancel_path_body
+    ):
+        errors.append("Arch Menu Cancel must clear pendingAction without Platform execution")
+
+    app_metadata_path = root / "Titonium/Foundation/AppMetadata.qml"
+    if not app_metadata_path.is_file():
+        errors.append("Foundation is missing the AppMetadata singleton")
+        app_metadata = ""
+    else:
+        app_metadata = app_metadata_path.read_text(encoding="utf-8")
+    for contract in ('name: "Titonium"', 'version: "0.1.0-dev"'):
+        if contract not in app_metadata:
+            errors.append(f"AppMetadata is missing build identity contract: {contract}")
+    about_surface = compact_menu_qml.get("AboutTitonium.qml", "")
+    for contract in (
+        "AppMetadata.name",
+        "AppMetadata.version",
+        "AppMetadata.themeIdentity",
+        "AppMetadata.sessionTechnologies",
+    ):
+        if contract not in about_surface:
+            errors.append(f"AboutTitonium must project Foundation metadata: {contract}")
+
+    app_shell = (root / "Titonium/App/AppShell.qml").read_text(encoding="utf-8")
+    if 'target: "arch-menu"' not in app_shell or 'target: "launcher"' in app_shell:
+        errors.append("AppShell must replace launcher IPC with arch-menu")
+    arch_menu_ipc = re.search(
+        r'IpcHandler\s*\{\s*target:\s*"arch-menu"(?P<body>[\s\S]*?)\n\s*\}\n\s*IpcHandler',
+        app_shell,
+    )
+    arch_menu_ipc_body = arch_menu_ipc.group("body") if arch_menu_ipc else ""
+    for method in ("function toggle(screenName: string)", "function close()", "function state()"):
+        if method not in arch_menu_ipc_body:
+            errors.append(f"arch-menu IPC is missing {method}")
+    if "function section(" in arch_menu_ipc_body:
+        errors.append("arch-menu IPC must not expose legacy section navigation")
+    if (
+        "ConfigStore.beginPreview()" not in compact_surface
+        or '"source": Qt.resolvedUrl("../../Settings/SettingsCenter.qml")' not in compact_surface
+        or '"cancelPreviewOnClose": true' not in compact_surface
+    ):
+        errors.append("Arch Menu Settings must replace the menu with a cancellable preview transaction")
+
+    session_actions = (root / "Titonium/Platform/System/SessionActions.qml").read_text(encoding="utf-8")
+    for contract in (
+        '"lock"',
+        '["hyprlock"]',
+        "signal actionStarted(string action)",
+        "signal actionFailed(string action, string error)",
+        "onStarted:",
+    ):
+        if contract not in session_actions:
+            errors.append(f"SessionActions is missing launch lifecycle contract: {contract}")
+    if re.search(r'"lock"\s*:\s*\[\s*"(?:sh|bash|zsh)"', session_actions):
+        errors.append("SessionActions lock must use direct hyprlock execution without a shell")
     application_adapter = (
         root / "Titonium/Platform/Applications/ApplicationCatalog.qml"
     ).read_text(encoding="utf-8")

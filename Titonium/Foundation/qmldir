@@ -1,5 +1,6 @@
 module qs.Titonium.Foundation
 singleton Logger 1.0 Logger.qml
+singleton AppMetadata 1.0 AppMetadata.qml
 singleton ConfigStore 1.0 ConfigStore.qml
 singleton ClipboardHistoryStore 1.0 ClipboardHistoryStore.qml
 singleton ThemeCatalog 1.0 ThemeCatalog.qml
