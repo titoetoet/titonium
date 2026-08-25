@@ -1,0 +1,16 @@
+{
+  "$schema": "titonium.i18n/v1",
+  "schemaVersion": 1,
+  "locale": "vi",
+  "strings": {
+    "foundation.ready": "Nền móng đã sẵn sàng",
+    "foundation.name": "Titonium",
+    "foundation.schema": "Cấu trúc v1",
+    "foundation.high_dpi": "HiDPI 1.5×",
+    "foundation.screen": "Màn hình {name}",
+    "foundation.unknown_widget": "Widget chưa đăng ký: {type}",
+    "foundation.invalid_node": "Node cấu hình không hợp lệ",
+    "foundation.overlay_placeholder": "Surface đang chờ module"
+  }
+}
+

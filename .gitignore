@@ -1,6 +1,6 @@
 # Runtime and generated files
-settings.json
-layout.json
+/settings.json
+/layout.json
 *.log
 *.qmlc
 __pycache__/
@@ -9,4 +9,3 @@ __pycache__/
 .idea/
 .vscode/
 *~
-

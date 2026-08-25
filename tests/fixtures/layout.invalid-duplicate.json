@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "menubar": {
+    "height": 40,
+    "screens": {
+      "default": {
+        "slots": {
+          "start": [
+            { "id": "duplicate", "type": "widget", "widgetType": "diagnostic.label" }
+          ],
+          "center": [
+            { "id": "duplicate", "type": "spacer", "size": 8 }
+          ],
+          "end": []
+        }
+      }
+    }
+  }
+}

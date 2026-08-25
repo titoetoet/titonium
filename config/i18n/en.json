@@ -1,0 +1,16 @@
+{
+  "$schema": "titonium.i18n/v1",
+  "schemaVersion": 1,
+  "locale": "en",
+  "strings": {
+    "foundation.ready": "Foundation ready",
+    "foundation.name": "Titonium",
+    "foundation.schema": "Schema v1",
+    "foundation.high_dpi": "HiDPI 1.5×",
+    "foundation.screen": "Screen {name}",
+    "foundation.unknown_widget": "Unregistered widget: {type}",
+    "foundation.invalid_node": "Invalid configuration node",
+    "foundation.overlay_placeholder": "Surface awaiting module"
+  }
+}
+

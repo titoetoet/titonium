@@ -1,0 +1,10 @@
+module Titonium.Composition
+singleton WidgetRegistry 1.0 WidgetRegistry.qml
+WidgetBase 1.0 WidgetBase.qml
+WidgetNode 1.0 WidgetNode.qml
+NodeHost 1.0 NodeHost.qml
+LayoutRenderer 1.0 LayoutRenderer.qml
+GroupNode 1.0 GroupNode.qml
+PanelNode 1.0 PanelNode.qml
+TabsNode 1.0 TabsNode.qml
+SpacerNode 1.0 SpacerNode.qml

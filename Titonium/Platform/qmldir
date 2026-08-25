@@ -1,0 +1,3 @@
+module Titonium.Platform
+singleton Capabilities 1.0 Capabilities.qml
+

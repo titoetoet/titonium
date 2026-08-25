@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "menubar": {
+    "height": 40,
+    "screens": {
+      "default": {
+        "slots": {
+          "start": [
+            {
+              "id": "fixture-group",
+              "type": "group",
+              "children": [
+                {
+                  "id": "fixture-widget",
+                  "type": "widget",
+                  "widgetType": "diagnostic.label",
+                  "props": {}
+                },
+                {
+                  "id": "fixture-spacer",
+                  "type": "spacer",
+                  "size": 8
+                }
+              ]
+            }
+          ],
+          "center": [
+            {
+              "id": "fixture-panel",
+              "type": "panel",
+              "child": {
+                "id": "fixture-panel-widget",
+                "type": "widget",
+                "widgetType": "unknown.fixture",
+                "props": {}
+              }
+            }
+          ],
+          "end": [
+            {
+              "id": "fixture-tabs",
+              "type": "tabs",
+              "pages": [
+                {
+                  "id": "fixture-page",
+                  "label": "Fixture",
+                  "child": {
+                    "id": "fixture-page-widget",
+                    "type": "widget",
+                    "widgetType": "diagnostic.screen",
+                    "props": {}
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,7 @@
+module Titonium.Foundation
+singleton Logger 1.0 Logger.qml
+singleton ConfigStore 1.0 ConfigStore.qml
+singleton I18n 1.0 I18n.qml
+singleton SurfaceCoordinator 1.0 SurfaceCoordinator.qml
+singleton ScreenRouter 1.0 ScreenRouter.qml
+

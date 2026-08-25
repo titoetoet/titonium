@@ -1,0 +1,14 @@
+{
+  "$schema": "titonium.settings/v1",
+  "schemaVersion": 1,
+  "locale": "vi",
+  "theme": {
+    "id": "titonium-foundation",
+    "mode": "dark",
+    "materialBackend": "auto"
+  },
+  "accessibility": {
+    "reducedMotion": false
+  }
+}
+

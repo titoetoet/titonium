@@ -3,8 +3,11 @@
 ## Static checks
 
 `scripts/check.sh` performs JSON validation, architecture policy checks and `qmllint`.
-Quickshell-specific lint warnings may be narrowly allowlisted in the script with an adjacent
-explanation. Errors, missing members and duplicate IDs are never allowlisted.
+Quickshell-specific lint warnings may be narrowly allowlisted in
+`scripts/qmllint_allowlist.txt` with an adjacent explanation. Quickshell 0.3.1 currently
+marks `PanelWindow` uncreatable in lint metadata even though it is the documented runtime
+layer-shell window type, so the foreground smoke test covers that narrow exception. Errors,
+missing members and duplicate IDs are never allowlisted.
 
 ## Runtime smoke test
 
@@ -21,4 +24,3 @@ log and fails on QML errors, type errors, duplicate IDs or missing members. It m
 - An unknown registry type renders a diagnostic item without crashing.
 - Applying settings does not modify the repository.
 - `hyprctl configerrors` is empty.
-

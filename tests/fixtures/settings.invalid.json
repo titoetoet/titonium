@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "locale": "xx",
+  "theme": {
+    "id": "broken",
+    "mode": "neon",
+    "materialBackend": "expensive"
+  },
+  "accessibility": {
+    "reducedMotion": "no"
+  }
+}

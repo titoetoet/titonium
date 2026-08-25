@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "titonium.theme/v1",
+  "type": "object",
+  "required": ["schemaVersion", "id", "modes", "typography", "metrics", "motion", "materials"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "id": { "type": "string", "minLength": 1 },
+    "modes": {
+      "type": "object",
+      "required": ["dark", "light"]
+    },
+    "typography": { "type": "object" },
+    "metrics": { "type": "object" },
+    "motion": { "type": "object" },
+    "materials": { "type": "object" }
+  }
+}
+

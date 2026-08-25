@@ -1,0 +1,90 @@
+{
+  "$schema": "titonium.layout/v1",
+  "schemaVersion": 1,
+  "menubar": {
+    "height": 40,
+    "screens": {
+      "default": {
+        "slots": {
+          "start": [
+            {
+              "id": "foundation-label",
+              "type": "widget",
+              "widgetType": "diagnostic.label",
+              "props": {
+                "textKey": "foundation.ready"
+              }
+            }
+          ],
+          "center": [
+            {
+              "id": "foundation-group",
+              "type": "group",
+              "orientation": "row",
+              "spacing": 8,
+              "surface": true,
+              "children": [
+                {
+                  "id": "foundation-name",
+                  "type": "widget",
+                  "widgetType": "diagnostic.label",
+                  "props": {
+                    "textKey": "foundation.name"
+                  }
+                },
+                {
+                  "id": "foundation-version",
+                  "type": "widget",
+                  "widgetType": "diagnostic.label",
+                  "props": {
+                    "textKey": "foundation.schema"
+                  }
+                }
+              ]
+            }
+          ],
+          "end": [
+            {
+              "id": "foundation-screen",
+              "type": "widget",
+              "widgetType": "diagnostic.screen",
+              "props": {}
+            }
+          ]
+        }
+      },
+      "DP-1": {
+        "slots": {
+          "center": [
+            {
+              "id": "dp1-density",
+              "type": "group",
+              "orientation": "row",
+              "spacing": 8,
+              "surface": true,
+              "children": [
+                {
+                  "id": "dp1-foundation-name",
+                  "type": "widget",
+                  "widgetType": "diagnostic.label",
+                  "props": {
+                    "textKey": "foundation.name"
+                  }
+                },
+                {
+                  "id": "dp1-high-dpi",
+                  "type": "widget",
+                  "widgetType": "diagnostic.label",
+                  "props": {
+                    "textKey": "foundation.high_dpi"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+}
+
