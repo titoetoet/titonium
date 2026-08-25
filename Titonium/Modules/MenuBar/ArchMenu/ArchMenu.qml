@@ -46,11 +46,17 @@ FocusScope {
     function confirmPendingAction(actionId: string): void {
         if (root.launchPending || actionId.length === 0 || actionId !== root.pendingAction)
             return;
-        const accepted = SessionActions.executeConfirmed(actionId);
-        if (accepted) {
-            root.launchPending = true;
+        if (!SurfaceCoordinator.guardOwner(root.ownerId)) {
+            root.failureMessage = I18n.tr("session.error.start_failed");
             return;
         }
+        const accepted = SessionActions.executeConfirmed(actionId);
+        if (accepted) {
+            if (SurfaceCoordinator.ownerId === root.ownerId)
+                root.launchPending = true;
+            return;
+        }
+        SurfaceCoordinator.releaseOwnerGuard(root.ownerId);
         root.failureMessage = I18n.tr(SessionActions.lastError);
     }
 
@@ -180,12 +186,13 @@ FocusScope {
 
         function onActionStarted(action: string): void {
             if (action === root.pendingAction)
-                SurfaceCoordinator.close(root.ownerId);
+                SurfaceCoordinator.forceClose(root.ownerId);
         }
 
         function onActionFailed(action: string, error: string): void {
             if (action !== root.pendingAction)
                 return;
+            SurfaceCoordinator.releaseOwnerGuard(root.ownerId);
             root.launchPending = false;
             root.failureMessage = I18n.tr(error);
         }

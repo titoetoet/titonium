@@ -193,8 +193,33 @@ def main() -> int:
         "onCancelled: root.cancelPendingAction()" not in compact_surface
         or 'root.pendingAction = ""' not in cancel_path_body
         or "SessionActions" in cancel_path_body
+        or "SurfaceCoordinator" in cancel_path_body
     ):
         errors.append("Arch Menu Cancel must clear pendingAction without Platform execution")
+
+    guard_call = compact_surface.find("SurfaceCoordinator.guardOwner(root.ownerId)")
+    confirmed_call = compact_surface.find("SessionActions.executeConfirmed(actionId)")
+    if guard_call < 0 or confirmed_call < 0 or guard_call > confirmed_call:
+        errors.append("Arch Menu must guard its surface owner before confirmed session execution")
+    action_started_handler = re.search(
+        r"function onActionStarted\(action: string\): void\s*\{(?P<body>[\s\S]*?)\n\s*\}",
+        compact_surface,
+    )
+    action_started_body = action_started_handler.group("body") if action_started_handler else ""
+    if "SurfaceCoordinator.forceClose(root.ownerId)" not in action_started_body:
+        errors.append("matching actionStarted must explicitly force-close the guarded Arch Menu")
+    action_failed_handler = re.search(
+        r"function onActionFailed\(action: string, error: string\): void\s*\{(?P<body>[\s\S]*?)\n\s*\}",
+        compact_surface,
+    )
+    action_failed_body = action_failed_handler.group("body") if action_failed_handler else ""
+    if (
+        "SurfaceCoordinator.releaseOwnerGuard(root.ownerId)" not in action_failed_body
+        or "root.launchPending = false" not in action_failed_body
+        or "SurfaceCoordinator.close" in action_failed_body
+        or "SurfaceCoordinator.forceClose" in action_failed_body
+    ):
+        errors.append("actionFailed must release the owner guard and retain the confirmation sheet")
 
     app_metadata_path = root / "Titonium/Foundation/AppMetadata.qml"
     if not app_metadata_path.is_file():
@@ -435,6 +460,19 @@ def main() -> int:
     coordinator_text = (root / "Titonium/Foundation/SurfaceCoordinator.qml").read_text(encoding="utf-8")
     if "cancelPreviewOnClose" not in coordinator_text or "ConfigStore.cancel()" not in coordinator_text:
         errors.append("SurfaceCoordinator must rollback abandoned preview transactions")
+    for contract in (
+        "property string guardedOwnerId",
+        "readonly property bool ownerGuarded",
+        "function guardOwner(requestOwnerId: string): bool",
+        "function releaseOwnerGuard(requestOwnerId: string): bool",
+        "function forceClose(requestOwnerId: string): bool",
+    ):
+        if contract not in coordinator_text:
+            errors.append(f"SurfaceCoordinator is missing owner lifecycle guard: {contract}")
+    if coordinator_text.count("if (root.ownerGuarded)") < 2:
+        errors.append("SurfaceCoordinator ordinary open and close must veto a guarded owner")
+    if "root.cancelPreviewIfOwned(requestDescriptor)" not in coordinator_text:
+        errors.append("a guarded replacement must roll back its rejected preview transaction")
 
     config_store_text = (root / "Titonium/Foundation/ConfigStore.qml").read_text(encoding="utf-8")
     for contract in ("committedLayout", "previewLayout", "patchLayout", "restoreLayout", "runtimeLayoutFile.setText"):
