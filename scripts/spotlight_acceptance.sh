@@ -35,7 +35,7 @@ cleanup() {
 trap cleanup EXIT
 
 call_ipc() {
-    qs -p "$project_root" ipc call "$@"
+    qs -p "$project_root" ipc --pid "$shell_pid" call "$@"
 }
 
 require_contains() {

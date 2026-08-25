@@ -146,6 +146,19 @@ def main() -> int:
         if re.search(r"\b(Timer|Process)\s*\{|wl-paste|wl-copy", clipboard_store):
             errors.append("ClipboardHistoryStore must remain event-driven and process-free")
 
+    spotlight_acceptance = (
+        root / "scripts/spotlight_acceptance.sh"
+    ).read_text(encoding="utf-8")
+    call_ipc_helper = re.search(
+        r"call_ipc\(\)\s*\{(?P<body>[\s\S]*?)\n\}", spotlight_acceptance
+    )
+    call_ipc_body = call_ipc_helper.group("body") if call_ipc_helper else ""
+    if not re.search(
+        r'qs\s+-p\s+"\$project_root"\s+ipc\s+--pid\s+"\$shell_pid"\s+call',
+        call_ipc_body,
+    ):
+        errors.append("Spotlight acceptance IPC must target its spawned shell PID")
+
     settings_feature = "\n".join(
         path.read_text(encoding="utf-8")
         for path in (root / "Titonium/Modules/Settings").glob("*.qml")
