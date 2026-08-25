@@ -7,6 +7,7 @@ trap 'rm -f -- "$qml_import_root/qs"; rmdir -- "$qml_import_root"' EXIT
 ln -s -- "$project_root" "$qml_import_root/qs"
 
 python3 "$project_root/scripts/validate_config.py"
+node "$project_root/scripts/check_config_migrations.js"
 python3 "$project_root/scripts/check_architecture.py"
 node "$project_root/scripts/check_lunar.js"
 node "$project_root/scripts/check_launcher_layout.js"

@@ -10,6 +10,8 @@ function migrateSettings(data) {
     if (data.schemaVersion !== 1 && data.schemaVersion !== 2 && data.schemaVersion !== 3 && data.schemaVersion !== 4)
         return clone(data);
     let current = clone(data);
+    if (current.schemaVersion < 4 && (!current.modules || typeof current.modules !== "object" || Array.isArray(current.modules)))
+        current.modules = {};
     if (current.schemaVersion === 1) {
         const legacyTheme = current.theme && typeof current.theme === "object" ? current.theme : {};
         const legacyAccessibility = current.accessibility && typeof current.accessibility === "object"
