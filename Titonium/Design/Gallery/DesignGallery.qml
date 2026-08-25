@@ -11,6 +11,8 @@ Item {
     property var descriptor: null
     property var screen: null
 
+    Keys.onEscapePressed: root.cancelAndClose()
+
     function cancelAndClose(): void {
         if (ConfigStore.previewActive)
             ConfigStore.cancel();
@@ -33,7 +35,7 @@ Item {
         id: galleryCard
         anchors.centerIn: parent
         width: Math.min(1000, parent.width - Metrics.spacingLarge * 4)
-        height: Math.min(780, parent.height - Metrics.spacingLarge * 4)
+        height: Math.min(900, parent.height - Metrics.spacingLarge * 4)
         radius: Metrics.radiusLarge
         padding: 0
         outlined: true
@@ -117,6 +119,8 @@ Item {
             }
 
             GallerySurfaceSection { width: parent.width }
+
+            GalleryInputSection { width: parent.width }
 
             GalleryTypographySection { width: parent.width }
             GalleryControlsSection { width: parent.width }

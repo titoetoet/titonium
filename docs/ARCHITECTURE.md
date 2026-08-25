@@ -52,4 +52,6 @@ target screen via `Loader.active`.
 - `ConfigStore.committedState` is the last applied state.
 - `ConfigStore.previewState` is the state currently rendered.
 - `SurfaceCoordinator` is the only owner of transient surface state.
+- Transient descriptors declare keyboard focus intent; `OverlayHost` translates the supported
+  `exclusive` policy to layer-shell focus and otherwise remains non-focusable.
 - Module services own feature data; UI is a projection of that data.

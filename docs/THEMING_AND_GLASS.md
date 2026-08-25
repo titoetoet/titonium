@@ -21,6 +21,11 @@ popup/section radius and padding. Cards and panels compose arbitrary child conte
 import module state or own a Wayland window. `MaterialSurface` remains an internal renderer,
 not a feature-level component.
 
+Input controls remain state-only: `Switch` exposes checked/toggled, `Slider` exposes a bounded
+range with moved/committed signals, and `Dropdown` resolves data through text/value roles while
+lazy-loading its option list. They never persist settings themselves. A module model or
+`ConfigStore` transaction owns the value and decides what to do with emitted changes.
+
 `titonium-neutral` is the immutable restore baseline. It uses opaque tonal surfaces, one-pixel
 borders, a 4/8px grid and no gradients, shadows, shaders, glass or compositor integration.
 Its material policy allows only `solid`; unsupported backend requests resolve to the package

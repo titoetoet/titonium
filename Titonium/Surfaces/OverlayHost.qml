@@ -23,7 +23,10 @@ Scope {
             WlrLayershell.namespace: "titonium-overlay"
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.exclusionMode: ExclusionMode.Ignore
-            WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+            WlrLayershell.keyboardFocus: window.ownsSurface
+                && SurfaceCoordinator.descriptor.keyboardFocus === "exclusive"
+                ? WlrKeyboardFocus.Exclusive
+                : WlrKeyboardFocus.None
 
             anchors {
                 top: true

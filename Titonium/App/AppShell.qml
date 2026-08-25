@@ -65,7 +65,8 @@ Scope {
                 return "unavailable:no-screen";
             ConfigStore.beginPreview();
             SurfaceCoordinator.open("design-gallery", {
-                "source": Qt.resolvedUrl("../Design/Gallery/DesignGallery.qml")
+                "source": Qt.resolvedUrl("../Design/Gallery/DesignGallery.qml"),
+                "keyboardFocus": "exclusive"
             }, targetScreen);
             return "open:" + targetScreen.name;
         }

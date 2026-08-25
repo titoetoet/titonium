@@ -42,3 +42,9 @@ configuration copies. Gallery content must disappear from the scene when its Loa
 - Surface/Card/Panel remain opaque under Neutral Utility and never allocate an effect layer.
 - Interactive Card responds to pointer and keyboard while non-interactive containers remain
   passive. Nested Card content stays inside Panel padding at both target output scales.
+- Switch toggles with pointer/Space/Enter; Slider clamps and snaps pointer/arrow/Home/End input;
+  disabled controls cannot mutate state.
+- Dropdown option content is absent while collapsed, supports arrow/Enter/Escape navigation and
+  emits the selected index/value without persistence or platform access.
+- Gallery requests exclusive keyboard focus only while open; Escape cancels preview and releases
+  the layer-shell focus immediately.
