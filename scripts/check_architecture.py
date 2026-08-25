@@ -121,6 +121,31 @@ def main() -> int:
     if "DesktopEntries.applications" not in application_adapter or "entry.execute()" not in application_adapter:
         errors.append("ApplicationCatalog must use Quickshell desktop-entry discovery and execution")
 
+    clipboard_adapter_path = root / "Titonium/Platform/Clipboard/ClipboardAdapter.qml"
+    clipboard_adapter = clipboard_adapter_path.read_text(encoding="utf-8")
+    for contract in ("Quickshell.clipboardText", "onClipboardTextChanged", "textObserved"):
+        if contract not in clipboard_adapter:
+            errors.append(f"ClipboardAdapter is missing event boundary: {contract}")
+    if re.search(r"\b(Timer|Process)\s*\{|wl-paste|wl-copy", clipboard_adapter):
+        errors.append("ClipboardAdapter must observe Quickshell clipboard events without polling or processes")
+
+    clipboard_store_path = root / "Titonium/Foundation/ClipboardHistoryStore.qml"
+    if not clipboard_store_path.is_file():
+        errors.append("Clipboard history is missing Foundation/ClipboardHistoryStore.qml")
+    else:
+        clipboard_store = clipboard_store_path.read_text(encoding="utf-8")
+        for contract in (
+            'Quickshell.dataPath("clipboard-history.json")',
+            "FileView",
+            "atomicWrites: true",
+            "setText(",
+            "ClipboardAdapter",
+        ):
+            if contract not in clipboard_store:
+                errors.append(f"ClipboardHistoryStore is missing persistence/event contract: {contract}")
+        if re.search(r"\b(Timer|Process)\s*\{|wl-paste|wl-copy", clipboard_store):
+            errors.append("ClipboardHistoryStore must remain event-driven and process-free")
+
     settings_feature = "\n".join(
         path.read_text(encoding="utf-8")
         for path in (root / "Titonium/Modules/Settings").glob("*.qml")
@@ -176,6 +201,7 @@ def main() -> int:
     spotlight_files = (
         "SpotlightModel.qml",
         "SpotlightSurface.qml",
+        "ClipboardView.qml",
         "AppGrid.qml",
         "ApplicationTile.qml",
         "SearchResults.qml",
@@ -202,10 +228,17 @@ def main() -> int:
         "Loader" not in spotlight_surface
         or 'mode === "browse"' not in spotlight_surface
         or 'mode === "results"' not in spotlight_surface
+        or 'mode === "clipboard"' not in spotlight_surface
         or "AppGrid.qml" not in spotlight_surface
         or "SearchResults.qml" not in spotlight_surface
+        or "ClipboardView.qml" not in spotlight_surface
     ):
-        errors.append("SpotlightSurface must lazy-load browse and results branches")
+        errors.append("SpotlightSurface must lazy-load browse, results and clipboard branches")
+    clipboard_view = spotlight_qml.get("ClipboardView.qml", "")
+    if "ClipboardHistoryStore" not in clipboard_view:
+        errors.append("ClipboardView must project ClipboardHistoryStore intents")
+    if "ClipboardAdapter" in clipboard_view or "clipboardTextChanged" in clipboard_view:
+        errors.append("Clipboard UI must not own clipboard observation")
     spotlight_accessibility = {
         "SpotlightSurface.qml": (
             "activeFocusOnTab:",

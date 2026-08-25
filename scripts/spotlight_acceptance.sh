@@ -2,20 +2,40 @@
 set -euo pipefail
 
 project_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
-log_file="$(mktemp --tmpdir titonium-spotlight-acceptance.XXXXXX.log)"
+user_home="$(getent passwd "$(id -u)" | cut -d: -f6)"
+data_root="${XDG_DATA_HOME:-$user_home/.local/share}"
+runtime_dir="$data_root/titonium"
+runtime_history="$runtime_dir/clipboard-history.json"
+backup_dir="$(mktemp -d --tmpdir titonium-spotlight-acceptance.XXXXXX)"
+log_file="$backup_dir/shell.log"
+had_history=false
 shell_pid=""
+
+mkdir -p -- "$runtime_dir"
+if [[ -f "$runtime_history" ]]; then
+    cp -- "$runtime_history" "$backup_dir/clipboard-history.json"
+    had_history=true
+fi
+
+before_git="$(git -C "$project_root" status --porcelain=v1)"
 
 cleanup() {
     if [[ -n "$shell_pid" ]] && kill -0 "$shell_pid" 2>/dev/null; then
         kill "$shell_pid" 2>/dev/null || true
         wait "$shell_pid" 2>/dev/null || true
     fi
-    rm -f -- "$log_file"
+    if [[ $had_history == true ]]; then
+        cp -- "$backup_dir/clipboard-history.json" "$runtime_history"
+    else
+        rm -f -- "$runtime_history"
+    fi
+    rm -f -- "$backup_dir/clipboard-history.json" "$log_file"
+    rmdir -- "$backup_dir"
 }
 trap cleanup EXIT
 
 call_ipc() {
-    qs -p "$project_root" ipc --newest call "$@"
+    qs -p "$project_root" ipc call "$@"
 }
 
 require_contains() {
@@ -56,6 +76,18 @@ require_contains "$results_state" "mode=results;query=fire;selected=0" "Spotligh
 require_contains "$(call_ipc spotlight close)" "closed" "Spotlight close"
 require_contains "$(call_ipc spotlight state)" "closed" "Spotlight closed state"
 
+require_contains "$(call_ipc spotlight clipboard)" "open:clipboard:" "Spotlight clipboard"
+require_contains "$(call_ipc spotlight state)" "open:clipboard:" "Spotlight clipboard state"
+require_contains "$(call_ipc spotlight state)" "mode=clipboard" "Spotlight clipboard mode"
+require_contains "$(call_ipc spotlight close)" "closed" "Spotlight clipboard close"
+require_contains "$(call_ipc spotlight state)" "closed" "Spotlight clipboard closed state"
+
+if [[ "$(git -C "$project_root" status --porcelain=v1)" != "$before_git" ]]; then
+    git -C "$project_root" status --short >&2
+    echo "FAIL Spotlight acceptance changed repository files" >&2
+    exit 1
+fi
+
 if ! rg -q 'Configuration Loaded' "$log_file"; then
     sed -n '1,240p' "$log_file" >&2
     echo "FAIL missing Configuration Loaded" >&2
@@ -67,4 +99,4 @@ if rg -i '\b(ERROR|TypeError|duplicate id|missing method)\b' "$log_file"; then
     exit 1
 fi
 
-echo "PASS Spotlight IPC toggle, search state and close acceptance"
+echo "PASS Spotlight application/clipboard IPC, search state, close and history isolation acceptance"

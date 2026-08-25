@@ -12,6 +12,8 @@ import qs.Titonium.Surfaces
 Scope {
     id: root
 
+    readonly property var clipboardHistory: ClipboardHistoryStore
+
     MenuBarHost {}
     FrameHost {}
     OverlayHost {}
@@ -259,6 +261,24 @@ Scope {
             return "open:applications:" + targetScreen.name;
         }
 
+        function clipboard(): string {
+            const targetScreen = ScreenRouter.screenForName(HyprlandAdapter.focusedMonitorName);
+            if (!targetScreen)
+                return "unavailable:no-screen";
+            const ownerId = "spotlight:" + targetScreen.name;
+            SurfaceCoordinator.open(ownerId, {
+                "source": Qt.resolvedUrl("../Modules/Spotlight/SpotlightSurface.qml"),
+                "keyboardFocus": "exclusive",
+                "closeOnMonitorChange": true,
+                "ownerId": ownerId,
+                "mode": "clipboard",
+                "query": "",
+                "stateMode": "clipboard",
+                "selectedIndex": 0
+            }, targetScreen);
+            return "open:clipboard:" + targetScreen.name;
+        }
+
         function close(): string {
             if (SurfaceCoordinator.ownerId.indexOf("spotlight:") === 0)
                 SurfaceCoordinator.close(SurfaceCoordinator.ownerId);
@@ -270,7 +290,7 @@ Scope {
                 return "closed";
             const screenName = SurfaceCoordinator.screen?.name || "";
             const descriptor = SurfaceCoordinator.descriptor || {};
-            return "open:applications:" + screenName
+            return "open:" + (descriptor.mode || "applications") + ":" + screenName
                 + ";mode=" + (descriptor.stateMode || "browse")
                 + ";query=" + (descriptor.query || "")
                 + ";selected=" + (descriptor.selectedIndex || 0);
@@ -280,14 +300,16 @@ Scope {
             if (SurfaceCoordinator.ownerId.indexOf("spotlight:") !== 0)
                 return "unavailable:closed";
             const ownerId = SurfaceCoordinator.ownerId;
+            const descriptorMode = SurfaceCoordinator.descriptor?.mode || "applications";
             SurfaceCoordinator.open(ownerId, {
                 "source": Qt.resolvedUrl("../Modules/Spotlight/SpotlightSurface.qml"),
                 "keyboardFocus": "exclusive",
                 "closeOnMonitorChange": true,
                 "ownerId": ownerId,
-                "mode": "applications",
+                "mode": descriptorMode,
                 "query": query,
-                "stateMode": query.trim().length > 0 ? "results" : "browse",
+                "stateMode": descriptorMode === "clipboard" ? "clipboard"
+                    : (query.trim().length > 0 ? "results" : "browse"),
                 "selectedIndex": 0
             }, SurfaceCoordinator.screen);
             return spotlightIpc.state();

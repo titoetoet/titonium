@@ -13,6 +13,8 @@ FocusScope {
     property var descriptor: ({})
     property var screen: null
     readonly property string ownerId: root.descriptor?.ownerId || ""
+    signal clipboardMoveRequested(int delta)
+    signal clipboardActivateRequested()
 
     anchors.fill: parent
     focus: true
@@ -43,7 +45,7 @@ FocusScope {
             "keyboardFocus": "exclusive",
             "closeOnMonitorChange": true,
             "ownerId": root.ownerId,
-            "mode": "applications",
+            "mode": root.descriptor?.mode || "applications",
             "query": spotlightModel.query,
             "stateMode": spotlightModel.mode,
             "selectedIndex": spotlightModel.selectedIndex
@@ -51,6 +53,11 @@ FocusScope {
     }
 
     onDescriptorChanged: {
+        const descriptorMode = root.descriptor?.mode || "applications";
+        if (descriptorMode === "clipboard" && spotlightModel.mode !== "clipboard")
+            spotlightModel.open("clipboard");
+        else if (descriptorMode !== "clipboard" && spotlightModel.mode === "clipboard")
+            spotlightModel.open(root.descriptor?.stateMode || "browse");
         const descriptorQuery = root.descriptor?.query || "";
         if (descriptorQuery !== spotlightModel.query)
             spotlightModel.setQuery(descriptorQuery);
@@ -94,7 +101,8 @@ FocusScope {
                 implicitHeight: 44
                 activeFocusOnTab: true
                 text: spotlightModel.query
-                placeholderText: I18n.tr("spotlight.search_placeholder")
+                placeholderText: I18n.tr(spotlightModel.mode === "clipboard"
+                    ? "spotlight.clipboard.search_placeholder" : "spotlight.search_placeholder")
                 color: Theme.textPrimary
                 placeholderTextColor: Theme.textSecondary
                 font.family: Typography.family
@@ -113,13 +121,21 @@ FocusScope {
                 onTextEdited: spotlightModel.setQuery(text)
                 Keys.onPressed: event => {
                     if (event.key === Qt.Key_Down) {
-                        spotlightModel.moveSelection(1);
+                        if (spotlightModel.mode === "clipboard" && bodyLoader.item)
+                            root.clipboardMoveRequested(1);
+                        else
+                            spotlightModel.moveSelection(1);
                         event.accepted = true;
                     } else if (event.key === Qt.Key_Up) {
-                        spotlightModel.moveSelection(-1);
+                        if (spotlightModel.mode === "clipboard" && bodyLoader.item)
+                            root.clipboardMoveRequested(-1);
+                        else
+                            spotlightModel.moveSelection(-1);
                         event.accepted = true;
                     } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                        if (spotlightModel.activateSelected())
+                        if (spotlightModel.mode === "clipboard" && bodyLoader.item)
+                            root.clipboardActivateRequested();
+                        else if (spotlightModel.activateSelected())
                             root.close();
                         event.accepted = true;
                     } else if (event.key === Qt.Key_Escape) {
@@ -129,7 +145,8 @@ FocusScope {
                 }
 
                 Accessible.role: Accessible.EditableText
-                Accessible.name: I18n.tr("spotlight.search_accessible")
+                Accessible.name: I18n.tr(spotlightModel.mode === "clipboard"
+                    ? "spotlight.clipboard.search_accessible" : "spotlight.search_accessible")
                 Accessible.focusable: true
             }
 
@@ -170,9 +187,11 @@ FocusScope {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 active: spotlightModel.mode === "browse" || spotlightModel.mode === "results"
+                    || spotlightModel.mode === "clipboard"
                 source: spotlightModel.mode === "browse"
                     ? Qt.resolvedUrl("AppGrid.qml")
-                    : (spotlightModel.mode === "results" ? Qt.resolvedUrl("SearchResults.qml") : "")
+                    : (spotlightModel.mode === "results" ? Qt.resolvedUrl("SearchResults.qml")
+                        : (spotlightModel.mode === "clipboard" ? Qt.resolvedUrl("ClipboardView.qml") : ""))
             }
 
             Binding {
@@ -180,6 +199,13 @@ FocusScope {
                 property: "spotlightModel"
                 value: spotlightModel
                 when: bodyLoader.item !== null
+            }
+
+            Binding {
+                target: bodyLoader.item || null
+                property: "spotlightSurface"
+                value: root
+                when: spotlightModel.mode === "clipboard" && bodyLoader.item !== null
             }
 
             Connections {

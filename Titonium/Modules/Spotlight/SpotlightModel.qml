@@ -32,6 +32,15 @@ QtObject {
     readonly property var results: root.searchResults()
 
     function open(descriptorMode: string): void {
+        if (descriptorMode === "clipboard") {
+            root.mode = "clipboard";
+            root.query = "";
+            root.categoryId = "all";
+            root.pageIndex = 0;
+            root.selectedIndex = 0;
+            root.selectionMoved = false;
+            return;
+        }
         const initial = SpotlightState.initial(descriptorMode === "results" ? "results" : "browse");
         root.mode = initial.mode;
         root.query = initial.query;
@@ -42,6 +51,12 @@ QtObject {
     }
 
     function setQuery(nextQuery: string): void {
+        if (root.mode === "clipboard") {
+            root.query = typeof nextQuery === "string" ? nextQuery : "";
+            root.selectedIndex = 0;
+            root.selectionMoved = false;
+            return;
+        }
         const next = SpotlightState.withQuery({
             "mode": root.mode,
             "query": root.query,
@@ -119,6 +134,11 @@ QtObject {
     }
 
     function escape(): bool {
+        if (root.mode === "clipboard") {
+            root.selectedIndex = 0;
+            root.selectionMoved = false;
+            return true;
+        }
         const next = SpotlightState.escape({
             "mode": root.mode,
             "query": root.query,

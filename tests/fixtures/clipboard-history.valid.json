@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "valid-url",
+      "text": "https://example.com",
+      "preview": "https://example.com",
+      "kind": "url",
+      "colorHex": "",
+      "timestamp": 1000,
+      "lines": 1,
+      "words": 1,
+      "chars": 19
+    },
+    {
+      "id": "invalid-missing-stats",
+      "text": "drop me",
+      "preview": "drop me",
+      "kind": "plain",
+      "colorHex": "",
+      "timestamp": 1500
+    },
+    {
+      "id": "valid-plain",
+      "text": "hello world",
+      "preview": "hello world",
+      "kind": "plain",
+      "colorHex": "",
+      "timestamp": 2000,
+      "lines": 1,
+      "words": 2,
+      "chars": 11
+    },
+    {
+      "id": 42,
+      "text": "drop wrong id type",
+      "preview": "drop wrong id type",
+      "kind": "plain",
+      "colorHex": "",
+      "timestamp": 2500,
+      "lines": 1,
+      "words": 4,
+      "chars": 18
+    }
+  ]
+}
