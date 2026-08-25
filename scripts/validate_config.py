@@ -24,7 +24,7 @@ def validate_settings(data: Any) -> list[str]:
     errors: list[str] = []
     if not isinstance(data, dict):
         return ["settings must be an object"]
-    if data.get("schemaVersion") != 2:
+    if data.get("schemaVersion") != 3:
         errors.append("unsupported settings schemaVersion")
     if data.get("locale") not in {"vi", "en"}:
         errors.append("locale must be vi or en")
@@ -85,20 +85,14 @@ def validate_settings(data: Any) -> list[str]:
                 avatar_icons = {"person", "terminal", "face", "smart_toy", "rocket_launch", "sports_esports", "bolt", "coffee", "palette", "pets", "headphones", "local_fire_department", "code", "music_note", "public", "diamond"}
                 if launcher.get("avatarIcon") not in avatar_icons:
                     errors.append("modules.launcher.avatarIcon is invalid")
-                if launcher.get("defaultCategory") not in {"all", "recent", "internet", "development", "media", "system"}:
-                    errors.append("modules.launcher.defaultCategory is invalid")
-                for key, minimum, maximum in (("resultLimit", 6, 48), ("columns", 4, 8)):
-                    value = launcher.get(key)
-                    if not isinstance(value, int) or isinstance(value, bool) or not minimum <= value <= maximum:
-                        errors.append(f"modules.launcher.{key} must be an integer from {minimum} to {maximum}")
                 if launcher.get("pageTransition") not in {"none", "slide", "slide-fade", "slide-scale"}:
                     errors.append("modules.launcher.pageTransition is invalid")
                 duration = launcher.get("transitionDuration")
                 if not isinstance(duration, int) or isinstance(duration, bool) or not 80 <= duration <= 500:
                     errors.append("modules.launcher.transitionDuration must be an integer from 80 to 500")
-                for key in ("showSubtitles", "searchAutoFocus"):
-                    if not isinstance(launcher.get(key), bool):
-                        errors.append(f"modules.launcher.{key} must be a boolean")
+                allowed = {"username", "avatarIcon", "pageTransition", "transitionDuration"}
+                for key in launcher.keys() - allowed:
+                    errors.append(f"modules.launcher.{key} is retired")
         clock = data["modules"].get("clock")
         if clock is not None:
             if not isinstance(clock, dict):
@@ -111,24 +105,40 @@ def validate_settings(data: Any) -> list[str]:
 
 
 def migrate_settings(data: Any) -> Any:
-    if not isinstance(data, dict) or data.get("schemaVersion") != 1:
+    if not isinstance(data, dict) or data.get("schemaVersion") not in {1, 2, 3}:
         return data
-    legacy_theme = data.get("theme") if isinstance(data.get("theme"), dict) else {}
-    accessibility = data.get("accessibility") if isinstance(data.get("accessibility"), dict) else {}
-    modules = data.get("modules") if isinstance(data.get("modules"), dict) else {}
-    return {
-        "$schema": "titonium.settings/v2",
-        "schemaVersion": 2,
-        "locale": "en" if data.get("locale") == "en" else "vi",
-        "appearance": {
-            "themeId": "titonium-neutral",
-            "mode": "light" if legacy_theme.get("mode") == "light" else "dark",
-            "density": "comfortable",
-            "overrides": {},
-        },
-        "accessibility": {"reducedMotion": accessibility.get("reducedMotion") is True},
-        "modules": modules,
-    }
+    current = json.loads(json.dumps(data))
+    if current.get("schemaVersion") == 1:
+        legacy_theme = current.get("theme") if isinstance(current.get("theme"), dict) else {}
+        accessibility = current.get("accessibility") if isinstance(current.get("accessibility"), dict) else {}
+        modules = current.get("modules") if isinstance(current.get("modules"), dict) else {}
+        current = {
+            "$schema": "titonium.settings/v2",
+            "schemaVersion": 2,
+            "locale": "en" if current.get("locale") == "en" else "vi",
+            "appearance": {
+                "themeId": "titonium-neutral",
+                "mode": "light" if legacy_theme.get("mode") == "light" else "dark",
+                "density": "comfortable",
+                "overrides": {},
+            },
+            "accessibility": {"reducedMotion": accessibility.get("reducedMotion") is True},
+            "modules": modules,
+        }
+    if current.get("schemaVersion") == 2:
+        modules = current.get("modules") if isinstance(current.get("modules"), dict) else {}
+        launcher = modules.get("launcher")
+        if isinstance(launcher, dict):
+            modules["launcher"] = {
+                "username": launcher.get("username") if isinstance(launcher.get("username"), str) else "",
+                "avatarIcon": launcher.get("avatarIcon") or "terminal",
+                "pageTransition": launcher.get("pageTransition") or "slide-fade",
+                "transitionDuration": launcher.get("transitionDuration")
+                if isinstance(launcher.get("transitionDuration"), int) else 220,
+            }
+        current["$schema"] = "titonium.settings/v3"
+        current["schemaVersion"] = 3
+    return current
 
 
 def restore_appearance(settings: Any, defaults: Any) -> Any:
@@ -308,7 +318,9 @@ def expect_migration(path: Path) -> bool:
     defaults = load_json(path.parents[2] / "config/defaults/settings.json")
     restored = restore_appearance(migrated, defaults)
     preserved = (
-        migrated.get("locale") == "en"
+        migrated.get("schemaVersion") == 3
+        and migrated.get("$schema") == "titonium.settings/v3"
+        and migrated.get("locale") == "en"
         and migrated.get("appearance", {}).get("themeId") == "titonium-neutral"
         and migrated.get("appearance", {}).get("mode") == "light"
         and migrated.get("accessibility", {}).get("reducedMotion") is True
@@ -321,7 +333,30 @@ def expect_migration(path: Path) -> bool:
     if errors or not preserved:
         print(f"FAIL {path}: migration errors={errors}; preserved={preserved}", file=sys.stderr)
         return False
-    print(f"PASS {path.name}: migrated v1 -> v2 with non-appearance state preserved")
+    print(f"PASS {path.name}: migrated v1 -> v3 with non-appearance state preserved")
+    return True
+
+
+def expect_launcher_v2_migration(path: Path) -> bool:
+    migrated = migrate_settings(load_json(path))
+    launcher = migrated.get("modules", {}).get("launcher", {})
+    retired = {"defaultCategory", "resultLimit", "columns", "showSubtitles", "searchAutoFocus"}
+    valid = (
+        migrated.get("schemaVersion") == 3
+        and migrated.get("$schema") == "titonium.settings/v3"
+        and launcher == {
+            "username": "Cole",
+            "avatarIcon": "rocket_launch",
+            "pageTransition": "slide-scale",
+            "transitionDuration": 280,
+        }
+        and retired.isdisjoint(launcher)
+        and migrated.get("modules", {}).get("sentinel", {}).get("enabled") is True
+    )
+    if not valid:
+        print(f"FAIL {path}: v2 launcher migration produced {launcher}", file=sys.stderr)
+        return False
+    print(f"PASS {path.name}: migrated v2 -> v3 and removed retired Launcher fields")
     return True
 
 
@@ -363,7 +398,7 @@ def expect_theme_contracts(root: Path) -> bool:
 def expect_derived_rejections(root: Path) -> bool:
     settings = load_json(root / "config/defaults/settings.json")
     settings["modules"]["audio"]["volumeStep"] = 0
-    settings["modules"]["launcher"]["columns"] = "six"
+    settings["modules"]["launcher"]["searchAutoFocus"] = True
     settings["modules"]["clock"]["showLunar"] = "yes"
     theme = load_json(root / "config/themes/titonium-hybrid-glass.json")
     theme["material"]["defaultBackend"] = "native"
@@ -393,12 +428,14 @@ def main() -> int:
         (root / "tests/fixtures/settings.invalid-frame.json", validate_settings, False),
         (root / "tests/fixtures/theme.invalid-typography.json", validate_theme, False),
     )
-    passed = (
-        all(expect(*case) for case in cases)
-        and expect_migration(root / "tests/fixtures/settings.v1.valid.json")
-        and expect_theme_contracts(root)
-        and expect_derived_rejections(root)
-    )
+    checks = [
+        all(expect(*case) for case in cases),
+        expect_migration(root / "tests/fixtures/settings.v1.valid.json"),
+        expect_launcher_v2_migration(root / "tests/fixtures/settings.v2.launcher.json"),
+        expect_theme_contracts(root),
+        expect_derived_rejections(root),
+    ]
+    passed = all(checks)
     return 0 if passed else 1
 
 

@@ -1,6 +1,6 @@
 {
-  "$schema": "titonium.settings/v2",
-  "schemaVersion": 2,
+  "$schema": "titonium.settings/v3",
+  "schemaVersion": 3,
   "locale": "vi",
   "appearance": {
     "themeId": "titonium-neutral",
@@ -28,13 +28,8 @@
     "launcher": {
       "username": "",
       "avatarIcon": "terminal",
-      "defaultCategory": "all",
-      "resultLimit": 24,
-      "columns": 6,
       "pageTransition": "slide-fade",
-      "transitionDuration": 220,
-      "showSubtitles": true,
-      "searchAutoFocus": true
+      "transitionDuration": 220
     },
     "clock": {
       "use24Hour": true,

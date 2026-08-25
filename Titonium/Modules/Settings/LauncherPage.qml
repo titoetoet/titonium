@@ -16,21 +16,6 @@ Item {
         "bolt", "coffee", "palette", "pets", "headphones", "local_fire_department",
         "code", "music_note", "public", "diamond"
     ]
-    readonly property var categories: [
-        { "label": I18n.tr("launcher.category.all"), "value": "all" },
-        { "label": I18n.tr("launcher.category.recent"), "value": "recent" },
-        { "label": I18n.tr("launcher.category.internet"), "value": "internet" },
-        { "label": I18n.tr("launcher.category.development"), "value": "development" },
-        { "label": I18n.tr("launcher.category.media"), "value": "media" },
-        { "label": I18n.tr("launcher.category.system"), "value": "system" }
-    ]
-
-    function categoryIndex(): int {
-        for (let index = 0; index < root.categories.length; index++)
-            if (root.categories[index].value === root.launcherState.defaultCategory) return index;
-        return 0;
-    }
-
     function transitionIndex(): int {
         const values = ["slide-fade", "slide", "slide-scale", "none"];
         const index = values.indexOf(root.launcherState.pageTransition);
@@ -118,7 +103,7 @@ Item {
                 Layout.fillWidth: true
                 Controls.TextLabel { text: I18n.tr("settings.launcher.grid"); strong: true }
                 Item { Layout.fillWidth: true }
-                Controls.TextLabel { text: "6 × 4 · 24"; variant: "mono"; tone: "accent" }
+                Controls.TextLabel { text: I18n.tr("settings.launcher.grid_adaptive"); variant: "caption"; tone: "accent" }
             }
             Controls.TextLabel {
                 Layout.fillWidth: true
@@ -166,34 +151,6 @@ Item {
                         accessibleName: I18n.tr("settings.launcher.transition_duration")
                         onMoved: value => ConfigStore.patch("modules.launcher.transitionDuration", Math.round(value))
                     }
-                }
-            }
-
-            Controls.TextLabel { text: I18n.tr("settings.launcher.default_category"); strong: true }
-            Controls.Dropdown {
-                Layout.fillWidth: true
-                model: root.categories
-                currentIndex: root.categoryIndex()
-                accessibleName: I18n.tr("settings.launcher.default_category")
-                onSelected: (index, value) => ConfigStore.patch("modules.launcher.defaultCategory", value)
-            }
-
-            RowLayout {
-                Layout.fillWidth: true
-                Controls.TextLabel { Layout.fillWidth: true; text: I18n.tr("settings.launcher.show_subtitles"); strong: true }
-                Controls.Switch {
-                    checked: root.launcherState.showSubtitles === true
-                    accessibleName: I18n.tr("settings.launcher.show_subtitles")
-                    onToggled: checked => ConfigStore.patch("modules.launcher.showSubtitles", checked)
-                }
-            }
-            RowLayout {
-                Layout.fillWidth: true
-                Controls.TextLabel { Layout.fillWidth: true; text: I18n.tr("settings.launcher.autofocus"); strong: true }
-                Controls.Switch {
-                    checked: root.launcherState.searchAutoFocus !== false
-                    accessibleName: I18n.tr("settings.launcher.autofocus")
-                    onToggled: checked => ConfigStore.patch("modules.launcher.searchAutoFocus", checked)
                 }
             }
 

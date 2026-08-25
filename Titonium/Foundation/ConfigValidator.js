@@ -6,7 +6,7 @@ const backends = ["auto", "solid", "qml", "native"];
 function validateSettings(data) {
     const errors = [];
     if (!data || typeof data !== "object") return ["settings must be an object"];
-    if (data.schemaVersion !== 2) errors.push("unsupported settings schemaVersion");
+    if (data.schemaVersion !== 3) errors.push("unsupported settings schemaVersion");
     if (data.locale !== "vi" && data.locale !== "en") errors.push("locale must be vi or en");
     if (!data.appearance || typeof data.appearance !== "object" || Array.isArray(data.appearance)) {
         errors.push("appearance is required");
@@ -62,20 +62,15 @@ function validateSettings(data) {
                 errors.push("modules.launcher.username must be a string up to 40 characters");
             if (["person", "terminal", "face", "smart_toy", "rocket_launch", "sports_esports", "bolt", "coffee", "palette", "pets", "headphones", "local_fire_department", "code", "music_note", "public", "diamond"].indexOf(launcher.avatarIcon) < 0)
                 errors.push("modules.launcher.avatarIcon is invalid");
-            if (["all", "recent", "internet", "development", "media", "system"].indexOf(launcher.defaultCategory) < 0)
-                errors.push("modules.launcher.defaultCategory is invalid");
-            if (!Number.isInteger(launcher.resultLimit) || launcher.resultLimit < 6 || launcher.resultLimit > 48)
-                errors.push("modules.launcher.resultLimit must be an integer from 6 to 48");
-            if (!Number.isInteger(launcher.columns) || launcher.columns < 4 || launcher.columns > 8)
-                errors.push("modules.launcher.columns must be an integer from 4 to 8");
             if (["none", "slide", "slide-fade", "slide-scale"].indexOf(launcher.pageTransition) < 0)
                 errors.push("modules.launcher.pageTransition is invalid");
             if (!Number.isInteger(launcher.transitionDuration) || launcher.transitionDuration < 80 || launcher.transitionDuration > 500)
                 errors.push("modules.launcher.transitionDuration must be an integer from 80 to 500");
-            if (typeof launcher.showSubtitles !== "boolean")
-                errors.push("modules.launcher.showSubtitles must be a boolean");
-            if (typeof launcher.searchAutoFocus !== "boolean")
-                errors.push("modules.launcher.searchAutoFocus must be a boolean");
+            const allowed = ["username", "avatarIcon", "pageTransition", "transitionDuration"];
+            Object.keys(launcher).forEach(key => {
+                if (allowed.indexOf(key) < 0)
+                    errors.push("modules.launcher." + key + " is retired");
+            });
         }
     }
     if (data.modules && data.modules.clock !== undefined) {

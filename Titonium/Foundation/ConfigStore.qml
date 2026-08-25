@@ -97,7 +97,7 @@ QtObject {
         root.resolveTheme();
         root.lastError = "";
         root.ready = true;
-        Logger.info("config", "settings schema v2 loaded from defaults/runtime data directory");
+        Logger.info("config", "settings schema v3 loaded from defaults/runtime data directory");
     }
 
     function resolveTheme(): void {
