@@ -19,16 +19,26 @@ def main() -> int:
         "islands/StatusPill.qml",
         "notch/qmldir",
         "notch/CenterNotchCoordinator.qml",
+        "notch/CenterNotchWindow.qml",
+        "notch/CenterNotchSurface.qml",
+        "notch/CenterNotch.qml",
     )
     for relative in required:
         if not (BAR / relative).is_file():
             errors.append(f"missing Bar island contract: Titonium/Bar/{relative}")
 
     contracts = {
-        "BarHost.qml": ("Variants {", "model: Quickshell.screens"),
+        "BarHost.qml": (
+            "Variants {",
+            "model: Quickshell.screens",
+            "CenterNotchWindow {",
+        ),
         "BarSurface.qml": ("PanelWindow {", "exclusiveZone: 40", "mask: Region {"),
         "Bar.qml": ("StartIsland {", "CenterIsland {", "EndIsland {", "BarLayout.centerX"),
-        "islands/CenterIsland.qml": ("CenterNotchCoordinator.toggle", "opacity: 1"),
+        "islands/CenterIsland.qml": (
+            "CenterNotchCoordinator.toggle",
+            "CenterNotchCoordinator.ownerScreenName",
+        ),
         "islands/ConnectivityPill.qml": ("readonly property int fullImplicitWidth",),
         "islands/EndIsland.qml": (
             "ConnectivityPill {",
@@ -36,6 +46,17 @@ def main() -> int:
             "connectivity.fullImplicitWidth",
         ),
         "islands/StatusPill.qml": ("InputMethod {", "Clock {"),
+        "notch/CenterNotchWindow.qml": (
+            "PanelWindow {",
+            "Loader {",
+            "active: window.ownsNotch",
+            "WlrLayershell.exclusionMode: ExclusionMode.Ignore",
+            "WlrLayershell.keyboardFocus:",
+        ),
+        "notch/CenterNotchSurface.qml": (
+            "CenterNotchCoordinator.close()",
+            "Keys.onEscapePressed",
+        ),
     }
     for filename, fragments in contracts.items():
         path = BAR / filename
@@ -83,6 +104,20 @@ def main() -> int:
         missing = sorted(required_i18n - set(catalog.get("strings", {})))
         for key in missing:
             errors.append(f"{locale} catalog missing Bar key: {key}")
+
+    app_path = ROOT / "Titonium/App.qml"
+    if app_path.is_file():
+        app_source = app_path.read_text(encoding="utf-8")
+        for fragment in (
+            'target: "centerNotch"',
+            "CenterNotchCoordinator.close()",
+            "function open(page: string): string",
+            "function page(page: string): string",
+            "function close(): string",
+            "function state(): string",
+        ):
+            if fragment not in app_source:
+                errors.append(f"App missing Center Notch lifecycle contract: {fragment}")
 
     if errors:
         print("FAIL direct Bar contract")

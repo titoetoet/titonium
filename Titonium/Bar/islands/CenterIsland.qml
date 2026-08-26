@@ -19,7 +19,7 @@ Item {
         variant: "secondary"
         size: "medium"
         accessibleName: I18n.tr("menubar.center_notch.accessible")
-        opacity: 1
+        opacity: CenterNotchCoordinator.ownerScreenName === root.screen.name ? 0 : 1
         onTriggered: CenterNotchCoordinator.toggle(root.screen.name)
     }
 }

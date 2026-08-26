@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import qs.Titonium.Bar
+import qs.Titonium.Bar.notch
 import qs.Titonium.Core.Runtime
 import qs.Titonium.Core.Screens
 import qs.Titonium.Core.Surfaces
@@ -14,6 +15,7 @@ Scope {
     id: root
 
     function openSpotlight(scope: string, query: string, stateMode: string): string {
+        CenterNotchCoordinator.close();
         const screen = ScreenRouter.screenForName(HyprlandService.focusedMonitorName);
         if (!screen)
             return "unavailable:no-screen";
@@ -38,6 +40,37 @@ Scope {
         target: "app"
         function status(): string { return Preferences.ready ? "ready" : "not-ready"; }
         function closeTransient(): void { SurfaceManager.close(""); }
+    }
+
+    IpcHandler {
+        id: centerNotchIpc
+        target: "centerNotch"
+
+        function open(page: string): string {
+            const screen = ScreenRouter.screenForName(HyprlandService.focusedMonitorName);
+            if (!screen)
+                return "unavailable:no-screen";
+            CenterNotchCoordinator.open(screen.name, page);
+            return centerNotchIpc.state();
+        }
+
+        function page(page: string): string {
+            if (!CenterNotchCoordinator.requestPage(page))
+                return "unavailable:closed";
+            return centerNotchIpc.state();
+        }
+
+        function close(): string {
+            CenterNotchCoordinator.close();
+            return "closed";
+        }
+
+        function state(): string {
+            if (!CenterNotchCoordinator.active)
+                return "closed";
+            return "open:" + CenterNotchCoordinator.ownerScreenName
+                + ";page=" + CenterNotchCoordinator.requestedPage;
+        }
     }
 
     IpcHandler {
