@@ -22,7 +22,7 @@ QtObject {
     property int selectedIndex: 0
     property bool selectionMoved: false
 
-    readonly property var categories: CategoryCatalog.catalogFor(ApplicationCatalog.applications)
+    readonly property var categories: CategoryCatalog.catalogFor(ApplicationVisibilityStore.visibleApplications)
     readonly property var visibleApps: {
         for (let index = 0; index < root.categories.length; index++) {
             if (root.categories[index].id === root.categoryId)
@@ -91,7 +91,7 @@ QtObject {
     function searchResults(): var {
         if (root.mode !== "results")
             return [];
-        const applications = SearchEngine.search(ApplicationCatalog.applications, root.query);
+        const applications = SearchEngine.search(ApplicationVisibilityStore.visibleApplications, root.query);
         const calculation = Calculator.evaluate(root.query);
         if (!calculation.matched)
             return applications;

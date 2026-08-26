@@ -50,8 +50,9 @@ Notification Center. Lunar conversion is pure stateless JavaScript fixed to Viet
 must retain its fixture tests.
 
 Spotlight owns the keyboard-first application and clipboard surface. It categorizes desktop
-entries from `Platform.Applications.ApplicationCatalog`, renders a fixed 5×4 browse grid with
-occupancy indicators, and keeps query results and clipboard content as separate lazy branches.
+entries from `Foundation.ApplicationVisibilityStore.visibleApplications`, renders a fixed 5×4
+browse grid with occupancy indicators, and keeps query results and clipboard content as separate
+lazy branches. Settings alone reads `allApplications` so hidden installed apps remain recoverable.
 Desktop discovery, icon resolution and execution remain behind
 `Platform.Applications.ApplicationCatalog`; a disappearing entry fails safely.
 

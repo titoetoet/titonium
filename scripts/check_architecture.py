@@ -445,6 +445,24 @@ def main() -> int:
         errors.append("Spotlight duration value must use its localized formatter")
 
     spotlight_dir = root / "Titonium/Modules/Spotlight"
+    visibility_store_path = root / "Titonium/Foundation/ApplicationVisibilityStore.qml"
+    foundation_qmldir = (root / "Titonium/Foundation/qmldir").read_text(encoding="utf-8")
+    if not visibility_store_path.is_file():
+        errors.append("Foundation application visibility store is missing")
+    else:
+        visibility_store = visibility_store_path.read_text(encoding="utf-8")
+        for contract in (
+            "ApplicationCatalog.applications",
+            "ConfigStore.previewState.applications",
+            "readonly property var allApplications",
+            "readonly property var visibleApplications",
+            "function isVisible(entryId: string): bool",
+            "function setVisible(entryId: string, visible: bool): bool",
+        ):
+            if contract not in visibility_store:
+                errors.append(f"ApplicationVisibilityStore is missing contract: {contract}")
+    if "singleton ApplicationVisibilityStore 1.0 ApplicationVisibilityStore.qml" not in foundation_qmldir:
+        errors.append("Foundation qmldir must register ApplicationVisibilityStore")
     spotlight_files = (
         "SpotlightModel.qml",
         "SpotlightSurface.qml",
@@ -464,6 +482,11 @@ def main() -> int:
         for path in spotlight_dir.glob("*.qml")
     }
     spotlight_feature = "\n".join(spotlight_qml.values())
+    spotlight_model = spotlight_qml.get("SpotlightModel.qml", "")
+    if "ApplicationVisibilityStore.visibleApplications" not in spotlight_model:
+        errors.append("SpotlightModel must consume the global visible application projection")
+    if "ApplicationCatalog.applications" in spotlight_model:
+        errors.append("SpotlightModel must not browse or search the raw application catalog")
     if re.search(
         r"\b(Process|FileView|Timer|MultiEffect|ShaderEffect)\s*\{|"
         r"execDetached|\b(hyprctl|nmcli|wpctl)\b|Animation\.Infinite|"

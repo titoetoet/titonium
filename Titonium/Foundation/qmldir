@@ -3,6 +3,7 @@ singleton Logger 1.0 Logger.qml
 singleton AppMetadata 1.0 AppMetadata.qml
 singleton ConfigStore 1.0 ConfigStore.qml
 singleton ClipboardHistoryStore 1.0 ClipboardHistoryStore.qml
+singleton ApplicationVisibilityStore 1.0 ApplicationVisibilityStore.qml
 singleton ThemeCatalog 1.0 ThemeCatalog.qml
 singleton I18n 1.0 I18n.qml
 singleton SurfaceCoordinator 1.0 SurfaceCoordinator.qml

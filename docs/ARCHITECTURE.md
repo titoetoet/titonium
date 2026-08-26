@@ -77,6 +77,10 @@ Hyprland, ToplevelManager or SystemTray directly.
 visible entries into immutable UI records, resolves theme icons and launches only through
 `DesktopEntry.execute()`. Spotlight UI never parses an Exec string or spawns a fallback command.
 
+`Foundation.ApplicationVisibilityStore` preserves that raw installed catalog as `allApplications`
+for Settings and exposes preview-aware `visibleApplications` to every application picker. Hidden
+IDs remain global configuration; launch requests still cross only through `ApplicationCatalog`.
+
 `Modules.Frame` is absent from the window tree unless `modules.frame.enabled` is true. When
 enabled, it creates one bottom-layer, empty-input-region surface per screen and renders only a
 semantic Rectangle border. Canvas, effects and repaint loops are forbidden.
