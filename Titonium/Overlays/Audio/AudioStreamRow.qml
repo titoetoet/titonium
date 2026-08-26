@@ -73,7 +73,9 @@ Item {
             variant: "quiet"
             size: "small"
             enabled: root.available
-            accessibleName: root.muted ? I18n.tr("audio.muted") : (root.stream?.name || "")
+            accessibleName: I18n.tr(root.muted ? "audio.unmute.accessible" : "audio.mute.accessible", {
+                "name": root.stream?.name || I18n.tr("audio.stream.fallback")
+            })
             onTriggered: root.toggleMute()
         }
     }

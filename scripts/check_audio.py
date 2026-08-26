@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import json
 import re
 from pathlib import Path
 
@@ -127,12 +128,25 @@ def main() -> int:
         "AudioService.toggleOutputMute",
         "AudioService.setInputVolume",
         "AudioService.toggleInputMute",
+        'I18n.tr(root.muted ? "audio.unmute.accessible" : "audio.mute.accessible", {',
+        '"name": root.label',
     ), "Audio control row")
     require_fragments(errors, OVERLAY_ROOT / "AudioStreamRow.qml", (
         "required property var stream",
         "AudioService.setStreamVolume",
         "AudioService.toggleStreamMute",
+        'I18n.tr(root.muted ? "audio.unmute.accessible" : "audio.mute.accessible", {',
+        '"name": root.stream?.name || I18n.tr("audio.stream.fallback")',
     ), "Audio stream row")
+
+    for locale in ("en", "vi"):
+        catalog_path = ROOT / f"config/i18n/{locale}.json"
+        if not catalog_path.is_file():
+            continue
+        strings = json.loads(catalog_path.read_text(encoding="utf-8")).get("strings", {})
+        for key in ("audio.mute.accessible", "audio.unmute.accessible"):
+            if key not in strings:
+                errors.append(f"{locale} catalog missing audio accessibility key: {key}")
 
     if OVERLAY_ROOT.exists():
         overlay_source = "\n".join(path.read_text(encoding="utf-8") for path in OVERLAY_ROOT.rglob("*.qml"))

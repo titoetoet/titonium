@@ -90,7 +90,9 @@ Item {
             variant: "quiet"
             size: "small"
             enabled: root.available
-            accessibleName: root.muted ? I18n.tr("audio.muted") : root.label
+            accessibleName: I18n.tr(root.muted ? "audio.unmute.accessible" : "audio.mute.accessible", {
+                "name": root.label
+            })
             onTriggered: root.toggleMute()
         }
     }
