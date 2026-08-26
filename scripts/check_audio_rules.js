@@ -72,5 +72,8 @@ assert.equal(rules.presentationEvent(
 assert.equal(rules.presentationEvent(
     { key: "sink:1", available: true, volume: 0.6, muted: false },
     { key: "", available: false, volume: 0, muted: false }).emit, false);
+assert.equal(rules.presentationEvent(
+    { key: "", available: true, volume: 0.5, muted: false },
+    { key: "", available: true, volume: 0.6, muted: false }).emit, false);
 
 console.log("PASS Audio rules fixtures");

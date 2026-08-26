@@ -92,7 +92,8 @@ function presentationEvent(previous, current) {
         volume: current && finite(current.volume) ? current.volume : 0,
         muted: !!(current && current.muted === true),
     };
-    var emit = !!previous && previous.available === true && next.available && previous.key === next.key
+    var emit = !!previous && previous.available === true && next.available && next.key.length > 0
+        && previous.key === next.key
         && (previous.volume !== next.volume || previous.muted !== next.muted);
     return { emit: emit, next: next };
 }
