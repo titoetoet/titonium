@@ -1,0 +1,2 @@
+module qs.Titonium.Services.Hyprland
+singleton HyprlandService 1.0 HyprlandService.qml

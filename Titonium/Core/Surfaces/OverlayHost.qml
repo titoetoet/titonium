@@ -3,7 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
-import qs.Titonium.Platform.Hyprland
+import qs.Titonium.Services.Hyprland
 
 Scope {
     Variants {
@@ -60,12 +60,12 @@ Scope {
             }
 
             Connections {
-                target: HyprlandAdapter
+                target: HyprlandService
                 function onFocusedMonitorNameChanged(): void {
                     if (!window.ownsSurface
                             || SurfaceManager.descriptor?.closeOnMonitorChange !== true)
                         return;
-                    const focusedName = HyprlandAdapter.focusedMonitorName;
+                    const focusedName = HyprlandService.focusedMonitorName;
                     if (focusedName.length > 0 && focusedName !== window.modelData.name)
                         SurfaceManager.close(SurfaceManager.ownerId);
                 }

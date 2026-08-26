@@ -23,22 +23,23 @@ def main() -> int:
     )
     forbidden_platform_objects = re.compile(r"\b(Hyprland|ToplevelManager|SystemTray)\.")
     forbidden_perf = re.compile(r"\b(MultiEffect|ShaderEffect)\b|Animation\.Infinite|loops\s*:\s*Animation\.Infinite")
-    allowed_io = {"Foundation", "Platform"}
+    allowed_io = {"Foundation", "Platform", "Services"}
 
     for path in sorted((root / "Titonium").rglob("*.qml")):
         text = path.read_text(encoding="utf-8")
         relative = path.relative_to(root)
         layer = relative.parts[1] if len(relative.parts) > 1 else ""
+        platform_owner = layer in {"Platform", "Services"}
         runtime_io = relative.parts[:3] == ("Titonium", "Core", "Runtime")
         if layer not in allowed_io and not runtime_io and forbidden_ui.search(text):
             errors.append(f"platform I/O in UI layer: {relative}")
         if layer not in allowed_io and forbidden_commands.search(text):
             errors.append(f"raw platform command in UI layer: {relative}")
-        if layer != "Platform" and forbidden_platform_imports.search(text):
+        if not platform_owner and forbidden_platform_imports.search(text):
             errors.append(f"direct platform API import outside Platform: {relative}")
-        if layer != "Platform" and forbidden_platform_objects.search(text):
+        if not platform_owner and forbidden_platform_objects.search(text):
             errors.append(f"direct platform object access outside Platform: {relative}")
-        if layer != "Platform" and re.search(r"\bDesktopEntries\b", text):
+        if not platform_owner and re.search(r"\bDesktopEntries\b", text):
             errors.append(f"direct desktop-entry access outside Platform: {relative}")
         if forbidden_perf.search(text):
             errors.append(f"forbidden always-on visual cost: {relative}")

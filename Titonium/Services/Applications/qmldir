@@ -1,0 +1,2 @@
+module qs.Titonium.Services.Applications
+singleton ApplicationService 1.0 ApplicationService.qml

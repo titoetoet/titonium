@@ -8,7 +8,7 @@ const vm = require("node:vm");
 const accessPath = path.join(
     __dirname,
     "..",
-    "Titonium/Platform/Clipboard/ClipboardAccess.js",
+    "Titonium/Services/Clipboard/ClipboardAccess.js",
 );
 
 if (!fs.existsSync(accessPath)) {

@@ -8,7 +8,7 @@ const vm = require("node:vm");
 const launchPath = path.join(
     __dirname,
     "..",
-    "Titonium/Platform/Applications/ApplicationLaunch.js",
+    "Titonium/Services/Applications/ApplicationLaunch.js",
 );
 
 if (!fs.existsSync(launchPath)) {

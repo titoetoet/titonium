@@ -1,0 +1,2 @@
+module qs.Titonium.Services.InputMethod
+singleton InputMethodService 1.0 InputMethodService.qml

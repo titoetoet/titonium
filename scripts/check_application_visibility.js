@@ -6,7 +6,7 @@ const path = require("node:path");
 const vm = require("node:vm");
 
 const projectRoot = path.resolve(__dirname, "..");
-const helperPath = path.join(projectRoot, "Titonium/Foundation/ApplicationVisibility.js");
+const helperPath = path.join(projectRoot, "Titonium/Services/Applications/Visibility.js");
 if (!fs.existsSync(helperPath)) {
     console.error("FAIL application visibility helper is missing");
     process.exit(1);

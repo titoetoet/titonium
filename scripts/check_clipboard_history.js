@@ -5,7 +5,7 @@ const path = require("path");
 const vm = require("vm");
 
 const projectRoot = path.join(__dirname, "..");
-const historyPath = path.join(projectRoot, "Titonium", "Foundation", "ClipboardHistory.js");
+const historyPath = path.join(projectRoot, "Titonium", "Services", "Clipboard", "ClipboardHistory.js");
 
 function fail(label, detail) {
     console.error(`FAIL clipboard history ${label}: ${detail}`);
@@ -25,7 +25,7 @@ function assertDeepEqual(actual, expected, label) {
 }
 
 if (!fs.existsSync(historyPath))
-    fail("module", "Foundation/ClipboardHistory.js is missing");
+    fail("module", "Services/Clipboard/ClipboardHistory.js is missing");
 
 const context = { JSON, Math, Date };
 vm.createContext(context);
