@@ -11,6 +11,7 @@ import qs.Titonium.Core.Surfaces
 import qs.Titonium.Services.Applications
 import qs.Titonium.Services.Audio
 import qs.Titonium.Services.Hyprland
+import qs.Titonium.Overlays.Audio
 
 Scope {
     id: root
@@ -37,6 +38,15 @@ Scope {
     BarHost {}
     OverlayHost {}
 
+    Connections {
+        target: SurfaceManager
+
+        function onOpened(ownerId: string, descriptor: var, screen: var): void {
+            if (ownerId.length > 0)
+                CenterNotchCoordinator.close();
+        }
+    }
+
     IpcHandler {
         target: "app"
         function status(): string { return Preferences.ready ? "ready" : "not-ready"; }
@@ -44,6 +54,7 @@ Scope {
     }
 
     IpcHandler {
+        id: audioIpc
         target: "audio"
         function state(): string {
             return "ready=" + AudioService.ready
@@ -52,6 +63,24 @@ Scope {
                 + ";muted=" + AudioService.outputMuted
                 + ";input=" + AudioService.inputAvailable
                 + ";streams=" + AudioService.playbackStreams.length;
+        }
+
+        function popup(): string {
+            const screen = ScreenRouter.screenForName(HyprlandService.focusedMonitorName);
+            if (!screen)
+                return "unavailable:no-screen";
+            return AudioPopupCoordinator.open(screen) ? audioIpc.popupState() : "unavailable:no-screen";
+        }
+
+        function closePopup(): string {
+            AudioPopupCoordinator.close();
+            return "closed";
+        }
+
+        function popupState(): string {
+            if (!AudioPopupCoordinator.active)
+                return "closed";
+            return "open:" + (SurfaceManager.screen?.name || "");
         }
     }
 

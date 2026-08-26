@@ -6,6 +6,7 @@
     "application.error.launch_failed": "The application could not be launched.",
     "application.error.unavailable": "That application is no longer available.",
     "audio.applications": "Applications",
+    "audio.applications.empty": "No applications are playing audio",
     "audio.microphone": "Microphone",
     "audio.muted": "Muted",
     "audio.output": "Output",

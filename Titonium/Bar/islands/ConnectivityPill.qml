@@ -2,17 +2,23 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Titonium.Core.Runtime
+import qs.Titonium.Overlays.Audio
+import qs.Titonium.Services.Audio
 import qs.Titonium.Theme
 import qs.Titonium.Shared as Shared
 
 Item {
     id: root
+    required property var screen
     property bool showDiagnostics: true
-    readonly property int fullImplicitWidth: iconRow.implicitWidth + Metrics.spacingSmall * 2
+    readonly property int diagnosticsWidth: networkIcon.implicitWidth + bluetoothIcon.implicitWidth
+        + Metrics.spacingSmall
+    readonly property int audioWidth: audioButton.implicitWidth
+    readonly property int fullImplicitWidth: root.diagnosticsWidth + Metrics.spacingSmall + root.audioWidth
 
-    implicitWidth: root.showDiagnostics ? root.fullImplicitWidth : 0
+    implicitWidth: root.audioWidth + (root.showDiagnostics
+        ? root.diagnosticsWidth + Metrics.spacingSmall : 0)
     implicitHeight: Metrics.widgetHeight
-    visible: root.showDiagnostics
 
     Shared.Surface {
         anchors.fill: parent
@@ -26,22 +32,37 @@ Item {
         spacing: Metrics.spacingSmall
 
         Shared.Icon {
+            id: networkIcon
+            visible: root.showDiagnostics
             name: "wifi"
             size: 18
             tone: "secondary"
             accessibleName: I18n.tr("menubar.connectivity.network_planned")
         }
         Shared.Icon {
+            id: bluetoothIcon
+            visible: root.showDiagnostics
             name: "bluetooth"
             size: 18
             tone: "secondary"
             accessibleName: I18n.tr("menubar.connectivity.bluetooth_planned")
         }
-        Shared.Icon {
-            name: "volume_up"
-            size: 18
-            tone: "secondary"
-            accessibleName: I18n.tr("menubar.connectivity.audio_planned")
+        Shared.Button {
+            id: audioButton
+            iconName: AudioService.outputIcon
+            variant: "quiet"
+            size: "small"
+            accessibleName: AudioService.outputName
+            onTriggered: AudioPopupCoordinator.toggle(root.screen)
+
+            WheelHandler {
+                onWheel: event => {
+                    if (event.angleDelta.y === 0)
+                        return;
+                    AudioService.adjustOutputVolume(event.angleDelta.y > 0 ? 0.05 : -0.05);
+                    event.accepted = true;
+                }
+            }
         }
     }
 }

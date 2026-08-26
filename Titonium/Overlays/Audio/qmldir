@@ -1,0 +1,6 @@
+module qs.Titonium.Overlays.Audio
+singleton AudioPopupCoordinator 1.0 AudioPopupCoordinator.qml
+AudioPopupSurface 1.0 AudioPopupSurface.qml
+AudioControlRow 1.0 AudioControlRow.qml
+AudioStreamRow 1.0 AudioStreamRow.qml
+AudioSlider 1.0 AudioSlider.qml

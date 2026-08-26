@@ -46,6 +46,24 @@ if [[ ! "$audio_state" =~ $state_pattern ]]; then
     exit 1
 fi
 
+popup_state="$(call_ipc audio popup)"
+if [[ ! "$popup_state" =~ ^open:[^[:space:]]+$ ]]; then
+    printf 'FAIL audio popup did not open: %q\n' "$popup_state" >&2
+    exit 1
+fi
+if [[ "$(call_ipc audio popupState)" != "$popup_state" ]]; then
+    printf 'FAIL audio popup state changed unexpectedly: %q\n' "$(call_ipc audio popupState)" >&2
+    exit 1
+fi
+if [[ "$(call_ipc audio closePopup)" != "closed" ]]; then
+    echo "FAIL audio popup did not close" >&2
+    exit 1
+fi
+if [[ "$(call_ipc audio popupState)" != "closed" ]]; then
+    printf 'FAIL audio popup state was not closed: %q\n' "$(call_ipc audio popupState)" >&2
+    exit 1
+fi
+
 if [[ "$(git -C "$project_root" status --porcelain=v1)" != "$before_git" ]]; then
     git -C "$project_root" status --short >&2
     echo "FAIL audio acceptance changed repository files" >&2
@@ -63,4 +81,4 @@ if rg -i "$runtime_rejection_pattern" "$log_file"; then
     exit 1
 fi
 
-echo "PASS audio read-only state acceptance"
+echo "PASS audio read-only state and popup acceptance"

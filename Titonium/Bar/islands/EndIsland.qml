@@ -20,6 +20,7 @@ Item {
 
         ConnectivityPill {
             id: connectivity
+            screen: root.screen
             showDiagnostics: root.showConnectivityDiagnostics
         }
         StatusPill {

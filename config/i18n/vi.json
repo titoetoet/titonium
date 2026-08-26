@@ -6,6 +6,7 @@
     "application.error.launch_failed": "Không thể khởi chạy ứng dụng.",
     "application.error.unavailable": "Ứng dụng này không còn khả dụng.",
     "audio.applications": "Ứng dụng",
+    "audio.applications.empty": "Không có ứng dụng nào đang phát âm thanh",
     "audio.microphone": "Micrô",
     "audio.muted": "Đã tắt tiếng",
     "audio.output": "Đầu ra",
