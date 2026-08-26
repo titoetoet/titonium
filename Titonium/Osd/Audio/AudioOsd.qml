@@ -11,12 +11,14 @@ Item {
 
     required property real volume
     required property bool muted
-    property bool entered: false
+    property bool requestedPresented: false
+    property bool presented: false
+    property bool completed: false
     readonly property int percentage: Math.round(root.volume * 100)
     readonly property real trackProgress: Math.max(0, Math.min(1, root.volume))
 
-    opacity: root.entered ? 1 : 0
-    y: root.entered ? 0 : 8
+    opacity: root.presented ? 1 : 0
+    y: root.presented ? 0 : 8
 
     Behavior on opacity {
         NumberAnimation { duration: Motion.fast; easing.type: Easing.OutCubic }
@@ -76,5 +78,13 @@ Item {
         }
     }
 
-    Component.onCompleted: root.entered = true
+    onRequestedPresentedChanged: {
+        if (root.completed)
+            root.presented = root.requestedPresented;
+    }
+
+    Component.onCompleted: {
+        root.completed = true;
+        root.presented = root.requestedPresented;
+    }
 }

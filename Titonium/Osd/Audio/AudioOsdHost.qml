@@ -34,6 +34,7 @@ Scope {
                 sourceComponent: AudioOsd {
                     volume: AudioOsdCoordinator.volume
                     muted: AudioOsdCoordinator.muted
+                    requestedPresented: AudioOsdCoordinator.presented
                 }
             }
         }

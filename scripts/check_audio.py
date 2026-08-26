@@ -156,6 +156,7 @@ def main() -> int:
     require_fragments(errors, OSD_ROOT / "AudioOsdCoordinator.qml", (
         "pragma Singleton",
         "readonly property bool active",
+        "readonly property bool presented",
         "readonly property string ownerScreenName",
         "function onOutputPresentationChanged(volume: real, muted: bool): void",
         "HyprlandService.focusedMonitorName",
@@ -164,6 +165,9 @@ def main() -> int:
         "interval: 1200",
         "repeat: false",
         "hideTimer.restart()",
+        "exitTimer.stop()",
+        "exitTimer.restart()",
+        "interval: Motion.fast",
     ), "Audio OSD coordinator")
     require_fragments(errors, OSD_ROOT / "AudioOsdHost.qml", (
         "Variants {",
@@ -175,6 +179,10 @@ def main() -> int:
         "Behavior on opacity",
         "Behavior on y",
         "Motion.fast",
+        "property bool requestedPresented: false",
+        "property bool presented: false",
+        "opacity: root.presented ? 1 : 0",
+        "y: root.presented ? 0 : 8",
     ), "Audio OSD pill")
 
     osd_host = OSD_ROOT / "AudioOsdHost.qml"
@@ -184,6 +192,7 @@ def main() -> int:
             "PanelWindow {",
             "Loader {",
             "active: window.visible",
+            "requestedPresented: AudioOsdCoordinator.presented",
             "WlrKeyboardFocus.None",
             "exclusiveZone: 0",
             "anchors { bottom: true; left: false; right: false }",
@@ -191,6 +200,10 @@ def main() -> int:
         ):
             if fragment not in source:
                 errors.append(f"Audio OSD host missing contract: {fragment}")
+
+    osd_pill = OSD_ROOT / "AudioOsd.qml"
+    if osd_pill.is_file() and "property bool entered" in osd_pill.read_text(encoding="utf-8"):
+        errors.append("Audio OSD must use coordinator presented state, not entry-only state")
 
     if OSD_ROOT.exists():
         osd_source = "\n".join(path.read_text(encoding="utf-8") for path in OSD_ROOT.rglob("*.qml"))
