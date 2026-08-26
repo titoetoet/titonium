@@ -1,0 +1,4 @@
+module qs.Titonium.Bar
+BarHost 1.0 BarHost.qml
+BarSurface 1.0 BarSurface.qml
+Bar 1.0 Bar.qml

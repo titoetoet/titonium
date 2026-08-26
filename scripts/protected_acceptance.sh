@@ -9,8 +9,8 @@ before_live="$(sha256sum -- "$live_hypr")"
 before_dotfiles="$(sha256sum -- "$dotfiles_hypr")"
 
 if rg -n 'Process\s*\{|Timer\s*\{' \
-    "$project_root/Titonium/Modules/MenuBar/InputMethod" \
-    "$project_root/Titonium/Platform/Input"; then
+    "$project_root/Titonium/Bar/widgets/InputMethod.qml" \
+    "$project_root/Titonium/Services/InputMethod/InputMethodService.qml"; then
     echo "FAIL Input Method owns a Process or Timer" >&2
     exit 1
 fi
