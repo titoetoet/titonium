@@ -1,4 +1,5 @@
 .pragma library
+// Protected Spotlight vertical slice.
 .import "StableOrder.js" as StableOrder
 
 const CATEGORY_DEFINITIONS = [

@@ -8,7 +8,7 @@ import qs.Titonium.Modules.Frame
 import qs.Titonium.Platform
 import qs.Titonium.Platform.Hyprland
 import qs.Titonium.Surfaces
-import "../Modules/Spotlight/SpotlightScope.js" as SpotlightScope
+import "../Overlays/Spotlight/SpotlightScope.js" as SpotlightScope
 import "../Modules/MenuBar/ArchMenu/ArchMenuModel.js" as ArchMenuModel
 
 Scope {

@@ -4,7 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const vm = require("vm");
 
-const spotlightRoot = path.join(__dirname, "..", "Titonium", "Modules", "Spotlight");
+const spotlightRoot = path.join(__dirname, "..", "Titonium", "Overlays", "Spotlight");
 
 function loadDomain(name, globals = {}) {
     const sourcePath = path.join(spotlightRoot, name + ".js");

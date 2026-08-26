@@ -472,7 +472,7 @@ def main() -> int:
     if len(re.findall(r"\bApplicationVisibilityList\s*\{", spotlight_settings)) != 1:
         errors.append("SpotlightPage must instantiate ApplicationVisibilityList exactly once")
 
-    spotlight_dir = root / "Titonium/Modules/Spotlight"
+    spotlight_dir = root / "Titonium/Overlays/Spotlight"
     visibility_store_path = root / "Titonium/Foundation/ApplicationVisibilityStore.qml"
     foundation_qmldir = (root / "Titonium/Foundation/qmldir").read_text(encoding="utf-8")
     if not visibility_store_path.is_file():
@@ -511,9 +511,9 @@ def main() -> int:
     }
     spotlight_feature = "\n".join(spotlight_qml.values())
     spotlight_model = spotlight_qml.get("SpotlightModel.qml", "")
-    if "ApplicationVisibilityStore.visibleApplications" not in spotlight_model:
+    if "ApplicationService.visibleApplications" not in spotlight_model:
         errors.append("SpotlightModel must consume the global visible application projection")
-    if "ApplicationCatalog.applications" in spotlight_model:
+    if "ApplicationService.allApplications" in spotlight_model:
         errors.append("SpotlightModel must not browse or search the raw application catalog")
     if re.search(
         r"\b(Process|FileView|Timer|MultiEffect|ShaderEffect)\s*\{|"
@@ -573,13 +573,13 @@ def main() -> int:
         if density_contract not in page_indicator:
             errors.append(f"Spotlight page indicator must expose app density without a fixed track: {density_contract}")
     clipboard_view = spotlight_qml.get("ClipboardView.qml", "")
-    if "ClipboardHistoryStore" not in clipboard_view:
-        errors.append("ClipboardView must project ClipboardHistoryStore intents")
-    if "ClipboardAdapter" in clipboard_view or "clipboardTextChanged" in clipboard_view:
+    if "ClipboardService" not in clipboard_view:
+        errors.append("ClipboardView must project ClipboardService intents")
+    if "Quickshell.clipboardText" in clipboard_view or "clipboardTextChanged" in clipboard_view:
         errors.append("Clipboard UI must not own clipboard observation")
     for contract in (
         'I18n.tr("spotlight.clipboard.unavailable")',
-        "ClipboardHistoryStore.available",
+        "ClipboardService.available",
     ):
         if contract not in clipboard_view:
             errors.append(f"ClipboardView must distinguish unavailable from empty: {contract}")

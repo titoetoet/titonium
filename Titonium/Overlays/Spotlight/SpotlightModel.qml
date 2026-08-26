@@ -1,9 +1,10 @@
 pragma ComponentBehavior: Bound
+// Protected Spotlight vertical slice.
 
 import QtQuick
-import qs.Titonium.Foundation
-import qs.Titonium.Platform.Applications
-import qs.Titonium.Platform.Clipboard
+import qs.Titonium.Core.Runtime
+import qs.Titonium.Services.Applications
+import qs.Titonium.Services.Clipboard
 import "Calculator.js" as Calculator
 import "CategoryCatalog.js" as CategoryCatalog
 import "SearchEngine.js" as SearchEngine
@@ -22,7 +23,7 @@ QtObject {
     property int selectedIndex: 0
     property bool selectionMoved: false
 
-    readonly property var categories: CategoryCatalog.catalogFor(ApplicationVisibilityStore.visibleApplications)
+    readonly property var categories: CategoryCatalog.catalogFor(ApplicationService.visibleApplications)
     readonly property var visibleApps: {
         for (let index = 0; index < root.categories.length; index++) {
             if (root.categories[index].id === root.categoryId)
@@ -91,7 +92,7 @@ QtObject {
     function searchResults(): var {
         if (root.mode !== "results")
             return [];
-        const applications = SearchEngine.search(ApplicationVisibilityStore.visibleApplications, root.query);
+        const applications = SearchEngine.search(ApplicationService.visibleApplications, root.query);
         const calculation = Calculator.evaluate(root.query);
         if (!calculation.matched)
             return applications;
@@ -128,12 +129,12 @@ QtObject {
         const index = root.selectionMoved ? root.selectedIndex : 0;
         const result = root.results[index];
         if (result.type === "calculator")
-            return ClipboardAdapter.copy(result.value);
-        return ApplicationCatalog.launch(result.executionId);
+            return ClipboardService.copyText(result.value);
+        return ApplicationService.launch(result.executionId);
     }
 
     function activateApplication(entryId: string): bool {
-        return ApplicationCatalog.launch(entryId);
+        return ApplicationService.launch(entryId);
     }
 
     function handleEscape(): bool {

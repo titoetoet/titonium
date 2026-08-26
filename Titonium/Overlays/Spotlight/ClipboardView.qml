@@ -1,11 +1,13 @@
 pragma ComponentBehavior: Bound
+// Protected Spotlight vertical slice.
 
 import QtQuick
 import QtQuick.Controls as QtControls
 import QtQuick.Layouts
-import qs.Titonium.Design
-import qs.Titonium.Design.Controls as Controls
-import qs.Titonium.Foundation
+import qs.Titonium.Theme
+import qs.Titonium.Shared as Controls
+import qs.Titonium.Core.Runtime
+import qs.Titonium.Services.Clipboard
 
 FocusScope {
     id: root
@@ -17,8 +19,8 @@ FocusScope {
     readonly property var filteredItems: {
         const query = (root.spotlightModel?.query || "").trim().toLowerCase();
         if (query.length === 0)
-            return ClipboardHistoryStore.items;
-        return ClipboardHistoryStore.items.filter(item =>
+            return ClipboardService.items;
+        return ClipboardService.items.filter(item =>
             item.text.toLowerCase().indexOf(query) >= 0
             || item.kind.toLowerCase().indexOf(query) >= 0);
     }
@@ -43,14 +45,14 @@ FocusScope {
     }
 
     function activateSelected(): bool {
-        return ClipboardHistoryStore.available && root.selectedItem !== null
-            && ClipboardHistoryStore.copy(root.selectedItem.id);
+        return ClipboardService.available && root.selectedItem !== null
+            && ClipboardService.copy(root.selectedItem.id);
     }
 
     function deleteSelected(): void {
         if (root.selectedItem === null)
             return;
-        ClipboardHistoryStore.remove(root.selectedItem.id);
+        ClipboardService.remove(root.selectedItem.id);
         if (root.spotlightModel)
             root.spotlightModel.selectedIndex = Math.max(0,
                 Math.min(root.spotlightModel.selectedIndex, root.filteredItems.length - 1));
@@ -95,14 +97,14 @@ FocusScope {
                     iconName: "delete_sweep"
                     variant: "quiet"
                     size: "small"
-                    enabled: ClipboardHistoryStore.items.length > 0
-                    onTriggered: ClipboardHistoryStore.clear()
+                    enabled: ClipboardService.items.length > 0
+                    onTriggered: ClipboardService.clear()
                 }
             }
 
             Controls.TextLabel {
                 Layout.fillWidth: true
-                visible: !ClipboardHistoryStore.available
+                visible: !ClipboardService.available
                 text: I18n.tr("spotlight.clipboard.unavailable")
                 tone: "danger"
                 wrapMode: Text.WordWrap
@@ -210,8 +212,8 @@ FocusScope {
 
                 Controls.TextLabel {
                     anchors.centerIn: parent
-                    visible: ClipboardHistoryStore.available && historyList.count === 0
-                    text: I18n.tr(ClipboardHistoryStore.items.length === 0
+                    visible: ClipboardService.available && historyList.count === 0
+                    text: I18n.tr(ClipboardService.items.length === 0
                         ? "spotlight.clipboard.empty" : "spotlight.clipboard.no_results")
                     tone: "secondary"
                     wrapMode: Text.WordWrap
@@ -246,7 +248,7 @@ FocusScope {
                         label: I18n.tr("spotlight.clipboard.copy")
                         iconName: "content_copy"
                         size: "small"
-                        enabled: ClipboardHistoryStore.available && root.selectedItem !== null
+                        enabled: ClipboardService.available && root.selectedItem !== null
                         onTriggered: {
                             if (root.activateSelected())
                                 root.activatedSuccessfully();

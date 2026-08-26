@@ -1,4 +1,5 @@
 .pragma library
+// Protected Spotlight vertical slice.
 
 function tokenize(expression) {
     const tokens = [];

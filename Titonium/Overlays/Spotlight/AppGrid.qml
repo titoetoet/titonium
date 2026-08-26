@@ -1,9 +1,10 @@
 pragma ComponentBehavior: Bound
+// Protected Spotlight vertical slice.
 
 import QtQuick
 import QtQuick.Layouts
-import qs.Titonium.Design
-import qs.Titonium.Foundation
+import qs.Titonium.Theme
+import qs.Titonium.Core.Runtime
 import "SpotlightLayout.js" as SpotlightLayout
 
 FocusScope {
@@ -15,8 +16,8 @@ FocusScope {
     readonly property int columns: SpotlightLayout.columnCount()
     readonly property int rows: SpotlightLayout.rowCount()
     readonly property int gap: Metrics.spacingSmall
-    readonly property var spotlightSettings: ConfigStore.previewState.modules?.spotlight || ({})
-    readonly property int transitionDuration: ConfigStore.previewState.accessibility?.reducedMotion === true
+    readonly property var spotlightSettings: Preferences.spotlight
+    readonly property int transitionDuration: Preferences.reducedMotion
         || root.spotlightSettings.pageTransition === "none" ? 0 : (root.spotlightSettings.transitionDuration || 220)
 
     ColumnLayout {

@@ -1,8 +1,2 @@
 module qs.Titonium.Modules.Spotlight
-SpotlightModel 1.0 SpotlightModel.qml
 SpotlightSurface 1.0 SpotlightSurface.qml
-ClipboardView 1.0 ClipboardView.qml
-AppGrid 1.0 AppGrid.qml
-ApplicationTile 1.0 ApplicationTile.qml
-SearchResults 1.0 SearchResults.qml
-PageIndicator 1.0 PageIndicator.qml

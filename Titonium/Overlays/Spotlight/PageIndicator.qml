@@ -1,8 +1,9 @@
 pragma ComponentBehavior: Bound
+// Protected Spotlight vertical slice.
 
 import QtQuick
-import qs.Titonium.Design
-import qs.Titonium.Foundation
+import qs.Titonium.Theme
+import qs.Titonium.Core.Runtime
 import "SpotlightLayout.js" as SpotlightLayout
 
 FocusScope {

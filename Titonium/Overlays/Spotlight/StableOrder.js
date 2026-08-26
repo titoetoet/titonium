@@ -1,4 +1,5 @@
 .pragma library
+// Protected Spotlight vertical slice.
 
 function compare(left, right) {
     const leftText = String(left || "");

@@ -1,10 +1,11 @@
 pragma ComponentBehavior: Bound
+// Protected Spotlight vertical slice.
 
 import QtQuick
 import QtQuick.Layouts
-import qs.Titonium.Design
-import qs.Titonium.Design.Controls as Controls
-import qs.Titonium.Foundation
+import qs.Titonium.Theme
+import qs.Titonium.Shared as Controls
+import qs.Titonium.Core.Runtime
 
 FocusScope {
     id: root

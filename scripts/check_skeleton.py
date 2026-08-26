@@ -27,6 +27,23 @@ REQUIRED = (
     "Titonium/Shared/Icon.qml",
     "Titonium/Shared/TextLabel.qml",
     "Titonium/Shared/qmldir",
+    "Titonium/Overlays/Spotlight/AppGrid.qml",
+    "Titonium/Overlays/Spotlight/ApplicationTile.qml",
+    "Titonium/Overlays/Spotlight/Calculator.js",
+    "Titonium/Overlays/Spotlight/CategoryCatalog.js",
+    "Titonium/Overlays/Spotlight/ClipboardView.qml",
+    "Titonium/Overlays/Spotlight/PageIndicator.qml",
+    "Titonium/Overlays/Spotlight/SearchEngine.js",
+    "Titonium/Overlays/Spotlight/SearchResults.qml",
+    "Titonium/Overlays/Spotlight/SpotlightLayout.js",
+    "Titonium/Overlays/Spotlight/SpotlightModel.qml",
+    "Titonium/Overlays/Spotlight/SpotlightScope.js",
+    "Titonium/Overlays/Spotlight/SpotlightState.js",
+    "Titonium/Overlays/Spotlight/SpotlightSurface.qml",
+    "Titonium/Overlays/Spotlight/SpotlightTransition.js",
+    "Titonium/Overlays/Spotlight/StableOrder.js",
+    "Titonium/Overlays/Spotlight/SystemSearchMock.qml",
+    "Titonium/Overlays/Spotlight/qmldir",
 )
 
 FORBIDDEN_UI_TOKENS = ("Process {", "Quickshell.execDetached", "FileView {")
@@ -49,6 +66,22 @@ def main() -> int:
                 if token in source:
                     errors.append(
                         f"UI platform/persistence boundary: {path.relative_to(ROOT)}: {token}"
+                    )
+
+    spotlight_root = ROOT / "Titonium/Overlays/Spotlight"
+    if spotlight_root.exists():
+        forbidden_imports = (
+            "qs.Titonium.Foundation",
+            "qs.Titonium.Platform",
+            "qs.Titonium.Design",
+            "qs.Titonium.Composition",
+        )
+        for path in spotlight_root.glob("*.qml"):
+            source = path.read_text(encoding="utf-8")
+            for old_import in forbidden_imports:
+                if old_import in source:
+                    errors.append(
+                        f"protected Spotlight retains old import: {path.relative_to(ROOT)}: {old_import}"
                     )
 
     if errors:

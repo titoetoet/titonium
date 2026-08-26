@@ -1,4 +1,5 @@
 .pragma library
+// Protected Spotlight vertical slice.
 
 var orderedScopes = ["applications", "clipboard", "system"];
 
