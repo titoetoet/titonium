@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+project_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+live_hypr="/home/cole/.config/hypr/hyprland.lua"
+dotfiles_hypr="/home/cole/Projects/titonium-hyprland/config/hypr/hyprland.lua"
+
+before_live="$(sha256sum -- "$live_hypr")"
+before_dotfiles="$(sha256sum -- "$dotfiles_hypr")"
+
+if rg -n 'Process\s*\{|Timer\s*\{' \
+    "$project_root/Titonium/Modules/MenuBar/InputMethod" \
+    "$project_root/Titonium/Platform/Input"; then
+    echo "FAIL Input Method owns a Process or Timer" >&2
+    exit 1
+fi
+
+"$project_root/scripts/spotlight_acceptance.sh"
+
+after_live="$(sha256sum -- "$live_hypr")"
+after_dotfiles="$(sha256sum -- "$dotfiles_hypr")"
+
+if [[ "$after_live" != "$before_live" || "$after_dotfiles" != "$before_dotfiles" ]]; then
+    echo "FAIL protected acceptance changed a Hyprland configuration" >&2
+    exit 1
+fi
+
+echo "PASS protected Spotlight, Input Method and keybind acceptance"

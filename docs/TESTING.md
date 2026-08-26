@@ -1,5 +1,14 @@
 # Testing
 
+## Protected skeleton baseline
+
+Before reorganizing runtime modules, run `./scripts/protected_acceptance.sh`. It exercises the real
+Spotlight Applications, Clipboard and mock System scopes through safe IPC calls, rejects timers or
+processes owned by Input Method, and verifies that neither Hyprland configuration changes. The
+acceptance never launches an application, copies/deletes clipboard content or confirms a session
+action. `scripts/check_protected_contract.py` also locks the existing `Super + Space` and
+`Super + V` command targets to `/home/cole/Projects/titonium`.
+
 ## Static checks
 
 `scripts/check.sh` performs JSON validation, lunar conversion fixtures, architecture policy
