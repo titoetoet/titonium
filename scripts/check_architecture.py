@@ -29,7 +29,8 @@ def main() -> int:
         text = path.read_text(encoding="utf-8")
         relative = path.relative_to(root)
         layer = relative.parts[1] if len(relative.parts) > 1 else ""
-        if layer not in allowed_io and forbidden_ui.search(text):
+        runtime_io = relative.parts[:3] == ("Titonium", "Core", "Runtime")
+        if layer not in allowed_io and not runtime_io and forbidden_ui.search(text):
             errors.append(f"platform I/O in UI layer: {relative}")
         if layer not in allowed_io and forbidden_commands.search(text):
             errors.append(f"raw platform command in UI layer: {relative}")

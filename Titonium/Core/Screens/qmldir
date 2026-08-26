@@ -1,0 +1,2 @@
+module qs.Titonium.Core.Screens
+singleton ScreenRouter 1.0 ScreenRouter.qml

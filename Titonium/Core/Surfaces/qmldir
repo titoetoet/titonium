@@ -1,0 +1,3 @@
+module qs.Titonium.Core.Surfaces
+singleton SurfaceManager 1.0 SurfaceManager.qml
+OverlayHost 1.0 OverlayHost.qml

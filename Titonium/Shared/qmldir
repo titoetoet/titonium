@@ -1,0 +1,6 @@
+module qs.Titonium.Shared
+Surface 1.0 Surface.qml
+Panel 1.0 Panel.qml
+Button 1.0 Button.qml
+Icon 1.0 Icon.qml
+TextLabel 1.0 TextLabel.qml

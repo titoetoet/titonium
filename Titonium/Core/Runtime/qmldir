@@ -1,0 +1,4 @@
+module qs.Titonium.Core.Runtime
+singleton Logger 1.0 Logger.qml
+singleton Preferences 1.0 Preferences.qml
+singleton I18n 1.0 I18n.qml
