@@ -61,6 +61,12 @@ var groups = [
     ]
 ];
 
+var sessionActionIds = ["lock", "sleep", "hibernate", "restart", "shutdown", "logout"];
+
+function isSessionAction(actionId) {
+    return sessionActionIds.indexOf(actionId) >= 0;
+}
+
 function routeFor(item) {
     if (!item || typeof item.id !== "string")
         return "unknown";

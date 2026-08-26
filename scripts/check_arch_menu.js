@@ -35,6 +35,11 @@ if (!Array.isArray(groups))
 
 if (typeof context.routeFor !== "function")
     fail("Arch Menu model must export routeFor");
+if (typeof context.isSessionAction !== "function")
+    fail("Arch Menu model must export isSessionAction");
+if (!context.isSessionAction("lock") || context.isSessionAction("settings")
+        || context.isSessionAction("future-action"))
+    fail("session action validation must accept only the six confirmation IDs");
 if (context.routeFor({ id: "future-tool", requiresConfirmation: false }) !== "unknown")
     fail("unknown non-confirming Arch Menu IDs must route to the warning path");
 if (context.routeFor({ id: "settings", requiresConfirmation: false }) !== "settings")

@@ -151,17 +151,23 @@ def main() -> int:
         or "implicitHeight: Metrics.borderWidth" not in compact_surface
     ):
         errors.append("Arch Menu group boundaries must render semantic one-pixel separators")
-    if compact_surface.count("SessionActions.executeConfirmed(") != 1:
-        errors.append("Arch Menu must have exactly one confirmed Platform execution path")
     if (
         "ArchMenuModel.routeFor(item)" not in compact_surface
         or 'Logger.warn("arch-menu", "unknown item id: "' not in compact_surface
     ):
         errors.append("unknown non-confirming Arch Menu items must log a warning and do nothing")
-    pending_assignment = compact_surface.find("pendingAction = actionId")
-    confirmed_execution = compact_surface.find("SessionActions.executeConfirmed(actionId)")
-    if pending_assignment < 0 or confirmed_execution < 0 or pending_assignment > confirmed_execution:
-        errors.append("Arch Menu must set pendingAction before confirmed session execution")
+    for retired_nested_contract in ("pendingAction", "confirmationComponent", "SessionActions"):
+        if retired_nested_contract in compact_surface:
+            errors.append(f"Arch Menu must not retain nested confirmation state: {retired_nested_contract}")
+    for descriptor_contract in (
+        "SessionConfirmationSurface.qml",
+        '"actionId": actionId',
+        '"keyboardFocus": "exclusive"',
+        '"closeOnMonitorChange": true',
+        '"session-confirm:" + root.screen.name + ":" + actionId',
+    ):
+        if descriptor_contract not in compact_surface:
+            errors.append(f"Arch Menu must replace itself with a confirmation descriptor: {descriptor_contract}")
     for leaf_name in ("ArchMenuItem.qml", "SessionConfirmation.qml"):
         if "SessionActions" in compact_menu_qml.get(leaf_name, ""):
             errors.append(f"{leaf_name} must emit intent without calling SessionActions")
@@ -176,33 +182,36 @@ def main() -> int:
         errors.append("SessionConfirmation must give Cancel initial keyboard focus")
     if "signal cancelled()" not in confirmation or "onTriggered: root.cancelled()" not in confirmation:
         errors.append("SessionConfirmation Cancel must emit only the cancelled intent")
-    cancel_path = re.search(
-        r"function cancelPendingAction\(\): void\s*\{(?P<body>[\s\S]*?)\n\s*\}",
-        compact_surface,
-    )
-    cancel_path_body = cancel_path.group("body") if cancel_path else ""
-    if (
-        "onCancelled: root.cancelPendingAction()" not in compact_surface
-        or 'root.pendingAction = ""' not in cancel_path_body
-        or "SessionActions" in cancel_path_body
-        or "SurfaceCoordinator" in cancel_path_body
+    confirmation_surface = compact_menu_qml.get("SessionConfirmationSurface.qml", "")
+    if not confirmation_surface:
+        errors.append("dedicated SessionConfirmationSurface is missing")
+    for surface_contract in (
+        "anchors.centerIn: parent",
+        "width: 420",
+        "Math.max(240",
+        "Math.min(320",
+        "onCancelled: root.close()",
+        "Keys.onEscapePressed",
+        "SurfaceCoordinator.releaseOwnerGuard(root.ownerId)",
     ):
-        errors.append("Arch Menu Cancel must clear pendingAction without Platform execution")
-
-    guard_call = compact_surface.find("SurfaceCoordinator.guardOwner(root.ownerId)")
-    confirmed_call = compact_surface.find("SessionActions.executeConfirmed(actionId)")
+        if surface_contract not in confirmation_surface:
+            errors.append(f"SessionConfirmationSurface is missing centered lifecycle contract: {surface_contract}")
+    if confirmation_surface.count("SessionActions.executeConfirmed(") != 1:
+        errors.append("SessionConfirmationSurface must own exactly one confirmed Platform execution path")
+    guard_call = confirmation_surface.find("SurfaceCoordinator.guardOwner(root.ownerId)")
+    confirmed_call = confirmation_surface.find("SessionActions.executeConfirmed(actionId)")
     if guard_call < 0 or confirmed_call < 0 or guard_call > confirmed_call:
-        errors.append("Arch Menu must guard its surface owner before confirmed session execution")
+        errors.append("SessionConfirmationSurface must guard its owner before confirmed execution")
     action_started_handler = re.search(
         r"function onActionStarted\(action: string\): void\s*\{(?P<body>[\s\S]*?)\n\s*\}",
-        compact_surface,
+        confirmation_surface,
     )
     action_started_body = action_started_handler.group("body") if action_started_handler else ""
     if "SurfaceCoordinator.forceClose(root.ownerId)" not in action_started_body:
-        errors.append("matching actionStarted must explicitly force-close the guarded Arch Menu")
+        errors.append("matching actionStarted must force-close the guarded confirmation")
     action_failed_handler = re.search(
         r"function onActionFailed\(action: string, error: string\): void\s*\{(?P<body>[\s\S]*?)\n\s*\}",
-        compact_surface,
+        confirmation_surface,
     )
     action_failed_body = action_failed_handler.group("body") if action_failed_handler else ""
     if (
@@ -252,7 +261,7 @@ def main() -> int:
             ipc_bodies[target_match.group("target")] = ipc_block
     reporting_mutation_counts = {
         "settings": 4,
-        "arch-menu": 3,
+        "arch-menu": 4,
         "spotlight": 6,
         "clock": 3,
         "calendar": 3,

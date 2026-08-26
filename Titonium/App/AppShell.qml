@@ -9,6 +9,7 @@ import qs.Titonium.Platform
 import qs.Titonium.Platform.Hyprland
 import qs.Titonium.Surfaces
 import "../Modules/Spotlight/SpotlightScope.js" as SpotlightScope
+import "../Modules/MenuBar/ArchMenu/ArchMenuModel.js" as ArchMenuModel
 
 Scope {
     id: root
@@ -224,7 +225,8 @@ Scope {
         }
 
         function close(): string {
-            if (SurfaceCoordinator.ownerId.indexOf("arch-menu:") === 0) {
+            if (SurfaceCoordinator.ownerId.indexOf("arch-menu:") === 0
+                    || SurfaceCoordinator.ownerId.indexOf("session-confirm:") === 0) {
                 const closed = SurfaceCoordinator.close(SurfaceCoordinator.ownerId);
                 return root.coordinatorIpcResult(closed, "closed");
             }
@@ -232,8 +234,31 @@ Scope {
         }
 
         function state(): string {
+            if (SurfaceCoordinator.ownerId.indexOf("session-confirm:") === 0) {
+                const descriptor = SurfaceCoordinator.descriptor || {};
+                return "confirmation:" + (descriptor.actionId || "") + ":"
+                    + (SurfaceCoordinator.screen?.name || "");
+            }
             return SurfaceCoordinator.ownerId.indexOf("arch-menu:") === 0
                 ? SurfaceCoordinator.ownerId : "closed";
+        }
+
+        function previewSessionAction(actionId: string): string {
+            if (!ArchMenuModel.isSessionAction(actionId))
+                return "unavailable:unknown-action";
+            const targetScreen = ScreenRouter.screenForName(HyprlandAdapter.focusedMonitorName);
+            if (!targetScreen)
+                return "unavailable:no-screen";
+            const ownerId = "session-confirm:" + targetScreen.name + ":" + actionId;
+            const opened = SurfaceCoordinator.open(ownerId, {
+                "source": Qt.resolvedUrl("../Modules/MenuBar/ArchMenu/SessionConfirmationSurface.qml"),
+                "keyboardFocus": "exclusive",
+                "closeOnMonitorChange": true,
+                "ownerId": ownerId,
+                "actionId": actionId
+            }, targetScreen);
+            return root.coordinatorIpcResult(opened,
+                "confirmation:" + actionId + ":" + targetScreen.name);
         }
     }
 

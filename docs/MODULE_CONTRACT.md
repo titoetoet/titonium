@@ -56,8 +56,10 @@ lazy branches. Settings alone reads `allApplications` so hidden installed apps r
 Desktop discovery, icon resolution and execution remain behind
 `Platform.Applications.ApplicationCatalog`; a disappearing entry fails safely.
 
-The compact Arch Menu owns the MenuBar trigger, grouped action dropdown, About surface and local
-confirmation sheet for session actions. Selecting Settings closes or replaces the dropdown with
+The compact Arch Menu owns the MenuBar trigger, grouped action dropdown and About surface.
+Session actions replace that dropdown with a dedicated, screen-centered
+`SessionConfirmationSurface`; the menu never embeds or dispatches a confirmation itself. Selecting
+Settings closes or replaces the dropdown with
 the standalone `SettingsCenter`; it does not host Settings pages, which remain owned by
 `SettingsWorkspace`.
 
@@ -66,8 +68,9 @@ Transient surfaces that must dismiss when focus moves to another monitor declare
 adapter, without polling or compositor commands.
 
 Session actions are explicit Platform capabilities. The compact Arch Menu shows each implemented
-session action and requires a second confirmation gesture before dispatch. Its confirmation stays
-open until the Platform adapter reports meaningful success and shows a localized failure otherwise.
+session action and requires a second confirmation gesture before dispatch. The centered
+confirmation verifies that it still owns the coordinator before dispatch, closes only after the
+Platform adapter reports a started transition, and remains open with a localized error on failure.
 Automated tests use injected lifecycle events only; they never execute lock, logout, suspend,
 hibernate, reboot or poweroff.
 

@@ -3,4 +3,5 @@ ArchMenuWidget 1.0 ArchMenuWidget.qml
 ArchMenu 1.0 ArchMenu.qml
 ArchMenuItem 1.0 ArchMenuItem.qml
 SessionConfirmation 1.0 SessionConfirmation.qml
+SessionConfirmationSurface 1.0 SessionConfirmationSurface.qml
 AboutTitonium 1.0 AboutTitonium.qml

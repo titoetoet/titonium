@@ -4,7 +4,6 @@ import QtQuick
 import qs.Titonium.Design
 import qs.Titonium.Design.Controls as Controls
 import qs.Titonium.Foundation
-import qs.Titonium.Platform.System
 import "ArchMenuModel.js" as ArchMenuModel
 
 FocusScope {
@@ -12,9 +11,6 @@ FocusScope {
 
     property var descriptor: ({})
     property var screen: null
-    property string pendingAction: ""
-    property bool launchPending: false
-    property string failureMessage: ""
     readonly property string ownerId: root.descriptor?.ownerId || ""
 
     anchors.fill: parent
@@ -26,38 +22,22 @@ FocusScope {
     }
 
     function close(): void {
-        if (!root.launchPending)
-            SurfaceCoordinator.close(root.ownerId);
+        SurfaceCoordinator.close(root.ownerId);
     }
 
-    function requestSessionAction(actionId: string): void {
-        root.pendingAction = actionId;
-        root.failureMessage = "";
-        root.launchPending = false;
-    }
-
-    function cancelPendingAction(): void {
-        if (root.launchPending)
-            return;
-        root.pendingAction = "";
-        root.failureMessage = "";
-    }
-
-    function confirmPendingAction(actionId: string): void {
-        if (root.launchPending || actionId.length === 0 || actionId !== root.pendingAction)
-            return;
-        if (!SurfaceCoordinator.guardOwner(root.ownerId)) {
-            root.failureMessage = I18n.tr("session.error.start_failed");
+    function openSessionConfirmation(actionId: string): void {
+        if (!ArchMenuModel.isSessionAction(actionId)) {
+            Logger.warn("arch-menu", "unsupported session action: " + actionId);
             return;
         }
-        const accepted = SessionActions.executeConfirmed(actionId);
-        if (accepted) {
-            if (SurfaceCoordinator.ownerId === root.ownerId)
-                root.launchPending = true;
-            return;
-        }
-        SurfaceCoordinator.releaseOwnerGuard(root.ownerId);
-        root.failureMessage = I18n.tr(SessionActions.lastError);
+        const confirmationOwner = "session-confirm:" + root.screen.name + ":" + actionId;
+        SurfaceCoordinator.open(confirmationOwner, {
+            "source": Qt.resolvedUrl("SessionConfirmationSurface.qml"),
+            "keyboardFocus": "exclusive",
+            "closeOnMonitorChange": true,
+            "ownerId": confirmationOwner,
+            "actionId": actionId
+        }, root.screen);
     }
 
     function openAbout(): void {
@@ -85,7 +65,7 @@ FocusScope {
     function activateItem(item: var): void {
         const route = ArchMenuModel.routeFor(item);
         if (route === "confirm") {
-            root.requestSessionAction(item.id);
+            root.openSessionConfirmation(item.id);
             return;
         }
         if (route === "settings") {
@@ -115,23 +95,12 @@ FocusScope {
         id: panel
         z: 1
         width: 292
-        height: root.pendingAction.length > 0 ? 268 : 308
+        height: 308
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.topMargin: Metrics.barHeight + Metrics.spacingSmall
         anchors.leftMargin: Metrics.barPadding
         padding: Metrics.spacingSmall
-
-        Loader {
-            id: contentLoader
-            anchors.fill: parent
-            sourceComponent: root.pendingAction.length > 0
-                ? confirmationComponent : menuComponent
-        }
-    }
-
-    Component {
-        id: menuComponent
 
         Column {
             width: 276
@@ -153,7 +122,6 @@ FocusScope {
                             width: groupDelegate.width
                             itemData: modelData
                             initialFocus: modelData.id === "about"
-                            enabled: !root.launchPending
                             onTriggered: item => root.activateItem(item)
                         }
                     }
@@ -169,36 +137,6 @@ FocusScope {
                     }
                 }
             }
-        }
-    }
-
-    Component {
-        id: confirmationComponent
-
-        SessionConfirmation {
-            width: 276
-            actionId: root.pendingAction
-            busy: root.launchPending
-            failureMessage: root.failureMessage
-            onCancelled: root.cancelPendingAction()
-            onConfirmed: actionId => root.confirmPendingAction(actionId)
-        }
-    }
-
-    Connections {
-        target: SessionActions
-
-        function onActionStarted(action: string): void {
-            if (action === root.pendingAction)
-                SurfaceCoordinator.forceClose(root.ownerId);
-        }
-
-        function onActionFailed(action: string, error: string): void {
-            if (action !== root.pendingAction)
-                return;
-            SurfaceCoordinator.releaseOwnerGuard(root.ownerId);
-            root.launchPending = false;
-            root.failureMessage = I18n.tr(error);
         }
     }
 

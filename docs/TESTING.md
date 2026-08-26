@@ -83,8 +83,10 @@ configuration copies. Gallery content must disappear from the scene when its Loa
 - Clipboard copy closes Spotlight after a successful copy. Outside click closes Spotlight, Arch
   Menu and Settings, and the coordinator permits only one transient per screen. The compact Arch
   Menu stays under the MenuBar trigger with text, icons and separators; Settings always opens as a
-  separate preview transaction. Every session action must show confirmation. Manual acceptance may
-  activate Cancel only; automated tests never invoke or confirm a session action.
+  separate preview transaction. Every session action must replace the menu with a dedicated
+  confirmation window centered on its screen. Escape, outside click and Cancel close it; failures
+  release its pending guard and remain visible. Manual acceptance may activate Cancel only;
+  automated tests never invoke or confirm a session action.
 - Settings preview updates every surface, but closing by any lifecycle path restores committed
   state. Apply writes only the atomic runtime settings/layout files. Theme metadata is resolved from a
   validated package; Typography font/size overrides reset independently of other appearance.
