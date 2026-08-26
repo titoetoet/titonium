@@ -29,7 +29,12 @@ def main() -> int:
         "BarSurface.qml": ("PanelWindow {", "exclusiveZone: 40", "mask: Region {"),
         "Bar.qml": ("StartIsland {", "CenterIsland {", "EndIsland {", "BarLayout.centerX"),
         "islands/CenterIsland.qml": ("CenterNotchCoordinator.toggle",),
-        "islands/EndIsland.qml": ("ConnectivityPill {", "StatusPill {"),
+        "islands/ConnectivityPill.qml": ("readonly property int fullImplicitWidth",),
+        "islands/EndIsland.qml": (
+            "ConnectivityPill {",
+            "StatusPill {",
+            "connectivity.fullImplicitWidth",
+        ),
         "islands/StatusPill.qml": ("InputMethod {", "Clock {"),
     }
     for filename, fragments in contracts.items():

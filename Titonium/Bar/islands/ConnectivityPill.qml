@@ -8,8 +8,9 @@ import qs.Titonium.Shared as Shared
 Item {
     id: root
     property bool showDiagnostics: true
+    readonly property int fullImplicitWidth: iconRow.implicitWidth + Metrics.spacingSmall * 2
 
-    implicitWidth: root.showDiagnostics ? iconRow.implicitWidth + Metrics.spacingSmall * 2 : 0
+    implicitWidth: root.showDiagnostics ? root.fullImplicitWidth : 0
     implicitHeight: Metrics.widgetHeight
     visible: root.showDiagnostics
 

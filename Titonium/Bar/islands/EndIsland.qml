@@ -7,7 +7,7 @@ Item {
     id: root
     required property var screen
     property bool showConnectivityDiagnostics: true
-    readonly property int preferredWidth: connectivity.implicitWidth + Metrics.barSpacing
+    readonly property int preferredWidth: connectivity.fullImplicitWidth + Metrics.barSpacing
         + status.implicitWidth
 
     implicitWidth: endRow.implicitWidth
