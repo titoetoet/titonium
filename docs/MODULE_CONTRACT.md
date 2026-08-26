@@ -1,90 +1,41 @@
-# Module and composition contract
+# Module contract
 
-## Layout node kinds
+A module is a vertical capability slice, not a widget file copied into the bar.
 
-Every node has a unique non-empty `id` and one of these `type` values:
+```text
+Titonium/Services/<Capability>/   system adapter + shared reactive model
+Titonium/Bar/widgets/             compact bar view, when needed
+Titonium/Overlays/<Capability>/   lazy heavy surface, when needed
+scripts/check_<capability>.*      pure and architecture checks
+config/i18n/{vi,en}.json          reachable user strings
+```
 
-- `widget`: resolves `widgetType` through `WidgetRegistry`; optional `props` and `panel`.
-- `group`: recursively lays out `children`; supports `orientation`, `spacing` and `surface`.
-- `panel`: declares lazily rendered transient content in `child`.
-- `tabs`: owns `pages`, each with an ID, translation key and child node.
-- `spacer`: consumes available space or an explicit logical size.
+Create only the directories the capability actually needs.
 
-The MenuBar document contains `screens.default.slots.start|center|end`. A screen-name object
-may override any of those slots.
+## Service interface
 
-## Widget contract
+A service may import Quickshell integration modules, observe native signals, persist runtime data
+outside Git and expose narrow intent methods. It must:
 
-All registry widgets derive from `WidgetBase` and receive:
+- be a `Singleton` when state is shared;
+- prefer events over polling;
+- expose stable semantic state rather than DBus/IPC payloads;
+- contain platform failure and provide a safe unavailable state;
+- have pure JavaScript helpers for transformations worth unit testing.
 
-- `node`: the validated widget node.
-- `screen`: the current `ShellScreen`.
-- `context`: host context such as slot and density.
+## View interface
 
-They emit:
+A view receives explicit context such as `screen` and reads a service singleton. It may emit user
+intent or call a narrow service method. It must not instantiate `Process`, `FileView`, execute raw
+commands, persist state or reach into another feature's private QML objects.
 
-- `actionRequested(action, payload)` for domain actions.
-- `surfaceRequested(descriptor)` for a panel/popup request.
-- `surfaceCloseRequested()` to close the surface they own.
+Bar widgets remain cheap while visible. Heavy panels use `SurfaceManager` plus `OverlayHost`; their
+`Loader.active` becomes false on close. Only one transient surface owns exclusive keyboard focus.
 
-Widgets expose implicit size and accessibility metadata. They do not expose an `expanded`
-property for the MenuBar to manage.
+## Adapting third-party code
 
-MenuBar feature widgets are vertical modules. Each folder owns a small state-only model and a
-`WidgetBase` UI; compositor/service bindings live in a named Platform adapter. Registry types
-currently include `menubar.workspaces`, `menubar.active-window`, `menubar.input-method` and
-`menubar.clock` and `menubar.launcher`.
-Workspace and running-app activation are routed exclusively through
-`Platform.Hyprland.HyprlandAdapter`.
-
-Active Window is a running-app task strip immediately adjacent to Workspaces. Its model groups
-non-minimized Wayland toplevels by app ID, resolves desktop metadata through
-`Platform.Applications.ApplicationCatalog`, and preserves stable discovery order. Inactive apps
-render as compact icons; the active app alone expands to its current title. There is no timer,
-`hyprctl` process, or compositor query in the model/UI.
-
-Clock owns one shared `SystemClock` at minute precision for the MenuBar. Clicking it lazily creates
-an analog-clock panel with a seconds-precision clock; closing the surface destroys that tree, so
-there is no seconds update at idle. Calendar/Lunar remain separate assets reserved for the future
-Notification Center. Lunar conversion is pure stateless JavaScript fixed to Vietnam UTC+7 and
-must retain its fixture tests.
-
-Spotlight owns the keyboard-first application and clipboard surface. It categorizes desktop
-entries from `Foundation.ApplicationVisibilityStore.visibleApplications`, renders a fixed 5×4
-browse grid with occupancy indicators, and keeps query results and clipboard content as separate
-lazy branches. Settings alone reads `allApplications` so hidden installed apps remain recoverable.
-Desktop discovery, icon resolution and execution remain behind
-`Platform.Applications.ApplicationCatalog`; a disappearing entry fails safely.
-
-The compact Arch Menu owns the MenuBar trigger, grouped action dropdown and About surface.
-Session actions replace that dropdown with a dedicated, screen-centered
-`SessionConfirmationSurface`; the menu never embeds or dispatches a confirmation itself. Selecting
-Settings closes or replaces the dropdown with
-the standalone `SettingsCenter`; it does not host Settings pages, which remain owned by
-`SettingsWorkspace`.
-
-Transient surfaces that must dismiss when focus moves to another monitor declare
-`closeOnMonitorChange: true`. `OverlayHost` observes monitor-focus events through the Hyprland
-adapter, without polling or compositor commands.
-
-Session actions are explicit Platform capabilities. The compact Arch Menu shows each implemented
-session action and requires a second confirmation gesture before dispatch. The centered
-confirmation verifies that it still owns the coordinator before dispatch, closes only after the
-Platform adapter reports a started transition, and remains open with a localized error on failure.
-Automated tests use injected lifecycle events only; they never execute lock, logout, suspend,
-hibernate, reboot or poweroff.
-
-Settings pages never own persisted state. `SettingsCenter` is the sole Settings host and embeds
-the reusable `SettingsWorkspace`, which projects `ConfigStore.previewState` and mutates it only
-through typed `patch()` paths. SettingsCenter begins one preview transaction; Apply commits
-atomically, while Cancel, Escape, outside click, IPC close and surface replacement all rollback.
-Theme metadata shown by UI comes from validated theme documents, not duplicated catalog labels.
-
-Panel metrics live in the versioned layout document: `menubar.height`, `padding` and `spacing`.
-They preview live on all outputs, including the layer-shell exclusive zone. Frame configuration
-lives under `settings.modules.frame`, remains disabled by default and is reset independently.
-
-## Failure behavior
-
-Missing registry entries and invalid node content render `DiagnosticWidget` with a concise
-message. Sibling nodes continue to render. Errors are logged with node and screen IDs.
+Do not copy a repository's shell root, theme engine or god service. Extract the protocol or model
+logic, rename it to Titonium vocabulary, remove unused behavior and wrap it in this contract.
+Preserve copyright/license notices and add provenance to the capability's documentation or source
+header. Tests must use fakes and must never launch a real app, execute a power action or overwrite
+clipboard contents.

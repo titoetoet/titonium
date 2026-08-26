@@ -1,93 +1,38 @@
 # Titonium
 
-Titonium is a modular Quickshell desktop shell for Hyprland. This repository is a greenfield
-rewrite focused on predictable extension points, low idle cost and safe takeover by another
-human or coding agent.
+Titonium is a small Quickshell skeleton for Hyprland, built to accept independently sourced
+modules without turning the shell into a coupled framework. The current baseline intentionally
+keeps only the distinctive Spotlight flow, the smooth Fcitx input indicator, a direct dynamic
+multi-monitor bar, shared tokens and narrow platform services.
 
-Milestone 0 provides a schema-driven, multi-monitor MenuBar foundation. The immutable
-`titonium-neutral` baseline and lazy Design Gallery are complete. Milestone 1 now includes the
-first production MenuBar slices: Workspaces, Active Window, event-driven Fcitx Input Method,
-and a minute-precision Clock with a lazy analog panel. Spotlight discovers and executes desktop
-entries through a dedicated Platform adapter, renders a fixed 5×4 browse grid with density-aware
-page indicators and opens Clipboard history separately. Application visibility is a global
-settings concern: hidden entries disappear from every Titonium picker but remain recoverable from
-the Spotlight settings page. The Arch logo owns a compact system menu whose session actions replace
-the menu with a dedicated screen-centered confirmation.
-Settings Center provides transactional appearance, layout, frame, system, audio and Spotlight
-pages with live global preview. Window Switcher and notifications remain phased.
+## Current UI
 
-## Run
+- A 40 logical-pixel bar is created reactively for every `Quickshell.screens` entry.
+- The temporary bar contains Workspaces, Input Method and Clock.
+- `Super + Space` opens Spotlight Applications; `Super + V` opens Clipboard.
+- Spotlight supports its 5×4 app grid, categories, calculator results, density indicators,
+  Clipboard scope and the System Search mock.
 
-```bash
-qs -n -p "$HOME/Projects/titonium"
-```
+Settings Center, Arch Menu, Active Window, Calendar, Theme Gallery, Frame and Audio were removed
+from the runtime baseline. They are historical reference in Git, not dependencies of the shell.
 
-Run the checks first:
+## Run and verify
 
 ```bash
+cd /home/cole/Projects/titonium
 ./scripts/check.sh
 ./scripts/smoke.sh
-./scripts/spotlight_acceptance.sh
-./scripts/runtime_acceptance.sh
-./scripts/settings_acceptance.sh
+./scripts/protected_acceptance.sh
+qs -d -p /home/cole/Projects/titonium
 ```
 
-Open Settings on a named output and test a page directly:
+Useful IPC calls:
 
 ```bash
-qs -p /home/cole/Projects/titonium ipc call settings openPage theme DP-3
-qs -p /home/cole/Projects/titonium ipc call settings openPage material DP-3
+qs -p /home/cole/Projects/titonium ipc call app status
+qs -p /home/cole/Projects/titonium ipc call spotlight toggle
+qs -p /home/cole/Projects/titonium ipc call spotlight clipboard
+qs -p /home/cole/Projects/titonium ipc call spotlight close
 ```
 
-The Material page is visible only after selecting Titonium Hybrid Glass. Closing Settings,
-pressing Escape or clicking outside cancels un-applied preview state; Apply writes atomic runtime
-data outside the repository. Restore Appearance always returns to Neutral Utility dark/solid and
-does not touch locale, layout, module settings or either `hyprland.lua` copy.
-
-Open or close the Design Gallery without a Hyprland keybinding:
-
-```bash
-qs -p "$HOME/Projects/titonium" ipc call gallery toggle DP-3
-qs -p "$HOME/Projects/titonium" ipc call gallery close
-```
-
-Open or close Calendar on a named output:
-
-```bash
-qs -p "$HOME/Projects/titonium" ipc call calendar toggle DP-3
-qs -p "$HOME/Projects/titonium" ipc call calendar close
-```
-
-Open Spotlight Applications or Clipboard, or close the active Spotlight surface:
-
-```bash
-qs -p "$HOME/Projects/titonium" ipc call spotlight toggle
-qs -p "$HOME/Projects/titonium" ipc call spotlight clipboard
-qs -p "$HOME/Projects/titonium" ipc call spotlight close
-```
-
-Open or close the compact Arch Menu on a named output:
-
-```bash
-qs -p "$HOME/Projects/titonium" ipc call arch-menu toggle DP-3
-qs -p "$HOME/Projects/titonium" ipc call arch-menu close
-```
-
-Automated acceptance may preview and cancel a session confirmation, but never confirms it:
-
-```bash
-qs -p "$HOME/Projects/titonium" ipc call arch-menu previewSessionAction lock
-qs -p "$HOME/Projects/titonium" ipc call arch-menu close
-```
-
-Open a Settings page directly for testing:
-
-```bash
-qs -p "$HOME/Projects/titonium" ipc call settings openPage theme DP-3
-qs -p "$HOME/Projects/titonium" ipc call settings openPage typography DP-3
-qs -p "$HOME/Projects/titonium" ipc call settings openPage layout DP-3
-qs -p "$HOME/Projects/titonium" ipc call settings openPage frame DP-3
-qs -p "$HOME/Projects/titonium" ipc call settings close
-```
-
-Start with [AGENTS.md](AGENTS.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Read [AGENTS.md](AGENTS.md) before adding or adapting a module.

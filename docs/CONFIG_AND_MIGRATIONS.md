@@ -1,47 +1,25 @@
-# Configuration and migrations
+# Configuration and runtime data
 
-## Files
+The skeleton ships one small read-only settings document at `config/defaults/settings.json` and
+its schema at `config/schemas/settings.schema.json`. It currently contains only state consumed by
+the protected runtime: locale, light/dark mode, reduced motion, global hidden application IDs,
+Spotlight transition preferences and 24-hour Clock preference.
 
-- `config/defaults/settings.json`: shipped application defaults.
-- `config/defaults/layout.json`: shipped composition defaults.
-- `config/schemas/*.schema.json`: documented public schemas.
-- Titonium data directory: atomically written runtime overrides.
-- Titonium state directory: ephemeral UI/session state only.
+`Preferences.qml` reads shipped defaults with `Quickshell.shellPath()` and optional runtime state
+with `Quickshell.dataPath("settings.json")`. `PreferencesValidator.project()` selects supported
+fields into a fresh object. This means a broader historical v5 runtime file remains readable, but
+retired Frame/Audio/Theme/Layout fields do not enter live state and are never rewritten merely by
+starting the shell.
 
-The source tree is always read-only at runtime.
+Clipboard history uses `Quickshell.dataPath("clipboard-history.json")` and `FileView.atomicWrites`.
+No runtime document belongs in Git.
 
-## Loading
+When a new module genuinely needs configuration:
 
-Defaults must validate. A runtime file is accepted only when its schema version and structure
-are valid. Invalid JSON, duplicate node IDs or unknown node kinds reject the entire runtime
-document and retain the last valid/default state.
+1. Add only its stable user preference to defaults/schema.
+2. Extend the projection with a safe fallback and range/type normalization.
+3. Add a projection test for valid, missing and historical input.
+4. Persist through a Core/Service owner, never a view.
 
-## Transactions
-
-`beginPreview()` copies both committed settings and committed layout into their preview states.
-`patch(path, value)` changes settings; `patchLayout(path, value)` changes the separately validated
-layout document. `apply()` atomically writes each runtime document and promotes both previews.
-`cancel()` restores both previews without writing. `restoreLayout()` is explicit and separate.
-
-## Migrations
-
-Every persisted document has integer `schemaVersion`. Future migrations are pure transforms
-from version N to N+1, run before validation. Never silently reinterpret an existing field.
-Settings schema v2 owns a dedicated `appearance` subtree. The pure v1→v2 migration preserves
-locale, accessibility and module state, maps the retired foundation theme to
-`titonium-neutral`, and never persists until the user applies a transaction.
-
-Settings v2→v3 normalized the former Launcher profile and transition fields as an intermediate
-migration step. Settings v3→v4 removes `modules.launcher`, creates `modules.spotlight` and carries
-forward only `pageTransition` and `transitionDuration`; profile, embedded-Settings and retired
-catalog-control fields are discarded. Older documents run each pure step in order and are not
-written until Apply.
-
-Settings v4→v5 adds global `applications.hiddenIds` as an empty list while preserving locale,
-appearance, accessibility and every module value. Hidden application IDs are unique non-empty
-desktop-entry IDs and remain outside module-owned settings.
-
-`restoreAppearance()` replaces only preview appearance state with shipped defaults. It always
-selects Neutral Utility dark/comfortable with empty overrides. Locale, accessibility, module
-state and the separate layout document remain untouched; Apply persists and Cancel rolls back.
-Frame reset changes only `modules.frame`; layout reset changes only the layout document.
+Do not introduce migration machinery until a persisted public schema actually changes. Unknown or
+malformed runtime input must fall back without crashing or destructively rewriting the user's file.

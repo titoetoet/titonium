@@ -1,55 +1,54 @@
 # AGENTS.md — Titonium
 
-This is the authoritative handoff for humans and coding agents working on Titonium, a
-Quickshell desktop shell for Hyprland. Read this file, then the linked documents, before
-changing code.
+This repository uses a **Skeleton First, Modular Pluggable** workflow. Preserve the small shell
+core, study external implementations one capability at a time, then adapt only the useful logic
+behind Titonium-owned contracts. Do not rebuild a generic framework in anticipation of features.
 
-## Current milestone
+## Protected baseline
 
-Milestone 0, Theme Foundation, Design Controls and the Settings Center are complete. Milestone 1
-is in final parity review: Workspaces, Active Window, Input Method, Clock, Calendar, the Vietnamese
-Lunar model and the compact Arch Menu are implemented. The superseded Launcher/Dashboard has been
-removed. Milestone 3 Spotlight is complete and live at `Super + Space` for Applications and
-`Super + V` for Clipboard, while Settings remains a separate transactional surface. Visualizer
-remains deferred to the media phase; Active Window and Clock retain their documented interactive
-review items.
+- Spotlight in `Titonium/Overlays/Spotlight` and its `Super + Space` / `Super + V` bindings.
+- Input Method in `Titonium/Services/InputMethod` and `Titonium/Bar/widgets/InputMethod.qml`.
+- Dynamic screen lifecycle in `Titonium/Bar/BarHost.qml` and the lazy overlay lifecycle.
+- Runtime data outside Git. Never edit either `hyprland.lua` from a feature or theme.
 
-The legacy reference is read-only:
+Workspaces and Clock are temporary visible widgets and may be replaced after an explicit
+reference-repo review. Protected features may be refactored only with equivalent acceptance
+coverage and user approval.
 
-`~/.local/share/Trash/files/titonium`
+## Dependency rules
 
-The greenfield repository and runtime source is:
+- `App` composes `Bar`, `Core/Surfaces` and feature overlays.
+- UI in `Bar`, `Overlays` and `Shared` reads services; it never owns `Process`, `FileView`, raw
+  commands or persistence.
+- `Services` own Quickshell/Hyprland/SystemTray/DesktopEntry/Clipboard integration and shared state.
+- `Core` owns screen routing, surface lifecycle, preferences, i18n and logging.
+- `Theme` is a static semantic token layer; `Shared` is the small reusable presentation layer.
+- Services never import feature views. Feature slices do not import one another.
 
-`~/Projects/titonium`
+Every QML directory has a `qmldir` and imports use `qs.Titonium.*`. User-facing strings use
+`I18n.tr()`. New runtime listeners are shared in a singleton service, not duplicated in widgets.
 
-## Required reading
+## Module workflow
 
-1. `docs/ARCHITECTURE.md` — dependency direction, runtime flow and surface lifecycle.
-2. `docs/CODING_FLOW.md` — the required implementation workflow.
-3. `docs/MODULE_CONTRACT.md` — layout nodes and widget contracts.
-4. `docs/CONFIG_AND_MIGRATIONS.md` — persistence, validation and schema policy.
-5. `docs/THEMING_AND_GLASS.md` — semantic theme and material backend contract.
-6. `docs/PERFORMANCE.md` — idle-cost and lazy-loading rules.
-7. `docs/TESTING.md` — checks that must pass before handoff.
-8. `docs/ROADMAP.md` — phased feature order.
+1. Define the user behavior and a narrow service/view contract.
+2. Research and record candidate repositories, licenses, versions and exact source files.
+3. Add a failing domain or contract test.
+4. Adapt logic into `Services/<Capability>` and presentation into its owning feature directory.
+5. Add the minimum composition line; keep heavy surfaces behind `Loader.active`.
+6. Run static, foreground and focused live acceptance before asking for visual review.
 
-## Non-negotiable rules
+Copying an entire repo directory, retaining its global state object, or importing its theme system
+is not allowed. Attribution and license notices must accompany adapted third-party code.
 
-- Dependency direction is `App/Surfaces -> Modules/Composition -> Design/Foundation -> Platform`.
-- UI code must not instantiate `Process`, call `Quickshell.execDetached`, or write files.
-- OS access belongs in `Titonium/Platform`; persistence belongs in `Foundation/ConfigStore.qml`.
-- User-facing strings use `I18n.tr()` and semantic colors use `Theme.*`.
-- Runtime data never lives in the repository. Defaults and schemas in `config/` are read-only.
-- Every long-running timer, animation, poller or effect must be gated by an explicit consumer.
-- Unknown configuration must degrade to a diagnostic component instead of crashing the shell.
-- Every QML directory has a `qmldir`; Quickshell exposes the logical `Titonium.*`
-  namespace at runtime as `qs.Titonium.*`.
-- New settings are declared once in the schema/defaults and changed through `ConfigStore`.
-- Never edit the legacy shell while implementing a greenfield milestone.
-- The Neutral Utility package is always solid and must never invoke compositor integration.
+## Required gates
 
-## Definition of done
+```bash
+./scripts/check.sh
+./scripts/smoke.sh
+./scripts/protected_acceptance.sh
+hyprctl configerrors
+```
 
-Run `scripts/check.sh`, then `scripts/smoke.sh`. A milestone is not done while static checks
-fail, the foreground log contains QML errors, Hyprland reports config errors, or rollback is
-undocumented.
+Never launch a real application or write clipboard contents in automated tests. Read
+`docs/ARCHITECTURE.md`, `docs/MODULE_CONTRACT.md`, `docs/CODING_FLOW.md` and `docs/TESTING.md`
+before implementation.
