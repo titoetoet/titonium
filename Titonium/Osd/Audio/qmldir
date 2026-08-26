@@ -1,0 +1,4 @@
+module qs.Titonium.Osd.Audio
+singleton AudioOsdCoordinator 1.0 AudioOsdCoordinator.qml
+AudioOsdHost 1.0 AudioOsdHost.qml
+AudioOsd 1.0 AudioOsd.qml

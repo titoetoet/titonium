@@ -8,6 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 AUDIO_ROOT = ROOT / "Titonium/Services/Audio"
 OVERLAY_ROOT = ROOT / "Titonium/Overlays/Audio"
+OSD_ROOT = ROOT / "Titonium/Osd/Audio"
 REQUIRED_FILES = (
     "Titonium/Services/Audio/AudioService.qml",
     "Titonium/Services/Audio/AudioRules.js",
@@ -20,6 +21,12 @@ REQUIRED_OVERLAY_FILES = (
     "Titonium/Overlays/Audio/AudioControlRow.qml",
     "Titonium/Overlays/Audio/AudioStreamRow.qml",
     "Titonium/Overlays/Audio/AudioSlider.qml",
+)
+REQUIRED_OSD_FILES = (
+    "Titonium/Osd/Audio/qmldir",
+    "Titonium/Osd/Audio/AudioOsdCoordinator.qml",
+    "Titonium/Osd/Audio/AudioOsdHost.qml",
+    "Titonium/Osd/Audio/AudioOsd.qml",
 )
 REQUIRED_FRAGMENTS = (
     "import Quickshell.Services.Pipewire",
@@ -70,6 +77,9 @@ def main() -> int:
     for relative in REQUIRED_OVERLAY_FILES:
         if not (ROOT / relative).is_file():
             errors.append(f"missing audio overlay file: {relative}")
+    for relative in REQUIRED_OSD_FILES:
+        if not (ROOT / relative).is_file():
+            errors.append(f"missing audio OSD file: {relative}")
 
     service = AUDIO_ROOT / "AudioService.qml"
     if service.is_file():
@@ -139,12 +149,80 @@ def main() -> int:
         '"name": root.stream?.name || I18n.tr("audio.stream.fallback")',
     ), "Audio stream row")
 
+    require_fragments(errors, OSD_ROOT / "qmldir", (
+        "module qs.Titonium.Osd.Audio",
+        "singleton AudioOsdCoordinator 1.0 AudioOsdCoordinator.qml",
+    ), "Audio OSD module")
+    require_fragments(errors, OSD_ROOT / "AudioOsdCoordinator.qml", (
+        "pragma Singleton",
+        "readonly property bool active",
+        "readonly property string ownerScreenName",
+        "function onOutputPresentationChanged(volume: real, muted: bool): void",
+        "HyprlandService.focusedMonitorName",
+        "function show(screenName: string, volume: real, muted: bool): bool",
+        "function hide(): bool",
+        "interval: 1200",
+        "repeat: false",
+        "hideTimer.restart()",
+    ), "Audio OSD coordinator")
+    require_fragments(errors, OSD_ROOT / "AudioOsdHost.qml", (
+        "Variants {",
+        "model: Quickshell.screens",
+    ), "Audio OSD host")
+    require_fragments(errors, OSD_ROOT / "AudioOsd.qml", (
+        'I18n.tr("audio.muted")',
+        'I18n.tr("audio.osd.volume", {',
+        "Behavior on opacity",
+        "Behavior on y",
+        "Motion.fast",
+    ), "Audio OSD pill")
+
+    osd_host = OSD_ROOT / "AudioOsdHost.qml"
+    if osd_host.is_file():
+        source = osd_host.read_text(encoding="utf-8")
+        for fragment in (
+            "PanelWindow {",
+            "Loader {",
+            "active: window.visible",
+            "WlrKeyboardFocus.None",
+            "exclusiveZone: 0",
+            "anchors { bottom: true; left: false; right: false }",
+            "mask: Region {}",
+        ):
+            if fragment not in source:
+                errors.append(f"Audio OSD host missing contract: {fragment}")
+
+    if OSD_ROOT.exists():
+        osd_source = "\n".join(path.read_text(encoding="utf-8") for path in OSD_ROOT.rglob("*.qml"))
+        for forbidden in (
+            "Quickshell.Services.Pipewire",
+            "SurfaceManager",
+            "Process",
+            "FileView",
+            "TapHandler",
+            "MouseArea",
+            "PointerHandler",
+            "WheelHandler",
+            ".audio.volume =",
+            ".audio.muted =",
+        ):
+            if forbidden in osd_source:
+                errors.append(f"Audio OSD contains forbidden dependency: {forbidden}")
+        if "repeat: true" in osd_source:
+            errors.append("Audio OSD timer must not repeat")
+        service_imports = re.findall(
+            r"^\s*import\s+(qs\.Titonium\.Services\.[A-Za-z.]+)", osd_source, re.MULTILINE
+        )
+        if any(import_name not in ("qs.Titonium.Services.Audio", "qs.Titonium.Services.Hyprland")
+               for import_name in service_imports):
+            errors.append("Audio OSD imports an unsupported service")
+
     for locale in ("en", "vi"):
         catalog_path = ROOT / f"config/i18n/{locale}.json"
         if not catalog_path.is_file():
             continue
         strings = json.loads(catalog_path.read_text(encoding="utf-8")).get("strings", {})
-        for key in ("audio.mute.accessible", "audio.unmute.accessible"):
+        for key in ("audio.mute.accessible", "audio.unmute.accessible", "audio.osd.volume"):
             if key not in strings:
                 errors.append(f"{locale} catalog missing audio accessibility key: {key}")
 
@@ -180,6 +258,11 @@ def main() -> int:
         "function popup(): string",
         "function closePopup(): string",
         "function popupState(): string",
+        "import qs.Titonium.Osd.Audio",
+        "AudioOsdHost {}",
+        "function osdState(): string",
+        "AudioOsdCoordinator.active",
+        "AudioOsdCoordinator.ownerScreenName",
         "AudioPopupCoordinator.open(screen)",
         "AudioPopupCoordinator.close()",
         "function onOpened(ownerId: string, descriptor: var, screen: var): void",

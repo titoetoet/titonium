@@ -12,6 +12,7 @@ import qs.Titonium.Services.Applications
 import qs.Titonium.Services.Audio
 import qs.Titonium.Services.Hyprland
 import qs.Titonium.Overlays.Audio
+import qs.Titonium.Osd.Audio
 
 Scope {
     id: root
@@ -37,6 +38,7 @@ Scope {
 
     BarHost {}
     OverlayHost {}
+    AudioOsdHost {}
 
     Connections {
         target: SurfaceManager
@@ -81,6 +83,11 @@ Scope {
             if (!AudioPopupCoordinator.active)
                 return "closed";
             return "open:" + (SurfaceManager.screen?.name || "");
+        }
+
+        function osdState(): string {
+            return AudioOsdCoordinator.active
+                ? "active:" + AudioOsdCoordinator.ownerScreenName : "idle";
         }
     }
 

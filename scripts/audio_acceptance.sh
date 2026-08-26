@@ -46,6 +46,11 @@ if [[ ! "$audio_state" =~ $state_pattern ]]; then
     exit 1
 fi
 
+if [[ "$(call_ipc audio osdState)" != "idle" ]]; then
+    printf 'FAIL audio OSD was not idle at startup: %q\n' "$(call_ipc audio osdState)" >&2
+    exit 1
+fi
+
 popup_state="$(call_ipc audio popup)"
 if [[ ! "$popup_state" =~ ^open:[^[:space:]]+$ ]]; then
     printf 'FAIL audio popup did not open: %q\n' "$popup_state" >&2
@@ -61,6 +66,10 @@ if [[ "$(call_ipc audio closePopup)" != "closed" ]]; then
 fi
 if [[ "$(call_ipc audio popupState)" != "closed" ]]; then
     printf 'FAIL audio popup state was not closed: %q\n' "$(call_ipc audio popupState)" >&2
+    exit 1
+fi
+if [[ "$(call_ipc audio osdState)" != "idle" ]]; then
+    printf 'FAIL audio OSD was not idle after popup lifecycle: %q\n' "$(call_ipc audio osdState)" >&2
     exit 1
 fi
 
@@ -81,4 +90,4 @@ if rg -i "$runtime_rejection_pattern" "$log_file"; then
     exit 1
 fi
 
-echo "PASS audio read-only state and popup acceptance"
+echo "PASS audio read-only OSD state and popup acceptance"

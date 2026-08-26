@@ -11,6 +11,7 @@
     "audio.mute.accessible": "Mute {name}",
     "audio.muted": "Muted",
     "audio.output": "Output",
+    "audio.osd.volume": "{percentage}%",
     "audio.stream.fallback": "Audio stream",
     "audio.unavailable": "Audio is unavailable",
     "audio.unmute.accessible": "Unmute {name}",

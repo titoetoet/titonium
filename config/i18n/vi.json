@@ -11,6 +11,7 @@
     "audio.mute.accessible": "Tắt tiếng {name}",
     "audio.muted": "Đã tắt tiếng",
     "audio.output": "Đầu ra",
+    "audio.osd.volume": "{percentage}%",
     "audio.stream.fallback": "Luồng âm thanh",
     "audio.unavailable": "Âm thanh không khả dụng",
     "audio.unmute.accessible": "Bật tiếng {name}",
