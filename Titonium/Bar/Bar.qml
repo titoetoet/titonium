@@ -1,35 +1,42 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.Titonium.Bar.islands
 import qs.Titonium.Theme
-import qs.Titonium.Shared as Shared
-import "widgets"
+import "notch/BarLayout.js" as BarLayout
 
 Item {
     id: root
     required property var screen
+    readonly property alias startHitbox: startIsland
+    readonly property alias centerHitbox: centerIsland
+    readonly property alias endHitbox: endIsland
+    readonly property var optionalPlan: BarLayout.optionalVisibility(
+        root.width,
+        startIsland.implicitWidth,
+        centerIsland.implicitWidth,
+        endIsland.preferredWidth,
+        Metrics.barSpacing)
 
-    Shared.Surface {
-        anchors.fill: parent
-        tone: "background"
-        radius: 0
-        outlined: false
+    StartIsland {
+        id: startIsland
+        x: Metrics.barPadding
+        anchors.verticalCenter: parent.verticalCenter
+        screen: root.screen
     }
 
-    Row {
-        anchors.left: parent.left
-        anchors.leftMargin: Metrics.barPadding
+    CenterIsland {
+        id: centerIsland
+        x: BarLayout.centerX(root.width, width)
         anchors.verticalCenter: parent.verticalCenter
-        spacing: Metrics.barSpacing
-        Workspaces { screen: root.screen; count: 5 }
+        screen: root.screen
     }
 
-    Row {
-        anchors.right: parent.right
-        anchors.rightMargin: Metrics.barPadding
+    EndIsland {
+        id: endIsland
+        x: root.width - width - Metrics.barPadding
         anchors.verticalCenter: parent.verticalCenter
-        spacing: Metrics.barSpacing
-        InputMethod { screen: root.screen }
-        Clock { screen: root.screen }
+        screen: root.screen
+        showConnectivityDiagnostics: root.optionalPlan.showConnectivityDiagnostics
     }
 }

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import json
 from pathlib import Path
 
 
@@ -9,10 +10,27 @@ BAR = ROOT / "Titonium/Bar"
 
 def main() -> int:
     errors: list[str] = []
+    required = (
+        "islands/qmldir",
+        "islands/StartIsland.qml",
+        "islands/CenterIsland.qml",
+        "islands/EndIsland.qml",
+        "islands/ConnectivityPill.qml",
+        "islands/StatusPill.qml",
+        "notch/qmldir",
+        "notch/CenterNotchCoordinator.qml",
+    )
+    for relative in required:
+        if not (BAR / relative).is_file():
+            errors.append(f"missing Bar island contract: Titonium/Bar/{relative}")
+
     contracts = {
         "BarHost.qml": ("Variants {", "model: Quickshell.screens"),
-        "BarSurface.qml": ("PanelWindow {", "exclusiveZone: 40"),
-        "Bar.qml": ("Workspaces {", "InputMethod {", "Clock {"),
+        "BarSurface.qml": ("PanelWindow {", "exclusiveZone: 40", "mask: Region {"),
+        "Bar.qml": ("StartIsland {", "CenterIsland {", "EndIsland {", "BarLayout.centerX"),
+        "islands/CenterIsland.qml": ("CenterNotchCoordinator.toggle",),
+        "islands/EndIsland.qml": ("ConnectivityPill {", "StatusPill {"),
+        "islands/StatusPill.qml": ("InputMethod {", "Clock {"),
     }
     for filename, fragments in contracts.items():
         path = BAR / filename
@@ -33,6 +51,10 @@ def main() -> int:
             "layout.json",
             "Process {",
             "Timer {",
+            "Quickshell.execDetached",
+            "MultiEffect",
+            "ShaderEffect",
+            "qs.modules.",
         ):
             if forbidden in feature:
                 errors.append(f"direct Bar contains forbidden dependency: {forbidden}")
@@ -44,6 +66,18 @@ def main() -> int:
     ):
         if path_fragment not in protected_acceptance:
             errors.append(f"protected acceptance does not inspect new Input Method path: {path_fragment}")
+
+    required_i18n = {
+        "menubar.center_notch.accessible",
+        "menubar.connectivity.network_planned",
+        "menubar.connectivity.bluetooth_planned",
+        "menubar.connectivity.audio_planned",
+    }
+    for locale in ("en", "vi"):
+        catalog = json.loads((ROOT / f"config/i18n/{locale}.json").read_text(encoding="utf-8"))
+        missing = sorted(required_i18n - set(catalog.get("strings", {})))
+        for key in missing:
+            errors.append(f"{locale} catalog missing Bar key: {key}")
 
     if errors:
         print("FAIL direct Bar contract")

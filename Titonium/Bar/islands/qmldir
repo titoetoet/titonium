@@ -1,0 +1,6 @@
+module qs.Titonium.Bar.islands
+StartIsland 1.0 StartIsland.qml
+CenterIsland 1.0 CenterIsland.qml
+EndIsland 1.0 EndIsland.qml
+ConnectivityPill 1.0 ConnectivityPill.qml
+StatusPill 1.0 StatusPill.qml

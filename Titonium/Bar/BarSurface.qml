@@ -15,5 +15,15 @@ PanelWindow {
     WlrLayershell.namespace: "titonium-menubar"
     WlrLayershell.layer: WlrLayer.Top
     anchors { top: true; left: true; right: true }
-    Bar { anchors.fill: parent; screen: root.screenModel }
+    mask: Region {
+        Region { item: bar.startHitbox }
+        Region { item: bar.centerHitbox }
+        Region { item: bar.endHitbox }
+    }
+
+    Bar {
+        id: bar
+        anchors.fill: parent
+        screen: root.screenModel
+    }
 }

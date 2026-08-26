@@ -1,0 +1,2 @@
+module qs.Titonium.Bar.notch
+singleton CenterNotchCoordinator 1.0 CenterNotchCoordinator.qml
