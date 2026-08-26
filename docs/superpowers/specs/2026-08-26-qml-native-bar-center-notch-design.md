@@ -1,7 +1,7 @@
 # Titonium QML-Native Bar and Center Notch
 
 **Date:** 2026-08-26
-**Status:** Awaiting written-spec review
+**Status:** Approved
 
 ## Purpose
 
