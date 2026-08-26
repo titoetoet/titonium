@@ -112,10 +112,23 @@ def main() -> int:
     en_path = root / "config/i18n/en.json"
     vi_path = root / "config/i18n/vi.json"
     try:
+        en_data = load_json(en_path)
+        vi_data = load_json(vi_path)
+        locale_key_errors: list[str] = []
+        en_strings = en_data.get("strings", {}) if isinstance(en_data, dict) else {}
+        vi_strings = vi_data.get("strings", {}) if isinstance(vi_data, dict) else {}
+        if isinstance(en_strings, dict) and isinstance(vi_strings, dict):
+            missing_vi = sorted(set(en_strings) - set(vi_strings))
+            missing_en = sorted(set(vi_strings) - set(en_strings))
+            if missing_vi:
+                locale_key_errors.append("vi is missing keys: " + ", ".join(missing_vi))
+            if missing_en:
+                locale_key_errors.append("en is missing keys: " + ", ".join(missing_en))
         checks = (
             report(settings_path, validate_settings(load_json(settings_path))),
-            report(en_path, validate_locale(load_json(en_path), "en")),
-            report(vi_path, validate_locale(load_json(vi_path), "vi")),
+            report(en_path, validate_locale(en_data, "en")),
+            report(vi_path, validate_locale(vi_data, "vi")),
+            report(Path("locale-key-parity"), locale_key_errors),
         )
     except ValueError as error:
         print(f"FAIL {error}", file=sys.stderr)

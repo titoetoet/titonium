@@ -52,11 +52,11 @@ FocusScope {
     }
     Component {
         id: toolsPlaceholderComponent
-        OverviewPage { pageId: "tools" }
+        ToolsPage { pageId: "tools" }
     }
     Component {
         id: sessionPlaceholderComponent
-        OverviewPage { pageId: "session" }
+        SessionPage { pageId: "session" }
     }
 
     StackView {

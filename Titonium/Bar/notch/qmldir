@@ -6,3 +6,6 @@ CenterNotch 1.0 CenterNotch.qml
 CenterNotchRail 1.0 CenterNotchRail.qml
 CenterNotchViewport 1.0 CenterNotchViewport.qml
 OverviewPage 1.0 OverviewPage.qml
+CenterActionButton 1.0 CenterActionButton.qml
+ToolsPage 1.0 ToolsPage.qml
+SessionPage 1.0 SessionPage.qml
