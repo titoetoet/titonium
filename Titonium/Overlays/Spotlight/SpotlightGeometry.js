@@ -1,7 +1,7 @@
 .pragma library
 
 function panelTop(barHeight) {
-    return Math.max(0, barHeight) + 32;
+    return Math.max(0, barHeight) + 80;
 }
 
 function panelHeight(viewportHeight, barHeight, bottomGap) {
