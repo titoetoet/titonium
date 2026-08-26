@@ -1,10 +1,10 @@
 .pragma library
 
-function panelTop(barHeight) {
-    return Math.max(0, barHeight) + 80;
+function panelTop() {
+    return 200;
 }
 
-function panelHeight(viewportHeight, barHeight, bottomGap) {
-    const available = Math.max(0, viewportHeight - panelTop(barHeight) - Math.max(0, bottomGap));
+function panelHeight(viewportHeight, bottomGap) {
+    const available = Math.max(0, viewportHeight - panelTop() - Math.max(0, bottomGap));
     return Math.min(760, available);
 }

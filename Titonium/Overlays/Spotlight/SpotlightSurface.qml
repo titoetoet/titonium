@@ -140,10 +140,10 @@ FocusScope {
         z: 1
         width: Math.min(800, root.width - Metrics.spacingLarge * 4)
         height: SpotlightGeometry.panelHeight(
-            root.height, Metrics.barHeight, Metrics.spacingLarge)
+            root.height, Metrics.spacingLarge)
         anchors.top: parent.top
         anchors.horizontalCenter: parent.horizontalCenter
-        anchors.topMargin: SpotlightGeometry.panelTop(Metrics.barHeight)
+        anchors.topMargin: SpotlightGeometry.panelTop()
         customColor: Theme.background
 
         ColumnLayout {

@@ -55,10 +55,10 @@ const state = loadDomain("SpotlightState");
 const scope = loadDomain("SpotlightScope");
 const geometry = loadDomain("SpotlightGeometry");
 
-assertEqual(geometry.panelTop(40), 120, "Spotlight panel starts at logical y 120 below a forty-pixel bar");
-assertEqual(geometry.panelHeight(800, 40, 16), 664,
+assertEqual(geometry.panelTop(), 200, "Spotlight panel starts at absolute logical y 200");
+assertEqual(geometry.panelHeight(800, 16), 584,
     "Spotlight panel height preserves its bottom safety gap after moving down");
-assertEqual(geometry.panelHeight(1000, 40, 16), 760,
+assertEqual(geometry.panelHeight(1000, 16), 760,
     "Spotlight panel retains its maximum height on tall screens");
 
 assertEqual(scope.next("applications", 1), "clipboard", "Tab advances Apps to Clipboard");
