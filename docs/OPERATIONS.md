@@ -25,6 +25,7 @@ MenuBar transient surfaces expose test-only lifecycle endpoints without requirin
 ```bash
 qs -p "$HOME/Projects/titonium" ipc call calendar toggle DP-3
 qs -p "$HOME/Projects/titonium" ipc call arch-menu toggle DP-3
+qs -p "$HOME/Projects/titonium" ipc call arch-menu previewSessionAction lock
 qs -p "$HOME/Projects/titonium" ipc call arch-menu close
 qs -p "$HOME/Projects/titonium" ipc call spotlight toggle
 qs -p "$HOME/Projects/titonium" ipc call spotlight clipboard
@@ -34,7 +35,9 @@ qs -p "$HOME/Projects/titonium" ipc call spotlight close
 The live Hyprland shortcuts are `Super + Space` for Spotlight Applications and `Super + V` for
 Spotlight Clipboard. Both call the project path directly. The MenuBar Arch trigger owns only the
 compact system menu; its Settings row opens the same standalone Settings Center used by Settings
-IPC. Arch Menu, Spotlight and Settings are separate coordinator owners and never nest their UI.
+IPC. A session row replaces the menu with a dedicated centered confirmation. The preview endpoint
+above is acceptance-only: close/cancel it and never automate its confirm control. Arch Menu,
+Spotlight and Settings are separate coordinator owners and never nest their UI.
 
 Settings lifecycle and page endpoints:
 

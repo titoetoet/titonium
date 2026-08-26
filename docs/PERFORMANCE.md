@@ -15,7 +15,12 @@
   42 lunar conversions exist only while the transient OverlayHost Loader is active.
 - Spotlight instantiates at most one fixed 5×4 page of 20 application tiles. Its Grid↔Results
   entry transition is bounded to 220 ms, resolves to zero under reduced motion and never retains
-  an outgoing Loader item. Search/category/grid and Clipboard branches are Loader-owned.
+  an outgoing Loader item. Search/category/grid and Clipboard branches are Loader-owned. Density
+  indicators reuse page counts and do not introduce polling; the global visibility projection is
+  signal-driven and does not rediscover desktop entries.
+- Arch Menu confirmation is a replacement Loader surface, not a nested retained tree. It has no
+  timer, animation loop or process; only the Platform session adapter may execute an action after
+  an explicit confirmation gesture.
 - Settings Center is Loader-owned; only its selected page exists. Theme and Typography pages
   have no poller, effect layer or compositor integration, and live preview is signal-driven.
 - Frame owns zero surfaces while disabled. Its enabled path uses one Rectangle per output with an

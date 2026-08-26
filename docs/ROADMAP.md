@@ -24,7 +24,7 @@ and lazy Design Gallery. Future theme reminders: Cupertino Flat and Fluent Solid
 - Clock, Calendar and Lunar model — approved and complete.
 - Arch Menu — complete. The superseded large Launcher prototype is removed; the Arch trigger now
   opens a compact text-and-icon system dropdown, Settings remains a standalone surface and every
-  session action requires confirmation.
+  session action replaces the menu with a dedicated centered confirmation.
 - Active Window — running-app task strip implemented adjacent to Workspaces; awaiting interactive
   activation and focus-transition acceptance.
 - Clock — lazy analog-clock panel implemented; Calendar remains available for the future
@@ -42,6 +42,10 @@ and lazy Design Gallery. Future theme reminders: Cupertino Flat and Fluent Solid
 
 Keyboard-first application launcher with a categorized 5×4 browse grid and stable search-result
 layout. `Super + Space` opens Applications plus calculator search; `Super + V` opens Clipboard.
+The 800×≤760 surface is top-anchored below the MenuBar, its scope icon remains outside Search and
+page pills reflect actual occupancy. Settings schema v5 adds global `applications.hiddenIds`;
+Spotlight Settings uses the full catalog to hide or restore entries while all launch surfaces use
+the shared visible projection. Category aliases improve classification without adding empty groups.
 The compact Arch Menu and standalone Settings Center remain separate surfaces. File search remains
 a later provider slice.
 
@@ -51,8 +55,10 @@ Safe Alt+Tab lifecycle with compositor submap recovery.
 
 ## Milestone 5 — System modules
 
-Media/Audio/Visualizer; Wi-Fi/Bluetooth; Monitor/Status/System Info.
+Next design slice: Wi-Fi, Bluetooth and Sound status/panels. Media/Visualizer and
+Monitor/Status/System Info follow as separately accepted slices.
 
 ## Milestone 6 — Notifications and information
 
-Notification widget/toasts/center; News/Weather cards and further extension modules.
+Next design slice includes the Notification Toast lifecycle only. Notification widget/center,
+News/Weather cards and further extension modules follow after its contract is accepted.

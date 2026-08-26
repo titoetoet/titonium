@@ -8,8 +8,11 @@ Milestone 0 provides a schema-driven, multi-monitor MenuBar foundation. The immu
 `titonium-neutral` baseline and lazy Design Gallery are complete. Milestone 1 now includes the
 first production MenuBar slices: Workspaces, Active Window, event-driven Fcitx Input Method,
 and a minute-precision Clock with a lazy analog panel. Spotlight discovers and executes desktop
-entries through a dedicated Platform adapter, renders a fixed 5×4 browse grid and opens Clipboard
-history separately. The Arch logo owns a compact system menu with confirmed session actions.
+entries through a dedicated Platform adapter, renders a fixed 5×4 browse grid with density-aware
+page indicators and opens Clipboard history separately. Application visibility is a global
+settings concern: hidden entries disappear from every Titonium picker but remain recoverable from
+the Spotlight settings page. The Arch logo owns a compact system menu whose session actions replace
+the menu with a dedicated screen-centered confirmation.
 Settings Center provides transactional appearance, layout, frame, system, audio and Spotlight
 pages with live global preview. Window Switcher and notifications remain phased.
 
@@ -67,6 +70,13 @@ Open or close the compact Arch Menu on a named output:
 
 ```bash
 qs -p "$HOME/Projects/titonium" ipc call arch-menu toggle DP-3
+qs -p "$HOME/Projects/titonium" ipc call arch-menu close
+```
+
+Automated acceptance may preview and cancel a session confirmation, but never confirms it:
+
+```bash
+qs -p "$HOME/Projects/titonium" ipc call arch-menu previewSessionAction lock
 qs -p "$HOME/Projects/titonium" ipc call arch-menu close
 ```
 
