@@ -7,7 +7,8 @@ function clone(value) {
 function migrateSettings(data) {
     if (!data || typeof data !== "object")
         return data;
-    if (data.schemaVersion !== 1 && data.schemaVersion !== 2 && data.schemaVersion !== 3 && data.schemaVersion !== 4)
+    if (data.schemaVersion !== 1 && data.schemaVersion !== 2 && data.schemaVersion !== 3
+            && data.schemaVersion !== 4 && data.schemaVersion !== 5)
         return clone(data);
     let current = clone(data);
     if (current.schemaVersion < 4 && (!current.modules || typeof current.modules !== "object" || Array.isArray(current.modules)))
@@ -56,6 +57,11 @@ function migrateSettings(data) {
         delete current.modules.launcher;
         current.$schema = "titonium.settings/v4";
         current.schemaVersion = 4;
+    }
+    if (current.schemaVersion === 4) {
+        current.applications = { "hiddenIds": [] };
+        current.$schema = "titonium.settings/v5";
+        current.schemaVersion = 5;
     }
     return current;
 }

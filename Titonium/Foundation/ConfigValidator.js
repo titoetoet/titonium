@@ -6,7 +6,7 @@ const backends = ["auto", "solid", "qml", "native"];
 function validateSettings(data) {
     const errors = [];
     if (!data || typeof data !== "object") return ["settings must be an object"];
-    if (data.schemaVersion !== 4) errors.push("unsupported settings schemaVersion");
+    if (data.schemaVersion !== 5) errors.push("unsupported settings schemaVersion");
     if (data.locale !== "vi" && data.locale !== "en") errors.push("locale must be vi or en");
     if (!data.appearance || typeof data.appearance !== "object" || Array.isArray(data.appearance)) {
         errors.push("appearance is required");
@@ -20,6 +20,30 @@ function validateSettings(data) {
     }
     if (!data.accessibility || typeof data.accessibility.reducedMotion !== "boolean")
         errors.push("accessibility.reducedMotion is required");
+    if (!data.applications || typeof data.applications !== "object" || Array.isArray(data.applications)) {
+        errors.push("applications must be an object");
+    } else {
+        const hiddenIds = data.applications.hiddenIds;
+        if (!Array.isArray(hiddenIds)) {
+            errors.push("applications.hiddenIds must be an array");
+        } else if (hiddenIds.some(entryId => typeof entryId !== "string" || entryId.length === 0)) {
+            errors.push("applications.hiddenIds entries must be non-empty strings");
+        } else {
+            const seenHiddenIds = Object.create(null);
+            for (let index = 0; index < hiddenIds.length; index++) {
+                const key = "$" + hiddenIds[index];
+                if (seenHiddenIds[key]) {
+                    errors.push("applications.hiddenIds must contain unique IDs");
+                    break;
+                }
+                seenHiddenIds[key] = true;
+            }
+        }
+        Object.keys(data.applications).forEach(key => {
+            if (key !== "hiddenIds")
+                errors.push("applications." + key + " is invalid");
+        });
+    }
     if (!data.modules || typeof data.modules !== "object" || Array.isArray(data.modules))
         errors.push("modules must be an object");
     else if (data.modules.frame !== undefined) {

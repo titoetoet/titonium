@@ -1,12 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "titonium.settings/v4",
+  "$id": "titonium.settings/v5",
   "type": "object",
-  "required": ["schemaVersion", "locale", "appearance", "accessibility", "modules"],
+  "required": ["schemaVersion", "locale", "appearance", "accessibility", "applications", "modules"],
   "additionalProperties": false,
   "properties": {
     "$schema": { "type": "string" },
-    "schemaVersion": { "const": 4 },
+    "schemaVersion": { "const": 5 },
     "locale": { "enum": ["vi", "en"] },
     "appearance": {
       "type": "object",
@@ -25,6 +25,18 @@
       "additionalProperties": false,
       "properties": {
         "reducedMotion": { "type": "boolean" }
+      }
+    },
+    "applications": {
+      "type": "object",
+      "required": ["hiddenIds"],
+      "additionalProperties": false,
+      "properties": {
+        "hiddenIds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        }
       }
     },
     "modules": {

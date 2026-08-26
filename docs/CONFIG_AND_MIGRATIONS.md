@@ -37,6 +37,10 @@ forward only `pageTransition` and `transitionDuration`; profile, embedded-Settin
 catalog-control fields are discarded. Older documents run each pure step in order and are not
 written until Apply.
 
+Settings v4→v5 adds global `applications.hiddenIds` as an empty list while preserving locale,
+appearance, accessibility and every module value. Hidden application IDs are unique non-empty
+desktop-entry IDs and remain outside module-owned settings.
+
 `restoreAppearance()` replaces only preview appearance state with shipped defaults. It always
 selects Neutral Utility dark/comfortable with empty overrides. Locale, accessibility, module
 state and the separate layout document remain untouched; Apply persists and Cancel rolls back.

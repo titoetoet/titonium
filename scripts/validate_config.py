@@ -24,7 +24,7 @@ def validate_settings(data: Any) -> list[str]:
     errors: list[str] = []
     if not isinstance(data, dict):
         return ["settings must be an object"]
-    if data.get("schemaVersion") != 4:
+    if data.get("schemaVersion") != 5:
         errors.append("unsupported settings schemaVersion")
     if data.get("locale") not in {"vi", "en"}:
         errors.append("locale must be vi or en")
@@ -43,6 +43,20 @@ def validate_settings(data: Any) -> list[str]:
     accessibility = data.get("accessibility")
     if not isinstance(accessibility, dict) or not isinstance(accessibility.get("reducedMotion"), bool):
         errors.append("accessibility.reducedMotion is required")
+    applications = data.get("applications")
+    if not isinstance(applications, dict):
+        errors.append("applications must be an object")
+    else:
+        hidden_ids = applications.get("hiddenIds")
+        if not isinstance(hidden_ids, list):
+            errors.append("applications.hiddenIds must be an array")
+        else:
+            if any(not isinstance(entry_id, str) or not entry_id for entry_id in hidden_ids):
+                errors.append("applications.hiddenIds entries must be non-empty strings")
+            elif len(set(hidden_ids)) != len(hidden_ids):
+                errors.append("applications.hiddenIds must contain unique IDs")
+        for key in applications.keys() - {"hiddenIds"}:
+            errors.append(f"applications.{key} is invalid")
     if not isinstance(data.get("modules"), dict):
         errors.append("modules must be an object")
     else:
@@ -100,7 +114,7 @@ def validate_settings(data: Any) -> list[str]:
 
 
 def migrate_settings(data: Any) -> Any:
-    if not isinstance(data, dict) or data.get("schemaVersion") not in {1, 2, 3, 4}:
+    if not isinstance(data, dict) or data.get("schemaVersion") not in {1, 2, 3, 4, 5}:
         return data
     current = json.loads(json.dumps(data))
     if current.get("schemaVersion") == 1:
@@ -145,6 +159,10 @@ def migrate_settings(data: Any) -> Any:
         current["modules"] = modules
         current["$schema"] = "titonium.settings/v4"
         current["schemaVersion"] = 4
+    if current.get("schemaVersion") == 4:
+        current["applications"] = {"hiddenIds": []}
+        current["$schema"] = "titonium.settings/v5"
+        current["schemaVersion"] = 5
     return current
 
 
@@ -325,8 +343,9 @@ def expect_migration(path: Path) -> bool:
     defaults = load_json(path.parents[2] / "config/defaults/settings.json")
     restored = restore_appearance(migrated, defaults)
     preserved = (
-        migrated.get("schemaVersion") == 4
-        and migrated.get("$schema") == "titonium.settings/v4"
+        migrated.get("schemaVersion") == 5
+        and migrated.get("$schema") == "titonium.settings/v5"
+        and migrated.get("applications") == {"hiddenIds": []}
         and migrated.get("locale") == "en"
         and migrated.get("appearance", {}).get("themeId") == "titonium-neutral"
         and migrated.get("appearance", {}).get("mode") == "light"
@@ -340,7 +359,7 @@ def expect_migration(path: Path) -> bool:
     if errors or not preserved:
         print(f"FAIL {path}: migration errors={errors}; preserved={preserved}", file=sys.stderr)
         return False
-    print(f"PASS {path.name}: migrated v1 -> v4 with non-appearance state preserved")
+    print(f"PASS {path.name}: migrated v1 -> v5 with non-appearance state preserved")
     return True
 
 
@@ -349,8 +368,9 @@ def expect_spotlight_v2_migration(path: Path) -> bool:
     spotlight = migrated.get("modules", {}).get("spotlight", {})
     retired = {"defaultCategory", "resultLimit", "columns", "showSubtitles", "searchAutoFocus"}
     valid = (
-        migrated.get("schemaVersion") == 4
-        and migrated.get("$schema") == "titonium.settings/v4"
+        migrated.get("schemaVersion") == 5
+        and migrated.get("$schema") == "titonium.settings/v5"
+        and migrated.get("applications") == {"hiddenIds": []}
         and spotlight == {
             "pageTransition": "slide-scale",
             "transitionDuration": 280,
@@ -362,7 +382,7 @@ def expect_spotlight_v2_migration(path: Path) -> bool:
     if not valid:
         print(f"FAIL {path}: v2 spotlight migration produced {spotlight}", file=sys.stderr)
         return False
-    print(f"PASS {path.name}: migrated v2 -> v4 and removed retired Launcher fields")
+    print(f"PASS {path.name}: migrated v2 -> v5 and removed retired Launcher fields")
     return True
 
 
@@ -370,8 +390,9 @@ def expect_spotlight_v3_migration(path: Path) -> bool:
     source = load_json(path)
     migrated = migrate_settings(source)
     preserved = (
-        migrated.get("$schema") == "titonium.settings/v4"
-        and migrated.get("schemaVersion") == 4
+        migrated.get("$schema") == "titonium.settings/v5"
+        and migrated.get("schemaVersion") == 5
+        and migrated.get("applications") == {"hiddenIds": []}
         and migrated.get("locale") == "en"
         and migrated.get("appearance") == {
             "themeId": "titonium-hybrid-glass",
@@ -407,7 +428,53 @@ def expect_spotlight_v3_migration(path: Path) -> bool:
     if not preserved:
         print(f"FAIL {path}: v3 spotlight migration produced {migrated}", file=sys.stderr)
         return False
-    print(f"PASS {path.name}: migrated v3 -> v4 with Spotlight preferences and unrelated state preserved")
+    print(f"PASS {path.name}: migrated v3 -> v5 with Spotlight preferences and unrelated state preserved")
+    return True
+
+
+def expect_v4_visibility_migration(path: Path) -> bool:
+    source = load_json(path)
+    migrated = migrate_settings(source)
+    valid = (
+        migrated.get("$schema") == "titonium.settings/v5"
+        and migrated.get("schemaVersion") == 5
+        and migrated.get("applications") == {"hiddenIds": []}
+        and migrated.get("locale") == source.get("locale")
+        and migrated.get("appearance") == source.get("appearance")
+        and migrated.get("accessibility") == source.get("accessibility")
+        and migrated.get("modules") == source.get("modules")
+    )
+    if not valid:
+        print(f"FAIL {path}: v4 visibility migration produced {migrated}", file=sys.stderr)
+        return False
+    print(f"PASS {path.name}: migrated v4 -> v5 with global visibility defaults")
+    return True
+
+
+def expect_application_visibility_rejections(root: Path) -> bool:
+    expected = {
+        "duplicate": "applications.hiddenIds must contain unique IDs",
+        "empty": "applications.hiddenIds entries must be non-empty strings",
+        "non-string": "applications.hiddenIds entries must be non-empty strings",
+        "unknown": "applications.unknown is invalid",
+    }
+    observed: dict[str, list[str]] = {}
+    for case in expected:
+        settings = load_json(root / "config/defaults/settings.json")
+        if case == "duplicate":
+            settings["applications"] = {"hiddenIds": ["a.desktop", "a.desktop"]}
+        elif case == "empty":
+            settings["applications"] = {"hiddenIds": [""]}
+        elif case == "non-string":
+            settings["applications"] = {"hiddenIds": [3]}
+        else:
+            settings["applications"] = {"hiddenIds": [], "unknown": True}
+        observed[case] = validate_settings(settings)
+    valid = all(observed[case] == [message] for case, message in expected.items())
+    if not valid:
+        print(f"FAIL isolated application visibility derivatives: {observed}", file=sys.stderr)
+        return False
+    print("PASS invalid application visibility derivatives rejected independently")
     return True
 
 
@@ -507,6 +574,7 @@ def main() -> int:
         (root / "tests/fixtures/layout.invalid-metrics.json", validate_layout, False),
         (root / "tests/fixtures/settings.invalid.json", validate_settings, False),
         (root / "tests/fixtures/settings.invalid-frame.json", validate_settings, False),
+        (root / "tests/fixtures/settings.invalid-applications.json", validate_settings, False),
         (root / "tests/fixtures/theme.invalid-typography.json", validate_theme, False),
     )
     checks = [
@@ -514,9 +582,11 @@ def main() -> int:
         expect_migration(root / "tests/fixtures/settings.v1.valid.json"),
         expect_spotlight_v2_migration(root / "tests/fixtures/settings.v2.launcher.json"),
         expect_spotlight_v3_migration(root / "tests/fixtures/settings.v3.spotlight.json"),
+        expect_v4_visibility_migration(root / "tests/fixtures/settings.v4.valid.json"),
         expect_theme_contracts(root),
         expect_spotlight_unknown_rejection(root),
         expect_other_derived_rejections(root),
+        expect_application_visibility_rejections(root),
         expect_theme_derivative_rejections(root),
     ]
     passed = all(checks)

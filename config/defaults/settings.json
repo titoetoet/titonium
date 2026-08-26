@@ -1,6 +1,6 @@
 {
-  "$schema": "titonium.settings/v4",
-  "schemaVersion": 4,
+  "$schema": "titonium.settings/v5",
+  "schemaVersion": 5,
   "locale": "vi",
   "appearance": {
     "themeId": "titonium-neutral",
@@ -10,6 +10,9 @@
   },
   "accessibility": {
     "reducedMotion": false
+  },
+  "applications": {
+    "hiddenIds": []
   },
   "modules": {
     "frame": {
