@@ -53,6 +53,13 @@ const search = loadDomain("SearchEngine", { StableOrder: stableOrder });
 const calculator = loadDomain("Calculator");
 const state = loadDomain("SpotlightState");
 const scope = loadDomain("SpotlightScope");
+const geometry = loadDomain("SpotlightGeometry");
+
+assertEqual(geometry.panelTop(40), 72, "Spotlight panel moves twenty pixels below its previous position");
+assertEqual(geometry.panelHeight(800, 40, 16), 712,
+    "Spotlight panel height preserves its bottom safety gap after moving down");
+assertEqual(geometry.panelHeight(1000, 40, 16), 760,
+    "Spotlight panel retains its maximum height on tall screens");
 
 assertEqual(scope.next("applications", 1), "clipboard", "Tab advances Apps to Clipboard");
 assertEqual(scope.next("clipboard", 1), "system", "Tab advances Clipboard to System Search");
@@ -198,4 +205,4 @@ assertEqual(state.escape({ mode: "results", query: "fire", categoryId: "games" }
 assertEqual(state.escape({ mode: "browse", query: "", categoryId: "games" }).closeRequested, true, "escape requests close from browse mode");
 assertDeepEqual(state.initial("browse"), { mode: "browse", query: "", categoryId: "all", closeRequested: false }, "initial browse state");
 
-console.log("PASS spotlight domain fixtures (68)");
+console.log("PASS spotlight domain fixtures (71)");

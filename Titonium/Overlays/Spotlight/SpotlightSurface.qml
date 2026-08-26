@@ -8,6 +8,7 @@ import qs.Titonium.Theme
 import qs.Titonium.Shared as Controls
 import qs.Titonium.Core.Runtime
 import qs.Titonium.Core.Surfaces
+import "SpotlightGeometry.js" as SpotlightGeometry
 import "SpotlightTransition.js" as SpotlightTransition
 
 FocusScope {
@@ -138,11 +139,11 @@ FocusScope {
         id: panel
         z: 1
         width: Math.min(800, root.width - Metrics.spacingLarge * 4)
-        height: Math.min(760,
-            root.height - Metrics.barHeight - 12 - Metrics.spacingLarge)
+        height: SpotlightGeometry.panelHeight(
+            root.height, Metrics.barHeight, Metrics.spacingLarge)
         anchors.top: parent.top
         anchors.horizontalCenter: parent.horizontalCenter
-        anchors.topMargin: Metrics.barHeight + 12
+        anchors.topMargin: SpotlightGeometry.panelTop(Metrics.barHeight)
         customColor: Theme.background
 
         ColumnLayout {
