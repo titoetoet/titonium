@@ -9,6 +9,7 @@ import qs.Titonium.Core.Runtime
 import qs.Titonium.Core.Screens
 import qs.Titonium.Core.Surfaces
 import qs.Titonium.Services.Applications
+import qs.Titonium.Services.Audio
 import qs.Titonium.Services.Hyprland
 
 Scope {
@@ -40,6 +41,18 @@ Scope {
         target: "app"
         function status(): string { return Preferences.ready ? "ready" : "not-ready"; }
         function closeTransient(): void { SurfaceManager.close(""); }
+    }
+
+    IpcHandler {
+        target: "audio"
+        function state(): string {
+            return "ready=" + AudioService.ready
+                + ";output=" + AudioService.outputAvailable
+                + ";volume=" + Math.round(AudioService.outputVolume * 100)
+                + ";muted=" + AudioService.outputMuted
+                + ";input=" + AudioService.inputAvailable
+                + ";streams=" + AudioService.playbackStreams.length;
+        }
     }
 
     IpcHandler {

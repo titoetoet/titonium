@@ -5,6 +5,13 @@
   "strings": {
     "application.error.launch_failed": "The application could not be launched.",
     "application.error.unavailable": "That application is no longer available.",
+    "audio.applications": "Applications",
+    "audio.microphone": "Microphone",
+    "audio.muted": "Muted",
+    "audio.output": "Output",
+    "audio.stream.fallback": "Audio stream",
+    "audio.unavailable": "Audio is unavailable",
+    "audio.volume.accessible": "Volume: {percentage}%",
     "clipboard.error.unavailable": "Clipboard access is unavailable.",
     "center_notch.action.camera-mirror": "Camera Mirror",
     "center_notch.action.color-picker": "Color Picker",

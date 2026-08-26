@@ -18,6 +18,9 @@ REQUIRED = (
     "Titonium/Services/Hyprland/qmldir",
     "Titonium/Services/InputMethod/InputMethodService.qml",
     "Titonium/Services/InputMethod/qmldir",
+    "Titonium/Services/Audio/AudioService.qml",
+    "Titonium/Services/Audio/AudioRules.js",
+    "Titonium/Services/Audio/qmldir",
 )
 
 
@@ -31,6 +34,7 @@ def main() -> int:
         "Titonium/Services/Applications/ApplicationService.qml",
         "Titonium/Services/Hyprland/HyprlandService.qml",
         "Titonium/Services/InputMethod/InputMethodService.qml",
+        "Titonium/Services/Audio/AudioService.qml",
     ):
         path = ROOT / relative
         if not path.is_file():
