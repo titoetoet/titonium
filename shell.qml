@@ -2,9 +2,6 @@
 //@ pragma StateDir $BASE/titonium
 
 import Quickshell
-import qs.Titonium.App
+import qs.Titonium
 
-ShellRoot {
-    AppShell {}
-}
-
+ShellRoot { App {} }

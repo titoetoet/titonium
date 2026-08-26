@@ -6,6 +6,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 REQUIRED = (
+    "Titonium/App.qml",
+    "Titonium/qmldir",
     "Titonium/Core/Screens/ScreenRouter.qml",
     "Titonium/Core/Screens/qmldir",
     "Titonium/Core/Surfaces/SurfaceManager.qml",
@@ -83,6 +85,31 @@ def main() -> int:
                     errors.append(
                         f"protected Spotlight retains old import: {path.relative_to(ROOT)}: {old_import}"
                     )
+
+    app_path = ROOT / "Titonium/App.qml"
+    shell_path = ROOT / "shell.qml"
+    if app_path.is_file():
+        app_source = app_path.read_text(encoding="utf-8")
+        for contract in ("BarHost {}", "OverlayHost {}", 'target: "app"', 'target: "spotlight"'):
+            if contract not in app_source:
+                errors.append(f"minimal App is missing contract: {contract}")
+        for retired in (
+            "FrameHost",
+            "SettingsCenter",
+            "DesignGallery",
+            "ArchMenu",
+            "SessionActions",
+            "CalendarPanel",
+            "WidgetRegistry",
+            "LayoutRenderer",
+            "Modules/Spotlight",
+        ):
+            if retired in app_source:
+                errors.append(f"minimal App retains retired runtime owner: {retired}")
+    if shell_path.is_file():
+        shell_source = shell_path.read_text(encoding="utf-8")
+        if "import qs.Titonium\n" not in shell_source or "App {}" not in shell_source:
+            errors.append("shell.qml must instantiate qs.Titonium App directly")
 
     if errors:
         print("FAIL skeleton contract")
