@@ -158,7 +158,7 @@ QtObject {
     property Connections outputAudioConnections: Connections {
         target: root.outputNode?.audio || null
 
-        function onVolumeChanged(): void { root.observeOutputPresentation(); }
+        function onVolumesChanged(): void { root.observeOutputPresentation(); }
         function onMutedChanged(): void { root.observeOutputPresentation(); }
     }
 

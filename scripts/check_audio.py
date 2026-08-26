@@ -25,6 +25,7 @@ REQUIRED_FRAGMENTS = (
     "function toggleInputMute(): bool",
     "function setStreamVolume(nodeId: int, value: real): bool",
     "function toggleStreamMute(nodeId: int): bool",
+    "function onVolumesChanged(): void { root.observeOutputPresentation(); }",
 )
 FORBIDDEN_SERVICE_FRAGMENTS = (
     "Process",
@@ -36,6 +37,9 @@ FORBIDDEN_SERVICE_FRAGMENTS = (
     "qs.Titonium.Services.Mpris",
     "qs.Titonium.Services.Bluetooth",
     "qs.Titonium.Services.Network",
+)
+WRONG_OUTPUT_PRESENTATION_NOTIFIER = (
+    "function onVolumeChanged(): void { root.observeOutputPresentation(); }"
 )
 
 
@@ -54,6 +58,8 @@ def main() -> int:
         for fragment in FORBIDDEN_SERVICE_FRAGMENTS:
             if fragment in source:
                 errors.append(f"forbidden audio service dependency: {fragment}")
+        if WRONG_OUTPUT_PRESENTATION_NOTIFIER in source:
+            errors.append("output presentation must observe PwNodeAudio.volumesChanged, not volumeChanged")
 
     for path in ROOT.rglob("*.qml"):
         if AUDIO_ROOT in path.parents:
