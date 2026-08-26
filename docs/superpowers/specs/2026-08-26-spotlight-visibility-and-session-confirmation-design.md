@@ -2,7 +2,7 @@
 
 Date: 2026-08-26
 
-Status: approved design, awaiting written-spec review
+Status: approved
 
 ## Scope
 
