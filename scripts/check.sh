@@ -20,6 +20,7 @@ node "$project_root/scripts/check_application_visibility.js"
 node "$project_root/scripts/check_spotlight.js"
 node "$project_root/scripts/check_clipboard_history.js"
 node "$project_root/scripts/check_clipboard_access.js"
+bash -n "$project_root/scripts/center_notch_acceptance.sh"
 
 mapfile -d '' qml_files < <(find "$project_root" -type f -name '*.qml' -print0 | sort -z)
 qml_output="$(/usr/lib/qt6/bin/qmllint -I "$qml_import_root" "${qml_files[@]}" 2>&1)"

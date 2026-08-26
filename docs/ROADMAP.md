@@ -10,8 +10,20 @@ The previous feature roadmap is retired. Work now advances by researched capabil
 - Temporary Workspaces and Clock.
 - Application, Clipboard and Hyprland service boundaries.
 - Static Neutral Utility tokens, i18n and focused gates.
+- Three independently positioned Bar islands with composed click-through regions.
+- Lazy, screen-owned Center Notch with Overview and safe Tools/Session mock pages.
 
-## Next — joint reference-repository research
+## Next — native capability slices
+
+1. **Audio native slice — awaiting design.** Agree the Quickshell PipeWire service/model boundary,
+   shared volume state and popup/OSD consumers before implementation.
+2. **Bluetooth native slice.** Select and validate one DBus-backed reference pattern after Audio.
+3. **Network native slice.** Select and validate one NetworkManager DBus pattern after Bluetooth.
+
+The diagnostic connectivity glyphs in the current End island are placeholders, not module state.
+No service stub should be added before its slice is designed.
+
+## Continuing reference-repository research
 
 For each candidate repo, record license, revision, Quickshell version, architecture pattern,
 runtime dependencies and the exact modules worth studying. Compare implementations before copying

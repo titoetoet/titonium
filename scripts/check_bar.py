@@ -106,10 +106,27 @@ def main() -> int:
             "Quickshell.execDetached",
             "MultiEffect",
             "ShaderEffect",
+            "loops: Animation.Infinite",
             "qs.modules.",
         ):
             if forbidden in feature:
                 errors.append(f"direct Bar contains forbidden dependency: {forbidden}")
+
+    notch_dir = BAR / "notch"
+    if notch_dir.exists():
+        notch_sources = {
+            path.name: path.read_text(encoding="utf-8") for path in notch_dir.rglob("*.qml")
+        }
+        notch_feature = "\n".join(notch_sources.values())
+        if re.search(
+            r"^\s*import\s+qs\.Titonium\.Services\.(Audio|Bluetooth|Network)",
+            notch_feature,
+            re.MULTILINE,
+        ):
+            errors.append("Center Notch imports a future connectivity service")
+        for filename, source in notch_sources.items():
+            if filename != "CenterNotchWindow.qml" and "Loader {" in source:
+                errors.append(f"{filename} contains an always-resident notch Loader boundary")
 
     protected_acceptance = (ROOT / "scripts/protected_acceptance.sh").read_text(encoding="utf-8")
     for path_fragment in (

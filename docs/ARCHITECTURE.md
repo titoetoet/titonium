@@ -6,7 +6,9 @@ Titonium is deliberately a composition of vertical slices around a small stable 
 shell.qml
 └── Titonium/App.qml
     ├── Bar/BarHost.qml ── Variants(Quickshell.screens)
-    │   └── BarSurface → Bar → widgets
+    │   ├── BarSurface → Start / Center / End islands
+    │   └── CenterNotchWindow → Loader(active for owner screen only)
+    │       └── CenterNotch → Rail + lazy StackView viewport
     └── Core/Surfaces/OverlayHost.qml ── Variants(Quickshell.screens)
         └── Loader(active only for SurfaceManager owner)
             └── Overlays/Spotlight
@@ -26,6 +28,16 @@ Each output always owns one lightweight overlay window, but its feature tree exi
 `SurfaceManager` has a descriptor for that screen. The manager allows one transient owner across
 the shell. Focused-monitor changes close Spotlight to prevent a stranded exclusive-focus window.
 
+The Bar owns a second, independent lightweight `CenterNotchWindow` per output. Only the screen
+named by `CenterNotchCoordinator.ownerScreenName` activates its heavy Loader. Opening Spotlight
+closes the notch; opening the notch closes `SurfaceManager`, so the two exclusive-focus surfaces
+cannot overlap. An outside click, Escape, or focused-monitor change releases the notch window.
+
+The compact Center island is positioned from the full screen width rather than between the Start
+and End islands. The full Bar input mask is composed from the three island hitboxes, preserving
+click-through elsewhere. The End island currently shows diagnostic-only Wi-Fi, Bluetooth and
+Audio glyphs beside the protected Input Method and Clock; those glyphs are not service state.
+
 ## State and presentation
 
 Singleton services expose reactive state once for all consumers:
@@ -38,6 +50,12 @@ Singleton services expose reactive state once for all consumers:
 QML views draw, animate and emit intent. They do not spawn commands, store files or duplicate
 system listeners. Pure JavaScript helpers contain searchable/testable domain rules.
 
+Inside the expanded notch, the 48-pixel rail requests a page from the coordinator. A `StackView`
+creates the incoming page for a bounded transition and destroys the replaced page afterward; rapid
+requests retain only the latest pending page. Overview is informational. Tools and Session consume
+immutable descriptors and emit translated “not available yet” feedback only. They expose no
+process, callback, command or IPC execution boundary, and Settings is also a feedback-only button.
+
 ## Protected feature flow
 
 IPC in `App.qml` resolves a screen and sends a descriptor to `SurfaceManager`. `OverlayHost`
@@ -46,3 +64,10 @@ Applications and Clipboard services and publishes query/scope state back through
 
 The dependency direction is `App/View → Core + Services + Shared + Theme`. Reverse imports and
 feature-to-feature imports are architecture violations.
+
+## Center Notch acceptance seam
+
+The `centerNotch` IPC target exists for deterministic lifecycle tests: `open(page)`, `page(page)`,
+`close()` and `state()`. It cannot invoke a mock tile. `scripts/center_notch_acceptance.sh` verifies
+Overview/Tools/Session navigation, mutual exclusion with Spotlight, clean runtime logs, repository
+isolation and unchanged Hyprland configuration hashes.
