@@ -22,6 +22,9 @@ def main() -> int:
         "notch/CenterNotchWindow.qml",
         "notch/CenterNotchSurface.qml",
         "notch/CenterNotch.qml",
+        "notch/CenterNotchRail.qml",
+        "notch/CenterNotchViewport.qml",
+        "notch/OverviewPage.qml",
     )
     for relative in required:
         if not (BAR / relative).is_file():
@@ -56,6 +59,25 @@ def main() -> int:
         "notch/CenterNotchSurface.qml": (
             "CenterNotchCoordinator.close()",
             "Keys.onEscapePressed",
+        ),
+        "notch/CenterNotchRail.qml": (
+            "width: 48",
+            "id: selectionHighlight",
+            '"overview"',
+            '"tools"',
+            '"session"',
+            "settingsRequested()",
+        ),
+        "notch/CenterNotchViewport.qml": (
+            "StackView {",
+            "stack.replace(",
+            "stack.busy",
+            "property string pendingPage",
+        ),
+        "notch/CenterNotch.qml": (
+            "CenterNotchRail {",
+            "CenterNotchViewport {",
+            "Layout.preferredWidth: Metrics.borderWidth",
         ),
     }
     for filename, fragments in contracts.items():
@@ -98,6 +120,17 @@ def main() -> int:
         "menubar.connectivity.network_planned",
         "menubar.connectivity.bluetooth_planned",
         "menubar.connectivity.audio_planned",
+        "center_notch.title",
+        "center_notch.tab.overview",
+        "center_notch.tab.tools",
+        "center_notch.tab.session",
+        "center_notch.tab.settings",
+        "center_notch.settings.unavailable",
+        "center_notch.overview.description",
+        "center_notch.overview.layout",
+        "center_notch.overview.keyboard",
+        "center_notch.overview.lazy",
+        "center_notch.overview.solid",
     }
     for locale in ("en", "vi"):
         catalog = json.loads((ROOT / f"config/i18n/{locale}.json").read_text(encoding="utf-8"))
