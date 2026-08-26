@@ -1,4 +1,0 @@
-module qs.Titonium.Modules.Frame
-singleton FrameModel 1.0 FrameModel.qml
-FrameHost 1.0 FrameHost.qml
-FrameSurface 1.0 FrameSurface.qml

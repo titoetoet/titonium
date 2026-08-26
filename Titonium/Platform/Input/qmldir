@@ -1,2 +1,0 @@
-module qs.Titonium.Platform.Input
-singleton FcitxAdapter 1.0 FcitxAdapter.qml

@@ -1,2 +1,0 @@
-module qs.Titonium.Platform.Applications
-singleton ApplicationCatalog 1.0 ApplicationCatalog.qml

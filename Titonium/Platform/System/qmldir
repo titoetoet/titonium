@@ -1,3 +1,0 @@
-module qs.Titonium.Platform.System
-singleton UserIdentity 1.0 UserIdentity.qml
-singleton SessionActions 1.0 SessionActions.qml

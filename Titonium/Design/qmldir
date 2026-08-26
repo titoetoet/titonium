@@ -1,7 +1,0 @@
-module qs.Titonium.Design
-singleton Theme 1.0 Theme.qml
-singleton Metrics 1.0 Metrics.qml
-singleton Typography 1.0 Typography.qml
-singleton Motion 1.0 Motion.qml
-MaterialSurface 1.0 MaterialSurface.qml
-

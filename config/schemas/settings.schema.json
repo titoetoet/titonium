@@ -2,30 +2,23 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "titonium.settings/v5",
   "type": "object",
-  "required": ["schemaVersion", "locale", "appearance", "accessibility", "applications", "modules"],
+  "required": ["$schema", "schemaVersion", "locale", "appearance", "accessibility", "applications", "modules"],
   "additionalProperties": false,
   "properties": {
-    "$schema": { "type": "string" },
+    "$schema": { "const": "titonium.settings/v5" },
     "schemaVersion": { "const": 5 },
     "locale": { "enum": ["vi", "en"] },
     "appearance": {
       "type": "object",
-      "required": ["themeId", "mode", "density", "overrides"],
+      "required": ["mode"],
       "additionalProperties": false,
-      "properties": {
-        "themeId": { "type": "string", "minLength": 1 },
-        "mode": { "enum": ["dark", "light"] },
-        "density": { "enum": ["compact", "comfortable"] },
-        "overrides": { "type": "object" }
-      }
+      "properties": { "mode": { "enum": ["dark", "light"] } }
     },
     "accessibility": {
       "type": "object",
       "required": ["reducedMotion"],
       "additionalProperties": false,
-      "properties": {
-        "reducedMotion": { "type": "boolean" }
-      }
+      "properties": { "reducedMotion": { "type": "boolean" } }
     },
     "applications": {
       "type": "object",
@@ -41,47 +34,23 @@
     },
     "modules": {
       "type": "object",
+      "required": ["spotlight", "clock"],
+      "additionalProperties": false,
       "properties": {
-        "frame": {
-          "type": "object",
-          "required": ["enabled", "thickness", "cornerRadius", "opacity"],
-          "additionalProperties": false,
-          "properties": {
-            "enabled": { "type": "boolean" },
-            "thickness": { "type": "integer", "minimum": 1, "maximum": 8 },
-            "cornerRadius": { "type": "integer", "minimum": 0, "maximum": 32 },
-            "opacity": { "type": "number", "minimum": 0.3, "maximum": 1.0 }
-          }
-        },
-        "audio": {
-          "type": "object",
-          "required": ["volumeStep", "maxVolume", "visualizerEnabled", "visualizerStyle", "visualizerBars"],
-          "additionalProperties": false,
-          "properties": {
-            "volumeStep": { "type": "integer", "minimum": 1, "maximum": 20 },
-            "maxVolume": { "type": "integer", "minimum": 50, "maximum": 150 },
-            "visualizerEnabled": { "type": "boolean" },
-            "visualizerStyle": { "enum": ["bars", "wave", "dots"] },
-            "visualizerBars": { "type": "integer", "minimum": 16, "maximum": 64 }
-          }
-        },
         "spotlight": {
           "type": "object",
           "required": ["pageTransition", "transitionDuration"],
           "additionalProperties": false,
           "properties": {
-            "pageTransition": { "enum": ["none", "slide", "slide-fade", "slide-scale"] },
-            "transitionDuration": { "type": "integer", "minimum": 80, "maximum": 500 }
+            "pageTransition": { "enum": ["none", "fade", "slide-fade"] },
+            "transitionDuration": { "type": "integer", "minimum": 0, "maximum": 500 }
           }
         },
         "clock": {
           "type": "object",
-          "required": ["use24Hour", "showLunar"],
+          "required": ["use24Hour"],
           "additionalProperties": false,
-          "properties": {
-            "use24Hour": { "type": "boolean" },
-            "showLunar": { "type": "boolean" }
-          }
+          "properties": { "use24Hour": { "type": "boolean" } }
         }
       }
     }

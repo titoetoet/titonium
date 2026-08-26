@@ -111,6 +111,19 @@ def main() -> int:
         if "import qs.Titonium\n" not in shell_source or "App {}" not in shell_source:
             errors.append("shell.qml must instantiate qs.Titonium App directly")
 
+    for retired_dir in (
+        "Titonium/App",
+        "Titonium/Composition",
+        "Titonium/Design",
+        "Titonium/Foundation",
+        "Titonium/Modules",
+        "Titonium/Platform",
+        "Titonium/Surfaces",
+    ):
+        retired_path = ROOT / retired_dir
+        if retired_path.exists() and any(path.is_file() for path in retired_path.rglob("*")):
+            errors.append(f"retired source directory remains: {retired_dir}")
+
     if errors:
         print("FAIL skeleton contract")
         print("\n".join(errors))

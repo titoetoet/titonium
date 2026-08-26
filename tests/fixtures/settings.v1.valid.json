@@ -1,7 +1,0 @@
-{
-  "schemaVersion": 1,
-  "locale": "en",
-  "theme": { "id": "titonium-foundation", "mode": "light", "materialBackend": "auto" },
-  "accessibility": { "reducedMotion": true },
-  "modules": { "sentinel": { "enabled": true } }
-}
