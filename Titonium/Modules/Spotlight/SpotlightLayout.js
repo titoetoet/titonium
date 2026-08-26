@@ -26,6 +26,10 @@ function fillRatio(page, capacity) {
     return Math.min(1, Math.max(0, (Array.isArray(page) ? page.length : 0) / safeCapacity));
 }
 
-function indicatorWidth(page, capacity) {
+function indicatorTrackWidth() {
+    return 40;
+}
+
+function indicatorFillWidth(page, capacity) {
     return 8 + Math.round(32 * fillRatio(page, capacity));
 }

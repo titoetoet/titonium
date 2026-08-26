@@ -52,13 +52,28 @@ const categories = loadDomain("CategoryCatalog", { StableOrder: stableOrder });
 const search = loadDomain("SearchEngine", { StableOrder: stableOrder });
 const calculator = loadDomain("Calculator");
 const state = loadDomain("SpotlightState");
+const scope = loadDomain("SpotlightScope");
+
+assertEqual(scope.next("applications", 1), "clipboard", "Tab advances Apps to Clipboard");
+assertEqual(scope.next("clipboard", 1), "system", "Tab advances Clipboard to System Search");
+assertEqual(scope.next("system", 1), "applications", "Tab wraps System Search to Apps");
+assertEqual(scope.next("applications", -1), "system", "Shift+Tab reverses the scope cycle");
+assertEqual(scope.next("unknown", 1), "clipboard", "unknown scope normalizes to Apps before cycling");
+assertEqual(scope.modeFor("applications", ""), "browse", "empty Apps query shows the grid");
+assertEqual(scope.modeFor("applications", "fire"), "results", "Apps query shows results");
+assertEqual(scope.modeFor("clipboard", "fire"), "clipboard", "Clipboard query stays in Clipboard");
+assertEqual(scope.modeFor("system", "fire"), "system", "System Search query stays in its mock scope");
 
 assertEqual(layout.columnCount(), 5, "fixed column count");
 assertEqual(layout.rowCount(), 4, "fixed row count");
 assertEqual(layout.pageSize(), 20, "fixed page capacity");
 assertDeepEqual(Array.from(layout.pages(ids(21), 20), page => Array.from(page).length), [20, 1], "fixed pagination");
-assertEqual(layout.indicatorWidth(ids(20), 20), 40, "full-page indicator width");
-assertEqual(layout.indicatorWidth(ids(5), 20), 16, "quarter-page indicator width");
+assertEqual(typeof layout.indicatorTrackWidth, "function", "density indicator exposes a fixed track");
+assertEqual(typeof layout.indicatorFillWidth, "function", "density indicator exposes proportional fill");
+assertEqual(layout.indicatorTrackWidth(), 40, "density indicator uses a fixed comparison track");
+assertEqual(layout.indicatorFillWidth(ids(20), 20), 40, "full page fills the density track");
+assertEqual(layout.indicatorFillWidth(ids(5), 20), 16, "quarter page partially fills the density track");
+assertEqual(layout.indicatorFillWidth([], 20), 8, "empty page keeps a visible density minimum");
 
 assertDeepEqual(Array.from(categories.idsFor(["Development", "Utility"])), ["development", "utilities"], "development and utility aliases");
 assertDeepEqual(Array.from(categories.idsFor(["Network"])), ["internet"], "network alias");
@@ -177,4 +192,4 @@ assertEqual(state.escape({ mode: "results", query: "fire", categoryId: "games" }
 assertEqual(state.escape({ mode: "browse", query: "", categoryId: "games" }).closeRequested, true, "escape requests close from browse mode");
 assertDeepEqual(state.initial("browse"), { mode: "browse", query: "", categoryId: "all", closeRequested: false }, "initial browse state");
 
-console.log("PASS spotlight domain fixtures (49)");
+console.log("PASS spotlight domain fixtures (62)");

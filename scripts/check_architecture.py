@@ -253,7 +253,7 @@ def main() -> int:
     reporting_mutation_counts = {
         "settings": 4,
         "arch-menu": 3,
-        "spotlight": 5,
+        "spotlight": 6,
         "clock": 3,
         "calendar": 3,
         "gallery": 3,
@@ -452,6 +452,7 @@ def main() -> int:
         "AppGrid.qml",
         "ApplicationTile.qml",
         "SearchResults.qml",
+        "SystemSearchMock.qml",
         "PageIndicator.qml",
         "qmldir",
     )
@@ -482,11 +483,28 @@ def main() -> int:
         or 'mode === "browse"' not in spotlight_surface
         or 'mode === "results"' not in spotlight_surface
         or 'mode === "clipboard"' not in spotlight_surface
+        or 'mode === "system"' not in spotlight_surface
         or "AppGrid.qml" not in spotlight_surface
         or "SearchResults.qml" not in spotlight_surface
         or "ClipboardView.qml" not in spotlight_surface
+        or "SystemSearchMock.qml" not in spotlight_surface
     ):
-        errors.append("SpotlightSurface must lazy-load browse, results and clipboard branches")
+        errors.append("SpotlightSurface must lazy-load Apps, Clipboard and System Search branches")
+    for scope_contract in (
+        "spotlightModel.cycleScope",
+        "Qt.Key_Tab",
+        "Qt.ShiftModifier",
+        "scopeIcon",
+    ):
+        if scope_contract not in spotlight_surface:
+            errors.append(f"Spotlight search field must expose keyboard scope switching: {scope_contract}")
+    page_indicator = spotlight_qml.get("PageIndicator.qml", "")
+    for density_contract in (
+        "SpotlightLayout.indicatorTrackWidth()",
+        "SpotlightLayout.indicatorFillWidth(root.page, SpotlightLayout.pageSize())",
+    ):
+        if density_contract not in page_indicator:
+            errors.append(f"Spotlight page indicator must compare page density on a fixed track: {density_contract}")
     clipboard_view = spotlight_qml.get("ClipboardView.qml", "")
     if "ClipboardHistoryStore" not in clipboard_view:
         errors.append("ClipboardView must project ClipboardHistoryStore intents")

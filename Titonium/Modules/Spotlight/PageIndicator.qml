@@ -13,18 +13,28 @@ FocusScope {
     required property bool current
     signal triggered()
 
-    width: SpotlightLayout.indicatorWidth(root.page, SpotlightLayout.pageSize())
+    width: SpotlightLayout.indicatorTrackWidth()
     height: 20
     activeFocusOnTab: true
 
     Rectangle {
+        id: track
         anchors.centerIn: parent
         width: parent.width
         height: 8
         radius: height / 2
-        color: root.current ? Theme.accent : Theme.borderStrong
+        color: Theme.border
         border.width: root.activeFocus ? Metrics.borderWidth : 0
         border.color: Theme.focus
+
+        Rectangle {
+            anchors.left: parent.left
+            anchors.verticalCenter: parent.verticalCenter
+            width: SpotlightLayout.indicatorFillWidth(root.page, SpotlightLayout.pageSize())
+            height: parent.height
+            radius: height / 2
+            color: root.current ? Theme.accent : Theme.borderStrong
+        }
     }
 
     HoverHandler { cursorShape: Qt.PointingHandCursor }

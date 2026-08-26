@@ -17,6 +17,8 @@ FocusScope {
     property int activeBodyTransitionDuration: 0
     readonly property string ownerId: root.descriptor?.ownerId || ""
     readonly property var spotlightSettings: ConfigStore.previewState.modules?.spotlight || ({})
+    readonly property string scopeIcon: spotlightModel.scope === "clipboard" ? "content_paste"
+        : (spotlightModel.scope === "system" ? "manage_search" : "apps")
     signal clipboardMoveRequested(int delta)
     signal clipboardActivateRequested()
 
@@ -49,7 +51,7 @@ FocusScope {
             "keyboardFocus": "exclusive",
             "closeOnMonitorChange": true,
             "ownerId": root.ownerId,
-            "mode": root.descriptor?.mode || "applications",
+            "mode": spotlightModel.scope,
             "query": spotlightModel.query,
             "stateMode": spotlightModel.mode,
             "selectedIndex": spotlightModel.selectedIndex
@@ -103,10 +105,8 @@ FocusScope {
 
     onDescriptorChanged: {
         const descriptorMode = root.descriptor?.mode || "applications";
-        if (descriptorMode === "clipboard" && spotlightModel.mode !== "clipboard")
-            spotlightModel.open("clipboard");
-        else if (descriptorMode !== "clipboard" && spotlightModel.mode === "clipboard")
-            spotlightModel.open(root.descriptor?.stateMode || "browse");
+        if (descriptorMode !== spotlightModel.scope)
+            spotlightModel.open(descriptorMode);
         const descriptorQuery = root.descriptor?.query || "";
         if (descriptorQuery !== spotlightModel.query)
             spotlightModel.setQuery(descriptorQuery);
@@ -151,12 +151,14 @@ FocusScope {
                 activeFocusOnTab: true
                 text: spotlightModel.query
                 placeholderText: I18n.tr(spotlightModel.mode === "clipboard"
-                    ? "spotlight.clipboard.search_placeholder" : "spotlight.search_placeholder")
+                    ? "spotlight.clipboard.search_placeholder"
+                    : (spotlightModel.mode === "system"
+                        ? "spotlight.system.search_placeholder" : "spotlight.search_placeholder"))
                 color: Theme.textPrimary
                 placeholderTextColor: Theme.textSecondary
                 font.family: Typography.family
                 font.pixelSize: Typography.bodyLargeSize
-                leftPadding: Metrics.spacingLarge
+                leftPadding: 48
                 rightPadding: Metrics.spacingLarge
                 selectByMouse: true
 
@@ -167,9 +169,23 @@ FocusScope {
                     border.color: searchField.activeFocus ? Theme.focus : Theme.border
                 }
 
+                Controls.Icon {
+                    anchors.left: parent.left
+                    anchors.leftMargin: Metrics.spacingLarge
+                    anchors.verticalCenter: parent.verticalCenter
+                    name: root.scopeIcon
+                    size: 22
+                    tone: searchField.activeFocus ? "accent" : "secondary"
+                }
+
                 onTextEdited: spotlightModel.setQuery(text)
                 Keys.onPressed: event => {
-                    if (event.key === Qt.Key_Down) {
+                    if (event.key === Qt.Key_Tab || event.key === Qt.Key_Backtab) {
+                        const reverse = event.key === Qt.Key_Backtab
+                            || (event.modifiers & Qt.ShiftModifier) !== 0;
+                        spotlightModel.cycleScope(reverse ? -1 : 1);
+                        event.accepted = true;
+                    } else if (event.key === Qt.Key_Down) {
                         if (spotlightModel.mode === "clipboard" && bodyLoader.item)
                             root.clipboardMoveRequested(1);
                         else
@@ -195,7 +211,9 @@ FocusScope {
 
                 Accessible.role: Accessible.EditableText
                 Accessible.name: I18n.tr(spotlightModel.mode === "clipboard"
-                    ? "spotlight.clipboard.search_accessible" : "spotlight.search_accessible")
+                    ? "spotlight.clipboard.search_accessible"
+                    : (spotlightModel.mode === "system"
+                        ? "spotlight.system.search_accessible" : "spotlight.search_accessible"))
                 Accessible.focusable: true
             }
 
@@ -204,7 +222,7 @@ FocusScope {
                 implicitHeight: categoryRow.implicitHeight
                 contentWidth: categoryRow.implicitWidth
                 contentHeight: height
-                visible: spotlightModel.mode === "browse"
+                visible: spotlightModel.scope === "applications" && spotlightModel.mode === "browse"
                 clip: true
                 boundsBehavior: Flickable.StopAtBounds
 
@@ -236,11 +254,12 @@ FocusScope {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 active: spotlightModel.mode === "browse" || spotlightModel.mode === "results"
-                    || spotlightModel.mode === "clipboard"
+                    || spotlightModel.mode === "clipboard" || spotlightModel.mode === "system"
                 source: spotlightModel.mode === "browse"
                     ? Qt.resolvedUrl("AppGrid.qml")
                     : (spotlightModel.mode === "results" ? Qt.resolvedUrl("SearchResults.qml")
-                        : (spotlightModel.mode === "clipboard" ? Qt.resolvedUrl("ClipboardView.qml") : ""))
+                        : (spotlightModel.mode === "clipboard" ? Qt.resolvedUrl("ClipboardView.qml")
+                            : (spotlightModel.mode === "system" ? Qt.resolvedUrl("SystemSearchMock.qml") : "")))
                 onLoaded: root.configureLoadedBody(item)
             }
 

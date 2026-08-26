@@ -8,6 +8,7 @@ import qs.Titonium.Modules.Frame
 import qs.Titonium.Platform
 import qs.Titonium.Platform.Hyprland
 import qs.Titonium.Surfaces
+import "../Modules/Spotlight/SpotlightScope.js" as SpotlightScope
 
 Scope {
     id: root
@@ -306,6 +307,27 @@ Scope {
                 "query": query,
                 "stateMode": descriptorMode === "clipboard" ? "clipboard"
                     : (query.trim().length > 0 ? "results" : "browse"),
+                "selectedIndex": 0
+            }, SurfaceCoordinator.screen);
+            return root.coordinatorIpcResult(opened, spotlightIpc.state());
+        }
+
+        function setScope(scope: string): string {
+            if (SurfaceCoordinator.ownerId.indexOf("spotlight:") !== 0)
+                return "unavailable:closed";
+            const nextScope = SpotlightScope.normalize(scope);
+            if (nextScope !== scope)
+                return "unavailable:unknown-scope";
+            const ownerId = SurfaceCoordinator.ownerId;
+            const query = SurfaceCoordinator.descriptor?.query || "";
+            const opened = SurfaceCoordinator.open(ownerId, {
+                "source": Qt.resolvedUrl("../Modules/Spotlight/SpotlightSurface.qml"),
+                "keyboardFocus": "exclusive",
+                "closeOnMonitorChange": true,
+                "ownerId": ownerId,
+                "mode": nextScope,
+                "query": query,
+                "stateMode": SpotlightScope.modeFor(nextScope, query),
                 "selectedIndex": 0
             }, SurfaceCoordinator.screen);
             return root.coordinatorIpcResult(opened, spotlightIpc.state());

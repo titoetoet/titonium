@@ -91,6 +91,13 @@ results_state="$(wait_for_spotlight_state \
     "mode=results;query=fire;selected=0" "Spotlight search state")"
 require_contains "$results_state" "mode=results;query=fire;selected=0" "Spotlight search state"
 
+require_contains "$(call_ipc spotlight setScope clipboard)" "open:clipboard:" "Spotlight Tab scope Clipboard"
+wait_for_spotlight_state "mode=clipboard;query=fire;selected=0" "Clipboard scope preserves query" >/dev/null
+require_contains "$(call_ipc spotlight setScope system)" "open:system:" "Spotlight Tab scope System Search"
+wait_for_spotlight_state "mode=system;query=fire;selected=0" "System Search scope preserves query" >/dev/null
+require_contains "$(call_ipc spotlight setScope applications)" "open:applications:" "Spotlight Tab scope wraps to Apps"
+wait_for_spotlight_state "mode=results;query=fire;selected=0" "Apps scope restores results" >/dev/null
+
 require_contains "$(call_ipc spotlight close)" "closed" "Spotlight close"
 require_contains "$(call_ipc spotlight state)" "closed" "Spotlight closed state"
 
@@ -118,4 +125,4 @@ if rg -i "$runtime_rejection_pattern" "$log_file"; then
     exit 1
 fi
 
-echo "PASS Spotlight application/clipboard IPC, search state, close and history isolation acceptance"
+echo "PASS Spotlight Apps/Clipboard/System scopes, search state, close and history isolation acceptance"

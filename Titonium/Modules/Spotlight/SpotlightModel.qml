@@ -8,12 +8,14 @@ import "Calculator.js" as Calculator
 import "CategoryCatalog.js" as CategoryCatalog
 import "SearchEngine.js" as SearchEngine
 import "SpotlightLayout.js" as SpotlightLayout
+import "SpotlightScope.js" as SpotlightScope
 import "SpotlightState.js" as SpotlightState
 
 QtObject {
     id: root
 
     property string mode: "browse"
+    property string scope: "applications"
     property string query: ""
     property string categoryId: "all"
     property int pageIndex: 0
@@ -32,18 +34,10 @@ QtObject {
     readonly property var results: root.searchResults()
 
     function open(descriptorMode: string): void {
-        if (descriptorMode === "clipboard") {
-            root.mode = "clipboard";
-            root.query = "";
-            root.categoryId = "all";
-            root.pageIndex = 0;
-            root.selectedIndex = 0;
-            root.selectionMoved = false;
-            return;
-        }
+        root.scope = SpotlightScope.normalize(descriptorMode);
         const initial = SpotlightState.initial(descriptorMode === "results" ? "results" : "browse");
-        root.mode = initial.mode;
         root.query = initial.query;
+        root.mode = SpotlightScope.modeFor(root.scope, root.query);
         root.categoryId = initial.categoryId;
         root.pageIndex = 0;
         root.selectedIndex = 0;
@@ -51,8 +45,9 @@ QtObject {
     }
 
     function setQuery(nextQuery: string): void {
-        if (root.mode === "clipboard") {
+        if (root.scope !== "applications") {
             root.query = typeof nextQuery === "string" ? nextQuery : "";
+            root.mode = SpotlightScope.modeFor(root.scope, root.query);
             root.selectedIndex = 0;
             root.selectionMoved = false;
             return;
@@ -65,6 +60,14 @@ QtObject {
         root.query = next.query;
         root.mode = next.mode;
         root.categoryId = next.categoryId;
+        root.selectedIndex = 0;
+        root.selectionMoved = false;
+    }
+
+    function cycleScope(delta: int): void {
+        root.scope = SpotlightScope.next(root.scope, delta);
+        root.mode = SpotlightScope.modeFor(root.scope, root.query);
+        root.pageIndex = 0;
         root.selectedIndex = 0;
         root.selectionMoved = false;
     }
