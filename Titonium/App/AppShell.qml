@@ -193,6 +193,13 @@ Scope {
                 return false;
             return ConfigStore.patch("modules.frame.enabled", enabled);
         }
+
+        function previewApplicationVisible(entryId: string, visible: bool): bool {
+            if (SurfaceCoordinator.ownerId.indexOf("settings:") !== 0
+                    || !ConfigStore.previewActive)
+                return false;
+            return ApplicationVisibilityStore.setVisible(entryId, visible);
+        }
     }
 
     IpcHandler {
@@ -331,6 +338,15 @@ Scope {
                 "selectedIndex": 0
             }, SurfaceCoordinator.screen);
             return root.coordinatorIpcResult(opened, spotlightIpc.state());
+        }
+
+        function firstVisibleApplicationId(): string {
+            const applications = ApplicationVisibilityStore.visibleApplications;
+            return applications.length > 0 ? applications[0].id : "";
+        }
+
+        function visibleApplicationCount(): int {
+            return ApplicationVisibilityStore.visibleApplications.length;
         }
     }
 

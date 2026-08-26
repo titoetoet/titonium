@@ -8,4 +8,5 @@ FramePage 1.0 FramePage.qml
 AudioPage 1.0 AudioPage.qml
 SystemPage 1.0 SystemPage.qml
 SpotlightPage 1.0 SpotlightPage.qml
+ApplicationVisibilityList 1.0 ApplicationVisibilityList.qml
 MaterialPage 1.0 MaterialPage.qml

@@ -443,6 +443,23 @@ def main() -> int:
         errors.append("Spotlight duration must not render a raw millisecond suffix")
     if 'I18n.tr("settings.spotlight.transition_duration_value"' not in spotlight_settings:
         errors.append("Spotlight duration value must use its localized formatter")
+    visibility_list_path = root / "Titonium/Modules/Settings/ApplicationVisibilityList.qml"
+    if not visibility_list_path.is_file():
+        errors.append("Spotlight Settings application visibility list is missing")
+    else:
+        visibility_list = visibility_list_path.read_text(encoding="utf-8")
+        for contract in (
+            "ListView",
+            "ApplicationVisibilityStore.allApplications",
+            "ApplicationVisibilityStore.setVisible",
+            "Controls.Switch",
+            "Image",
+            "Text.ElideRight",
+        ):
+            if contract not in visibility_list:
+                errors.append(f"ApplicationVisibilityList is missing lazy visibility contract: {contract}")
+    if len(re.findall(r"\bApplicationVisibilityList\s*\{", spotlight_settings)) != 1:
+        errors.append("SpotlightPage must instantiate ApplicationVisibilityList exactly once")
 
     spotlight_dir = root / "Titonium/Modules/Spotlight"
     visibility_store_path = root / "Titonium/Foundation/ApplicationVisibilityStore.qml"

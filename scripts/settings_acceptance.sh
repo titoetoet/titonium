@@ -101,6 +101,31 @@ call_ipc config cancel >/dev/null
 [[ "$(call_ipc config layoutDocument)" == "$original_layout" ]]
 echo "PASS Preview and Cancel restore exact settings/layout documents"
 
+candidate_id="$(call_ipc spotlight firstVisibleApplicationId)"
+visible_before="$(call_ipc spotlight visibleApplicationCount)"
+[[ -n "$candidate_id" ]]
+[[ "$visible_before" =~ ^[0-9]+$ ]]
+call_ipc config beginPreview >/dev/null
+[[ "$(call_ipc settings previewApplicationVisible "$candidate_id" false)" == *true* ]]
+[[ "$(call_ipc spotlight visibleApplicationCount)" == "$((visible_before - 1))" ]]
+call_ipc config cancel >/dev/null
+[[ "$(call_ipc spotlight visibleApplicationCount)" == "$visible_before" ]]
+echo "PASS Application visibility preview and Cancel restore the global catalog"
+
+call_ipc config beginPreview >/dev/null
+[[ "$(call_ipc settings previewApplicationVisible "$candidate_id" false)" == *true* ]]
+[[ "$(call_ipc config apply)" == *true* ]]
+visibility_applied=false
+for _ in {1..40}; do
+    if [[ -f "$runtime_settings" ]] && python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); raise SystemExit(sys.argv[2] not in d.get("applications", {}).get("hiddenIds", []))' "$runtime_settings" "$candidate_id"; then
+        visibility_applied=true
+        break
+    fi
+    sleep 0.05
+done
+[[ $visibility_applied == true ]]
+echo "PASS Application visibility Apply writes atomically outside the repository"
+
 call_ipc config beginPreview >/dev/null
 call_ipc config previewTheme titonium-hybrid-glass >/dev/null
 call_ipc config previewMaterialBackend auto >/dev/null
@@ -119,7 +144,7 @@ done
 [[ "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["appearance"]["themeId"])' "$runtime_settings")" == "titonium-hybrid-glass" ]]
 echo "PASS Apply writes hybrid appearance atomically outside the repository"
 
-committed_nonappearance="$(call_ipc config committedSettingsDocument | python3 -c 'import json,sys; d=json.load(sys.stdin); print(json.dumps({k:d[k] for k in ("locale","accessibility","modules")},sort_keys=True))')"
+committed_nonappearance="$(call_ipc config committedSettingsDocument | python3 -c 'import json,sys; d=json.load(sys.stdin); print(json.dumps({k:d[k] for k in ("locale","accessibility","applications","modules")},sort_keys=True))')"
 call_ipc config beginPreview >/dev/null
 [[ "$(call_ipc config restoreAppearance)" == *true* ]]
 restored_appearance="$(call_ipc config appearanceState)"
@@ -127,7 +152,7 @@ restored_appearance="$(call_ipc config appearanceState)"
 [[ "$restored_appearance" == *'"mode":"dark"'* ]]
 [[ "$restored_appearance" == *'"density":"comfortable"'* ]]
 [[ "$restored_appearance" == *'"overrides":{}'* ]]
-restored_nonappearance="$(call_ipc config settingsDocument | python3 -c 'import json,sys; d=json.load(sys.stdin); print(json.dumps({k:d[k] for k in ("locale","accessibility","modules")},sort_keys=True))')"
+restored_nonappearance="$(call_ipc config settingsDocument | python3 -c 'import json,sys; d=json.load(sys.stdin); print(json.dumps({k:d[k] for k in ("locale","accessibility","applications","modules")},sort_keys=True))')"
 [[ "$restored_nonappearance" == "$committed_nonappearance" ]]
 [[ "$(call_ipc config layoutDocument)" == "$original_layout" ]]
 call_ipc config cancel >/dev/null

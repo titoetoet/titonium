@@ -91,10 +91,12 @@ configuration copies. Gallery content must disappear from the scene when its Loa
 - Layout height/padding/spacing preview on both outputs and Cancel restores the exact document.
   Enabling Frame creates one click-through layer per output; disabling or cancelling removes all
   frame layers. Appearance, Layout and Frame reset actions must not modify each other's state.
-- Audio, System and Spotlight pages write only their owned settings subtree. The Audio visualizer
+- Audio and System pages write only their owned settings subtree. Spotlight owns transition
+  settings plus the UI for global `applications.hiddenIds`; hiding previews across every Titonium
+  app picker, Cancel restores the catalog, and the full installed list remains available to unhide.
+  The Audio visualizer
   controls store future preferences but never create an audio stream or animation in Settings.
-  System exposes no power/session command, and Spotlight settings own only page-transition style
-  and duration; the runtime grid remains fixed at 5×4.
+  System exposes no power/session command; the runtime Spotlight grid remains fixed at 5×4.
 - Hybrid Glass `auto` resolves to native only when the one-shot Platform probe confirms hyprglass
   is loaded. Otherwise it resolves to QML without error. Selecting Neutral immediately removes
   the Material page and every surface resolves solid. QML glass uses no shader/effect/idle loop.
