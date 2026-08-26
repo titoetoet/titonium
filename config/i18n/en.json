@@ -90,6 +90,7 @@
     "spotlight.category.utilities": "Utilities",
     "spotlight.category.other": "Other",
     "spotlight.page_go": "Go to page {page}",
+    "spotlight.page_density": "Page {page}, {count} of {capacity} applications",
     "spotlight.clipboard.title": "Clipboard",
     "spotlight.clipboard.search_placeholder": "Search clipboard history",
     "spotlight.clipboard.search_accessible": "Search clipboard history",

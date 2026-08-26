@@ -68,16 +68,22 @@ assertEqual(layout.columnCount(), 5, "fixed column count");
 assertEqual(layout.rowCount(), 4, "fixed row count");
 assertEqual(layout.pageSize(), 20, "fixed page capacity");
 assertDeepEqual(Array.from(layout.pages(ids(21), 20), page => Array.from(page).length), [20, 1], "fixed pagination");
-assertEqual(typeof layout.indicatorTrackWidth, "function", "density indicator exposes a fixed track");
-assertEqual(typeof layout.indicatorFillWidth, "function", "density indicator exposes proportional fill");
-assertEqual(layout.indicatorTrackWidth(), 40, "density indicator uses a fixed comparison track");
-assertEqual(layout.indicatorFillWidth(ids(20), 20), 40, "full page fills the density track");
-assertEqual(layout.indicatorFillWidth(ids(5), 20), 16, "quarter page partially fills the density track");
-assertEqual(layout.indicatorFillWidth([], 20), 8, "empty page keeps a visible density minimum");
+assertEqual(typeof layout.indicatorTargetWidth, "function", "density indicator exposes a stable hit target");
+assertEqual(typeof layout.indicatorVisualWidth, "function", "density indicator exposes proportional visual width");
+assertEqual(layout.indicatorTargetWidth(), 56, "density indicator keeps a stable hit target");
+assertEqual(layout.indicatorVisualWidth(ids(20), 20), 56, "full page uses the longest density pill");
+assertEqual(layout.indicatorVisualWidth(ids(5), 20), 23, "quarter page uses a visibly shorter pill");
+assertEqual(layout.indicatorVisualWidth([], 20), 12, "empty page keeps a visible minimum pill");
 
 assertDeepEqual(Array.from(categories.idsFor(["Development", "Utility"])), ["development", "utilities"], "development and utility aliases");
 assertDeepEqual(Array.from(categories.idsFor(["Network"])), ["internet"], "network alias");
 assertDeepEqual(Array.from(categories.idsFor(["AudioVideo"])), ["multimedia"], "audio-video alias");
+assertDeepEqual(Array.from(categories.idsFor(["WordProcessor"])), ["office"], "word processor alias");
+assertDeepEqual(Array.from(categories.idsFor(["Settings"])), ["system"], "settings alias");
+assertDeepEqual(Array.from(categories.idsFor(["FileManager"])), ["utilities"], "file manager alias");
+assertDeepEqual(Array.from(categories.idsFor(["WebBrowser"])), ["internet"], "web browser alias");
+assertDeepEqual(Array.from(categories.idsFor(["Audio", "Video"])), ["multimedia"], "audio-video subcategory aliases dedupe");
+assertDeepEqual(Array.from(categories.idsFor(["IDE", "Building"])), ["development"], "development subcategory aliases dedupe");
 assertDeepEqual(Array.from(categories.idsFor(["Unrecognized"])), ["other"], "fallback category");
 
 const catalogApps = [
@@ -192,4 +198,4 @@ assertEqual(state.escape({ mode: "results", query: "fire", categoryId: "games" }
 assertEqual(state.escape({ mode: "browse", query: "", categoryId: "games" }).closeRequested, true, "escape requests close from browse mode");
 assertDeepEqual(state.initial("browse"), { mode: "browse", query: "", categoryId: "all", closeRequested: false }, "initial browse state");
 
-console.log("PASS spotlight domain fixtures (62)");
+console.log("PASS spotlight domain fixtures (68)");

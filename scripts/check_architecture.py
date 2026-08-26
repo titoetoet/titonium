@@ -538,13 +538,29 @@ def main() -> int:
     ):
         if scope_contract not in spotlight_surface:
             errors.append(f"Spotlight search field must expose keyboard scope switching: {scope_contract}")
+    for placement_contract in (
+        '"rocket_launch"',
+        "anchors.top: parent.top",
+        "anchors.horizontalCenter: parent.horizontalCenter",
+        "anchors.topMargin: Metrics.barHeight + 12",
+        "height: Math.min(760",
+    ):
+        if placement_contract not in spotlight_surface:
+            errors.append(f"Spotlight must use the approved top-anchored composition: {placement_contract}")
+    icon_position = spotlight_surface.find("Controls.Icon {")
+    search_position = spotlight_surface.find("QtControls.TextField {")
+    if icon_position < 0 or search_position < 0 or icon_position > search_position:
+        errors.append("Spotlight scope icon must be a sibling before the Search field")
+    if "leftPadding: 48" in spotlight_surface:
+        errors.append("Spotlight Search field must not reserve padding for an embedded scope icon")
     page_indicator = spotlight_qml.get("PageIndicator.qml", "")
     for density_contract in (
-        "SpotlightLayout.indicatorTrackWidth()",
-        "SpotlightLayout.indicatorFillWidth(root.page, SpotlightLayout.pageSize())",
+        "SpotlightLayout.indicatorTargetWidth()",
+        "SpotlightLayout.indicatorVisualWidth(root.page, SpotlightLayout.pageSize())",
+        'I18n.tr("spotlight.page_density"',
     ):
         if density_contract not in page_indicator:
-            errors.append(f"Spotlight page indicator must compare page density on a fixed track: {density_contract}")
+            errors.append(f"Spotlight page indicator must expose app density without a fixed track: {density_contract}")
     clipboard_view = spotlight_qml.get("ClipboardView.qml", "")
     if "ClipboardHistoryStore" not in clipboard_view:
         errors.append("ClipboardView must project ClipboardHistoryStore intents")

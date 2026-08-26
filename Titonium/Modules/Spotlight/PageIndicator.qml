@@ -13,28 +13,19 @@ FocusScope {
     required property bool current
     signal triggered()
 
-    width: SpotlightLayout.indicatorTrackWidth()
+    width: SpotlightLayout.indicatorTargetWidth()
     height: 20
     activeFocusOnTab: true
 
     Rectangle {
-        id: track
-        anchors.centerIn: parent
-        width: parent.width
+        anchors.left: parent.left
+        anchors.verticalCenter: parent.verticalCenter
+        width: SpotlightLayout.indicatorVisualWidth(root.page, SpotlightLayout.pageSize())
         height: 8
         radius: height / 2
-        color: Theme.border
+        color: root.current ? Theme.accent : Theme.borderStrong
         border.width: root.activeFocus ? Metrics.borderWidth : 0
         border.color: Theme.focus
-
-        Rectangle {
-            anchors.left: parent.left
-            anchors.verticalCenter: parent.verticalCenter
-            width: SpotlightLayout.indicatorFillWidth(root.page, SpotlightLayout.pageSize())
-            height: parent.height
-            radius: height / 2
-            color: root.current ? Theme.accent : Theme.borderStrong
-        }
     }
 
     HoverHandler { cursorShape: Qt.PointingHandCursor }
@@ -47,7 +38,11 @@ FocusScope {
     }
 
     Accessible.role: Accessible.Button
-    Accessible.name: I18n.tr("spotlight.page_go", { "page": root.pageIndex + 1 })
+    Accessible.name: I18n.tr("spotlight.page_density", {
+        "page": root.pageIndex + 1,
+        "count": root.page.length,
+        "capacity": SpotlightLayout.pageSize()
+    })
     Accessible.focusable: true
     Accessible.selected: root.current
 }

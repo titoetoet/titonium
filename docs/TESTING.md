@@ -73,10 +73,10 @@ configuration copies. Gallery content must disappear from the scene when its Loa
   trigger and remains reserved for Notification Center. Lunar fixtures cover Tết 2024–2026 and
   Trung thu 2023.
 - `Super + Space` opens Spotlight Applications on the focused output and `Super + V` opens its
-  Clipboard list/preview. The centered panel remains 800×620 logical pixels at scales 1.0 and 1.5.
-  Browse mode renders a 5×4 page, vertical wheel input moves exactly one horizontal page and the
-  fixed-width occupancy tracks fill according to each page's app density. The Search field shows
-  the active scope icon; Tab cycles Applications → Clipboard → mock System Search without closing
+  Clipboard list/preview. The 800×≤760 panel is horizontally centered and top-anchored 12 logical
+  pixels below the MenuBar at scales 1.0 and 1.5. Browse mode renders a 5×4 page, vertical wheel
+  input moves exactly one horizontal page and each 12–56 pixel pill reflects its page's app count.
+  The scope icon sits outside Search; Tab cycles Applications → Clipboard → mock System Search without closing
   the surface or clearing the query, while Shift+Tab reverses the cycle. Typing in Applications
   switches to a result list without resizing; Escape clears a query before closing, and reduced
   motion removes transition duration.

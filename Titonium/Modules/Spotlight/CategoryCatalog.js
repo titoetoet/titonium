@@ -3,14 +3,14 @@
 
 const CATEGORY_DEFINITIONS = [
     { id: "all", title: "All", aliases: [] },
-    { id: "development", title: "Development", aliases: ["development"] },
-    { id: "games", title: "Games", aliases: ["game", "games"] },
-    { id: "graphics", title: "Graphics", aliases: ["graphics"] },
-    { id: "internet", title: "Internet", aliases: ["network", "internet"] },
-    { id: "multimedia", title: "Multimedia", aliases: ["audiovideo", "multimedia"] },
-    { id: "office", title: "Office", aliases: ["office"] },
-    { id: "system", title: "System", aliases: ["system"] },
-    { id: "utilities", title: "Utilities", aliases: ["utility", "utilities"] },
+    { id: "development", title: "Development", aliases: ["development", "ide", "building", "guidesigner", "webdevelopment"] },
+    { id: "games", title: "Games", aliases: ["game", "games", "arcadegame", "boardgame", "cardgame", "kidsgame", "logicgame", "roleplaying", "simulation", "sportsgame", "strategygame"] },
+    { id: "graphics", title: "Graphics", aliases: ["graphics", "2dgraphics", "3dgraphics", "photography", "rastergraphics", "vectorgraphics"] },
+    { id: "internet", title: "Internet", aliases: ["network", "internet", "webbrowser", "email", "instantmessaging", "filetransfer", "p2p", "remoteaccess"] },
+    { id: "multimedia", title: "Multimedia", aliases: ["audiovideo", "multimedia", "audio", "video", "player", "recorder", "tv"] },
+    { id: "office", title: "Office", aliases: ["office", "wordprocessor", "spreadsheet", "presentation", "database", "finance", "calendar"] },
+    { id: "system", title: "System", aliases: ["system", "settings", "desktopsettings", "hardwaresettings", "packagemanager", "monitor", "security"] },
+    { id: "utilities", title: "Utilities", aliases: ["utility", "utilities", "filemanager", "filetools", "archiving", "calculator", "texteditor", "accessibility"] },
     { id: "other", title: "Other", aliases: [] }
 ];
 

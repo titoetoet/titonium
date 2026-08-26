@@ -90,6 +90,7 @@
     "spotlight.category.utilities": "Tiện ích",
     "spotlight.category.other": "Khác",
     "spotlight.page_go": "Đi tới trang {page}",
+    "spotlight.page_density": "Trang {page}, {count} trên {capacity} ứng dụng",
     "spotlight.clipboard.title": "Bảng nhớ tạm",
     "spotlight.clipboard.search_placeholder": "Tìm trong lịch sử bảng nhớ tạm",
     "spotlight.clipboard.search_accessible": "Tìm trong lịch sử bảng nhớ tạm",

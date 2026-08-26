@@ -18,7 +18,7 @@ FocusScope {
     readonly property string ownerId: root.descriptor?.ownerId || ""
     readonly property var spotlightSettings: ConfigStore.previewState.modules?.spotlight || ({})
     readonly property string scopeIcon: spotlightModel.scope === "clipboard" ? "content_paste"
-        : (spotlightModel.scope === "system" ? "manage_search" : "apps")
+        : (spotlightModel.scope === "system" ? "manage_search" : "rocket_launch")
     signal clipboardMoveRequested(int delta)
     signal clipboardActivateRequested()
 
@@ -136,15 +136,29 @@ FocusScope {
         id: panel
         z: 1
         width: Math.min(800, root.width - Metrics.spacingLarge * 4)
-        height: Math.min(620, root.height - Metrics.spacingLarge * 4)
-        anchors.centerIn: parent
+        height: Math.min(760,
+            root.height - Metrics.barHeight - 12 - Metrics.spacingLarge)
+        anchors.top: parent.top
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.topMargin: Metrics.barHeight + 12
         customColor: Theme.background
 
         ColumnLayout {
             anchors.fill: parent
             spacing: Metrics.spacingMedium
 
-            QtControls.TextField {
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Metrics.spacingMedium
+
+                Controls.Icon {
+                    name: root.scopeIcon
+                    size: 30
+                    tone: searchField.activeFocus ? "accent" : "secondary"
+                    accessibleName: ""
+                }
+
+                QtControls.TextField {
                 id: searchField
                 Layout.fillWidth: true
                 implicitHeight: 44
@@ -158,7 +172,7 @@ FocusScope {
                 placeholderTextColor: Theme.textSecondary
                 font.family: Typography.family
                 font.pixelSize: Typography.bodyLargeSize
-                leftPadding: 48
+                leftPadding: Metrics.spacingLarge
                 rightPadding: Metrics.spacingLarge
                 selectByMouse: true
 
@@ -167,15 +181,6 @@ FocusScope {
                     color: Theme.surfaceElevated
                     border.width: Metrics.borderWidth
                     border.color: searchField.activeFocus ? Theme.focus : Theme.border
-                }
-
-                Controls.Icon {
-                    anchors.left: parent.left
-                    anchors.leftMargin: Metrics.spacingLarge
-                    anchors.verticalCenter: parent.verticalCenter
-                    name: root.scopeIcon
-                    size: 22
-                    tone: searchField.activeFocus ? "accent" : "secondary"
                 }
 
                 onTextEdited: spotlightModel.setQuery(text)
@@ -215,6 +220,7 @@ FocusScope {
                     : (spotlightModel.mode === "system"
                         ? "spotlight.system.search_accessible" : "spotlight.search_accessible"))
                 Accessible.focusable: true
+                }
             }
 
             Flickable {
