@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import qs.Titonium.Core.Surfaces
 import qs.Titonium.Services.Dock
 import "../Services/Dock/DockRules.js" as DockRules
 
@@ -21,7 +22,24 @@ PanelWindow {
         edgeReveal.hovered,
         dockSurface.hovered || dockSurface.itemMenuActive)
     readonly property bool pinnedOpen: DockStore.pinnedOpen
+    readonly property string inputRegionOwnerId: "dock:" + root.screenModel.name
+    readonly property bool bodyInputVisible: root.dockRevealed || dockSurface.itemMenuActive
+    readonly property rect bodyInputRect: root.bodyInputVisible
+        ? root.bottomLocalToOverlayRect(Qt.rect(dockSurface.x, dockSurface.y,
+            dockSurface.width, dockSurface.height)) : Qt.rect(0, 0, 0, 0)
+    readonly property rect edgeInputRect: root.bottomLocalToOverlayRect(Qt.rect(edgeReveal.x,
+        edgeReveal.y, edgeReveal.width, edgeReveal.height))
     signal applicationsRequested(var screen)
+
+    function bottomLocalToOverlayRect(localRect: rect): rect {
+        return Qt.rect(localRect.x, root.screenModel.height - root.reservedHeight + localRect.y,
+            localRect.width, localRect.height);
+    }
+
+    function publishInputRegions(): void {
+        SurfaceInputRegions.publish(root.inputRegionOwnerId, root.screenModel,
+            root.bodyInputRect, root.edgeInputRect);
+    }
 
     screen: root.screenModel
     color: "transparent"
@@ -61,4 +79,9 @@ PanelWindow {
 
         readonly property bool hovered: edgeRevealHover.hovered
     }
+
+    onBodyInputRectChanged: root.publishInputRegions()
+    onEdgeInputRectChanged: root.publishInputRegions()
+    Component.onCompleted: root.publishInputRegions()
+    Component.onDestruction: SurfaceInputRegions.clear(root.inputRegionOwnerId)
 }

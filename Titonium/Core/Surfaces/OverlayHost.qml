@@ -31,6 +31,28 @@ Scope {
                 ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
 
             anchors { top: true; bottom: true; left: true; right: true }
+            readonly property var overlayInputRegions:
+                SurfaceInputRegions.regionsFor(window.modelData)
+            mask: Region {
+                width: window.modelData.width
+                height: window.modelData.height
+
+                Region {
+                    x: window.overlayInputRegions.body.x
+                    y: window.overlayInputRegions.body.y
+                    width: window.overlayInputRegions.body.width
+                    height: window.overlayInputRegions.body.height
+                    intersection: Intersection.Subtract
+                }
+
+                Region {
+                    x: window.overlayInputRegions.edge.x
+                    y: window.overlayInputRegions.edge.y
+                    width: window.overlayInputRegions.edge.width
+                    height: window.overlayInputRegions.edge.height
+                    intersection: Intersection.Subtract
+                }
+            }
 
             Loader {
                 id: overlayLoader

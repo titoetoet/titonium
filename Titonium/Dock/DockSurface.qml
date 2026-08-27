@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Titonium.Core.Runtime
+import qs.Titonium.Core.Surfaces
 import qs.Titonium.Services.Dock
 import qs.Titonium.Shared as Shared
 import qs.Titonium.Theme
@@ -19,6 +20,11 @@ FocusScope {
     readonly property bool hovered: surfaceHover.hovered
     readonly property bool itemMenuActive: itemMenu.active
     signal applicationsRequested(var screen)
+
+    function closeTransient(): void {
+        if (SurfaceManager.active)
+            SurfaceManager.close(SurfaceManager.ownerId);
+    }
 
     implicitWidth: dockRow.implicitWidth + Metrics.spacingSmall * 2
     implicitHeight: root.bodyHeight
@@ -142,12 +148,14 @@ FocusScope {
             TapHandler {
                 onTapped: {
                     pinControl.forceActiveFocus(Qt.MouseFocusReason);
+                    root.closeTransient();
                     pinControl.togglePinnedOpen();
                 }
             }
             Keys.onPressed: event => {
                 if (event.key === Qt.Key_Space || event.key === Qt.Key_Return
                         || event.key === Qt.Key_Enter) {
+                    root.closeTransient();
                     pinControl.togglePinnedOpen();
                     event.accepted = true;
                 }

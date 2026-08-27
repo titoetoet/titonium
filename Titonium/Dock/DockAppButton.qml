@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls as QtControls
 import qs.Titonium.Core.Runtime
+import qs.Titonium.Core.Surfaces
 import qs.Titonium.Services.Dock
 import qs.Titonium.Shared as Shared
 import qs.Titonium.Theme
@@ -16,6 +17,21 @@ FocusScope {
     readonly property int iconSize: 40
     readonly property bool hovered: hoverHandler.hovered
     signal menuRequested(var dockItem, var invoker)
+
+    function closeTransient(): void {
+        if (SurfaceManager.active)
+            SurfaceManager.close(SurfaceManager.ownerId);
+    }
+
+    function activateOrLaunch(): void {
+        root.closeTransient();
+        DockService.activateOrLaunch(root.dockItem.appId);
+    }
+
+    function launchNew(): void {
+        root.closeTransient();
+        DockService.launchNew(root.dockItem.appId);
+    }
 
     width: root.iconSize
     height: root.iconSize
@@ -74,14 +90,14 @@ FocusScope {
         acceptedButtons: Qt.LeftButton
         onTapped: {
             root.forceActiveFocus(Qt.MouseFocusReason);
-            DockService.activateOrLaunch(root.dockItem.appId);
+            root.activateOrLaunch();
         }
     }
     TapHandler {
         acceptedButtons: Qt.MiddleButton
         onTapped: {
             root.forceActiveFocus(Qt.MouseFocusReason);
-            DockService.launchNew(root.dockItem.appId);
+            root.launchNew();
         }
     }
     TapHandler {
@@ -93,7 +109,7 @@ FocusScope {
     }
     Keys.onPressed: event => {
         if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-            DockService.activateOrLaunch(root.dockItem.appId);
+            root.activateOrLaunch();
             event.accepted = true;
         } else if (event.key === Qt.Key_Menu || (event.key === Qt.Key_F10
                 && (event.modifiers & Qt.ShiftModifier) !== 0)) {
