@@ -8,6 +8,7 @@ import qs.Titonium.Core.Screens
 import qs.Titonium.Services.Applications
 import "WindowRegistry.js" as WindowRegistry
 import "WindowRules.js" as WindowRules
+import "WorkspaceRules.js" as WorkspaceRules
 
 Singleton {
     id: root
@@ -25,24 +26,21 @@ Singleton {
     }
     function workspaceSnapshot(screen: var, count: int): var {
         const activeId = root.activeWorkspaceId(screen);
-        const safeCount = Math.max(1, Math.min(10, count));
-        const groupStart = Math.floor((Math.max(1, activeId) - 1) / safeCount) * safeCount + 1;
-        const source = Hyprland.workspaces.values || [], result = [];
-        for (let offset = 0; offset < safeCount; offset++) {
-            const id = groupStart + offset;
-            let occupied = false, urgent = false;
-            for (let index = 0; index < source.length; index++) {
-                const workspace = source[index];
-                if (!workspace || workspace.id !== id) continue;
-                const state = workspace.lastIpcObject || {};
-                occupied = Number(state.windows || 0) > 0
-                    || (workspace.toplevels?.values?.length || 0) > 0;
-                urgent = workspace.urgent === true;
-                break;
-            }
-            result.push({ id: id, active: id === activeId, occupied: occupied, urgent: urgent });
+        const source = Hyprland.workspaces.values || [];
+        const facts = [];
+        for (let index = 0; index < source.length; index++) {
+            const workspace = source[index];
+            if (!workspace)
+                continue;
+            const state = workspace.lastIpcObject || {};
+            facts.push({
+                id: workspace.id,
+                occupied: Number(state.windows || 0) > 0
+                    || (workspace.toplevels?.values?.length || 0) > 0,
+                urgent: workspace.urgent === true,
+            });
         }
-        return result;
+        return WorkspaceRules.project(activeId, count, facts, root.windows);
     }
     function activateWorkspace(workspaceId: int): void {
         if (workspaceId < 1) return;
