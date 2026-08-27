@@ -26,9 +26,18 @@ eligibility when `DP-1` returns, preventing Titonium from reserving or drawing o
 
 ## Native Dock + Bluetooth handoff (Task 8)
 
-The implementation has static contracts and read-only acceptance seams. Live-gate evidence and
-the manual visual checkpoint remain **pending the controller**; the commands below are the
-repeatable handoff procedure, not a record that those gates have passed.
+The implementation has static contracts and read-only acceptance seams. The controller completed
+the automated live gates on 2026-08-27; the user's manual visual/interaction checkpoint remains
+pending. The commands below are the repeatable handoff procedure.
+
+Recorded automated evidence:
+
+- `./scripts/check.sh`, `./scripts/smoke.sh`, `./scripts/dock_acceptance.sh`,
+  `./scripts/bluetooth_acceptance.sh` and `./scripts/protected_acceptance.sh` passed;
+- `hyprctl configerrors` returned no errors;
+- DP-1 owned one `titonium-menubar` and one `titonium-dock`; DP-3 owned no Titonium layer;
+- the reference shell remained running on DP-3 while one Titonium daemon was restored on DP-1;
+- Hyprland hashes remained `97f9e0f8…451e9` (live) and `3df33e52…880a` (dotfiles).
 
 Run the static and syntax checks from the project root:
 
@@ -69,10 +78,11 @@ qs -d -p /home/cole/Projects/titonium
 
 ### Manual Dock and Bluetooth checkpoint
 
-Audio checkpoint: on DP-1 (scale 1.5) and DP-3 (scale 1.0), verify the corrected popup's
+Audio checkpoint: on DP-1 (scale 1.5), verify the corrected popup's
 right-edge anchoring, bounded height and exactly-once outer padding; exercise Output/Microphone
 controls, local slider drag, playback stream updates, click/outside-click/Escape close and the
-focused-screen click-through OSD. Restore original volume, mute state and runtime preference.
+focused-screen click-through OSD. Confirm DP-3 continues to belong only to the reference shell.
+Restore original volume, mute state and runtime preference.
 Approve this Audio checkpoint first. Then on DP-1 (scale 1.5), verify Dock body/icon/margin/
 spacing of 56/40/8/6 logical px, 4px edge reveal, bounded 1.12 hover scale and 4px lift, solid
 Neutral Utility rendering, click-through outside the mask, auto-hide on a populated workspace,
@@ -168,7 +178,7 @@ Titonium output:
 - switch pages rapidly and confirm only the latest page remains, without vertically stretched tiles;
 - activate a Tools/Session tile and confirm translated feedback with no system action.
 
-Audio remains awaiting visual approval. On DP-1 (scale 1.5) and DP-3 (scale 1.0), verify the Audio
+Audio remains awaiting visual approval. On DP-1 (scale 1.5), verify the Audio
 icon remains visible when diagnostic glyphs collapse; click/outside-click/Escape popup lifecycle;
 right-edge anchoring and bounded height; Output/Microphone controls and local drag behavior; and
 playback applications appearing/disappearing without closing the popup. Verify multimedia-key or
@@ -176,7 +186,7 @@ external volume changes update the Bar and produce one focused-screen, bottom-ce
 click-through OSD that coalesces changes, unloads after 1.2 seconds and does not flash at startup
 or output hotplug. Confirm the default 100% cap and a prepared v6 runtime fixture's 150% cap, then
 re-check Spotlight, Input Method and Center Notch. Restore the original volume, mute state and
-runtime preference before review; do not start Bluetooth until that review approves Audio.
+runtime preference before review. DP-3 must remain free of Titonium surfaces throughout.
 
 Every imported module adds a pure fake-driven test, an architecture check and a focused live test
 for its own boundary. Never automate power actions, destructive session actions, real application

@@ -398,31 +398,31 @@
 - Consumes: all prior tasks and required repository gates.
 - Produces: provenance record, repeatable safe QA commands and a clean single-daemon DP-1 runtime ready for the user's visual checkpoint.
 
-- [ ] **Step 1: Record immutable pre-live evidence**
+- [x] **Step 1: Record immutable pre-live evidence**
 
   Save hashes of both `hyprland.lua` files, `git status --short`, current Bluetooth powered/discovery/connection state and current Titonium process list in `/tmp/titonium-native-dock-bluetooth-pre.txt`.
 
-- [ ] **Step 2: Run the full static/foreground gates**
+- [x] **Step 2: Run the full static/foreground gates**
 
   Run: `./scripts/check.sh && ./scripts/smoke.sh`
 
   Expected: `Configuration Loaded`, no `ERROR`, `TypeError`, unavailable type, illegal method name or unexpected qmllint warning.
 
-- [ ] **Step 3: Run protected read-only live acceptance**
+- [x] **Step 3: Run protected read-only live acceptance**
 
   Stop only the existing Titonium shell ID, launch one foreground `qs -p /home/cole/Projects/titonium`, then run `./scripts/protected_acceptance.sh`, `./scripts/dock_acceptance.sh`, `./scripts/bluetooth_acceptance.sh` and `hyprctl configerrors`.
 
   Expected: DP-1 has exactly one Bar and Dock, DP-3 has neither Titonium layer nor reserve, transient mutual exclusion passes, config errors are empty and acceptance does not alter applications/Bluetooth devices.
 
-- [ ] **Step 4: Document provenance and operation**
+- [x] **Step 4: Document provenance and operation**
 
   Record Ambxst URL, inspected revision, AGPL-3.0 license, the three inspected Dock paths and which interaction ideas were independently reimplemented. Add static/live/manual commands, state restoration procedure and the explicit deferral of Network/Wi-Fi.
 
-- [ ] **Step 5: Restore and verify the host session**
+- [x] **Step 5: Restore and verify the host session**
 
   Restore original Bluetooth power/discovery/connection state only if manual QA changed it; leave exactly one daemon via `qs -d -p /home/cole/Projects/titonium`. Compare both Hyprland hashes and verify `git status --short` contains only the intended documentation changes.
 
-- [ ] **Step 6: Run final verification and commit**
+- [x] **Step 6: Run final verification and commit**
 
   Run: `./scripts/check.sh && ./scripts/smoke.sh && ./scripts/protected_acceptance.sh && hyprctl configerrors && git diff --check`
 

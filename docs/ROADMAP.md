@@ -18,11 +18,10 @@ The previous feature roadmap is retired. Work now advances by researched capabil
 1. **Audio native slice — awaiting visual approval.** Its PipeWire owner, normalized view contract,
    popup/OSD split and read-only acceptance are implemented; mark the slice complete only after
    the two-monitor visual and interaction checklist is approved.
-2. **Native Dock + Bluetooth milestone — implementation landed; live evidence pending.** The
+2. **Native Dock + Bluetooth milestone — automated acceptance complete, visual approval pending.** The
    DP-1-only Dock, native `Quickshell.Bluetooth` service, state-aware connectivity button,
-   lazy popup, pure rules, static gates and read-only acceptance scripts are in place. The
-   controller still needs to run the foreground/live gates and the manual Audio, Dock and
-   Bluetooth visual/interaction checkpoint; this roadmap does not claim those gates passed.
+   lazy popup, pure rules and static/read-only live gates passed on 2026-08-27. The user still
+   needs to approve the manual Audio, Dock and Bluetooth visual/interaction checkpoint.
 3. **Network/Wi-Fi native slice — explicitly deferred.** Keep Wi-Fi diagnostic-only and do not
    select or implement a NetworkManager pattern until the Audio/Dock/Bluetooth checkpoint is
    approved.
