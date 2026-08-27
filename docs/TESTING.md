@@ -24,6 +24,108 @@ The screen-policy fixture requires Bar, transient overlays and Audio OSD hosts t
 `DP-1`-only eligible-screen model. It verifies fail-closed disconnect behavior and reactive
 eligibility when `DP-1` returns, preventing Titonium from reserving or drawing on `DP-3`.
 
+## Native Dock + Bluetooth handoff (Task 8)
+
+The implementation has static contracts and read-only acceptance seams. Live-gate evidence and
+the manual visual checkpoint remain **pending the controller**; the commands below are the
+repeatable handoff procedure, not a record that those gates have passed.
+
+Run the static and syntax checks from the project root:
+
+```bash
+./scripts/check.sh
+bash -n scripts/dock_acceptance.sh scripts/bluetooth_acceptance.sh scripts/protected_acceptance.sh
+git diff --check
+```
+
+The focused read-only live scripts are:
+
+```bash
+./scripts/dock_acceptance.sh
+./scripts/bluetooth_acceptance.sh
+```
+
+`dock_acceptance.sh` reads `dock state`, checks the DP-1 Dock layer and rejects Titonium layers
+on DP-3. `bluetooth_acceptance.sh` reads Bluetooth state, opens/closes the DP-1 popup, verifies
+mutual exclusion with Spotlight and Center Notch, and checks DP-3 isolation. Both scripts launch
+and clean up their own temporary foreground shell, call no mutating Dock/Bluetooth IPC, and verify
+repository and Hyprland-file isolation. `protected_acceptance.sh` includes both focused scripts.
+The controller should also run:
+
+```bash
+./scripts/smoke.sh
+./scripts/protected_acceptance.sh
+hyprctl configerrors
+```
+
+Stop only the existing Titonium shell using its shell ID before foreground acceptance, then leave
+one daemon for the user's review:
+
+```bash
+qs -p /home/cole/Projects/titonium kill
+qs -p /home/cole/Projects/titonium
+qs -d -p /home/cole/Projects/titonium
+```
+
+### Manual Dock and Bluetooth checkpoint
+
+Audio checkpoint: on DP-1 (scale 1.5) and DP-3 (scale 1.0), verify the corrected popup's
+right-edge anchoring, bounded height and exactly-once outer padding; exercise Output/Microphone
+controls, local slider drag, playback stream updates, click/outside-click/Escape close and the
+focused-screen click-through OSD. Restore original volume, mute state and runtime preference.
+Approve this Audio checkpoint first. Then on DP-1 (scale 1.5), verify Dock body/icon/margin/
+spacing of 56/40/8/6 logical px, 4px edge reveal, bounded 1.12 hover scale and 4px lift, solid
+Neutral Utility rendering, click-through outside the mask, auto-hide on a populated workspace,
+empty-workspace visibility, pin control and 64px pinned reservation versus zero auto-hide reserve.
+Exercise Applications-to-Spotlight routing, pinned/running grouping, focus/launch/cycle behavior,
+right-click menu actions, keyboard order, focus return and urgent/running indicators. Confirm DP-3
+has no Titonium Dock layer or exclusive zone.
+
+Before touching Bluetooth, capture the original host state. The following is a read-only evidence
+capture; it is intentionally outside Titonium's runtime and writes only `/tmp`:
+
+```bash
+evidence=/tmp/titonium-native-dock-bluetooth-pre.txt
+{
+    date -Is
+    echo '## git status'
+    git -C /home/cole/Projects/titonium status --short
+    echo '## Hyprland hashes'
+    sha256sum /home/cole/.config/hypr/hyprland.lua \
+        /home/cole/Projects/titonium-hyprland/config/hypr/hyprland.lua
+    echo '## Titonium processes'
+    pgrep -af '[q]s' || true
+    echo '## Bluetooth adapter and discovery state'
+    bluetoothctl show
+    echo '## Connected devices'
+    bluetoothctl devices Connected
+    echo '## Paired devices (reference for forget checks)'
+    bluetoothctl paired-devices
+} > "$evidence"
+```
+
+Record the `Powered:` and `Discovering:` values and the connected addresses from that file before
+manual testing. Verify unavailable/off/on/scanning states, section ordering, connect/disconnect,
+one safe pairing flow where supported, and the inline two-step Forget confirmation. Do not use
+automated acceptance to power, scan, pair, connect, disconnect or forget a device.
+
+Restore the original state explicitly after the checkpoint: disconnect any device that was not in
+the captured connected-address list; reconnect every captured address; set adapter power to the
+captured `Powered:` value; and set discovery to the captured `Discovering:` value. The manual
+commands are, as applicable:
+
+```bash
+bluetoothctl disconnect AA:BB:CC:DD:EE:FF
+bluetoothctl connect AA:BB:CC:DD:EE:FF
+bluetoothctl power on     # or: bluetoothctl power off
+bluetoothctl scan on      # or: bluetoothctl scan off
+```
+
+Re-check `bluetoothctl show` and `bluetoothctl devices Connected` against the evidence file. If a
+pairing/forget test changed a real device, restore that pairing manually before continuing. Do not
+start Network/Wi-Fi implementation; the Wi-Fi glyph remains diagnostic until this checkpoint is
+approved.
+
 ## Runtime gate
 
 Stop any daemon using the same shell ID, then run:
