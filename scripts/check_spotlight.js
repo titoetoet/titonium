@@ -114,8 +114,8 @@ assertEqual(applicationTileSource.includes("property bool selected: false"), tru
     "application tiles expose an explicit selected state");
 assertEqual(applicationTileSource.includes("border.width: 0"), true,
     "selected and focused application tiles use tonal fill without an accent border");
-assertEqual(appGridSource.includes("selected: appPage.ListView.isCurrentItem && index === 0"), true,
-    "the first application on the current page has a visible default selection");
+assertEqual(appGridSource.includes("selected: appPage.ListView.isCurrentItem && index === 0"), false,
+    "browse pages do not preselect the first application before user interaction");
 assertEqual(spotlightSurfaceSource.includes('name: "search"'), true,
     "the search field includes a leading search icon");
 assertEqual(spotlightSurfaceSource.includes("searchField.activeFocus ? Theme.borderStrong : Theme.border"), true,
@@ -147,6 +147,16 @@ assertEqual(typeof layout.indicatorTargetWidth, "function", "density indicator e
 assertEqual(typeof layout.indicatorVisualWidth, "function", "density indicator exposes proportional visual width");
 assertEqual(layout.indicatorTargetWidth(), 44, "density indicator keeps an accessible expanded hit target");
 assertEqual(layout.indicatorSpacing(), 4, "density visuals stay grouped as one pagination control");
+assertEqual(layout.panelContentTopInset(), 8,
+    "Spotlight content keeps a calm inset below the panel edge");
+assertEqual(layout.headerCategoryGap(), 20,
+    "header and categories use the measured reference rhythm");
+assertEqual(layout.categoryGridGap(), 56,
+    "categories and applications keep a stronger sectional break");
+assertEqual(spotlightSurfaceSource.includes("Layout.bottomMargin: SpotlightLayout.headerCategoryGap()"), true,
+    "header-to-category rhythm is explicit instead of inherited from one generic spacing");
+assertEqual(spotlightSurfaceSource.includes("Layout.bottomMargin: SpotlightLayout.categoryGridGap()"), true,
+    "category-to-grid rhythm is explicit instead of stretching application rows");
 assertEqual(layout.indicatorVisualWidth(ids(20), 20), 56, "full page uses the longest density pill");
 assertEqual(layout.indicatorVisualWidth(ids(5), 20), 23, "quarter page uses a visibly shorter pill");
 assertEqual(layout.indicatorVisualWidth([], 20), 12, "empty page keeps a visible minimum pill");

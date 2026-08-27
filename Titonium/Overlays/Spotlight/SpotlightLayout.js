@@ -35,6 +35,18 @@ function indicatorSpacing() {
     return 4;
 }
 
+function panelContentTopInset() {
+    return 8;
+}
+
+function headerCategoryGap() {
+    return 20;
+}
+
+function categoryGridGap() {
+    return 56;
+}
+
 function indicatorVisualWidth(page, capacity) {
     return 12 + Math.round(44 * fillRatio(page, capacity));
 }

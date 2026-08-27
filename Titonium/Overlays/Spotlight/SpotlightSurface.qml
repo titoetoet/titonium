@@ -10,6 +10,7 @@ import qs.Titonium.Core.Runtime
 import qs.Titonium.Core.Surfaces
 import "SpotlightGeometry.js" as SpotlightGeometry
 import "SpotlightHeader.js" as SpotlightHeader
+import "SpotlightLayout.js" as SpotlightLayout
 import "SpotlightTransition.js" as SpotlightTransition
 import "SpotlightVisual.js" as SpotlightVisual
 
@@ -149,10 +150,12 @@ FocusScope {
 
         ColumnLayout {
             anchors.fill: parent
-            spacing: Metrics.spacingMedium
+            anchors.topMargin: SpotlightLayout.panelContentTopInset()
+            spacing: 0
 
             RowLayout {
                 Layout.fillWidth: true
+                Layout.bottomMargin: SpotlightLayout.headerCategoryGap()
                 spacing: Metrics.spacingMedium
 
                 Controls.Icon {
@@ -277,6 +280,7 @@ FocusScope {
 
             Flickable {
                 Layout.fillWidth: true
+                Layout.bottomMargin: SpotlightLayout.categoryGridGap()
                 implicitHeight: categoryRow.implicitHeight
                 contentWidth: categoryRow.implicitWidth
                 contentHeight: height
