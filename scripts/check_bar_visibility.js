@@ -21,8 +21,8 @@ assert.equal(context.shouldReveal(true, false, false), true);
 assert.equal(context.shouldReveal(false, true, false), true);
 assert.equal(context.shouldReveal(false, false, true), true);
 assert.equal(context.shouldReveal(false, false, false), false);
-assert.equal(context.exclusiveZone(true, 40), 40);
-assert.equal(context.exclusiveZone(false, 40), 0);
+assert.equal(context.exclusiveZone(true, 44), 44);
+assert.equal(context.exclusiveZone(false, 44), 0);
 assert.equal(context.exclusiveZone(true, -1), 0);
 
 console.log("PASS TopBar pin, edge reveal, and exclusive-zone fixtures");

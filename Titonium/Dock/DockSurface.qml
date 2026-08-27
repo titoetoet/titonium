@@ -61,7 +61,6 @@ FocusScope {
         border.width: Metrics.borderWidth
         border.color: Theme.border
 
-        HoverHandler { id: dockPanelHover }
     }
 
     Row {
@@ -134,7 +133,7 @@ FocusScope {
         width: 22
         height: 22
         z: 10
-        visible: dockPanelHover.hovered || pinHover.hovered
+        visible: root.hovered || pinHover.hovered
         Accessible.role: Accessible.Button
         Accessible.name: I18n.tr(DockStore.pinnedOpen
             ? "dock.pin_control.close" : "dock.pin_control.open")

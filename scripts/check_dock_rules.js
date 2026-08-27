@@ -35,8 +35,8 @@ assert.deepEqual(plain(rules.normalizeState({ pinnedIds: [" Unknown " ] }).pinne
 console.log("PASS Dock rules normalization fixtures");
 
 const runningGroups = [
-    { appId: "firefox", runningCount: 2, active: true, urgent: false },
-    { appId: "org.gnome.Nautilus", runningCount: 1, active: false, urgent: true },
+    { appId: "firefox", runningCount: 2, active: true, urgent: false, activeWorkspaceId: 7 },
+    { appId: "org.gnome.Nautilus", runningCount: 1, active: false, urgent: true, activeWorkspaceId: 0 },
     { appId: "FIREFOX", runningCount: 3, active: false, urgent: true },
     { appId: "", runningCount: 7, active: true, urgent: true },
 ];
@@ -52,15 +52,15 @@ const merged = rules.mergeItems(
 );
 assert.deepEqual(plain(merged), [
     { appId: "Firefox", name: "Firefox", icon: "firefox", runningCount: 5,
-        active: true, urgent: true, pinned: true },
+        active: true, urgent: true, pinned: true, workspaceColorIndex: 1 },
     { appId: "org.gnome.Nautilus", name: "Files", icon: "org.gnome.Nautilus", runningCount: 1,
-        active: false, urgent: true, pinned: false },
+        active: false, urgent: true, pinned: false, workspaceColorIndex: -1 },
 ]);
 assert.deepEqual(plain(rules.mergeItems([], runningGroups, entriesById,
     ["org.gnome.Nautilus", "FIREFOX"]).map(item => item.appId)),
     ["org.gnome.Nautilus", "Firefox"]);
 assert.deepEqual(plain(Object.keys(merged[0]).sort()),
-    ["active", "appId", "icon", "name", "pinned", "runningCount", "urgent"]);
+    ["active", "appId", "icon", "name", "pinned", "runningCount", "urgent", "workspaceColorIndex"]);
 console.log("PASS Dock rules merge fixtures");
 
 assert.equal(rules.nextCycleIndex(-1, 3), 0);

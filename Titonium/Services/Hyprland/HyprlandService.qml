@@ -68,6 +68,30 @@ Singleton {
         return typeof value === "string" ? value.trim() : "";
     }
 
+    function workspaceIdFor(toplevel: var): int {
+        const directId = Number(toplevel?.workspace?.id || 0);
+        if (Number.isInteger(directId) && directId > 0)
+            return directId;
+        const ipcWorkspace = toplevel?.lastIpcObject?.workspace;
+        const ipcId = Number(ipcWorkspace?.id || ipcWorkspace || 0);
+        if (Number.isInteger(ipcId) && ipcId > 0)
+            return ipcId;
+
+        const targetId = root.nativeWindowId(toplevel);
+        const workspaces = Hyprland.workspaces.values || [];
+        for (let workspaceIndex = 0; workspaceIndex < workspaces.length; workspaceIndex++) {
+            const workspace = workspaces[workspaceIndex];
+            const candidates = workspace?.toplevels?.values || [];
+            for (let windowIndex = 0; windowIndex < candidates.length; windowIndex++) {
+                if (root.nativeWindowId(candidates[windowIndex]) === targetId)
+                    return Number(workspace?.id || 0);
+            }
+        }
+        if (toplevel?.activated === true || toplevel?.wayland?.activated === true)
+            return Number(Hyprland.focusedWorkspace?.id || 0);
+        return 0;
+    }
+
     function recomputeWindows(): void {
         const source = Hyprland.toplevels.values || [];
         const descriptors = [];
@@ -85,8 +109,7 @@ Singleton {
                 active: toplevel?.activated === true || toplevel?.wayland?.activated === true,
                 urgent: toplevel?.urgent === true,
                 minimized: toplevel?.wayland?.minimized === true,
-                workspaceId: Number(toplevel?.workspace?.id
-                    || toplevel?.lastIpcObject?.workspace?.id || 0),
+                workspaceId: root.workspaceIdFor(toplevel),
                 monitorName: toplevel?.workspace?.monitor?.name
                     || toplevel?.lastIpcObject?.monitor || "",
             });
@@ -100,8 +123,18 @@ Singleton {
         root.projectedWindows = WindowRules.orderByIds(descriptors, root.recentWindowIds);
 
         const screen = ScreenPolicy.screens.length > 0 ? ScreenPolicy.screens[0] : null;
-        const workspace = screen ? Hyprland.monitorFor(screen)?.activeWorkspace : null;
-        root.workspaceWindowCount = workspace?.toplevels?.values.length || 0;
+        let activeId = 0;
+        for (let index = 0; index < descriptors.length; index++) {
+            const window = descriptors[index];
+            if (window.active && window.workspaceId > 0) {
+                activeId = window.workspaceId;
+                break;
+            }
+        }
+        if (activeId <= 0)
+            activeId = root.activeWorkspaceId(screen);
+        root.workspaceWindowCount = descriptors.filter(window => window.workspaceId === activeId
+            && (!screen || !window.monitorName || window.monitorName === screen.name)).length;
     }
 
     function focusWindow(id: string): bool {
@@ -137,6 +170,8 @@ Singleton {
 
     Component.onCompleted: {
         root.focusedMonitorName = Hyprland.focusedMonitor?.name || "";
-        root.recomputeWindows();
+        Hyprland.refreshWorkspaces();
+        Hyprland.refreshToplevels();
+        Qt.callLater(root.recomputeWindows);
     }
 }

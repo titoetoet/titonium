@@ -310,7 +310,7 @@ def main() -> int:
         "TapHandler {",
         "Keys.onEscapePressed",
         "width: 380",
-        "readonly property real panelTop: 40 + Metrics.barSpacing",
+        "readonly property real panelTop: Metrics.barHeight + Metrics.barSpacing",
         "anchors.topMargin: root.panelTop",
         "anchors.rightMargin: Metrics.barPadding",
         "maximumHeight: 520",

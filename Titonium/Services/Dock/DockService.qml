@@ -70,7 +70,8 @@ QtObject {
             if (!key)
                 continue;
             if (!groupsById[key]) {
-                groupsById[key] = { appId: appId, runningCount: 0, active: false, urgent: false };
+                groupsById[key] = { appId: appId, runningCount: 0, active: false, urgent: false,
+                    activeWorkspaceId: 0 };
                 entriesById[appId] = root.descriptorForAppId(appId, entry);
                 order.push(key);
                 root.rememberFirstSeen(appId);
@@ -78,6 +79,8 @@ QtObject {
             groupsById[key].runningCount += 1;
             groupsById[key].active = groupsById[key].active || window?.active === true;
             groupsById[key].urgent = groupsById[key].urgent || window?.urgent === true;
+            if (window?.active === true && Number(window.workspaceId) > 0)
+                groupsById[key].activeWorkspaceId = Number(window.workspaceId);
         }
         const groups = [];
         for (let index = 0; index < order.length; index++)

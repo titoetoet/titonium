@@ -7,7 +7,7 @@ multi-monitor bar, shared tokens and narrow platform services.
 
 ## Current UI
 
-- A 40 logical-pixel bar is created reactively for every `Quickshell.screens` entry.
+- A 44 logical-pixel bar is created reactively for every enabled screen entry.
 - The temporary bar contains Workspaces, Input Method and Clock.
 - `Super + Space` opens Spotlight Applications; `Super + V` opens Clipboard.
 - Spotlight supports its 5×4 app grid, categories, calculator results, density indicators,

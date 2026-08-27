@@ -11,17 +11,10 @@ Item {
     required property var screen
 
     implicitWidth: 180
-    implicitHeight: 32
-
-    Shared.Surface {
-        anchors.fill: parent
-        tone: "elevated"
-        radius: Metrics.radiusLarge
-    }
+    implicitHeight: Metrics.controlHeight
 
     Shared.Button {
         anchors.fill: parent
-        anchors.margins: Metrics.borderWidth
         label: "Titonium"
         iconName: "deployed_code"
         variant: "quiet"

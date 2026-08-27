@@ -58,7 +58,8 @@ FORBIDDEN_SERVICE_FRAGMENTS = (
     "Timer {",
     "qs.Titonium.Services.Bluetooth",
 )
-PUBLIC_FIELDS = ("appId", "name", "icon", "runningCount", "active", "urgent", "pinned")
+PUBLIC_FIELDS = ("appId", "name", "icon", "runningCount", "active", "urgent", "pinned",
+                 "workspaceColorIndex")
 APP = ROOT / "Titonium/App.qml"
 DOCK_ACCEPTANCE = ROOT / "scripts/dock_acceptance.sh"
 
@@ -239,7 +240,7 @@ def validate_rules_contract(errors: list[str]) -> None:
         return
     fields = re.findall(r"^\s*(\w+)\s*:", item_source, re.MULTILINE)
     if fields != list(PUBLIC_FIELDS):
-        errors.append("Dock descriptors must contain exactly appId/name/icon/runningCount/active/urgent/pinned")
+        errors.append("Dock descriptors must contain the semantic workspace color index")
     if "toplevel" in item_source.lower() or "wayland" in item_source.lower():
         errors.append("Dock descriptor construction must not retain raw toplevel objects")
 

@@ -12,6 +12,7 @@ FocusScope {
     property bool checkable: false
     property bool checked: false
     property bool selected: false
+    property bool showFocusRing: true
     property int contentAlignment: Qt.AlignHCenter
     property string accessibleName: root.label.length > 0 ? root.label : root.iconName
     signal triggered()
@@ -47,8 +48,9 @@ FocusScope {
         anchors.fill: parent
         radius: Metrics.radiusSmall
         color: root.backgroundColor
-        border.width: Metrics.borderWidth
-        border.color: root.activeFocus ? Theme.focus
+        border.width: root.activeFocus && root.showFocusRing ? Metrics.borderWidth
+            : (root.variant === "quiet" ? 0 : Metrics.borderWidth)
+        border.color: root.activeFocus && root.showFocusRing ? Theme.focus
             : (root.variant === "quiet" ? "transparent" : Theme.border)
         Behavior on color { ColorAnimation { duration: Motion.fast } }
     }

@@ -16,7 +16,7 @@ FocusScope {
     readonly property string ownerId: root.descriptor?.ownerId || ""
     readonly property var invoker: root.descriptor?.invoker || null
     readonly property int maximumHeight: 520
-    readonly property real panelTop: 40 + Metrics.barSpacing
+    readonly property real panelTop: Metrics.barHeight + Metrics.barSpacing
     readonly property real availableHeight: Math.max(0,
         root.height - root.panelTop - Metrics.barPadding)
     readonly property real contentHeight: contentColumn.implicitHeight + 2 * panel.padding

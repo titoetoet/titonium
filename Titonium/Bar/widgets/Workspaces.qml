@@ -25,8 +25,8 @@ Item {
         HyprlandService.activateWorkspace(id);
     }
 
-    function workspaceColor(index: int): color {
-        const palette = Theme.workspacePalette;
+    function workspaceColor(index: int, active: bool): color {
+        const palette = active ? Theme.workspaceActivePalette : Theme.workspacePalette;
         return palette[Math.max(0, index) % palette.length];
     }
 
@@ -64,7 +64,8 @@ Item {
                     visible: workspaceItem.modelData.occupied
                     height: workspaceItem.modelData.active ? 22 : 18
                     radius: Metrics.radiusLarge
-                    color: root.workspaceColor(workspaceItem.modelData.colorIndex)
+                    color: root.workspaceColor(workspaceItem.modelData.colorIndex,
+                        workspaceItem.modelData.active)
                     opacity: workspaceItem.modelData.active ? 1.0 : 0.72
                     border.width: workspaceItem.modelData.urgent ? Metrics.borderWidth : 0
                     border.color: workspaceItem.modelData.urgent ? Theme.warning : "transparent"

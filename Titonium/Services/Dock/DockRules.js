@@ -58,12 +58,16 @@ function combinedGroups(runningGroups) {
         if (!appId)
             continue;
         if (!byId[key]) {
-            byId[key] = { appId: appId, runningCount: 0, active: false, urgent: false };
+            byId[key] = { appId: appId, runningCount: 0, active: false, urgent: false,
+                activeWorkspaceId: 0 };
             order.push(key);
         }
         byId[key].runningCount += Math.max(0, Number(group.runningCount) || 0);
         byId[key].active = byId[key].active || group.active === true;
         byId[key].urgent = byId[key].urgent || group.urgent === true;
+        if (group.active === true && Number.isInteger(group.activeWorkspaceId)
+                && group.activeWorkspaceId > 0)
+            byId[key].activeWorkspaceId = group.activeWorkspaceId;
     }
     return { byId: byId, order: order };
 }
@@ -78,6 +82,8 @@ function itemFor(appId, group, entriesById, pinned) {
         active: group ? group.active : false,
         urgent: group ? group.urgent : false,
         pinned: pinned,
+        workspaceColorIndex: group && group.activeWorkspaceId > 0
+            ? (group.activeWorkspaceId - 1) % 5 : -1,
     };
 }
 

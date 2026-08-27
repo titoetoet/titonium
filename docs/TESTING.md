@@ -167,7 +167,7 @@ mute, adjustment, OSD-show or device-selection IPC.
 After passing, restart with `qs -d -p /home/cole/Projects/titonium` and manually verify the assigned
 Titonium output:
 
-- exactly one 40px bar with correct scaling/exclusive zone on DP-1 and no Titonium surface or
+- exactly one 44px bar with correct scaling/exclusive zone on DP-1 and no Titonium surface or
   exclusive zone on DP-3;
 - workspace interaction and input-method state;
 - `Super + Space`, typing, Tab/Shift+Tab scopes, category paging and Escape;

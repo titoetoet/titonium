@@ -9,32 +9,32 @@ Item {
     id: root
 
     required property var screen
-    implicitWidth: centerRow.implicitWidth
+    implicitWidth: centerRow.implicitWidth + Metrics.spacingXSmall * 2
     implicitHeight: Metrics.controlHeight
+
+    Shared.Surface {
+        anchors.fill: parent
+        tone: "elevated"
+        radius: Metrics.radiusLarge
+    }
 
     Row {
         id: centerRow
         anchors.centerIn: parent
-        spacing: Metrics.spacingSmall
+        spacing: 0
 
         Item {
             id: pinPill
-            width: Metrics.controlHeight
+            width: Metrics.controlHeightSmall
             height: Metrics.controlHeight
-
-            Shared.Surface {
-                anchors.fill: parent
-                tone: "elevated"
-                radius: Metrics.radiusLarge
-            }
 
             Shared.Button {
                 anchors.fill: parent
-                anchors.margins: Metrics.borderWidth
                 iconName: BarVisibilityState.pinned ? "keep" : "keep_off"
                 variant: "quiet"
                 size: "small"
                 selected: BarVisibilityState.pinned
+                showFocusRing: false
                 accessibleName: I18n.tr(BarVisibilityState.pinned
                     ? "menubar.bar_pin.autohide" : "menubar.bar_pin.pin")
                 onTriggered: BarVisibilityState.togglePinned()

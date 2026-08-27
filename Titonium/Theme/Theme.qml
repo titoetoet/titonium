@@ -26,4 +26,7 @@ QtObject {
     readonly property var workspacePalette: light
         ? ["#dbeafe", "#dcfce7", "#fef3c7", "#f3e8ff", "#ffe4e6"]
         : ["#233a5e", "#1f4a3b", "#58451d", "#49305f", "#5a2934"]
+    readonly property var workspaceActivePalette: light
+        ? ["#bfdbfe", "#bbf7d0", "#fde68a", "#e9d5ff", "#fecdd3"]
+        : ["#3b5f91", "#317057", "#806329", "#684887", "#813c4a"]
 }

@@ -125,6 +125,16 @@ const dockSource = fs.readFileSync(dockPath, "utf8");
 assert.equal((serviceSource.match(/Hyprland\.toplevels/g) || []).length > 0, true);
 assert.equal(serviceSource.includes("WindowRules.focusPlan"), true);
 assert.equal(serviceSource.includes("root.activateWorkspace(plan.workspaceId)"), true);
+assert.equal(serviceSource.includes("function workspaceIdFor(toplevel: var): int"), true,
+    "window projection must resolve workspace ownership through a dedicated helper");
+assert.equal(serviceSource.includes("Hyprland.workspaces.values || []"), true,
+    "workspace resolution must be able to scan the native workspace model");
+assert.equal(serviceSource.includes("Hyprland.refreshWorkspaces()"), true,
+    "native workspace state must be refreshed before the initial projection");
+assert.equal(serviceSource.includes("Hyprland.refreshToplevels()"), true,
+    "native toplevel state must be refreshed before the initial projection");
+assert.equal(serviceSource.includes("window.active && window.workspaceId > 0"), true,
+    "active workspace count must prefer the projected active window over stale monitor state");
 assert.equal(serviceSource.includes("Qt.callLater"), true);
 assert.equal(serviceSource.indexOf("root.activateWorkspace(plan.workspaceId)")
     < serviceSource.indexOf("Hyprland.dispatch(command)"), true);

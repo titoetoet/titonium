@@ -62,12 +62,13 @@ def main() -> int:
             "menubar.bar_pin.pin",
             "menubar.bar_pin.autohide",
             "id: pinPill",
+            "radius: Metrics.radiusLarge",
+            "showFocusRing: false",
         ),
         "islands/qmldir": ("CenterGroup 1.0 CenterGroup.qml",),
         "islands/CenterIsland.qml": (
             "CenterNotchCoordinator.toggle",
             "CenterNotchCoordinator.ownerScreenName",
-            "radius: Metrics.radiusLarge",
             'variant: "quiet"',
         ),
         "islands/ConnectivityPill.qml": (
@@ -128,6 +129,15 @@ def main() -> int:
             if fragment not in source:
                 errors.append(f"{filename} missing direct Bar contract: {fragment}")
 
+    metrics = (ROOT / "Titonium/Theme/Metrics.qml").read_text(encoding="utf-8")
+    for fragment in (
+        "readonly property int barHeight: 44",
+        "readonly property int controlHeight: 36",
+        "readonly property int widgetHeight: 36",
+    ):
+        if fragment not in metrics:
+            errors.append(f"TopBar 44px geometry missing metric: {fragment}")
+
     connectivity = BAR / "islands/ConnectivityPill.qml"
     if connectivity.is_file():
         source = connectivity.read_text(encoding="utf-8")
@@ -179,12 +189,25 @@ def main() -> int:
         source = center_group.read_text(encoding="utf-8")
         if not (0 <= source.find("id: pinPill") < source.find("CenterIsland {")):
             errors.append("TopBar Pin must be a separate pill left of Titonium Center")
-        if "anchors.fill: parent\n        tone: \"elevated\"" in source:
-            errors.append("CenterGroup must not wrap Pin and Titonium in one outlined surface")
+        if source.count("Shared.Surface {") != 1:
+            errors.append("CenterGroup must use exactly one rounded surface for Pin and Titonium")
 
     input_method = BAR / "widgets/InputMethod.qml"
     if input_method.is_file() and "Shared.Surface" in input_method.read_text(encoding="utf-8"):
         errors.append("Input Method must not draw a nested outlined surface inside StatusPill")
+
+    center_island = BAR / "islands/CenterIsland.qml"
+    if center_island.is_file() and "Shared.Surface" in center_island.read_text(encoding="utf-8"):
+        errors.append("Titonium Center must share the parent pill instead of drawing a nested border")
+
+    for relative in (
+        "Overlays/Audio/AudioPopupSurface.qml",
+        "Overlays/Bluetooth/BluetoothPopupSurface.qml",
+        "Overlays/Network/NetworkPopupSurface.qml",
+    ):
+        source = (ROOT / "Titonium" / relative).read_text(encoding="utf-8")
+        if "readonly property real panelTop: Metrics.barHeight + Metrics.barSpacing" not in source:
+            errors.append(f"{relative} must follow the shared TopBar height")
 
     for relative in ("islands/StartIsland.qml", "islands/StatusPill.qml"):
         path = BAR / relative

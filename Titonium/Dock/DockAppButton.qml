@@ -15,6 +15,10 @@ FocusScope {
     property int hoverLift: 4
     readonly property int iconSize: 40
     readonly property bool hovered: hoverHandler.hovered
+    readonly property int workspaceColorIndex: Number(root.dockItem?.workspaceColorIndex ?? -1)
+    readonly property color workspaceBackground: root.workspaceColorIndex >= 0
+        ? Theme.workspaceActivePalette[root.workspaceColorIndex % Theme.workspaceActivePalette.length]
+        : "transparent"
     signal menuRequested(var dockItem, var invoker)
 
     function closeTransient(): void {
@@ -54,7 +58,9 @@ FocusScope {
     Rectangle {
         anchors.fill: parent
         radius: Metrics.radiusMedium
-        color: root.hovered || root.activeFocus ? Theme.surfaceInteractive : "transparent"
+        color: root.dockItem?.active && root.workspaceColorIndex >= 0
+            ? root.workspaceBackground
+            : (root.hovered || root.activeFocus ? Theme.surfaceInteractive : "transparent")
         border.width: root.activeFocus ? Metrics.borderWidth : 0
         border.color: root.activeFocus ? Theme.focus : "transparent"
         Behavior on color { ColorAnimation { duration: Motion.fast } }

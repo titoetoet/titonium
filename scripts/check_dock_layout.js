@@ -82,8 +82,8 @@ requireFragments("surface", [
   "name: \"rocket_launch\"", "id: dockPanel", "x: 12", "y: 8",
   "width: dockRow.implicitWidth + 24", "implicitWidth: dockRow.implicitWidth + 48",
   "readonly property alias pinHitbox: pinControl", "id: pinControl", "width: 22", "height: 22",
-  "visible: dockPanelHover.hovered || pinHover.hovered", "x: 1", "y: 0",
-  "HoverHandler { id: dockPanelHover }",
+  "visible: root.hovered || pinHover.hovered", "x: 1", "y: 0",
+  "readonly property bool hovered: surfaceHover.hovered", "HoverHandler { id: surfaceHover }",
   "Item {\n        id: pinControl",
 ]);
 requireFragments("button", [
@@ -92,6 +92,7 @@ requireFragments("button", [
   "DockService.launchNew", "menuRequested", "Keys.onPressed", "size: root.iconSize",
   "Shared.SystemIcon", "sourceName: root.dockItem?.icon || \"\"",
   "fallbackName: \"dock_to_bottom\"",
+  "Theme.workspaceActivePalette", "root.dockItem?.workspaceColorIndex",
 ]);
 requireAbsent("button", ["name: root.dockItem?.icon || \"apps\""]);
 requireAbsent("button", ["import QtQuick.Controls", "ToolTip", "dock.application_tooltip"]);
