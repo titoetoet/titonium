@@ -4,8 +4,10 @@ import QtQuick
 import qs.Titonium.Core.Runtime
 import qs.Titonium.Overlays.Audio
 import qs.Titonium.Overlays.Bluetooth
+import qs.Titonium.Overlays.Network
 import qs.Titonium.Services.Audio
 import qs.Titonium.Services.Bluetooth
+import qs.Titonium.Services.Network
 import qs.Titonium.Theme
 import qs.Titonium.Shared as Shared
 
@@ -38,6 +40,11 @@ Item {
     readonly property string bluetoothIconName: !BluetoothService.available || !BluetoothService.powered
         ? "bluetooth_disabled" : (BluetoothService.discovering ? "bluetooth_searching"
             : (BluetoothService.connectedCount > 0 ? "bluetooth_connected" : "bluetooth"))
+    readonly property string networkAccessibleName: I18n.tr(NetworkService.stateKey, {
+        "name": NetworkService.connectedName
+    })
+    readonly property string networkIconName: !NetworkService.available || !NetworkService.wifiHardwareEnabled
+        ? "wifi_off" : (NetworkService.wifiEnabled ? "wifi" : "wifi_off")
 
     implicitWidth: root.audioWidth + (root.showDiagnostics
         ? root.diagnosticsWidth + Metrics.spacingSmall : 0)
@@ -59,11 +66,12 @@ Item {
             visible: root.showDiagnostics
             width: root.controlSize
             height: root.controlSize
-            iconName: "wifi"
+            iconName: root.networkIconName
             variant: "quiet"
             size: "small"
-            enabled: false
-            accessibleName: I18n.tr("menubar.connectivity.network_planned")
+            enabled: NetworkService.available
+            accessibleName: root.networkAccessibleName
+            onTriggered: NetworkPopupCoordinator.toggle(root.screen, networkButton)
         }
         Shared.Button {
             id: bluetoothButton

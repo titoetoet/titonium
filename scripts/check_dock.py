@@ -10,19 +10,16 @@ DOCK_ROOT = ROOT / "Titonium/Services/Dock"
 PRESENTATION_ROOT = ROOT / "Titonium/Dock"
 SERVICE = DOCK_ROOT / "DockService.qml"
 RULES = DOCK_ROOT / "DockRules.js"
-REGISTRY = DOCK_ROOT / "DockNativeRegistry.js"
+LEGACY_REGISTRY = DOCK_ROOT / "DockNativeRegistry.js"
 QMLDIR = DOCK_ROOT / "qmldir"
 REQUIRED_SERVICE_FRAGMENTS = (
     "pragma Singleton",
-    "import Quickshell.Hyprland",
     "import qs.Titonium.Core.Runtime",
-    "import qs.Titonium.Core.Screens",
     "import qs.Titonium.Services.Applications",
     "import qs.Titonium.Services.Dock",
+    "import qs.Titonium.Services.Hyprland",
     "readonly property var items",
     "readonly property int activeWorkspaceWindowCount",
-    "import \"DockNativeRegistry.js\" as DockNativeRegistry",
-    "property var operationRegistry: DockNativeRegistry.create()",
     "property var firstSeenIds",
     "function normalizedAppId",
     "function activateOrLaunch(appId: string): bool",
@@ -30,25 +27,29 @@ REQUIRED_SERVICE_FRAGMENTS = (
     "function closeActive(appId: string): bool",
     "function togglePin(appId: string): bool",
     "function snapshot(): string",
-    "Hyprland.toplevels.values",
-    "ScreenPolicy.screens",
-    "Hyprland.monitorFor(screen)",
+    "HyprlandService.windows",
+    "HyprlandService.activeWorkspaceWindowCount",
+    "HyprlandService.activateWindow",
+    "HyprlandService.closeWindow",
     "ApplicationService.desktopEntryForAppId",
     "ApplicationService.iconForAppId",
     "ApplicationService.nameForAppId",
     "ApplicationService.launch(entry.id)",
     "DockRules.mergeItems",
     "DockStore.togglePin(appId)",
-    "root.operationRegistry.replace(nativeById)",
-    "function onRawEvent",
+    "target: HyprlandService",
+    "function onWindowsChanged",
 )
 REQUIRED_MUTATION_RELOOKUPS = {
-    "activateOrLaunch": "root.operationRegistry.activate",
+    "activateOrLaunch": "HyprlandService.activateWindow",
     "launchNew": "root.entryForAppId(appId)",
-    "closeActive": "root.operationRegistry.closeActive",
+    "closeActive": "HyprlandService.closeWindow",
     "togglePin": "DockStore.togglePin(appId)",
 }
 FORBIDDEN_SERVICE_FRAGMENTS = (
+    "import Quickshell.Hyprland",
+    "Hyprland.toplevels",
+    "DockNativeRegistry",
     "Process",
     "FileView",
     "execDetached",
@@ -216,8 +217,8 @@ def function_block(source: str, name: str) -> str:
 def validate_native_owner(errors: list[str]) -> None:
     for path in DOCK_ROOT.rglob("*.qml"):
         source = path.read_text(encoding="utf-8")
-        if "import Quickshell.Hyprland" in source and path != SERVICE:
-            errors.append(f"Hyprland import outside DockService: {path.relative_to(ROOT)}")
+        if "import Quickshell.Hyprland" in source or "Hyprland.toplevels" in source:
+            errors.append(f"Dock must consume shared window descriptors: {path.relative_to(ROOT)}")
 
 
 def validate_rules_contract(errors: list[str]) -> None:
@@ -237,21 +238,10 @@ def validate_rules_contract(errors: list[str]) -> None:
         errors.append("Dock descriptor construction must not retain raw toplevel objects")
 
 
-def validate_native_registry(errors: list[str]) -> None:
-    if not REGISTRY.is_file():
-        errors.append("missing DockNativeRegistry.js")
-        return
-    source = REGISTRY.read_text(encoding="utf-8")
-    for fragment in ("function create()", "const nativeByAppId = {}", "function liveFor",
-                     "activate: function", "closeActive: function"):
-        if fragment not in source:
-            errors.append(f"Dock native registry missing encapsulation contract: {fragment}")
-    if "return nativeByAppId" in source or "getForAppId" in source:
-        errors.append("Dock native registry must not expose raw toplevel objects")
-
-
 def main() -> int:
     errors: list[str] = []
+    if LEGACY_REGISTRY.exists():
+        errors.append("obsolete DockNativeRegistry.js remains after shared window ownership")
     if not SERVICE.is_file():
         errors.append("missing DockService.qml")
     else:
@@ -275,7 +265,6 @@ def main() -> int:
         errors.append("Dock qmldir must export DockService as a singleton")
     validate_native_owner(errors)
     validate_rules_contract(errors)
-    validate_native_registry(errors)
     validate_presentation(errors)
     validate_integration(errors)
     validate_integration_gate_fixtures(errors)

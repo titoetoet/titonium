@@ -1,0 +1,2 @@
+module qs.Titonium.Services.Network
+singleton NetworkService 1.0 NetworkService.qml

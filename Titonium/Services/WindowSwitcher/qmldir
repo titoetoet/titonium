@@ -1,0 +1,2 @@
+module qs.Titonium.Services.WindowSwitcher
+singleton WindowSwitcherService 1.0 WindowSwitcherService.qml

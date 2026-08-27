@@ -18,6 +18,8 @@ fi
 "$project_root/scripts/spotlight_acceptance.sh"
 "$project_root/scripts/dock_acceptance.sh"
 "$project_root/scripts/bluetooth_acceptance.sh"
+"$project_root/scripts/wifi_acceptance.sh"
+"$project_root/scripts/window_switcher_acceptance.sh"
 
 after_live="$(sha256sum -- "$live_hypr")"
 after_dotfiles="$(sha256sum -- "$dotfiles_hypr")"
@@ -27,4 +29,4 @@ if [[ "$after_live" != "$before_live" || "$after_dotfiles" != "$before_dotfiles"
     exit 1
 fi
 
-echo "PASS protected Spotlight, Input Method, Dock and Bluetooth acceptance"
+echo "PASS protected Spotlight, Input Method, Dock, Bluetooth, Wi-Fi and Window Switcher acceptance"

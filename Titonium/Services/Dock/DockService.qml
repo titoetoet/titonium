@@ -2,12 +2,10 @@ pragma Singleton
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import Quickshell.Hyprland
 import qs.Titonium.Core.Runtime
-import qs.Titonium.Core.Screens
 import qs.Titonium.Services.Applications
 import qs.Titonium.Services.Dock
-import "DockNativeRegistry.js" as DockNativeRegistry
+import qs.Titonium.Services.Hyprland
 import "DockRules.js" as DockRules
 
 QtObject {
@@ -15,7 +13,6 @@ QtObject {
 
     property var projectedItems: []
     property int workspaceWindowCount: 0
-    property var operationRegistry: DockNativeRegistry.create()
     property var firstSeenIds: []
     property var cycleIndexesByAppId: ({})
     property var mutationWarningCounts: ({})
@@ -43,11 +40,6 @@ QtObject {
         };
     }
 
-    function nativeAppId(toplevel: var): string {
-        return root.normalizedAppId(toplevel?.wayland?.appId
-            || toplevel?.lastIpcObject?.class || toplevel?.title || "");
-    }
-
     function rememberFirstSeen(appId: string): void {
         const key = root.appKey(appId);
         for (let index = 0; index < root.firstSeenIds.length; index++) {
@@ -57,21 +49,19 @@ QtObject {
         root.firstSeenIds = root.firstSeenIds.concat([appId]);
     }
 
-    function workspaceWindowTotal(): int {
-        const screen = ScreenPolicy.screens.length > 0 ? ScreenPolicy.screens[0] : null;
-        const workspace = screen ? Hyprland.monitorFor(screen)?.activeWorkspace : null;
-        return workspace?.toplevels?.values.length || 0;
+    function windowsForAppId(appId: string): var {
+        const key = root.appKey(appId);
+        return HyprlandService.windows.filter(window => root.appKey(window?.appId) === key);
     }
 
     function recompute(): void {
-        const source = Hyprland.toplevels.values || [];
-        const nativeById = {};
+        const source = HyprlandService.windows;
         const groupsById = {};
         const entriesById = {};
         const order = [];
         for (let index = 0; index < source.length; index++) {
-            const toplevel = source[index];
-            const sourceId = root.nativeAppId(toplevel);
+            const window = source[index];
+            const sourceId = root.normalizedAppId(window?.appId);
             if (!sourceId)
                 continue;
             const entry = root.entryForAppId(sourceId);
@@ -79,23 +69,20 @@ QtObject {
             const key = root.appKey(appId);
             if (!key)
                 continue;
-            if (!nativeById[key]) {
-                nativeById[key] = [];
+            if (!groupsById[key]) {
                 groupsById[key] = { appId: appId, runningCount: 0, active: false, urgent: false };
                 entriesById[appId] = root.descriptorForAppId(appId, entry);
                 order.push(key);
                 root.rememberFirstSeen(appId);
             }
-            nativeById[key].push(toplevel);
             groupsById[key].runningCount += 1;
-            groupsById[key].active = groupsById[key].active || toplevel?.activated === true;
-            groupsById[key].urgent = groupsById[key].urgent || toplevel?.urgent === true;
+            groupsById[key].active = groupsById[key].active || window?.active === true;
+            groupsById[key].urgent = groupsById[key].urgent || window?.urgent === true;
         }
         const groups = [];
         for (let index = 0; index < order.length; index++)
             groups.push(groupsById[order[index]]);
-        root.operationRegistry.replace(nativeById);
-        root.workspaceWindowCount = root.workspaceWindowTotal();
+        root.workspaceWindowCount = HyprlandService.activeWorkspaceWindowCount;
         root.projectedItems = DockRules.mergeItems(
             DockStore.pinnedIds, groups, entriesById, root.firstSeenIds);
     }
@@ -113,16 +100,26 @@ QtObject {
 
     function activateOrLaunch(appId: string): bool {
         const key = root.appKey(appId);
-        const result = root.operationRegistry.activate(
-            key, Hyprland.toplevels.values || [], root.cycleIndexesByAppId[key]);
-        if (!result.available)
+        const windows = root.windowsForAppId(appId);
+        if (windows.length === 0)
             return root.launchNew(appId);
-        if (!result.success) {
+        const previousIndex = root.cycleIndexesByAppId[key];
+        let selectedIndex = Number.isInteger(previousIndex) && previousIndex >= 0
+            && previousIndex < windows.length ? (previousIndex + 1) % windows.length : 0;
+        if (!Number.isInteger(previousIndex)) {
+            for (let index = 0; index < windows.length; index++) {
+                if (windows[index]?.active === true) {
+                    selectedIndex = index;
+                    break;
+                }
+            }
+        }
+        if (!HyprlandService.activateWindow(windows[selectedIndex].id)) {
             root.warnMutation("activate", appId);
             return false;
         }
         const nextCycles = Object.assign({}, root.cycleIndexesByAppId);
-        nextCycles[key] = result.selectedIndex;
+        nextCycles[key] = selectedIndex;
         root.cycleIndexesByAppId = nextCycles;
         return true;
     }
@@ -137,15 +134,22 @@ QtObject {
     }
 
     function closeActive(appId: string): bool {
-        const result = root.operationRegistry.closeActive(
-            root.appKey(appId), Hyprland.toplevels.values || []);
-        if (!result.available) {
+        const windows = root.windowsForAppId(appId);
+        if (windows.length === 0) {
             root.warnMutation("close", appId);
             return false;
         }
-        if (!result.success)
+        let selected = windows[0];
+        for (let index = 0; index < windows.length; index++) {
+            if (windows[index]?.active === true) {
+                selected = windows[index];
+                break;
+            }
+        }
+        const success = HyprlandService.closeWindow(selected.id);
+        if (!success)
             root.warnMutation("close", appId);
-        return result.success;
+        return success;
     }
 
     function togglePin(appId: string): bool {
@@ -160,10 +164,9 @@ QtObject {
     }
 
     property Connections hyprlandConnections: Connections {
-        target: Hyprland
-        function onRawEvent(event: HyprlandEvent): void { root.recompute(); }
-        function onActiveToplevelChanged(): void { root.recompute(); }
-        function onFocusedWorkspaceChanged(): void { root.recompute(); }
+        target: HyprlandService
+        function onWindowsChanged(): void { root.recompute(); }
+        function onActiveWorkspaceWindowCountChanged(): void { root.recompute(); }
     }
 
     property Connections dockStoreConnections: Connections {

@@ -1,0 +1,3 @@
+module qs.Titonium.Overlays.WindowSwitcher
+WindowSwitcherSurface 1.0 WindowSwitcherSurface.qml
+WindowSwitcherTile 1.0 WindowSwitcherTile.qml

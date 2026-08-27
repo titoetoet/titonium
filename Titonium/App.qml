@@ -14,8 +14,11 @@ import qs.Titonium.Services.Audio
 import qs.Titonium.Services.Bluetooth
 import qs.Titonium.Services.Dock
 import qs.Titonium.Services.Hyprland
+import qs.Titonium.Services.Network
+import qs.Titonium.Services.WindowSwitcher
 import qs.Titonium.Overlays.Audio
 import qs.Titonium.Overlays.Bluetooth
+import qs.Titonium.Overlays.Network
 import qs.Titonium.Osd.Audio
 
 Scope {
@@ -140,6 +143,63 @@ Scope {
             if (!BluetoothPopupCoordinator.active)
                 return "closed";
             return "open:" + (SurfaceManager.screen?.name || "");
+        }
+    }
+
+    IpcHandler {
+        id: networkIpc
+        target: "network"
+
+        function state(): string {
+            return NetworkService.snapshot();
+        }
+
+        function popup(): string {
+            const screen = ScreenRouter.screenForName(HyprlandService.focusedMonitorName);
+            if (!screen)
+                return "unavailable:no-screen";
+            return NetworkPopupCoordinator.openForIpc(screen)
+                ? networkIpc.popupState() : "unavailable:no-screen";
+        }
+
+        function closePopup(): string {
+            NetworkPopupCoordinator.close();
+            return "closed";
+        }
+
+        function popupState(): string {
+            if (!NetworkPopupCoordinator.active)
+                return "closed";
+            return "open:" + (SurfaceManager.screen?.name || "");
+        }
+    }
+
+    IpcHandler {
+        id: windowSwitcherIpc
+        target: "window-switcher"
+
+        function next(): string {
+            WindowSwitcherService.next();
+            return windowSwitcherIpc.state();
+        }
+
+        function previous(): string {
+            WindowSwitcherService.previous();
+            return windowSwitcherIpc.state();
+        }
+
+        function accept(): string {
+            WindowSwitcherService.accept();
+            return windowSwitcherIpc.state();
+        }
+
+        function close(): string {
+            WindowSwitcherService.cancel();
+            return "closed";
+        }
+
+        function state(): string {
+            return WindowSwitcherService.snapshot();
         }
     }
 

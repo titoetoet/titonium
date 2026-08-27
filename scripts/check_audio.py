@@ -158,10 +158,14 @@ def audio_ipc_exposes_mutation(source: str) -> bool:
 
 
 def forbidden_audio_service_imports(path: Path, source: str) -> list[str]:
-    """Keep Bluetooth available to shared UI without widening Audio slice imports."""
+    """Allow sibling services only at their explicit shared composition boundary."""
     imports = FORBIDDEN_AUDIO_SERVICE_IMPORTS.findall(source)
-    if path in (ROOT / "Titonium/Bar/islands/ConnectivityPill.qml", ROOT / "Titonium/App.qml"):
-        return [entry for entry in imports if "Bluetooth" not in entry]
+    if path == ROOT / "Titonium/Bar/islands/ConnectivityPill.qml":
+        return [entry for entry in imports
+                if "Bluetooth" not in entry and "Network" not in entry]
+    if path == ROOT / "Titonium/App.qml":
+        return [entry for entry in imports
+                if "Bluetooth" not in entry and "Network" not in entry]
     return imports
 
 
@@ -186,6 +190,8 @@ def validate_audio_hardening(errors: list[str]) -> None:
     shared_source = shared_pill.read_text(encoding="utf-8") if shared_pill.is_file() else ""
     if "import qs.Titonium.Services.Bluetooth" not in shared_source:
         errors.append("ConnectivityPill must retain its shared Bluetooth service import")
+    if "import qs.Titonium.Services.Network" not in shared_source:
+        errors.append("ConnectivityPill must own its shared Network service import")
 
     bad_overlay = OVERLAY_ROOT / "BadBluetoothImport.qml"
     if not forbidden_audio_service_imports(
@@ -194,9 +200,15 @@ def validate_audio_hardening(errors: list[str]) -> None:
     if forbidden_audio_service_imports(
             shared_pill, "import qs.Titonium.Services.Bluetooth\nItem {}"):
         errors.append("Audio import matcher rejected the allowed shared ConnectivityPill fixture")
-    if not forbidden_audio_service_imports(
+    if forbidden_audio_service_imports(
+            shared_pill, "import qs.Titonium.Services.Network\nItem {}"):
+        errors.append("Audio import matcher rejected the allowed shared Network pill fixture")
+    if forbidden_audio_service_imports(
             ROOT / "Titonium/App.qml", "import qs.Titonium.Services.Network\nScope {}"):
-        errors.append("Audio import matcher broadly allowlisted App service imports")
+        errors.append("Audio import matcher rejected Network at the App composition root")
+    if not forbidden_audio_service_imports(
+            ROOT / "Titonium/App.qml", "import qs.Titonium.Services.Mpris\nScope {}"):
+        errors.append("Audio import matcher broadly allowlisted unrelated App service imports")
 
     for pattern in ("*.qml", "*.js"):
         for path in ROOT.rglob(pattern):
