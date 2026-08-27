@@ -64,12 +64,14 @@ def main() -> int:
             "id: pinPill",
             "radius: Metrics.radiusLarge",
             "showFocusRing: false",
+            "backgroundRadius: Metrics.radiusLarge",
         ),
         "islands/qmldir": ("CenterGroup 1.0 CenterGroup.qml",),
         "islands/CenterIsland.qml": (
             "CenterNotchCoordinator.toggle",
             "CenterNotchCoordinator.ownerScreenName",
             'variant: "quiet"',
+            "backgroundRadius: Metrics.radiusLarge",
         ),
         "islands/ConnectivityPill.qml": (
             "readonly property int fullImplicitWidth",
@@ -191,6 +193,16 @@ def main() -> int:
             errors.append("TopBar Pin must be a separate pill left of Titonium Center")
         if source.count("Shared.Surface {") != 1:
             errors.append("CenterGroup must use exactly one rounded surface for Pin and Titonium")
+        if "implicitWidth: centerRow.implicitWidth +" in source:
+            errors.append("Center hover controls must meet the outer pill edge without inset padding")
+
+    shared_button = (ROOT / "Titonium/Shared/Button.qml").read_text(encoding="utf-8")
+    for fragment in (
+        "property int backgroundRadius: Metrics.radiusSmall",
+        "radius: root.backgroundRadius",
+    ):
+        if fragment not in shared_button:
+            errors.append(f"Shared Button missing configurable rounded hover contract: {fragment}")
 
     input_method = BAR / "widgets/InputMethod.qml"
     if input_method.is_file() and "Shared.Surface" in input_method.read_text(encoding="utf-8"):

@@ -19,6 +19,7 @@ Item {
         iconName: "deployed_code"
         variant: "quiet"
         size: "medium"
+        backgroundRadius: Metrics.radiusLarge
         accessibleName: I18n.tr("menubar.center_notch.accessible")
         opacity: CenterNotchCoordinator.ownerScreenName === root.screen.name ? 0 : 1
         onTriggered: CenterNotchCoordinator.toggle(root.screen.name)

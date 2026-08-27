@@ -13,6 +13,7 @@ FocusScope {
     property bool checked: false
     property bool selected: false
     property bool showFocusRing: true
+    property int backgroundRadius: Metrics.radiusSmall
     property int contentAlignment: Qt.AlignHCenter
     property string accessibleName: root.label.length > 0 ? root.label : root.iconName
     signal triggered()
@@ -46,7 +47,7 @@ FocusScope {
 
     Rectangle {
         anchors.fill: parent
-        radius: Metrics.radiusSmall
+        radius: root.backgroundRadius
         color: root.backgroundColor
         border.width: root.activeFocus && root.showFocusRing ? Metrics.borderWidth
             : (root.variant === "quiet" ? 0 : Metrics.borderWidth)

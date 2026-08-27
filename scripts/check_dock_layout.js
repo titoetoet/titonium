@@ -82,10 +82,11 @@ requireFragments("surface", [
   "name: \"rocket_launch\"", "id: dockPanel", "x: 12", "y: 8",
   "width: dockRow.implicitWidth + 24", "implicitWidth: dockRow.implicitWidth + 48",
   "readonly property alias pinHitbox: pinControl", "id: pinControl", "width: 22", "height: 22",
-  "visible: root.hovered || pinHover.hovered", "x: 1", "y: 0",
+  "opacity: root.hovered || pinHover.hovered ? 1 : 0", "x: 1", "y: 0",
   "readonly property bool hovered: surfaceHover.hovered", "HoverHandler { id: surfaceHover }",
   "Item {\n        id: pinControl",
 ]);
+requireAbsent("surface", ["visible: root.hovered || pinHover.hovered"]);
 requireFragments("button", [
   "readonly property int iconSize: 40", "scale: root.hovered ? root.hoverScale : 1",
   "y: root.hovered ? -root.hoverLift : 0", "Motion.fast", "DockService.activateOrLaunch",

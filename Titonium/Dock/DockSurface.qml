@@ -133,10 +133,14 @@ FocusScope {
         width: 22
         height: 22
         z: 10
-        visible: root.hovered || pinHover.hovered
+        opacity: root.hovered || pinHover.hovered ? 1 : 0
         Accessible.role: Accessible.Button
         Accessible.name: I18n.tr(DockStore.pinnedOpen
             ? "dock.pin_control.close" : "dock.pin_control.open")
+
+        Behavior on opacity {
+            NumberAnimation { duration: Motion.fast; easing.type: Easing.OutCubic }
+        }
 
         Rectangle {
             anchors.fill: parent

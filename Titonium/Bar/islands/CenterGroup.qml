@@ -9,7 +9,7 @@ Item {
     id: root
 
     required property var screen
-    implicitWidth: centerRow.implicitWidth + Metrics.spacingXSmall * 2
+    implicitWidth: centerRow.implicitWidth
     implicitHeight: Metrics.controlHeight
 
     Shared.Surface {
@@ -35,6 +35,7 @@ Item {
                 size: "small"
                 selected: BarVisibilityState.pinned
                 showFocusRing: false
+                backgroundRadius: Metrics.radiusLarge
                 accessibleName: I18n.tr(BarVisibilityState.pinned
                     ? "menubar.bar_pin.autohide" : "menubar.bar_pin.pin")
                 onTriggered: BarVisibilityState.togglePinned()
