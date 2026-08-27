@@ -141,6 +141,8 @@ def bluetooth_locale_errors() -> list[str]:
         "bluetooth.section.paired": {"count"},
         "bluetooth.section.available": {"count"},
         "bluetooth.section.accessible": {"name", "count", "collapsed"},
+        "bluetooth.section.state.collapsed": set(),
+        "bluetooth.section.state.expanded": set(),
         "bluetooth.devices.scanning": set(),
         "bluetooth.devices.empty": set(),
         "bluetooth.device.available": set(),
@@ -192,7 +194,31 @@ def ipc_open_path_errors(coordinator: str) -> list[str]:
             or '"invoker": null' not in block
             or "SurfaceManager.open" not in block):
         return ["Bluetooth coordinator must provide explicit nullable-invoker IPC open path"]
+    same_owner = re.search(
+        r"if\s*\(\s*SurfaceManager\.ownerId\s*===\s*owner\s*\)\s*return\s+true\s*;", block)
+    if not same_owner or same_owner.start() > block.find("SurfaceManager.open"):
+        return ["Bluetooth IPC open must preserve an already-open owner descriptor and invoker"]
     return []
+
+
+def section_accessible_errors(source: str) -> list[str]:
+    start = source.find('I18n.tr("bluetooth.section.accessible",')
+    block = qml_block(source, start) if start >= 0 else ""
+    if not block:
+        return ["Bluetooth section accessibility translation is missing"]
+    errors = []
+    name_with_count = re.search(
+        r'"name"\s*:\s*I18n\.tr\(\s*"bluetooth\.section\."\s*\+\s*section\.modelData\s*,\s*\{\s*'
+        r'"count"\s*:\s*section\.sectionDevices\.length\s*\}\s*\)', block, re.DOTALL)
+    if not name_with_count:
+        errors.append("Bluetooth section accessibility must resolve its label with the section count")
+    collapsed_state = re.search(
+        r'"collapsed"\s*:\s*I18n\.tr\(\s*root\.sectionCollapsedFor\(section\.modelData\)\s*\?\s*'
+        r'"bluetooth\.section\.state\.collapsed"\s*:\s*"bluetooth\.section\.state\.expanded"\s*\)',
+        block, re.DOTALL)
+    if not collapsed_state:
+        errors.append("Bluetooth section accessibility must translate collapsed state text")
+    return errors
 
 
 def root_property_blocks(source: str) -> list[tuple[str, str]]:
@@ -536,6 +562,9 @@ def validate_integration(errors: list[str]) -> None:
             or '"name": root.device?.name || ""' not in row):
         errors.append("Bluetooth row action must retain a plain label and expose action plus device name")
 
+    popup = POPUP.read_text(encoding="utf-8") if POPUP.is_file() else ""
+    errors.extend(section_accessible_errors(popup))
+
     pill = CONNECTIVITY_PILL.read_text(encoding="utf-8") if CONNECTIVITY_PILL.is_file() else ""
     connected_state = re.search(
         r'I18n\.tr\(BluetoothService\.stateKey\s*,\s*\{[^}]*"count"\s*:\s*BluetoothService\.connectedCount',
@@ -573,6 +602,8 @@ def validate_integration(errors: list[str]) -> None:
         for fragment in ("qs -n -p", "hyprctl -j layers", "DP-1", "DP-3"):
             if fragment not in acceptance:
                 errors.append(f"Bluetooth acceptance missing read-only lifecycle check: {fragment}")
+        if "runtime_rejection_pattern='\\b(ERROR|TypeError|duplicate id|missing method|Illegal method name)\\b|Type .* unavailable'" not in acceptance:
+            errors.append("Bluetooth acceptance runtime rejection must use bounded error tokens")
     protected = ROOT / "scripts/protected_acceptance.sh"
     if protected.is_file() and "scripts/bluetooth_acceptance.sh" not in protected.read_text(encoding="utf-8"):
         errors.append("protected acceptance must run Bluetooth acceptance after cleanup")
@@ -595,6 +626,23 @@ def validate_integration_gate_fixtures(errors: list[str]) -> None:
     }"""
     if not ipc_open_path_errors(coordinator_without_null):
         errors.append("Bluetooth IPC coordinator matcher missed non-nullable fixture")
+
+    coordinator_reopens_existing = """QtObject {
+        function openForIpc(screen: var): bool {
+            const owner = \"bluetooth:DP-1\";
+            return SurfaceManager.open(owner, { \"invoker\": null }, screen);
+        }
+    }"""
+    if not ipc_open_path_errors(coordinator_reopens_existing):
+        errors.append("Bluetooth IPC coordinator matcher missed same-owner reopen fixture")
+
+    unresolved_section_accessible = """I18n.tr("bluetooth.section.accessible", {
+        "name": I18n.tr("bluetooth.section." + section.modelData),
+        "count": section.sectionDevices.length,
+        "collapsed": root.sectionCollapsedFor(section.modelData)
+    })"""
+    if not section_accessible_errors(unresolved_section_accessible):
+        errors.append("Bluetooth section accessibility matcher missed unresolved nested fixture")
 
     bad_acceptance = "call_ipc bluetooth setPowered true"
     if set(re.findall(r"\bcall_ipc\s+bluetooth\s+(\w+)", bad_acceptance)).issubset(

@@ -51,6 +51,8 @@
     "bluetooth.section.available": "Khả dụng ({count})",
     "bluetooth.section.connected": "Đã kết nối ({count})",
     "bluetooth.section.paired": "Đã ghép đôi ({count})",
+    "bluetooth.section.state.collapsed": "đã thu gọn",
+    "bluetooth.section.state.expanded": "đã mở rộng",
     "bluetooth.title": "Bluetooth",
     "bluetooth.unavailable": "Bluetooth không khả dụng",
     "clipboard.error.unavailable": "Không thể truy cập bảng nhớ tạm.",

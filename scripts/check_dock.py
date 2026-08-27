@@ -129,6 +129,8 @@ def validate_integration(errors: list[str]) -> None:
         for fragment in ("qs -n -p", "hyprctl -j layers", "DP-1", "DP-3"):
             if fragment not in acceptance:
                 errors.append(f"Dock acceptance missing read-only lifecycle check: {fragment}")
+        if "runtime_rejection_pattern='\\b(ERROR|TypeError|duplicate id|missing method|Illegal method name)\\b|Type .* unavailable'" not in acceptance:
+            errors.append("Dock acceptance runtime rejection must use bounded error tokens")
     protected = ROOT / "scripts/protected_acceptance.sh"
     if protected.is_file() and "scripts/dock_acceptance.sh" not in protected.read_text(encoding="utf-8"):
         errors.append("protected acceptance must run Dock acceptance after Spotlight cleanup")

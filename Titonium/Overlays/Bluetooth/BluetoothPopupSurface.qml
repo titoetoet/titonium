@@ -179,9 +179,13 @@ FocusScope {
                             contentAlignment: Qt.AlignLeft
                             variant: "quiet"
                             accessibleName: I18n.tr("bluetooth.section.accessible", {
-                                "name": I18n.tr("bluetooth.section." + section.modelData),
+                                "name": I18n.tr("bluetooth.section." + section.modelData, {
+                                    "count": section.sectionDevices.length
+                                }),
                                 "count": section.sectionDevices.length,
-                                "collapsed": root.sectionCollapsedFor(section.modelData)
+                                "collapsed": I18n.tr(root.sectionCollapsedFor(section.modelData)
+                                    ? "bluetooth.section.state.collapsed"
+                                    : "bluetooth.section.state.expanded")
                             })
                             onTriggered: root.toggleSection(section.modelData)
                         }

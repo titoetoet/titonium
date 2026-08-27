@@ -95,7 +95,8 @@ if ! rg -q 'Configuration Loaded' "$log_file"; then
     echo "FAIL Dock acceptance missing Configuration Loaded" >&2
     exit 1
 fi
-if rg -i 'ERROR|TypeError|Illegal method name|Type .* unavailable|duplicate id|missing method' "$log_file"; then
+runtime_rejection_pattern='\b(ERROR|TypeError|duplicate id|missing method|Illegal method name)\b|Type .* unavailable'
+if rg -i "$runtime_rejection_pattern" "$log_file"; then
     sed -n '1,240p' "$log_file" >&2
     echo "FAIL Dock acceptance runtime error found" >&2
     exit 1

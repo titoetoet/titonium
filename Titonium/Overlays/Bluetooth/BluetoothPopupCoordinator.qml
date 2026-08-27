@@ -33,6 +33,8 @@ QtObject {
         const owner = root.ownerFor(routedScreen);
         if (!owner)
             return false;
+        if (SurfaceManager.ownerId === owner)
+            return true;
         return SurfaceManager.open(owner, {
             "source": Qt.resolvedUrl("BluetoothPopupSurface.qml"),
             "keyboardFocus": "exclusive",

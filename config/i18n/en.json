@@ -51,6 +51,8 @@
     "bluetooth.section.available": "Available ({count})",
     "bluetooth.section.connected": "Connected ({count})",
     "bluetooth.section.paired": "Paired ({count})",
+    "bluetooth.section.state.collapsed": "collapsed",
+    "bluetooth.section.state.expanded": "expanded",
     "bluetooth.title": "Bluetooth",
     "bluetooth.unavailable": "Bluetooth is unavailable",
     "clipboard.error.unavailable": "Clipboard access is unavailable.",
