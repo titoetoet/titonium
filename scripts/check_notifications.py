@@ -8,6 +8,45 @@ ROOT = Path(__file__).resolve().parents[1]
 SERVICE_ROOT = ROOT / "Titonium/Services/Notifications"
 SERVICE = SERVICE_ROOT / "NotificationService.qml"
 QMLDIR = SERVICE_ROOT / "qmldir"
+PRESENTATION_ROOT = ROOT / "Titonium/Notifications"
+PRESENTATION_FILES = {
+    "ToastHost.qml": (
+        "Variants {",
+        "model: ScreenPolicy.screens",
+        "ToastWindow {",
+    ),
+    "ToastWindow.qml": (
+        "PanelWindow {",
+        'WlrLayershell.namespace: "titonium-notification-toast"',
+        "WlrLayershell.exclusionMode: ExclusionMode.Ignore",
+        "WlrLayershell.keyboardFocus: WlrKeyboardFocus.None",
+        "anchors { top: true; right: true",
+        "Metrics.barHeight + Metrics.barSpacing",
+        "active: NotificationService.toastNotifications.length > 0",
+        "Region { item: stackLoader }",
+    ),
+    "ToastStack.qml": (
+        "width: 360",
+        "Repeater {",
+        "model: NotificationService.toastNotifications",
+        "ToastCard {",
+    ),
+    "ToastCard.qml": (
+        "required property var notification",
+        "Shared.SystemIcon",
+        "maximumLineCount: 1",
+        "maximumLineCount: 3",
+        "NotificationService.expireToast(root.notification.id)",
+        "NotificationService.dismiss(root.notification.id)",
+        "Timer {",
+        "interval: 5000",
+        "repeat: false",
+    ),
+    "qmldir": (
+        "module Titonium.Notifications",
+        "ToastHost 1.0 ToastHost.qml",
+    ),
+}
 
 REQUIRED = (
     "pragma Singleton",
@@ -129,6 +168,30 @@ def validate_ownership(errors: list[str]) -> None:
         errors.append("native NotificationServer ownership must be unique")
 
 
+def validate_presentation(errors: list[str]) -> None:
+    sources: list[str] = []
+    for filename, fragments in PRESENTATION_FILES.items():
+        path = PRESENTATION_ROOT / filename
+        if not path.is_file():
+            errors.append(f"missing notification presentation: Titonium/Notifications/{filename}")
+            continue
+        source = path.read_text(encoding="utf-8")
+        sources.append(source)
+        for fragment in fragments:
+            if fragment not in source:
+                errors.append(f"{filename} missing toast contract: {fragment}")
+    feature = "\n".join(sources)
+    for fragment in (
+        "import Quickshell.Services.Notifications", "Process", "FileView",
+        "execDetached", "MultiEffect", "ShaderEffect", "Animation.Infinite",
+        "loops: Animation.Infinite",
+    ):
+        if fragment in feature:
+            errors.append(f"notification presentation has forbidden dependency: {fragment}")
+    if feature.count("Timer {") != 1:
+        errors.append("notification presentation must own exactly one one-shot toast timer")
+
+
 def main() -> int:
     errors: list[str] = []
     if not QMLDIR.is_file():
@@ -140,6 +203,7 @@ def main() -> int:
         errors.append("Notifications qmldir must export only its singleton")
     validate_service(errors)
     validate_ownership(errors)
+    validate_presentation(errors)
     validate_gate_fixtures(errors)
     if errors:
         print("FAIL notification service architecture")

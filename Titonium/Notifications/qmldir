@@ -1,0 +1,5 @@
+module Titonium.Notifications
+ToastHost 1.0 ToastHost.qml
+ToastWindow 1.0 ToastWindow.qml
+ToastStack 1.0 ToastStack.qml
+ToastCard 1.0 ToastCard.qml
