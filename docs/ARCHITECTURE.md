@@ -46,9 +46,30 @@ Singleton services expose reactive state once for all consumers:
 - `ClipboardService`: Quickshell clipboard events and atomic history persistence.
 - `HyprlandService`: focused monitor and workspace state/actions.
 - `InputMethodService`: event-driven Fcitx SystemTray state.
+- `AudioService`: the sole PipeWire owner. Its `PwObjectTracker` observes audio-capable nodes and
+  exposes normalized output, input and playback-stream view data; Bar and overlay code never
+  imports PipeWire or writes raw node audio fields.
 
 QML views draw, animate and emit intent. They do not spawn commands, store files or duplicate
 system listeners. Pure JavaScript helpers contain searchable/testable domain rules.
+
+## Audio slice boundaries
+
+`AudioService` is the only Titonium module permitted to import `Quickshell.Services.Pipewire`.
+Its normalized contract supplies readiness, availability, names, icon, volume, mute state and
+playback streams to views, while narrow service methods are the only manual mutation boundary.
+The Bar invokes the shared service and the popup is a lazy `SurfaceManager` descriptor rendered by
+the existing `OverlayHost`; there is no independent popup Loader or audio command helper.
+
+The OSD is separate from the popup: `AudioOsdCoordinator` owns its focused-screen, click-through
+presentation and an `AudioOsdHost` creates content only for that coordinator owner. The service
+captures the initial PipeWire snapshot before emitting later presentation changes, preventing a
+false startup or output-change OSD. Timers only coalesce/hide OSD presentation and never poll.
+
+`audio` IPC is intentionally read-only (`state`, popup lifecycle state and OSD state). Foreground
+acceptance may open and close surfaces, but must not change volume, mute, device selection or any
+other PipeWire setting. Manual visual testing is the only place to exercise those mutations, and
+the tester restores the original audio level, mute state and runtime preference afterward.
 
 Inside the expanded notch, the 48-pixel rail requests a page from the coordinator. A `StackView`
 creates the incoming page for a bounded transition and destroys the replaced page afterward; rapid

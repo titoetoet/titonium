@@ -9,6 +9,13 @@ ROOT = Path(__file__).resolve().parents[1]
 AUDIO_ROOT = ROOT / "Titonium/Services/Audio"
 OVERLAY_ROOT = ROOT / "Titonium/Overlays/Audio"
 OSD_ROOT = ROOT / "Titonium/Osd/Audio"
+AUDIO_SOURCE_ROOTS = (
+    AUDIO_ROOT,
+    OVERLAY_ROOT,
+    OSD_ROOT,
+    ROOT / "Titonium/Bar/islands/ConnectivityPill.qml",
+    ROOT / "Titonium/App.qml",
+)
 REQUIRED_FILES = (
     "Titonium/Services/Audio/AudioService.qml",
     "Titonium/Services/Audio/AudioRules.js",
@@ -59,6 +66,20 @@ FORBIDDEN_SERVICE_FRAGMENTS = (
 WRONG_OUTPUT_PRESENTATION_NOTIFIER = (
     "function onVolumeChanged(): void { root.observeOutputPresentation(); }"
 )
+FORBIDDEN_AUDIO_DEPENDENCIES = (
+    "Process",
+    "FileView",
+    "execDetached",
+    "wpctl",
+    "pactl",
+)
+FORBIDDEN_AUDIO_SERVICE_IMPORTS = re.compile(
+    r"^\s*import\s+.*(?:Mpris|Bluetooth|Network)", re.MULTILINE | re.IGNORECASE
+)
+RAW_AUDIO_MUTATION = re.compile(r"\.audio\.(?:volume|muted)\s*=")
+MUTATING_AUDIO_IPC_METHOD = re.compile(
+    r"^\s*function\s+(?:set|adjust|toggleMute|showOsd|device)\w*\s*\(", re.MULTILINE
+)
 
 
 def require_fragments(errors: list[str], path: Path, fragments: tuple[str, ...], label: str) -> None:
@@ -70,8 +91,110 @@ def require_fragments(errors: list[str], path: Path, fragments: tuple[str, ...],
             errors.append(f"{label} missing contract: {fragment}")
 
 
+def qml_files(paths: tuple[Path, ...]) -> tuple[Path, ...]:
+    files: set[Path] = set()
+    for path in paths:
+        if path.is_dir():
+            files.update(path.rglob("*.qml"))
+        elif path.is_file():
+            files.add(path)
+    return tuple(sorted(files))
+
+
+def audio_source_files(paths: tuple[Path, ...]) -> tuple[Path, ...]:
+    files: set[Path] = set()
+    for path in paths:
+        if path.is_dir():
+            files.update(path.rglob("*.qml"))
+            files.update(path.rglob("*.js"))
+        elif path.is_file():
+            files.add(path)
+    return tuple(sorted(files))
+
+
+def qml_block(source: str, start: int) -> str:
+    opening = source.find("{", start)
+    if opening < 0:
+        return ""
+    depth = 0
+    for index in range(opening, len(source)):
+        if source[index] == "{":
+            depth += 1
+        elif source[index] == "}":
+            depth -= 1
+            if depth == 0:
+                return source[start:index + 1]
+    return ""
+
+
+def ipc_handler_source(source: str, target: str) -> str:
+    for match in re.finditer(r"\bIpcHandler\s*\{", source):
+        block = qml_block(source, match.start())
+        if re.search(rf'\btarget\s*:\s*"{re.escape(target)}"', block):
+            return block
+    return ""
+
+
+def validate_audio_hardening(errors: list[str]) -> None:
+    audio_files = audio_source_files(AUDIO_SOURCE_ROOTS)
+    for path in audio_files:
+        source = path.read_text(encoding="utf-8")
+        relative = path.relative_to(ROOT)
+        if re.search(r"\bTimer\s*\{", source) and re.search(r"\brepeat\s*:\s*true\b", source):
+            errors.append(f"Audio timer repeats: {relative}")
+        for dependency in FORBIDDEN_AUDIO_DEPENDENCIES:
+            if dependency in source:
+                errors.append(f"forbidden Audio dependency {dependency}: {relative}")
+        if FORBIDDEN_AUDIO_SERVICE_IMPORTS.search(source):
+            errors.append(f"forbidden Audio service import: {relative}")
+
+    for pattern in ("*.qml", "*.js"):
+        for path in ROOT.rglob(pattern):
+            if AUDIO_ROOT in path.parents:
+                continue
+            if RAW_AUDIO_MUTATION.search(path.read_text(encoding="utf-8")):
+                errors.append(f"raw audio mutation outside Services/Audio: {path.relative_to(ROOT)}")
+
+    overlay_loaders = [
+        path.relative_to(ROOT)
+        for path in qml_files((OVERLAY_ROOT,))
+        if re.search(r"\bLoader\s*\{", path.read_text(encoding="utf-8"))
+    ]
+    if overlay_loaders:
+        errors.append("Audio popup Loader bypasses OverlayHost lifecycle: "
+                      + ", ".join(str(path) for path in overlay_loaders))
+
+    osd_host = OSD_ROOT / "AudioOsdHost.qml"
+    osd_loader_paths = [
+        path for path in qml_files((OSD_ROOT,))
+        if re.search(r"\bLoader\s*\{", path.read_text(encoding="utf-8"))
+    ]
+    if osd_loader_paths != [osd_host]:
+        errors.append("Audio OSD Loader must exist only in AudioOsdHost")
+    elif osd_host.is_file():
+        source = osd_host.read_text(encoding="utf-8")
+        loader_count = len(re.findall(r"\bLoader\s*\{", source))
+        osd_lifecycle = (
+            "readonly property bool ownsOsd: AudioOsdCoordinator.active",
+            "AudioOsdCoordinator.ownerScreenName === window.modelData.name",
+            "visible: window.ownsOsd",
+            "active: window.visible",
+        )
+        if loader_count != 1 or any(fragment not in source for fragment in osd_lifecycle):
+            errors.append("Audio OSD Loader must follow AudioOsdCoordinator active owner-screen lifecycle")
+
+    app = ROOT / "Titonium/App.qml"
+    if app.is_file():
+        audio_ipc = ipc_handler_source(app.read_text(encoding="utf-8"), "audio")
+        if not audio_ipc:
+            errors.append("missing audio IPC handler")
+        elif MUTATING_AUDIO_IPC_METHOD.search(audio_ipc):
+            errors.append("Audio IPC exposes a mutating method")
+
+
 def main() -> int:
     errors: list[str] = []
+    validate_audio_hardening(errors)
     for relative in REQUIRED_FILES:
         if not (ROOT / relative).is_file():
             errors.append(f"missing audio file: {relative}")

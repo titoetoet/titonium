@@ -2,11 +2,15 @@
 set -euo pipefail
 
 project_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+live_hypr="/home/cole/.config/hypr/hyprland.lua"
+dotfiles_hypr="/home/cole/Projects/titonium-hyprland/config/hypr/hyprland.lua"
 test_dir="$(mktemp -d --tmpdir titonium-audio-acceptance.XXXXXX)"
 log_file="$test_dir/shell.log"
 shell_pid=""
 
 before_git="$(git -C "$project_root" status --porcelain=v1)"
+before_live="$(sha256sum -- "$live_hypr")"
+before_dotfiles="$(sha256sum -- "$dotfiles_hypr")"
 
 cleanup() {
     if [[ -n "$shell_pid" ]] && kill -0 "$shell_pid" 2>/dev/null; then
@@ -60,6 +64,37 @@ if [[ "$(call_ipc audio popupState)" != "$popup_state" ]]; then
     printf 'FAIL audio popup state changed unexpectedly: %q\n' "$(call_ipc audio popupState)" >&2
     exit 1
 fi
+
+if [[ "$(call_ipc centerNotch open overview)" != *";page=overview"* ]]; then
+    printf 'FAIL Center Notch did not open Overview: %q\n' "$(call_ipc centerNotch state)" >&2
+    exit 1
+fi
+if [[ "$(call_ipc audio popupState)" != "closed" ]]; then
+    printf 'FAIL Center Notch did not close Audio popup: %q\n' "$(call_ipc audio popupState)" >&2
+    exit 1
+fi
+if [[ "$(call_ipc centerNotch close)" != "closed" ]]; then
+    echo "FAIL Center Notch did not close" >&2
+    exit 1
+fi
+
+popup_state="$(call_ipc audio popup)"
+if [[ ! "$popup_state" =~ ^open:[^[:space:]]+$ ]]; then
+    printf 'FAIL audio popup did not reopen: %q\n' "$popup_state" >&2
+    exit 1
+fi
+if [[ "$(call_ipc spotlight toggle)" != open:applications:* ]]; then
+    printf 'FAIL Spotlight did not open: %q\n' "$(call_ipc spotlight state)" >&2
+    exit 1
+fi
+if [[ "$(call_ipc audio popupState)" != "closed" ]]; then
+    printf 'FAIL Spotlight did not close Audio popup: %q\n' "$(call_ipc audio popupState)" >&2
+    exit 1
+fi
+if [[ "$(call_ipc spotlight close)" != "closed" ]]; then
+    echo "FAIL Spotlight did not close" >&2
+    exit 1
+fi
 if [[ "$(call_ipc audio closePopup)" != "closed" ]]; then
     echo "FAIL audio popup did not close" >&2
     exit 1
@@ -78,16 +113,21 @@ if [[ "$(git -C "$project_root" status --porcelain=v1)" != "$before_git" ]]; the
     echo "FAIL audio acceptance changed repository files" >&2
     exit 1
 fi
+if [[ "$(sha256sum -- "$live_hypr")" != "$before_live" \
+        || "$(sha256sum -- "$dotfiles_hypr")" != "$before_dotfiles" ]]; then
+    echo "FAIL audio acceptance changed a Hyprland configuration" >&2
+    exit 1
+fi
 if ! rg -q 'Configuration Loaded' "$log_file"; then
     sed -n '1,240p' "$log_file" >&2
     echo "FAIL audio acceptance missing Configuration Loaded" >&2
     exit 1
 fi
-runtime_rejection_pattern='\b(ERROR|TypeError|duplicate id|missing method|Illegal method name)\b|Type .* unavailable'
+runtime_rejection_pattern='ERROR|TypeError|Illegal method name|Type .* unavailable|duplicate id|missing method'
 if rg -i "$runtime_rejection_pattern" "$log_file"; then
     sed -n '1,240p' "$log_file" >&2
     echo "FAIL audio acceptance runtime error found" >&2
     exit 1
 fi
 
-echo "PASS audio read-only OSD state and popup acceptance"
+echo "PASS audio read-only popup, Center Notch and Spotlight acceptance"
