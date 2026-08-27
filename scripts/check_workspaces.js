@@ -7,14 +7,22 @@ const vm = require("node:vm");
 
 const root = path.join(__dirname, "..");
 const helperPath = path.join(root, "Titonium", "Services", "Hyprland", "WorkspaceRules.js");
+const visualPath = path.join(root, "Titonium", "Bar", "widgets", "WorkspaceVisualRules.js");
 if (!fs.existsSync(helperPath)) {
     console.error("FAIL Workspace rules are missing");
+    process.exit(1);
+}
+if (!fs.existsSync(visualPath)) {
+    console.error("FAIL Workspace visual rules are missing");
     process.exit(1);
 }
 
 const source = fs.readFileSync(helperPath, "utf8").replace(/^\.pragma library\s*\n/, "");
 const context = vm.createContext({ Math, Number, Object, Array, isFinite });
 vm.runInContext(source, context, { filename: helperPath });
+const visualSource = fs.readFileSync(visualPath, "utf8").replace(/^\.pragma library\s*\n/, "");
+const visual = vm.createContext({ Math, Number, Array });
+vm.runInContext(visualSource, visual, { filename: visualPath });
 const plain = value => JSON.parse(JSON.stringify(value));
 
 assert.equal(context.groupStart(1, 5), 1);
@@ -66,4 +74,17 @@ assert.equal(JSON.stringify(projected).includes("native"), false);
 assert.equal(JSON.stringify(projected).includes("toplevel"), false);
 assert.equal(JSON.stringify(projected).includes("workspace\""), false);
 
-console.log("PASS five-slot workspace colors, unique app icons, and raw-object rejection fixtures");
+const mutedPalette = ["#233a5e", "#1f4a3b", "#58451d", "#49305f", "#5a2934"];
+const activeBlue = "#5b8fce";
+assert.equal(visual.occupiedWidth(1, 17, 3), 40);
+assert.equal(visual.occupiedWidth(2, 17, 3), 53);
+assert.equal(visual.occupiedWidth(3, 17, 3), 73);
+assert.equal(visual.pillHeight(false), 24);
+assert.equal(visual.pillHeight(true), 28);
+assert.equal(visual.slotHeight(), 28);
+assert.equal(visual.backgroundColor(0, false, mutedPalette, activeBlue), "#233a5e");
+assert.equal(visual.backgroundColor(3, false, mutedPalette, activeBlue), "#49305f");
+assert.equal(visual.backgroundColor(3, true, mutedPalette, activeBlue), activeBlue);
+assert.equal(visual.backgroundColor(8, true, mutedPalette, activeBlue), activeBlue);
+
+console.log("PASS workspace projection, muted palette, active-blue highlight and roomy pill fixtures");

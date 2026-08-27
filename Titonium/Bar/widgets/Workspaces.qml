@@ -5,6 +5,7 @@ import qs.Titonium.Core.Runtime
 import qs.Titonium.Services.Hyprland
 import qs.Titonium.Theme
 import qs.Titonium.Shared as Shared
+import "WorkspaceVisualRules.js" as WorkspaceVisualRules
 
 Item {
     id: root
@@ -26,8 +27,8 @@ Item {
     }
 
     function workspaceColor(index: int, active: bool): color {
-        const palette = active ? Theme.workspaceActivePalette : Theme.workspacePalette;
-        return palette[Math.max(0, index) % palette.length];
+        return WorkspaceVisualRules.backgroundColor(index, active,
+            Theme.workspacePalette, Theme.workspaceActivePalette[0]);
     }
 
     Row {
@@ -41,13 +42,11 @@ Item {
             Item {
                 id: workspaceItem
                 required property var modelData
-                readonly property int occupiedWidth: Math.max(36,
-                    workspaceItem.modelData.apps.length * root.appIconSize
-                        + Math.max(0, workspaceItem.modelData.apps.length - 1) * root.appSpacing
-                        + Metrics.spacingMedium)
+                readonly property int occupiedWidth: WorkspaceVisualRules.occupiedWidth(
+                    workspaceItem.modelData.apps.length, root.appIconSize, root.appSpacing)
                 width: workspaceItem.modelData.occupied
                     ? workspaceItem.occupiedWidth : root.emptySlotWidth
-                height: 26
+                height: WorkspaceVisualRules.slotHeight()
                 Accessible.role: Accessible.Button
                 Accessible.name: I18n.tr("menubar.workspace.accessible", {
                     id: workspaceItem.modelData.id,
@@ -62,11 +61,11 @@ Item {
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
                     visible: workspaceItem.modelData.occupied
-                    height: workspaceItem.modelData.active ? 26 : 20
+                    height: WorkspaceVisualRules.pillHeight(workspaceItem.modelData.active)
                     radius: Metrics.radiusLarge
                     color: root.workspaceColor(workspaceItem.modelData.colorIndex,
                         workspaceItem.modelData.active)
-                    opacity: workspaceItem.modelData.active ? 1.0 : 0.62
+                    opacity: workspaceItem.modelData.active ? 1.0 : 0.76
                     border.width: workspaceItem.modelData.urgent ? Metrics.borderWidth : 0
                     border.color: workspaceItem.modelData.urgent ? Theme.warning : "transparent"
 
