@@ -19,6 +19,7 @@ FocusScope {
     readonly property int hoverLift: 4
     readonly property bool hovered: surfaceHover.hovered
     readonly property bool itemMenuActive: itemMenu.active
+    readonly property alias pinHitbox: pinControl
     signal applicationsRequested(var screen)
 
     function closeTransient(): void {
@@ -31,8 +32,8 @@ FocusScope {
         root.applicationsRequested(root.screenModel);
     }
 
-    implicitWidth: dockRow.implicitWidth + Metrics.spacingSmall * 2
-    implicitHeight: root.bodyHeight
+    implicitWidth: dockRow.implicitWidth + 32
+    implicitHeight: 64
     width: implicitWidth
     height: implicitHeight
     opacity: root.revealed ? 1 : 0
@@ -50,7 +51,11 @@ FocusScope {
     }
 
     Rectangle {
-        anchors.fill: parent
+        id: dockPanel
+        x: 8
+        y: 8
+        width: dockRow.implicitWidth + 16
+        height: root.bodyHeight
         radius: Metrics.radiusLarge
         color: Theme.surface
         border.width: Metrics.borderWidth
@@ -59,7 +64,7 @@ FocusScope {
 
     Row {
         id: dockRow
-        anchors.centerIn: parent
+        anchors.centerIn: dockPanel
         spacing: root.itemSpacing
 
         FocusScope {
@@ -122,12 +127,10 @@ FocusScope {
 
     Item {
         id: pinControl
-        width: 14
-        height: 14
-        anchors.left: parent.left
-        anchors.top: parent.top
-        anchors.leftMargin: 4
-        anchors.topMargin: 3
+        x: 0
+        y: 0
+        width: 16
+        height: 16
         visible: root.hovered
         opacity: pinHover.hovered ? 1 : 0.62
         Accessible.role: Accessible.Button
@@ -137,7 +140,7 @@ FocusScope {
         Shared.Icon {
             anchors.centerIn: parent
             name: DockStore.pinnedOpen ? "keep" : "keep_off"
-            size: 12
+            size: 10
             tone: DockStore.pinnedOpen ? "accent" : "secondary"
             accessibleName: ""
         }

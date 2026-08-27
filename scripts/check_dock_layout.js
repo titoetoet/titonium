@@ -50,12 +50,16 @@ function layoutFixture() {
   const spacing = 6;
   const reveal = 4;
   const reserve = body + margin;
+  const pinRight = 0 + 16;
+  const launcherLeft = 8 + 8;
   if (body !== 56 || icon !== 40 || margin !== 8 || spacing !== 6)
     errors.push("dock geometry fixture changed");
   if (reveal !== 4)
     errors.push("edge reveal fixture changed");
   if (reserve !== 64)
     errors.push("pinned reserve fixture changed");
+  if (pinRight > launcherLeft)
+    errors.push("dock pin overlaps launcher hitbox");
 }
 
 layoutFixture();
@@ -64,7 +68,8 @@ requireFragments("window", [
   "PanelWindow {", "WlrLayershell.namespace: \"titonium-dock\"",
   "readonly property int bodyHeight: 56", "readonly property int edgeRevealHeight: 4",
   "readonly property int reservedHeight: 64", "exclusiveZone: root.pinnedOpen ? root.reservedHeight : 0",
-  "mask: Region {", "Region { item: dockSurface }", "Region { item: edgeReveal }",
+  "mask: Region {", "Region { item: dockSurface }", "Region { item: dockSurface.pinHitbox }",
+  "Region { item: edgeReveal }", "readonly property rect pinInputRect:",
   "WlrLayershell.exclusionMode: root.pinnedOpen ? ExclusionMode.Normal : ExclusionMode.Ignore",
   "WlrLayershell.keyboardFocus: WlrKeyboardFocus.None", "WlrLayershell.layer: WlrLayer.Overlay",
   "dockSurface.itemMenuActive",
@@ -74,19 +79,20 @@ requireFragments("surface", [
   "readonly property real hoverScale: 1.12", "readonly property int hoverLift: 4",
   "Motion.fast", "Behavior on opacity", "Behavior on y", "applicationsRequested",
   "DockAppButton", "DockItemMenuCoordinator", "DockStore.setPinnedOpen", "itemMenu.active",
-  "name: \"rocket_launch\"", "id: pinControl", "width: 14", "height: 14",
-  "visible: root.hovered", "anchors.left: parent.left", "anchors.top: parent.top",
+  "name: \"rocket_launch\"", "id: dockPanel", "x: 8", "y: 8",
+  "readonly property alias pinHitbox: pinControl", "id: pinControl", "width: 16", "height: 16",
+  "visible: root.hovered", "x: 0", "y: 0",
   "Item {\n        id: pinControl",
 ]);
 requireFragments("button", [
   "readonly property int iconSize: 40", "scale: root.hovered ? root.hoverScale : 1",
   "y: root.hovered ? -root.hoverLift : 0", "Motion.fast", "DockService.activateOrLaunch",
   "DockService.launchNew", "menuRequested", "Keys.onPressed", "size: root.iconSize",
-  "QtControls.ToolTip.visible", "dock.application_tooltip",
   "Shared.SystemIcon", "sourceName: root.dockItem?.icon || \"\"",
   "fallbackName: \"dock_to_bottom\"",
 ]);
 requireAbsent("button", ["name: root.dockItem?.icon || \"apps\""]);
+requireAbsent("button", ["import QtQuick.Controls", "ToolTip", "dock.application_tooltip"]);
 requireFragments("coordinator", [
   "SurfaceManager.open", "DockItemMenuSurface.qml", "function open(dockItem: var, invoker: var, screen: var): bool",
   "function menuItem(dockItem: var): var", "\"item\": item", "function close(): bool", "keyboardFocus\": \"exclusive\"",

@@ -170,7 +170,7 @@ def validate_presentation(errors: list[str]) -> None:
             "WlrKeyboardFocus.None", "WlrLayer.Overlay", "ExclusionMode.Normal"),
         "DockSurface.qml": ("import qs.Titonium.Services.Dock", "DockAppButton", "itemMenu.active"),
         "DockAppButton.qml": ("DockService.activateOrLaunch", "DockService.launchNew",
-            "QtControls.ToolTip", "size: root.iconSize"),
+            "Shared.SystemIcon", "Accessible.name", "size: root.iconSize"),
         "DockItemMenuCoordinator.qml": ("SurfaceManager.open", "DockItemMenuSurface.qml",
             "function menuItem(dockItem: var): var"),
         "DockItemMenuSurface.qml": ("SurfaceManager.close", "DockService.closeActive",
@@ -192,6 +192,12 @@ def validate_presentation(errors: list[str]) -> None:
     window = PRESENTATION_ROOT / "DockWindow.qml"
     if window.is_file() and "WlrLayershell.exclusionMode: ExclusionMode.Ignore" in window.read_text(encoding="utf-8"):
         errors.append("Dock pinned reservation must not use click-through exclusion mode")
+    button = PRESENTATION_ROOT / "DockAppButton.qml"
+    if button.is_file():
+        button_source = button.read_text(encoding="utf-8")
+        for forbidden in ("import QtQuick.Controls", "ToolTip", "dock.application_tooltip"):
+            if forbidden in button_source:
+                errors.append(f"Dock application retains visual hover text: {forbidden}")
 
 
 def qml_block(source: str, start: int) -> str:

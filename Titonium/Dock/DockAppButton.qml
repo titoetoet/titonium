@@ -1,7 +1,6 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QtQuick.Controls as QtControls
 import qs.Titonium.Core.Runtime
 import qs.Titonium.Core.Surfaces
 import qs.Titonium.Services.Dock
@@ -82,11 +81,6 @@ FocusScope {
     }
 
     HoverHandler { id: hoverHandler; cursorShape: Qt.PointingHandCursor }
-    QtControls.ToolTip.visible: root.hovered
-    QtControls.ToolTip.text: I18n.tr("dock.application_tooltip", {
-        "name": root.dockItem?.name || "",
-        "count": root.dockItem?.runningCount || 0,
-    })
     TapHandler {
         acceptedButtons: Qt.LeftButton
         onTapped: {

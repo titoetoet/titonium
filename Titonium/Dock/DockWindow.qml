@@ -27,6 +27,12 @@ PanelWindow {
     readonly property rect bodyInputRect: root.bodyInputVisible
         ? root.bottomLocalToOverlayRect(Qt.rect(dockSurface.x, dockSurface.y,
             dockSurface.width, dockSurface.height)) : Qt.rect(0, 0, 0, 0)
+    readonly property rect pinInputRect: root.bodyInputVisible
+        ? root.bottomLocalToOverlayRect(Qt.rect(
+            dockSurface.x + dockSurface.pinHitbox.x,
+            dockSurface.y + dockSurface.pinHitbox.y,
+            dockSurface.pinHitbox.width,
+            dockSurface.pinHitbox.height)) : Qt.rect(0, 0, 0, 0)
     readonly property rect edgeInputRect: root.bottomLocalToOverlayRect(Qt.rect(edgeReveal.x,
         edgeReveal.y, edgeReveal.width, edgeReveal.height))
     signal applicationsRequested(var screen)
@@ -54,6 +60,7 @@ PanelWindow {
     anchors { bottom: true; left: true; right: true }
     mask: Region {
         Region { item: dockSurface }
+        Region { item: dockSurface.pinHitbox }
         Region { item: edgeReveal }
     }
 
