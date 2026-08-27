@@ -65,6 +65,7 @@ def main() -> int:
             "radius: Metrics.radiusLarge",
             "showFocusRing: false",
             "backgroundRadius: Metrics.radiusLarge",
+            "spacing: Metrics.spacingSmall",
         ),
         "islands/qmldir": ("CenterGroup 1.0 CenterGroup.qml",),
         "islands/CenterIsland.qml": (
@@ -72,6 +73,7 @@ def main() -> int:
             "CenterNotchCoordinator.ownerScreenName",
             'variant: "quiet"',
             "backgroundRadius: Metrics.radiusLarge",
+            "Shared.Surface {",
         ),
         "islands/ConnectivityPill.qml": (
             "readonly property int fullImplicitWidth",
@@ -165,6 +167,12 @@ def main() -> int:
         source = workspaces.read_text(encoding="utf-8")
         for fragment in (
             "property int count: 5",
+            "readonly property int emptySlotWidth: 24",
+            "readonly property int appIconSize: 17",
+            "readonly property int appSpacing: 3",
+            "Math.max(36,",
+            "height: workspaceItem.modelData.active ? 26 : 20",
+            "opacity: workspaceItem.modelData.active ? 1.0 : 0.62",
             "Shared.SystemIcon",
             "modelData.apps",
             "workspaceColor",
@@ -192,7 +200,7 @@ def main() -> int:
         if not (0 <= source.find("id: pinPill") < source.find("CenterIsland {")):
             errors.append("TopBar Pin must be a separate pill left of Titonium Center")
         if source.count("Shared.Surface {") != 1:
-            errors.append("CenterGroup must use exactly one rounded surface for Pin and Titonium")
+            errors.append("CenterGroup must give the detached Pin exactly one rounded surface")
         if "implicitWidth: centerRow.implicitWidth +" in source:
             errors.append("Center hover controls must meet the outer pill edge without inset padding")
 
@@ -209,8 +217,8 @@ def main() -> int:
         errors.append("Input Method must not draw a nested outlined surface inside StatusPill")
 
     center_island = BAR / "islands/CenterIsland.qml"
-    if center_island.is_file() and "Shared.Surface" in center_island.read_text(encoding="utf-8"):
-        errors.append("Titonium Center must share the parent pill instead of drawing a nested border")
+    if center_island.is_file() and center_island.read_text(encoding="utf-8").count("Shared.Surface {") != 1:
+        errors.append("Titonium Center must own one rounded surface after Pin is detached")
 
     for relative in (
         "Overlays/Audio/AudioPopupSurface.qml",

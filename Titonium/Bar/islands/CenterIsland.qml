@@ -13,6 +13,12 @@ Item {
     implicitWidth: 180
     implicitHeight: Metrics.controlHeight
 
+    Shared.Surface {
+        anchors.fill: parent
+        tone: "elevated"
+        radius: Metrics.radiusLarge
+    }
+
     Shared.Button {
         anchors.fill: parent
         label: "Titonium"

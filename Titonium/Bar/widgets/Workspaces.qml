@@ -11,13 +11,13 @@ Item {
 
     required property var screen
     property int count: 5
-    readonly property int emptySlotWidth: 20
-    readonly property int appIconSize: 14
-    readonly property int appSpacing: 2
+    readonly property int emptySlotWidth: 24
+    readonly property int appIconSize: 17
+    readonly property int appSpacing: 3
     readonly property int activeWorkspaceId: HyprlandService.activeWorkspaceId(root.screen)
     readonly property var items: HyprlandService.workspaceSnapshot(root.screen, root.count)
 
-    implicitWidth: workspaceRow.implicitWidth + Metrics.spacingXSmall * 2
+    implicitWidth: workspaceRow.implicitWidth + Metrics.spacingSmall * 2
     implicitHeight: Metrics.widgetHeight
 
     function activateRelative(delta: int): void {
@@ -33,7 +33,7 @@ Item {
     Row {
         id: workspaceRow
         anchors.centerIn: parent
-        spacing: Metrics.spacingXSmall
+        spacing: Metrics.spacingSmall
 
         Repeater {
             model: root.items
@@ -41,13 +41,13 @@ Item {
             Item {
                 id: workspaceItem
                 required property var modelData
-                readonly property int occupiedWidth: Math.max(28,
+                readonly property int occupiedWidth: Math.max(36,
                     workspaceItem.modelData.apps.length * root.appIconSize
                         + Math.max(0, workspaceItem.modelData.apps.length - 1) * root.appSpacing
-                        + Metrics.spacingSmall)
+                        + Metrics.spacingMedium)
                 width: workspaceItem.modelData.occupied
                     ? workspaceItem.occupiedWidth : root.emptySlotWidth
-                height: 22
+                height: 26
                 Accessible.role: Accessible.Button
                 Accessible.name: I18n.tr("menubar.workspace.accessible", {
                     id: workspaceItem.modelData.id,
@@ -62,11 +62,11 @@ Item {
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
                     visible: workspaceItem.modelData.occupied
-                    height: workspaceItem.modelData.active ? 22 : 18
+                    height: workspaceItem.modelData.active ? 26 : 20
                     radius: Metrics.radiusLarge
                     color: root.workspaceColor(workspaceItem.modelData.colorIndex,
                         workspaceItem.modelData.active)
-                    opacity: workspaceItem.modelData.active ? 1.0 : 0.72
+                    opacity: workspaceItem.modelData.active ? 1.0 : 0.62
                     border.width: workspaceItem.modelData.urgent ? Metrics.borderWidth : 0
                     border.color: workspaceItem.modelData.urgent ? Theme.warning : "transparent"
 
@@ -81,7 +81,7 @@ Item {
                 Rectangle {
                     anchors.centerIn: parent
                     visible: !workspaceItem.modelData.occupied
-                    width: workspaceItem.modelData.active ? 8 : 6
+                    width: workspaceItem.modelData.active ? 10 : 7
                     height: width
                     radius: width / 2
                     color: workspaceItem.modelData.active ? Theme.accent : Theme.textSecondary

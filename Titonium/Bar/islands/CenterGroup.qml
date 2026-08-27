@@ -12,21 +12,21 @@ Item {
     implicitWidth: centerRow.implicitWidth
     implicitHeight: Metrics.controlHeight
 
-    Shared.Surface {
-        anchors.fill: parent
-        tone: "elevated"
-        radius: Metrics.radiusLarge
-    }
-
     Row {
         id: centerRow
         anchors.centerIn: parent
-        spacing: 0
+        spacing: Metrics.spacingSmall
 
         Item {
             id: pinPill
-            width: Metrics.controlHeightSmall
+            width: Metrics.controlHeight
             height: Metrics.controlHeight
+
+            Shared.Surface {
+                anchors.fill: parent
+                tone: "elevated"
+                radius: Metrics.radiusLarge
+            }
 
             Shared.Button {
                 anchors.fill: parent
