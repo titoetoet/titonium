@@ -9,7 +9,7 @@ function appLabelSize() {
 }
 
 function categoryLabelSize() {
-    return 14;
+    return 15;
 }
 
 function searchTextSize() {

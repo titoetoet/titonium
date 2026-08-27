@@ -280,6 +280,7 @@ FocusScope {
 
             Flickable {
                 Layout.fillWidth: true
+                Layout.leftMargin: SpotlightLayout.categoryHorizontalInset()
                 Layout.bottomMargin: SpotlightLayout.categoryGridGap()
                 implicitHeight: categoryRow.implicitHeight
                 contentWidth: categoryRow.implicitWidth

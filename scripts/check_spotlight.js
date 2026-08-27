@@ -101,7 +101,7 @@ assertEqual(spotlightSurfaceSource.includes("backgroundRadius: Metrics.radiusLar
     "every scope icon keeps the shared rounded TopBar silhouette");
 assertEqual(visual.appIconSize(), 56, "application icons match the selected visual density");
 assertEqual(visual.appLabelSize(), 14, "application labels match the shell label tier");
-assertEqual(visual.categoryLabelSize(), 14, "category labels match the shell label tier");
+assertEqual(visual.categoryLabelSize(), 15, "category labels keep the approved launcher emphasis");
 assertEqual(visual.searchTextSize(), 15, "search text matches the shell body-large tier");
 assertEqual(visual.fallbackIcon(["Network"]), "public", "network applications use a quiet semantic fallback icon");
 assertEqual(visual.fallbackIcon({ 0: "Network", length: 1 }), "public",
@@ -149,10 +149,12 @@ assertEqual(layout.indicatorTargetWidth(), 44, "density indicator keeps an acces
 assertEqual(layout.indicatorSpacing(), 4, "density visuals stay grouped as one pagination control");
 assertEqual(layout.panelContentTopInset(), 8,
     "Spotlight content keeps a calm inset below the panel edge");
-assertEqual(layout.headerCategoryGap(), 20,
+assertEqual(layout.headerCategoryGap(), 32,
     "header and categories use the measured reference rhythm");
-assertEqual(layout.categoryGridGap(), 56,
-    "categories and applications keep a stronger sectional break");
+assertEqual(layout.categoryGridGap(), 44,
+    "category movement preserves the established application grid position");
+assertEqual(layout.categoryHorizontalInset(), 12,
+    "category labels align with the reference's inset text rail");
 assertEqual(spotlightSurfaceSource.includes("Layout.bottomMargin: SpotlightLayout.headerCategoryGap()"), true,
     "header-to-category rhythm is explicit instead of inherited from one generic spacing");
 assertEqual(spotlightSurfaceSource.includes("Layout.bottomMargin: SpotlightLayout.categoryGridGap()"), true,

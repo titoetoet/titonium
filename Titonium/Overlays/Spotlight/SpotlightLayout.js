@@ -40,11 +40,15 @@ function panelContentTopInset() {
 }
 
 function headerCategoryGap() {
-    return 20;
+    return 32;
 }
 
 function categoryGridGap() {
-    return 56;
+    return 44;
+}
+
+function categoryHorizontalInset() {
+    return 12;
 }
 
 function indicatorVisualWidth(page, capacity) {

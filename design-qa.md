@@ -3,8 +3,8 @@
 ## Evidence
 
 - Source visual truth: `/home/cole/.codex/generated_images/01a037cb-1907-7283-b61a-d2511a403983/exec-98c7d2ff-8ef8-4088-bdbd-76f38f52e398.png`
-- Verified implementation screenshot: `/tmp/titonium-spotlight-spacing-final-live.png`
-- Final normalized comparison: `/tmp/titonium-spotlight-spacing-final-live-compare.png`
+- Verified implementation screenshot: `/tmp/titonium-spotlight-category-rail.png`
+- Final normalized comparison: `/tmp/titonium-spotlight-category-rail-compare.png`
 - Source pixels: 1672 × 941, generated desktop reference, density unspecified.
 - Implementation pixels: 3840 × 2160 on DP-1; Quickshell logical viewport 2560 × 1440 at scale 1.5.
 - Density normalization: source panel crop 600 × 520 and implementation panel crop 1290 × 1110 were both normalized to 860 × 740 before side-by-side inspection.
@@ -35,6 +35,7 @@ The normalized panel comparison was required because the header controls, search
 5. Final pass used `/tmp/titonium-launcher-spacing-audit.png`; no actionable P0/P1/P2 differences remained after accounting for live catalog content and the explicit no-glass constraint.
 6. The compactness pass found a P2 overall-scale and header-grouping mismatch: the 920 × 800 frame felt oversized and three independent scope squares did not reproduce the source's unified segmented rhythm. The frame was reduced to 860 × 740, search to 560 × 46, and the actions were regrouped into one fixed 200px capsule. The normalized post-fix evidence is `/tmp/titonium-spotlight-reference-balanced-final.png`; no actionable P0/P1/P2 differences remain in the approved scope.
 7. The final user-directed pass restored three independent rounded scope controls and found a P2 vertical-rhythm mismatch: one generic 12px layout gap placed the category rail and first application row too high while stretching later rows. The content now uses an 8px top inset, a 20px header-to-category gap and a 56px category-to-grid break. Horizontal app centers and the 860 × 740 frame were retained because normalized comparison showed they already matched the reference. Browse pages no longer preselect the first application; search-result selection and Enter activation remain unchanged.
+8. The category-rail pass moved only the text controls 12px down and 12px inward, raised their label size from 14px to 15px, and compensated the lower gap from 56px to 44px. The normalized comparison confirms the application icons and indicator did not move while the text baseline now follows the reference.
 
 ## Interaction and accessibility checks
 
