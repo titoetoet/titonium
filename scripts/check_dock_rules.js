@@ -77,3 +77,13 @@ assert.equal(rules.shouldReveal(true, false, 2, false, true), true);
 assert.equal(rules.shouldReveal(false, false, 2, false, false), true);
 assert.equal(rules.shouldReveal(true, true, 2, false, false), true);
 console.log("PASS Dock rules reveal fixtures");
+
+assert.equal(typeof rules.exclusiveZone, "function",
+    "Dock rules must own the pinned exclusive-zone decision");
+assert.equal(rules.exclusiveZone(true, 56), 56,
+    "a pinned Dock reserves only its visible 56px body");
+assert.equal(rules.exclusiveZone(false, 56), 0,
+    "an unpinned Dock does not reserve the screen edge");
+assert.equal(rules.exclusiveZone(true, -4), 0,
+    "invalid body heights cannot create a negative reserve");
+console.log("PASS Dock exclusive-zone fixtures");

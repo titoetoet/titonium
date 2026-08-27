@@ -51,7 +51,7 @@ PanelWindow {
     color: "transparent"
     implicitWidth: root.screenModel.width
     implicitHeight: root.reservedHeight
-    exclusiveZone: root.pinnedOpen ? root.reservedHeight : 0
+    exclusiveZone: DockRules.exclusiveZone(root.pinnedOpen, root.bodyHeight)
     aboveWindows: true
     WlrLayershell.namespace: "titonium-dock"
     WlrLayershell.layer: WlrLayer.Overlay

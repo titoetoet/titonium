@@ -145,3 +145,9 @@ function shouldReveal(autoHide, pinnedOpen, activeWorkspaceWindowCount, edgeHove
         || Math.max(0, Number(activeWorkspaceWindowCount) || 0) === 0
         || edgeHovered === true || dockHovered === true;
 }
+
+function exclusiveZone(pinnedOpen, bodyHeight) {
+    if (pinnedOpen !== true)
+        return 0;
+    return Math.max(0, Number(bodyHeight) || 0);
+}

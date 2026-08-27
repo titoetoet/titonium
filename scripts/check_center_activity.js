@@ -30,10 +30,12 @@ for (const fragment of [
     "HyprlandService.activeWindow",
     "ApplicationService.nameForAppId",
     "CenterActivityRules.label",
-    "Math.min(520",
+    "implicitWidth: 520",
     "Text.ElideRight",
     "maximumLineCount: 1",
 ]) {
     assert.equal(island.includes(fragment), true, `CenterIsland missing ${fragment}`);
 }
-console.log("PASS adaptive Center activity presentation contract");
+assert.equal(island.includes("activityRow.implicitWidth"), false,
+    "Center width must not change with the active-window title");
+console.log("PASS fixed-width Center activity presentation contract");

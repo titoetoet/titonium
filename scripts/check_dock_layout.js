@@ -74,7 +74,8 @@ requireFragments("host", ["Variants {", "model: ScreenPolicy.screens", "DockWind
 requireFragments("window", [
   "PanelWindow {", "WlrLayershell.namespace: \"titonium-dock\"",
   "readonly property int bodyHeight: 56", "readonly property int edgeRevealHeight: 4",
-  "readonly property int reservedHeight: 64", "exclusiveZone: root.pinnedOpen ? root.reservedHeight : 0",
+  "readonly property int reservedHeight: 64",
+  "exclusiveZone: DockRules.exclusiveZone(root.pinnedOpen, root.bodyHeight)",
   "mask: Region {", "Region { item: dockSurface }", "Region { item: dockSurface.pinHitbox }",
   "Region { item: edgeReveal }", "readonly property rect pinInputRect:",
   "WlrLayershell.exclusionMode: root.pinnedOpen ? ExclusionMode.Normal : ExclusionMode.Ignore",
@@ -121,6 +122,7 @@ for (const name of Object.keys(files))
   requireAbsent(name, ["Process", "FileView", "Timer {", "MultiEffect", "ShaderEffect", "gradient", "blur", "hyprctl", "bluetoothctl"]);
 
 requireAbsent("window", ["WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand", "WlrLayershell.layer: WlrLayer.Top"]);
+requireAbsent("window", ["exclusiveZone: root.pinnedOpen ? root.reservedHeight : 0"]);
 requireAbsent("surface", ["name: \"archlinux\""]);
 
 const surfaceSource = source("surface");

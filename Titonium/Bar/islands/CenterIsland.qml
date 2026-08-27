@@ -21,8 +21,7 @@ FocusScope {
         root.appName, root.activeWindow?.title || "")
     readonly property bool notchOpen: CenterNotchCoordinator.ownerScreenName === root.screen.name
 
-    implicitWidth: Math.min(520, Math.max(180,
-        activityRow.implicitWidth + Metrics.spacingLarge * 2))
+    implicitWidth: 520
     implicitHeight: Metrics.controlHeight
     activeFocusOnTab: true
 

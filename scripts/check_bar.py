@@ -80,7 +80,7 @@ def main() -> int:
             "HyprlandService.activeWindow",
             "ApplicationService.nameForAppId",
             "CenterActivityRules.label",
-            "Math.min(520",
+            "implicitWidth: 520",
             "Text.ElideRight",
             "maximumLineCount: 1",
             "Shared.SystemIcon",
@@ -233,6 +233,12 @@ def main() -> int:
             errors.append("Workspaces must use dots and app icons instead of visible numbers")
         if "Theme.focus" in source:
             errors.append("Active workspace must not use the global blue focus border")
+
+    center_island = BAR / "islands/CenterIsland.qml"
+    if center_island.is_file():
+        source = center_island.read_text(encoding="utf-8")
+        if "activityRow.implicitWidth" in source:
+            errors.append("Center width must remain fixed when the active-window title changes")
 
     center_group = BAR / "islands/CenterGroup.qml"
     if center_group.is_file():
