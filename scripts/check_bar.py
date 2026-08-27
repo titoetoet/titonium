@@ -19,6 +19,7 @@ def main() -> int:
         "islands/CenterIsland.qml",
         "islands/CenterGroup.qml",
         "islands/EndIsland.qml",
+        "islands/NotificationPill.qml",
         "islands/ConnectivityPill.qml",
         "islands/StatusPill.qml",
         "widgets/Workspaces.qml",
@@ -69,7 +70,10 @@ def main() -> int:
             "backgroundRadius: Metrics.radiusLarge",
             "spacing: Metrics.spacingSmall",
         ),
-        "islands/qmldir": ("CenterGroup 1.0 CenterGroup.qml",),
+        "islands/qmldir": (
+            "CenterGroup 1.0 CenterGroup.qml",
+            "NotificationPill 1.0 NotificationPill.qml",
+        ),
         "islands/CenterIsland.qml": (
             "CenterNotchCoordinator.toggle",
             "CenterNotchCoordinator.ownerScreenName",
@@ -86,10 +90,16 @@ def main() -> int:
             "readonly property int fullImplicitWidth",
             "radius: Metrics.radiusLarge",
             "spacing: 0",
+        ),
+        "islands/NotificationPill.qml": (
             "NotificationBell {",
             "id: notificationBell",
+            "Shared.Surface {",
+            "radius: Metrics.radiusLarge",
+            "implicitHeight: Metrics.widgetHeight",
         ),
         "islands/EndIsland.qml": (
+            "NotificationPill {",
             "ConnectivityPill {",
             "StatusPill {",
             "connectivity.fullImplicitWidth",
@@ -166,16 +176,24 @@ def main() -> int:
             "id: networkButton",
             "id: bluetoothButton",
             "id: audioButton",
-            "id: notificationBell",
             "width: root.controlSize",
             "height: root.controlSize",
         ):
             if fragment not in source:
                 errors.append(f"ConnectivityPill missing aligned-control contract: {fragment}")
-        if not (source.find("id: audioButton") < source.find("id: notificationBell")):
-            errors.append("Notification Bell must follow Sound inside ConnectivityPill")
+        if "NotificationBell {" in source or "notificationBell" in source:
+            errors.append("Notification Bell must live in its own pill outside ConnectivityPill")
         if "id: networkIcon" in source:
             errors.append("ConnectivityPill must not mix a raw Wi-Fi icon with button-sized controls")
+
+    end_island = BAR / "islands/EndIsland.qml"
+    if end_island.is_file():
+        source = end_island.read_text(encoding="utf-8")
+        notification_index = source.find("NotificationPill {")
+        connectivity_index = source.find("ConnectivityPill {")
+        status_index = source.find("StatusPill {")
+        if not (0 <= notification_index < connectivity_index < status_index):
+            errors.append("EndIsland order must be Notification, Connectivity, then Input")
 
     status_pill = BAR / "islands/StatusPill.qml"
     if status_pill.is_file() and "Clock {" in status_pill.read_text(encoding="utf-8"):

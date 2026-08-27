@@ -1,7 +1,6 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import qs.Titonium.Bar.widgets
 import qs.Titonium.Core.Runtime
 import qs.Titonium.Overlays.Audio
 import qs.Titonium.Overlays.Bluetooth
@@ -20,8 +19,7 @@ Item {
     readonly property int innerPadding: 2
     readonly property int diagnosticsWidth: networkButton.width + bluetoothButton.width
     readonly property int audioWidth: audioButton.implicitWidth
-    readonly property int bellWidth: notificationBell.width
-    readonly property int fullImplicitWidth: root.diagnosticsWidth + root.audioWidth + root.bellWidth
+    readonly property int fullImplicitWidth: root.diagnosticsWidth + root.audioWidth
         + root.innerPadding * 2
     readonly property string outputAccessibleName: AudioService.outputAvailable
         ? AudioService.outputName : I18n.tr("audio.output")
@@ -49,7 +47,7 @@ Item {
     readonly property string networkIconName: !NetworkService.available || !NetworkService.wifiHardwareEnabled
         ? "wifi_off" : (NetworkService.wifiEnabled ? "wifi" : "wifi_off")
 
-    implicitWidth: root.audioWidth + root.bellWidth + root.innerPadding * 2
+    implicitWidth: root.audioWidth + root.innerPadding * 2
         + (root.showDiagnostics ? root.diagnosticsWidth : 0)
     implicitHeight: Metrics.widgetHeight
 
@@ -105,9 +103,6 @@ Item {
                     event.accepted = true;
                 }
             }
-        }
-        NotificationBell {
-            id: notificationBell
         }
     }
 }

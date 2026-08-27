@@ -7,8 +7,8 @@ Item {
     id: root
     required property var screen
     property bool showConnectivityDiagnostics: true
-    readonly property int preferredWidth: connectivity.fullImplicitWidth + Metrics.barSpacing
-        + status.implicitWidth
+    readonly property int preferredWidth: notification.implicitWidth + Metrics.barSpacing
+        + connectivity.fullImplicitWidth + Metrics.barSpacing + status.implicitWidth
 
     implicitWidth: endRow.implicitWidth
     implicitHeight: Metrics.widgetHeight
@@ -16,7 +16,11 @@ Item {
     Row {
         id: endRow
         anchors.fill: parent
-        spacing: connectivity.visible ? Metrics.barSpacing : 0
+        spacing: Metrics.barSpacing
+
+        NotificationPill {
+            id: notification
+        }
 
         ConnectivityPill {
             id: connectivity

@@ -3,5 +3,6 @@ StartIsland 1.0 StartIsland.qml
 CenterIsland 1.0 CenterIsland.qml
 CenterGroup 1.0 CenterGroup.qml
 EndIsland 1.0 EndIsland.qml
+NotificationPill 1.0 NotificationPill.qml
 ConnectivityPill 1.0 ConnectivityPill.qml
 StatusPill 1.0 StatusPill.qml

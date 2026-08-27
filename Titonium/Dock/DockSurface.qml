@@ -128,8 +128,8 @@ FocusScope {
 
     Item {
         id: pinControl
-        x: 1
-        y: 0
+        x: dockPanel.x - width / 2
+        y: dockPanel.y + (dockPanel.height - height) / 2
         width: 22
         height: 22
         z: 10

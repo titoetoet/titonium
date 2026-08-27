@@ -50,7 +50,12 @@ function layoutFixture() {
   const spacing = 6;
   const reveal = 4;
   const reserve = body + margin;
-  const pinRight = 1 + 22;
+  const panelX = 12;
+  const panelY = 8;
+  const pinSize = 22;
+  const pinX = panelX - pinSize / 2;
+  const pinY = panelY + (body - pinSize) / 2;
+  const pinRight = pinX + pinSize;
   const launcherLeft = 12 + 12;
   if (body !== 56 || icon !== 40 || margin !== 8 || spacing !== 6)
     errors.push("dock geometry fixture changed");
@@ -58,6 +63,8 @@ function layoutFixture() {
     errors.push("edge reveal fixture changed");
   if (reserve !== 64)
     errors.push("pinned reserve fixture changed");
+  if (pinX !== 1 || pinY !== 25)
+    errors.push("dock pin center must sit on the middle of the left panel border");
   if (pinRight > launcherLeft)
     errors.push("dock pin overlaps launcher hitbox");
 }
@@ -82,7 +89,8 @@ requireFragments("surface", [
   "name: \"rocket_launch\"", "id: dockPanel", "x: 12", "y: 8",
   "width: dockRow.implicitWidth + 24", "implicitWidth: dockRow.implicitWidth + 48",
   "readonly property alias pinHitbox: pinControl", "id: pinControl", "width: 22", "height: 22",
-  "opacity: root.hovered || pinHover.hovered ? 1 : 0", "x: 1", "y: 0",
+  "opacity: root.hovered || pinHover.hovered ? 1 : 0", "x: dockPanel.x - width / 2",
+  "y: dockPanel.y + (dockPanel.height - height) / 2",
   "readonly property bool hovered: surfaceHover.hovered", "HoverHandler { id: surfaceHover }",
   "Item {\n        id: pinControl",
 ]);
