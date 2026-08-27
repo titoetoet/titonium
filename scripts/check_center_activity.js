@@ -46,9 +46,9 @@ for (const fragment of [
     "implicitWidth: 420",
     "readonly property var presentation:",
     "id: appNameLabel",
-    "Layout.preferredWidth: 120",
-    "id: activitySeparator",
-    "Layout.preferredWidth: Metrics.borderWidth",
+    "Layout.maximumWidth: 120",
+    "id: activityDot",
+    "text: \"·\"",
     "id: titleLabel",
     "outlined: false",
     "Text.ElideRight",
@@ -58,4 +58,8 @@ for (const fragment of [
 }
 assert.equal(island.includes("activityRow.implicitWidth"), false,
     "Center width must not change with the active-window title");
+assert.equal(island.includes("id: activitySeparator"), false,
+    "Center content must not use a vertical divider");
+assert.equal(island.includes("Layout.preferredWidth: 120"), false,
+    "short app names must not leave a fixed-width gap before the title");
 console.log("PASS fixed-width Center activity presentation contract");

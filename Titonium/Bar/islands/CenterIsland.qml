@@ -59,7 +59,7 @@ FocusScope {
 
         Shared.TextLabel {
             id: appNameLabel
-            Layout.preferredWidth: 120
+            Layout.maximumWidth: 120
             text: root.presentation.appName
             variant: "label"
             strong: true
@@ -67,11 +67,11 @@ FocusScope {
             maximumLineCount: 1
         }
 
-        Rectangle {
-            id: activitySeparator
-            Layout.preferredWidth: Metrics.borderWidth
-            Layout.preferredHeight: 16
-            color: Theme.border
+        Shared.TextLabel {
+            id: activityDot
+            text: "·"
+            variant: "label"
+            tone: "secondary"
         }
 
         Shared.TextLabel {

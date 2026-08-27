@@ -83,9 +83,9 @@ def main() -> int:
             "implicitWidth: 420",
             "readonly property var presentation:",
             "id: appNameLabel",
-            "Layout.preferredWidth: 120",
-            "id: activitySeparator",
-            "Layout.preferredWidth: Metrics.borderWidth",
+            "Layout.maximumWidth: 120",
+            "id: activityDot",
+            'text: "·"',
             "id: titleLabel",
             "outlined: false",
             "Text.ElideRight",
@@ -246,6 +246,8 @@ def main() -> int:
         source = center_island.read_text(encoding="utf-8")
         if "activityRow.implicitWidth" in source:
             errors.append("Center width must remain fixed when the active-window title changes")
+        if "id: activitySeparator" in source or "Layout.preferredWidth: 120" in source:
+            errors.append("Center app content must sit naturally beside its title without a divider gap")
 
     center_group = BAR / "islands/CenterGroup.qml"
     if center_group.is_file():
