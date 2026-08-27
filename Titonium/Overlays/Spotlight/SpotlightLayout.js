@@ -28,7 +28,11 @@ function fillRatio(page, capacity) {
 }
 
 function indicatorTargetWidth() {
-    return 56;
+    return 44;
+}
+
+function indicatorSpacing() {
+    return 4;
 }
 
 function indicatorVisualWidth(page, capacity) {

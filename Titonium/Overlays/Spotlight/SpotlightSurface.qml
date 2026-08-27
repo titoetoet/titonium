@@ -9,6 +9,7 @@ import qs.Titonium.Shared as Controls
 import qs.Titonium.Core.Runtime
 import qs.Titonium.Core.Surfaces
 import "SpotlightGeometry.js" as SpotlightGeometry
+import "SpotlightHeader.js" as SpotlightHeader
 import "SpotlightTransition.js" as SpotlightTransition
 
 FocusScope {
@@ -20,8 +21,7 @@ FocusScope {
     property int activeBodyTransitionDuration: 0
     readonly property string ownerId: root.descriptor?.ownerId || ""
     readonly property var spotlightSettings: Preferences.spotlight
-    readonly property string scopeIcon: spotlightModel.scope === "clipboard" ? "content_paste"
-        : (spotlightModel.scope === "system" ? "manage_search" : "rocket_launch")
+    readonly property var scopeActions: SpotlightHeader.scopeActions()
     signal clipboardMoveRequested(int delta)
     signal clipboardActivateRequested()
 
@@ -138,7 +138,7 @@ FocusScope {
     Controls.Panel {
         id: panel
         z: 1
-        width: Math.min(800, root.width - Metrics.spacingLarge * 4)
+        width: SpotlightGeometry.panelWidth(root.width, Metrics.spacingLarge)
         height: SpotlightGeometry.panelHeight(
             root.height, Metrics.spacingLarge)
         anchors.top: parent.top
@@ -155,16 +155,17 @@ FocusScope {
                 spacing: Metrics.spacingMedium
 
                 Controls.Icon {
-                    name: root.scopeIcon
-                    size: 30
-                    tone: searchField.activeFocus ? "accent" : "secondary"
-                    accessibleName: ""
+                    name: "rocket_launch"
+                    size: SpotlightHeader.identityIconSize()
+                    tone: "secondary"
+                    accessibleName: I18n.tr("spotlight.identity")
                 }
 
                 QtControls.TextField {
                 id: searchField
-                Layout.fillWidth: true
-                implicitHeight: 44
+                Layout.preferredWidth: SpotlightHeader.searchFieldWidth()
+                Layout.maximumWidth: SpotlightHeader.searchFieldWidth()
+                implicitHeight: SpotlightHeader.searchFieldHeight()
                 activeFocusOnTab: true
                 text: spotlightModel.query
                 placeholderText: I18n.tr(spotlightModel.mode === "clipboard"
@@ -175,15 +176,25 @@ FocusScope {
                 placeholderTextColor: Theme.textSecondary
                 font.family: Typography.family
                 font.pixelSize: Typography.bodyLargeSize
-                leftPadding: Metrics.spacingLarge
+                leftPadding: 44
                 rightPadding: Metrics.spacingLarge
                 selectByMouse: true
 
                 background: Rectangle {
-                    radius: Metrics.radiusMedium
+                    radius: searchField.height / 2
                     color: Theme.surfaceElevated
                     border.width: Metrics.borderWidth
-                    border.color: searchField.activeFocus ? Theme.focus : Theme.border
+                    border.color: searchField.activeFocus ? Theme.borderStrong : Theme.border
+                }
+
+                Controls.Icon {
+                    anchors.left: parent.left
+                    anchors.leftMargin: Metrics.spacingMedium
+                    anchors.verticalCenter: parent.verticalCenter
+                    name: "search"
+                    size: 20
+                    tone: "secondary"
+                    accessibleName: ""
                 }
 
                 onTextEdited: spotlightModel.setQuery(text)
@@ -224,6 +235,38 @@ FocusScope {
                         ? "spotlight.system.search_accessible" : "spotlight.search_accessible"))
                 Accessible.focusable: true
                 }
+
+                Item { Layout.fillWidth: true }
+
+                Row {
+                    spacing: Metrics.spacingSmall
+                    Layout.preferredWidth: SpotlightHeader.scopeStripWidth(spacing)
+                    Layout.preferredHeight: SpotlightHeader.scopeButtonSize()
+                    Layout.alignment: Qt.AlignVCenter
+
+                    Repeater {
+                        model: root.scopeActions
+
+                        Controls.Button {
+                            required property var modelData
+                            width: SpotlightHeader.scopeButtonSize()
+                            height: SpotlightHeader.scopeButtonSize()
+                            iconName: modelData.icon
+                            variant: "secondary"
+                            selected: spotlightModel.scope === modelData.id
+                            backgroundRadius: Metrics.radiusLarge
+                            activeFocusOnTab: false
+                            accessibleName: I18n.tr(modelData.accessibleKey)
+                            QtControls.ToolTip.visible: hovered
+                            QtControls.ToolTip.text: accessibleName
+                            QtControls.ToolTip.delay: 500
+                            onTriggered: {
+                                spotlightModel.setScope(modelData.id);
+                                searchField.forceActiveFocus(Qt.MouseFocusReason);
+                            }
+                        }
+                    }
+                }
             }
 
             Flickable {
@@ -248,6 +291,7 @@ FocusScope {
                             variant: "quiet"
                             size: "small"
                             selected: spotlightModel.categoryId === modelData.id
+                            backgroundRadius: height / 2
                             accessibleName: I18n.tr("spotlight.category_accessible", { "name": label })
                             onTriggered: {
                                 spotlightModel.setCategory(modelData.id);
@@ -274,6 +318,7 @@ FocusScope {
 
             Connections {
                 target: bodyLoader.item || null
+                ignoreUnknownSignals: true
                 function onActivatedSuccessfully(): void { root.close(); }
             }
         }

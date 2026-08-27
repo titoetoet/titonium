@@ -70,10 +70,12 @@ FocusScope {
                             model: appPage.modelData
 
                             ApplicationTile {
+                                required property int index
                                 required property var modelData
                                 width: Math.floor((appPage.width - root.gap * (root.columns - 1)) / root.columns)
                                 height: Math.floor((appPage.height - root.gap * (root.rows - 1)) / root.rows)
                                 application: modelData
+                                selected: appPage.ListView.isCurrentItem && index === 0
                                 onTriggered: {
                                     if (root.spotlightModel.activateApplication(modelData.id))
                                         root.activatedSuccessfully();
@@ -104,7 +106,7 @@ FocusScope {
         Row {
             Layout.alignment: Qt.AlignHCenter
             visible: (root.spotlightModel?.pages.length || 0) > 1
-            spacing: Metrics.spacingSmall
+            spacing: SpotlightLayout.indicatorSpacing()
 
             Repeater {
                 model: root.spotlightModel?.pages || []

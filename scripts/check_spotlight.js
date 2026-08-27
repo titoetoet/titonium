@@ -5,6 +5,14 @@ const path = require("path");
 const vm = require("vm");
 
 const spotlightRoot = path.join(__dirname, "..", "Titonium", "Overlays", "Spotlight");
+const spotlightSurfaceSource = fs.readFileSync(
+    path.join(spotlightRoot, "SpotlightSurface.qml"), "utf8");
+const applicationTileSource = fs.readFileSync(
+    path.join(spotlightRoot, "ApplicationTile.qml"), "utf8");
+const appGridSource = fs.readFileSync(
+    path.join(spotlightRoot, "AppGrid.qml"), "utf8");
+const pageIndicatorSource = fs.readFileSync(
+    path.join(spotlightRoot, "PageIndicator.qml"), "utf8");
 
 function loadDomain(name, globals = {}) {
     const sourcePath = path.join(spotlightRoot, name + ".js");
@@ -53,13 +61,61 @@ const search = loadDomain("SearchEngine", { StableOrder: stableOrder });
 const calculator = loadDomain("Calculator");
 const state = loadDomain("SpotlightState");
 const scope = loadDomain("SpotlightScope");
+const header = loadDomain("SpotlightHeader");
+const visual = loadDomain("SpotlightVisual");
 const geometry = loadDomain("SpotlightGeometry");
 
 assertEqual(geometry.panelTop(), 200, "Spotlight panel starts at absolute logical y 200");
+assertEqual(geometry.panelWidth(1000, 16), 920,
+    "Spotlight panel uses the selected wide 920 logical pixel frame");
+assertEqual(geometry.panelWidth(700, 16), 636,
+    "Spotlight panel remains bounded on narrow outputs");
 assertEqual(geometry.panelHeight(800, 16), 584,
     "Spotlight panel height preserves its bottom safety gap after moving down");
-assertEqual(geometry.panelHeight(1000, 16), 760,
-    "Spotlight panel retains its maximum height on tall screens");
+assertEqual(geometry.panelHeight(1200, 16), 800,
+    "Spotlight panel uses the selected roomy 800 logical pixel height");
+
+assertDeepEqual(Array.from(header.scopeActions(), action => ({
+    id: action.id,
+    icon: action.icon,
+    accessibleKey: action.accessibleKey
+})), [
+    { id: "applications", icon: "apps", accessibleKey: "spotlight.scope.applications" },
+    { id: "clipboard", icon: "content_paste", accessibleKey: "spotlight.scope.clipboard" },
+    { id: "system", icon: "manage_search", accessibleKey: "spotlight.scope.system" }
+], "header exposes three icon-only scope actions in keyboard cycle order");
+assertEqual(header.identityIconSize(), 28, "header identity icon balances the search control");
+assertEqual(header.searchFieldWidth(), 620, "search keeps a bounded visual width");
+assertEqual(header.searchFieldHeight(), 48, "search and scope controls share one visual height");
+assertEqual(header.scopeButtonSize(), 48, "scope icon buttons keep a clear square hit target");
+assertEqual(header.scopeStripWidth(8), 160,
+    "scope icon strip reserves width instead of collapsing inside RowLayout");
+assertEqual(spotlightSurfaceSource.includes('variant: "secondary"\n                            selected: spotlightModel.scope === modelData.id'), true,
+    "all scope icons use a tonal button while the current scope remains selected");
+assertEqual(visual.appIconSize(), 56, "application icons match the selected visual density");
+assertEqual(visual.fallbackIcon(["Network"]), "public", "network applications use a quiet semantic fallback icon");
+assertEqual(visual.fallbackIcon({ 0: "Network", length: 1 }), "public",
+    "QML list-like categories keep their semantic fallback icon");
+assertEqual(visual.fallbackIcon(["Development"]), "code", "development applications use a semantic fallback icon");
+assertEqual(visual.fallbackIcon([]), "widgets", "uncategorized applications use a quiet generic fallback");
+assertEqual(applicationTileSource.includes("Controls.SystemIcon"), true,
+    "application tiles share the native icon resolver used by the Dock");
+assertEqual(applicationTileSource.includes("property bool selected: false"), true,
+    "application tiles expose an explicit selected state");
+assertEqual(appGridSource.includes("selected: appPage.ListView.isCurrentItem && index === 0"), true,
+    "the first application on the current page has a visible default selection");
+assertEqual(spotlightSurfaceSource.includes('name: "search"'), true,
+    "the search field includes a leading search icon");
+assertEqual(spotlightSurfaceSource.includes("searchField.activeFocus ? Theme.borderStrong : Theme.border"), true,
+    "search focus strengthens the neutral border without turning it accent blue");
+assertEqual(spotlightSurfaceSource.includes("radius: searchField.height / 2"), true,
+    "the neutral search frame keeps the soft pill silhouette from the selected visual");
+assertEqual(spotlightSurfaceSource.includes("QtControls.ToolTip.visible: hovered"), true,
+    "icon-only scope controls explain themselves on hover");
+assertEqual(spotlightSurfaceSource.includes("ignoreUnknownSignals: true"), true,
+    "the polymorphic body Loader does not warn when a scope lacks the app activation signal");
+assertEqual(spotlightSurfaceSource.includes("Layout.preferredWidth: SpotlightHeader.searchFieldWidth()"), true,
+    "search width no longer consumes every remaining header pixel");
 
 assertEqual(scope.next("applications", 1), "clipboard", "Tab advances Apps to Clipboard");
 assertEqual(scope.next("clipboard", 1), "system", "Tab advances Clipboard to System Search");
@@ -77,10 +133,15 @@ assertEqual(layout.pageSize(), 20, "fixed page capacity");
 assertDeepEqual(Array.from(layout.pages(ids(21), 20), page => Array.from(page).length), [20, 1], "fixed pagination");
 assertEqual(typeof layout.indicatorTargetWidth, "function", "density indicator exposes a stable hit target");
 assertEqual(typeof layout.indicatorVisualWidth, "function", "density indicator exposes proportional visual width");
-assertEqual(layout.indicatorTargetWidth(), 56, "density indicator keeps a stable hit target");
+assertEqual(layout.indicatorTargetWidth(), 44, "density indicator keeps an accessible expanded hit target");
+assertEqual(layout.indicatorSpacing(), 4, "density visuals stay grouped as one pagination control");
 assertEqual(layout.indicatorVisualWidth(ids(20), 20), 56, "full page uses the longest density pill");
 assertEqual(layout.indicatorVisualWidth(ids(5), 20), 23, "quarter page uses a visibly shorter pill");
 assertEqual(layout.indicatorVisualWidth([], 20), 12, "empty page keeps a visible minimum pill");
+assertEqual(pageIndicatorSource.includes("width: root.visualWidth"), true,
+    "indicator layout width follows visible density instead of a fixed hitbox");
+assertEqual(pageIndicatorSource.includes("margin: root.hitMargin"), true,
+    "indicator pointer handlers retain a larger target outside the compact visual");
 
 assertDeepEqual(Array.from(categories.idsFor(["Development", "Utility"])), ["development", "utilities"], "development and utility aliases");
 assertDeepEqual(Array.from(categories.idsFor(["Network"])), ["internet"], "network alias");

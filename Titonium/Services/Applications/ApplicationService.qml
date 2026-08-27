@@ -5,6 +5,7 @@ import QtQuick
 import Quickshell
 import qs.Titonium.Core.Runtime
 import "ApplicationLaunch.js" as ApplicationLaunch
+import "ApplicationProjection.js" as ApplicationProjection
 import "Visibility.js" as Visibility
 
 QtObject {
@@ -72,7 +73,7 @@ QtObject {
                 searchText: (entry.name + " " + (entry.genericName || "") + " "
                     + (entry.comment || "")).toLocaleLowerCase(),
                 icon: root.iconFor(entry.icon),
-                categories: Array.isArray(entry.categories) ? entry.categories : [] });
+                categories: ApplicationProjection.categoryNames(entry.categories) });
         }
         next.sort((left, right) => left.name.localeCompare(right.name));
         const signature = next.map(entry => entry.id).join("\n");

@@ -66,7 +66,11 @@ QtObject {
     }
 
     function cycleScope(delta: int): void {
-        root.scope = SpotlightScope.next(root.scope, delta);
+        root.setScope(SpotlightScope.next(root.scope, delta));
+    }
+
+    function setScope(nextScope: string): void {
+        root.scope = SpotlightScope.normalize(nextScope);
         root.mode = SpotlightScope.modeFor(root.scope, root.query);
         root.pageIndex = 0;
         root.selectedIndex = 0;

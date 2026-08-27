@@ -14,14 +14,19 @@ FocusScope {
     required property bool current
     signal triggered()
 
-    width: SpotlightLayout.indicatorTargetWidth()
+    readonly property int visualWidth: SpotlightLayout.indicatorVisualWidth(
+        root.page, SpotlightLayout.pageSize())
+    readonly property real hitMargin: Math.max(0,
+        (SpotlightLayout.indicatorTargetWidth() - root.visualWidth) / 2)
+
+    width: root.visualWidth
     height: 20
     activeFocusOnTab: true
 
     Rectangle {
-        anchors.left: parent.left
+        anchors.horizontalCenter: parent.horizontalCenter
         anchors.verticalCenter: parent.verticalCenter
-        width: SpotlightLayout.indicatorVisualWidth(root.page, SpotlightLayout.pageSize())
+        width: root.visualWidth
         height: 8
         radius: height / 2
         color: root.current ? Theme.accent : Theme.borderStrong
@@ -29,8 +34,8 @@ FocusScope {
         border.color: Theme.focus
     }
 
-    HoverHandler { cursorShape: Qt.PointingHandCursor }
-    TapHandler { onTapped: root.triggered() }
+    HoverHandler { margin: root.hitMargin; cursorShape: Qt.PointingHandCursor }
+    TapHandler { margin: root.hitMargin; onTapped: root.triggered() }
     Keys.onPressed: event => {
         if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
             root.triggered();
