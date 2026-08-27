@@ -58,7 +58,7 @@ assert.deepEqual(plain(merged), [
 ]);
 assert.deepEqual(plain(rules.mergeItems([], runningGroups, entriesById,
     ["org.gnome.Nautilus", "FIREFOX"]).map(item => item.appId)),
-    ["org.gnome.Nautilus", "FIREFOX"]);
+    ["org.gnome.Nautilus", "Firefox"]);
 assert.deepEqual(plain(Object.keys(merged[0]).sort()),
     ["active", "appId", "icon", "name", "pinned", "runningCount", "urgent"]);
 console.log("PASS Dock rules merge fixtures");

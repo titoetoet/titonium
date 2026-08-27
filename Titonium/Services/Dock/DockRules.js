@@ -81,6 +81,11 @@ function itemFor(appId, group, entriesById, pinned) {
     };
 }
 
+function canonicalUnpinnedId(group, entriesById) {
+    const entry = entryForId(entriesById, group.appId) || {};
+    return normalizedId(entry.id) || group.appId;
+}
+
 function mergeItems(pinnedIds, runningGroups, entriesById, firstSeenIds) {
     const groups = combinedGroups(runningGroups);
     const pinned = uniqueIds(pinnedIds);
@@ -105,7 +110,7 @@ function mergeItems(pinnedIds, runningGroups, entriesById, firstSeenIds) {
         const group = groups.byId[key];
         if (!group || emitted[key])
             continue;
-        result.push(itemFor(appId, group, entriesById, false));
+        result.push(itemFor(canonicalUnpinnedId(group, entriesById), group, entriesById, false));
         emitted[key] = true;
     }
 
@@ -114,7 +119,7 @@ function mergeItems(pinnedIds, runningGroups, entriesById, firstSeenIds) {
         if (emitted[key])
             continue;
         const group = groups.byId[key];
-        result.push(itemFor(group.appId, group, entriesById, false));
+        result.push(itemFor(canonicalUnpinnedId(group, entriesById), group, entriesById, false));
         emitted[key] = true;
     }
     return result;

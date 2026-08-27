@@ -2,11 +2,12 @@ pragma Singleton
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import Quickshell
 import Quickshell.Hyprland
 import qs.Titonium.Core.Runtime
+import qs.Titonium.Core.Screens
 import qs.Titonium.Services.Applications
 import qs.Titonium.Services.Dock
+import "DockNativeRegistry.js" as DockNativeRegistry
 import "DockRules.js" as DockRules
 
 QtObject {
@@ -14,7 +15,7 @@ QtObject {
 
     property var projectedItems: []
     property int workspaceWindowCount: 0
-    property var nativeToplevelsByAppId: ({})
+    property var operationRegistry: DockNativeRegistry.create()
     property var firstSeenIds: []
     property var cycleIndexesByAppId: ({})
     property var mutationWarningCounts: ({})
@@ -47,19 +48,6 @@ QtObject {
             || toplevel?.lastIpcObject?.class || toplevel?.title || "");
     }
 
-    function nativeToplevelsForAppId(appId: string): var {
-        const key = root.appKey(appId);
-        const current = root.nativeToplevelsByAppId[key] || [];
-        const source = Hyprland.toplevels.values || [];
-        const result = [];
-        for (let index = 0; index < current.length; index++) {
-            const candidate = current[index];
-            if (source.indexOf(candidate) >= 0)
-                result.push(candidate);
-        }
-        return result;
-    }
-
     function rememberFirstSeen(appId: string): void {
         const key = root.appKey(appId);
         for (let index = 0; index < root.firstSeenIds.length; index++) {
@@ -70,7 +58,9 @@ QtObject {
     }
 
     function workspaceWindowTotal(): int {
-        return Hyprland.focusedWorkspace?.toplevels?.values.length || 0;
+        const screen = ScreenPolicy.screens.length > 0 ? ScreenPolicy.screens[0] : null;
+        const workspace = screen ? Hyprland.monitorFor(screen)?.activeWorkspace : null;
+        return workspace?.toplevels?.values.length || 0;
     }
 
     function recompute(): void {
@@ -104,7 +94,7 @@ QtObject {
         const groups = [];
         for (let index = 0; index < order.length; index++)
             groups.push(groupsById[order[index]]);
-        root.nativeToplevelsByAppId = nativeById;
+        root.operationRegistry.replace(nativeById);
         root.workspaceWindowCount = root.workspaceWindowTotal();
         root.projectedItems = DockRules.mergeItems(
             DockStore.pinnedIds, groups, entriesById, root.firstSeenIds);
@@ -121,47 +111,20 @@ QtObject {
         Logger.warn("dock", action + " ignored for unavailable application " + appId);
     }
 
-    function activateNative(toplevel: var, appId: string): bool {
-        const target = toplevel?.wayland;
-        if (!target || typeof target.activate !== "function") {
+    function activateOrLaunch(appId: string): bool {
+        const key = root.appKey(appId);
+        const result = root.operationRegistry.activate(
+            key, Hyprland.toplevels.values || [], root.cycleIndexesByAppId[key]);
+        if (!result.available)
+            return root.launchNew(appId);
+        if (!result.success) {
             root.warnMutation("activate", appId);
             return false;
         }
-        target.activate();
-        return true;
-    }
-
-    function closeNative(toplevel: var, appId: string): bool {
-        const target = toplevel?.wayland;
-        if (!target || typeof target.close !== "function") {
-            root.warnMutation("close", appId);
-            return false;
-        }
-        target.close();
-        return true;
-    }
-
-    function activateOrLaunch(appId: string): bool {
-        const toplevels = root.nativeToplevelsForAppId(appId);
-        if (toplevels.length === 0)
-            return root.launchNew(appId);
-        const key = root.appKey(appId);
-        let selectedIndex = root.cycleIndexesByAppId[key];
-        if (selectedIndex === undefined) {
-            selectedIndex = 0;
-            for (let index = 0; index < toplevels.length; index++) {
-                if (toplevels[index]?.activated === true) {
-                    selectedIndex = index;
-                    break;
-                }
-            }
-        } else {
-            selectedIndex = DockRules.nextCycleIndex(selectedIndex, toplevels.length);
-        }
         const nextCycles = Object.assign({}, root.cycleIndexesByAppId);
-        nextCycles[key] = selectedIndex;
+        nextCycles[key] = result.selectedIndex;
         root.cycleIndexesByAppId = nextCycles;
-        return root.activateNative(toplevels[selectedIndex], appId);
+        return true;
     }
 
     function launchNew(appId: string): bool {
@@ -174,19 +137,15 @@ QtObject {
     }
 
     function closeActive(appId: string): bool {
-        const toplevels = root.nativeToplevelsForAppId(appId);
-        if (toplevels.length === 0) {
+        const result = root.operationRegistry.closeActive(
+            root.appKey(appId), Hyprland.toplevels.values || []);
+        if (!result.available) {
             root.warnMutation("close", appId);
             return false;
         }
-        let active = toplevels[0];
-        for (let index = 0; index < toplevels.length; index++) {
-            if (toplevels[index]?.activated === true) {
-                active = toplevels[index];
-                break;
-            }
-        }
-        return root.closeNative(active, appId);
+        if (!result.success)
+            root.warnMutation("close", appId);
+        return result.success;
     }
 
     function togglePin(appId: string): bool {

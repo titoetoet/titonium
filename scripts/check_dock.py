@@ -8,39 +8,42 @@ ROOT = Path(__file__).resolve().parents[1]
 DOCK_ROOT = ROOT / "Titonium/Services/Dock"
 SERVICE = DOCK_ROOT / "DockService.qml"
 RULES = DOCK_ROOT / "DockRules.js"
+REGISTRY = DOCK_ROOT / "DockNativeRegistry.js"
 QMLDIR = DOCK_ROOT / "qmldir"
 REQUIRED_SERVICE_FRAGMENTS = (
     "pragma Singleton",
     "import Quickshell.Hyprland",
     "import qs.Titonium.Core.Runtime",
+    "import qs.Titonium.Core.Screens",
     "import qs.Titonium.Services.Applications",
     "import qs.Titonium.Services.Dock",
     "readonly property var items",
     "readonly property int activeWorkspaceWindowCount",
-    "property var nativeToplevelsByAppId",
+    "import \"DockNativeRegistry.js\" as DockNativeRegistry",
+    "property var operationRegistry: DockNativeRegistry.create()",
     "property var firstSeenIds",
     "function normalizedAppId",
-    "function nativeToplevelsForAppId(appId: string): var",
     "function activateOrLaunch(appId: string): bool",
     "function launchNew(appId: string): bool",
     "function closeActive(appId: string): bool",
     "function togglePin(appId: string): bool",
     "function snapshot(): string",
     "Hyprland.toplevels.values",
-    "Hyprland.focusedWorkspace",
-    "Hyprland.focusedWorkspace?.toplevels?.values.length",
+    "ScreenPolicy.screens",
+    "Hyprland.monitorFor(screen)",
     "ApplicationService.desktopEntryForAppId",
     "ApplicationService.iconForAppId",
     "ApplicationService.nameForAppId",
     "ApplicationService.launch(entry.id)",
     "DockRules.mergeItems",
     "DockStore.togglePin(appId)",
+    "root.operationRegistry.replace(nativeById)",
     "function onRawEvent",
 )
 REQUIRED_MUTATION_RELOOKUPS = {
-    "activateOrLaunch": "root.nativeToplevelsForAppId(appId)",
+    "activateOrLaunch": "root.operationRegistry.activate",
     "launchNew": "root.entryForAppId(appId)",
-    "closeActive": "root.nativeToplevelsForAppId(appId)",
+    "closeActive": "root.operationRegistry.closeActive",
     "togglePin": "DockStore.togglePin(appId)",
 }
 FORBIDDEN_SERVICE_FRAGMENTS = (
@@ -99,6 +102,19 @@ def validate_rules_contract(errors: list[str]) -> None:
         errors.append("Dock descriptor construction must not retain raw toplevel objects")
 
 
+def validate_native_registry(errors: list[str]) -> None:
+    if not REGISTRY.is_file():
+        errors.append("missing DockNativeRegistry.js")
+        return
+    source = REGISTRY.read_text(encoding="utf-8")
+    for fragment in ("function create()", "const nativeByAppId = {}", "function liveFor",
+                     "activate: function", "closeActive: function"):
+        if fragment not in source:
+            errors.append(f"Dock native registry missing encapsulation contract: {fragment}")
+    if "return nativeByAppId" in source or "getForAppId" in source:
+        errors.append("Dock native registry must not expose raw toplevel objects")
+
+
 def main() -> int:
     errors: list[str] = []
     if not SERVICE.is_file():
@@ -114,12 +130,17 @@ def main() -> int:
         for method, fragment in REQUIRED_MUTATION_RELOOKUPS.items():
             if fragment not in function_block(source, method):
                 errors.append(f"Dock {method} must relookup its target before mutation")
-        if "nativeToplevelsByAppId" not in source:
-            errors.append("Dock service must keep native toplevels in a private normalized lookup")
+        if "nativeToplevelsByAppId" in source or "nativeToplevelsForAppId" in source:
+            errors.append("Dock service must not expose raw toplevel collections")
+        if "Hyprland.focusedWorkspace" in source:
+            errors.append("Dock workspace count must stay on the allowed DP-1 monitor")
+        if "import Quickshell\n" in source:
+            errors.append("Dock service must not retain an unused Quickshell import")
     if not QMLDIR.is_file() or "singleton DockService 1.0 DockService.qml" not in QMLDIR.read_text(encoding="utf-8"):
         errors.append("Dock qmldir must export DockService as a singleton")
     validate_native_owner(errors)
     validate_rules_contract(errors)
+    validate_native_registry(errors)
     if errors:
         for error in errors:
             print(f"FAIL {error}")
