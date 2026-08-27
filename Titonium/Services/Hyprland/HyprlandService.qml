@@ -105,7 +105,15 @@ Singleton {
     }
 
     function focusWindow(id: string): bool {
-        return WindowRegistry.focus(id, Hyprland.toplevels.values || []);
+        const plan = WindowRules.focusPlan(id, root.windows);
+        if (!plan)
+            return false;
+        const command = WindowRules.focusCommand(plan.id, Hyprland.usingLua);
+        if (!command)
+            return false;
+        root.activateWorkspace(plan.workspaceId);
+        Qt.callLater(() => Hyprland.dispatch(command));
+        return true;
     }
 
     function activateWindow(id: string): bool {

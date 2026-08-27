@@ -61,12 +61,14 @@ def main() -> int:
             "BarVisibilityState.togglePinned()",
             "menubar.bar_pin.pin",
             "menubar.bar_pin.autohide",
-            "radius: Metrics.radiusLarge",
+            "id: pinPill",
         ),
         "islands/qmldir": ("CenterGroup 1.0 CenterGroup.qml",),
         "islands/CenterIsland.qml": (
             "CenterNotchCoordinator.toggle",
             "CenterNotchCoordinator.ownerScreenName",
+            "radius: Metrics.radiusLarge",
+            'variant: "quiet"',
         ),
         "islands/ConnectivityPill.qml": (
             "readonly property int fullImplicitWidth",
@@ -169,6 +171,20 @@ def main() -> int:
                 errors.append(f"Workspaces has forbidden ownership/animation: {forbidden}")
         if 'text: String(workspaceItem.modelData.id)' in source:
             errors.append("Workspaces must use dots and app icons instead of visible numbers")
+        if "Theme.focus" in source:
+            errors.append("Active workspace must not use the global blue focus border")
+
+    center_group = BAR / "islands/CenterGroup.qml"
+    if center_group.is_file():
+        source = center_group.read_text(encoding="utf-8")
+        if not (0 <= source.find("id: pinPill") < source.find("CenterIsland {")):
+            errors.append("TopBar Pin must be a separate pill left of Titonium Center")
+        if "anchors.fill: parent\n        tone: \"elevated\"" in source:
+            errors.append("CenterGroup must not wrap Pin and Titonium in one outlined surface")
+
+    input_method = BAR / "widgets/InputMethod.qml"
+    if input_method.is_file() and "Shared.Surface" in input_method.read_text(encoding="utf-8"):
+        errors.append("Input Method must not draw a nested outlined surface inside StatusPill")
 
     for relative in ("islands/StartIsland.qml", "islands/StatusPill.qml"):
         path = BAR / relative

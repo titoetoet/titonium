@@ -27,6 +27,38 @@ function descriptor(raw) {
     });
 }
 
+function focusPlan(id, windows) {
+    const targetId = text(id);
+    const source = Array.isArray(windows) ? windows : [];
+    for (let index = 0; index < source.length; index++) {
+        if (text(source[index]?.id) !== targetId)
+            continue;
+        const workspaceId = Number.isInteger(source[index]?.workspaceId)
+            && source[index].workspaceId > 0 ? source[index].workspaceId : 0;
+        return Object.freeze({ id: targetId, workspaceId: workspaceId });
+    }
+    return null;
+}
+
+function windowSelector(id) {
+    let value = text(id);
+    if (value.indexOf("address:") === 0)
+        value = value.slice(8);
+    const raw = value.indexOf("0x") === 0 ? value.slice(2) : value;
+    if (!/^[0-9a-fA-F]+$/.test(raw))
+        return "";
+    return "address:" + (value.indexOf("0x") === 0 ? value : "0x" + value);
+}
+
+function focusCommand(id, usingLua) {
+    const selector = windowSelector(id);
+    if (!selector)
+        return "";
+    return usingLua
+        ? "hl.dsp.focus({ window = \"" + selector + "\" })"
+        : "focuswindow " + selector;
+}
+
 function mruIds(previousIds, windows) {
     const previous = Array.isArray(previousIds) ? previousIds : [];
     const source = Array.isArray(windows) ? windows : [];

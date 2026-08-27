@@ -29,12 +29,9 @@ function create() {
 
         focus: function(id, source) {
             const records = Array.isArray(source) ? source : [];
-            const native = liveNative(id, records);
             const target = targetFor(id, records, "activate");
             if (!target)
                 return false;
-            if (native.workspace && typeof native.workspace.activate === "function")
-                native.workspace.activate();
             target.activate();
             return true;
         },

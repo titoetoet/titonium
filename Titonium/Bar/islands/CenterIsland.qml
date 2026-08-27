@@ -4,6 +4,7 @@ import QtQuick
 import qs.Titonium.Bar.notch
 import qs.Titonium.Core.Runtime
 import qs.Titonium.Shared as Shared
+import qs.Titonium.Theme
 
 Item {
     id: root
@@ -12,11 +13,18 @@ Item {
     implicitWidth: 180
     implicitHeight: 32
 
+    Shared.Surface {
+        anchors.fill: parent
+        tone: "elevated"
+        radius: Metrics.radiusLarge
+    }
+
     Shared.Button {
         anchors.fill: parent
+        anchors.margins: Metrics.borderWidth
         label: "Titonium"
         iconName: "deployed_code"
-        variant: "secondary"
+        variant: "quiet"
         size: "medium"
         accessibleName: I18n.tr("menubar.center_notch.accessible")
         opacity: CenterNotchCoordinator.ownerScreenName === root.screen.name ? 0 : 1

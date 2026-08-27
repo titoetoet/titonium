@@ -32,7 +32,7 @@ FocusScope {
         root.applicationsRequested(root.screenModel);
     }
 
-    implicitWidth: dockRow.implicitWidth + 40
+    implicitWidth: dockRow.implicitWidth + 48
     implicitHeight: 64
     width: implicitWidth
     height: implicitHeight
@@ -54,12 +54,14 @@ FocusScope {
         id: dockPanel
         x: 12
         y: 8
-        width: dockRow.implicitWidth + 16
+        width: dockRow.implicitWidth + 24
         height: root.bodyHeight
         radius: Metrics.radiusLarge
         color: Theme.surface
         border.width: Metrics.borderWidth
         border.color: Theme.border
+
+        HoverHandler { id: dockPanelHover }
     }
 
     Row {
@@ -127,20 +129,28 @@ FocusScope {
 
     Item {
         id: pinControl
-        x: 0
-        anchors.verticalCenter: dockPanel.verticalCenter
-        width: 20
-        height: 20
-        visible: root.hovered
-        opacity: pinHover.hovered ? 1 : 0.62
+        x: 1
+        y: 0
+        width: 22
+        height: 22
+        z: 10
+        visible: dockPanelHover.hovered || pinHover.hovered
         Accessible.role: Accessible.Button
         Accessible.name: I18n.tr(DockStore.pinnedOpen
             ? "dock.pin_control.close" : "dock.pin_control.open")
 
+        Rectangle {
+            anchors.fill: parent
+            radius: width / 2
+            color: pinHover.hovered ? Theme.surfaceInteractive : Theme.surfaceElevated
+            border.width: Metrics.borderWidth
+            border.color: DockStore.pinnedOpen ? Theme.accent : Theme.border
+        }
+
         Shared.Icon {
             anchors.centerIn: parent
             name: DockStore.pinnedOpen ? "keep" : "keep_off"
-            size: 10
+            size: 12
             tone: DockStore.pinnedOpen ? "accent" : "secondary"
             accessibleName: ""
         }

@@ -12,7 +12,6 @@ Item {
     implicitWidth: 52
     implicitHeight: Metrics.widgetHeight
 
-    Shared.Surface { anchors.fill: parent; tone: "elevated"; radius: Metrics.radiusSmall }
     Row {
         anchors.centerIn: parent
         spacing: Metrics.spacingXSmall

@@ -58,13 +58,23 @@ Item {
                 })
 
                 Rectangle {
-                    anchors.fill: parent
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
                     visible: workspaceItem.modelData.occupied
+                    height: workspaceItem.modelData.active ? 22 : 18
                     radius: Metrics.radiusLarge
                     color: root.workspaceColor(workspaceItem.modelData.colorIndex)
-                    border.width: workspaceItem.modelData.active ? Metrics.borderWidth : 0
-                    border.color: workspaceItem.modelData.urgent ? Theme.warning
-                        : (workspaceItem.modelData.active ? Theme.focus : "transparent")
+                    opacity: workspaceItem.modelData.active ? 1.0 : 0.72
+                    border.width: workspaceItem.modelData.urgent ? Metrics.borderWidth : 0
+                    border.color: workspaceItem.modelData.urgent ? Theme.warning : "transparent"
+
+                    Behavior on height {
+                        NumberAnimation { duration: Motion.fast; easing.type: Easing.OutCubic }
+                    }
+                    Behavior on opacity {
+                        NumberAnimation { duration: Motion.fast; easing.type: Easing.OutCubic }
+                    }
                 }
 
                 Rectangle {

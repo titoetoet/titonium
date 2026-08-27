@@ -73,6 +73,22 @@ assert.equal(rules.descriptor({ id: "0xjkl", monitorName: 42 }).monitorName, "")
 assert.equal(rules.descriptor({ id: "", appId: "ignored" }), null);
 console.log("PASS Window descriptor identity, fallback, immutability, and raw-object rejection fixtures");
 
+assert.deepEqual(plain(rules.focusPlan("0xdef", [first, {
+    id: "0xdef", workspaceId: 2,
+}])), { id: "0xdef", workspaceId: 2 });
+assert.equal(rules.focusPlan("missing", [first]), null);
+console.log("PASS workspace-aware public focus-plan fixtures");
+
+assert.equal(rules.windowSelector("56060087e260"), "address:0x56060087e260");
+assert.equal(rules.windowSelector("0xABC"), "address:0xABC");
+assert.equal(rules.windowSelector("address:0xabc"), "address:0xabc");
+assert.equal(rules.windowSelector("0xabc\" }) malicious"), "");
+assert.equal(rules.focusCommand("56060087e260", true),
+    'hl.dsp.focus({ window = "address:0x56060087e260" })');
+assert.equal(rules.focusCommand("56060087e260", false),
+    "focuswindow address:0x56060087e260");
+console.log("PASS safe Hyprland window-focus command fixtures");
+
 assert.deepEqual(plain(rules.mruIds(["gone", "0x2", "0x1"], [
     { id: "0x1", active: false },
     { id: "0x2", active: true },
@@ -88,9 +104,6 @@ const activationOrder = [];
 let closed = 0;
 const native = {
     address: "0xabc",
-    workspace: {
-        activate() { activationOrder.push("workspace"); },
-    },
     wayland: {
         activate() { activationOrder.push("window"); },
         close() { closed += 1; },
@@ -99,7 +112,7 @@ const native = {
 registry.replace([{ id: "0xabc", native }]);
 assert.equal(registry.focus("0xabc", [native]), true);
 assert.equal(registry.close("0xabc", [native]), true);
-assert.deepEqual(activationOrder, ["workspace", "window"]);
+assert.deepEqual(activationOrder, ["window"]);
 assert.equal(closed, 1);
 assert.equal(registry.focus("0xabc", []), false);
 assert.equal(registry.close("missing", [native]), false);
@@ -110,6 +123,11 @@ console.log("PASS Window private registry re-lookup fixtures");
 const serviceSource = fs.readFileSync(servicePath, "utf8");
 const dockSource = fs.readFileSync(dockPath, "utf8");
 assert.equal((serviceSource.match(/Hyprland\.toplevels/g) || []).length > 0, true);
+assert.equal(serviceSource.includes("WindowRules.focusPlan"), true);
+assert.equal(serviceSource.includes("root.activateWorkspace(plan.workspaceId)"), true);
+assert.equal(serviceSource.includes("Qt.callLater"), true);
+assert.equal(serviceSource.indexOf("root.activateWorkspace(plan.workspaceId)")
+    < serviceSource.indexOf("Hyprland.dispatch(command)"), true);
 assert.equal(dockSource.includes("Hyprland.toplevels"), false);
 assert.equal(dockSource.includes("import Quickshell.Hyprland"), false);
 assert.equal(dockSource.includes("DockNativeRegistry"), false);
