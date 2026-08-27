@@ -19,6 +19,7 @@ FocusScope {
         "available": false,
     })
     readonly property string ownerId: root.descriptor?.ownerId || ""
+    readonly property var invoker: root.descriptor?.invoker || null
     readonly property int maximumHeight: 520
     readonly property real panelTop: 40 + Metrics.barSpacing
     readonly property real availableHeight: Math.max(0,
@@ -28,7 +29,13 @@ FocusScope {
     anchors.fill: parent
     focus: true
 
+    function returnFocus(): void {
+        if (root.invoker && root.invoker.forceActiveFocus)
+            root.invoker.forceActiveFocus(Qt.PopupFocusReason);
+    }
+
     function close(): void {
+        root.returnFocus();
         if (root.ownerId)
             SurfaceManager.close(root.ownerId);
     }
@@ -225,4 +232,5 @@ FocusScope {
     }
 
     Component.onCompleted: panel.forceActiveFocus(Qt.PopupFocusReason)
+    Component.onDestruction: root.returnFocus()
 }

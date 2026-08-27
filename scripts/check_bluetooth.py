@@ -281,8 +281,8 @@ def validate_presentation(errors: list[str]) -> None:
         "import qs.Titonium.Core.Screens",
         "import qs.Titonium.Core.Surfaces",
         "readonly property bool active:",
-        "function open(screen: var): bool",
-        "function toggle(screen: var): bool",
+        "function open(screen: var, invoker: var): bool",
+        "function toggle(screen: var, invoker: var): bool",
         "function close(): bool",
         "ScreenRouter",
         '"bluetooth:"',
@@ -297,6 +297,8 @@ def validate_presentation(errors: list[str]) -> None:
     for forbidden in ("Loader", "PanelWindow", "Timer", "Process", "FileView", "Quickshell.Bluetooth"):
         if forbidden in coordinator:
             errors.append(f"forbidden Bluetooth coordinator dependency: {forbidden}")
+
+    errors.extend(focus_return_errors(coordinator, popup))
 
     popup_fragments = (
         "import qs.Titonium.Services.Bluetooth",
@@ -360,22 +362,82 @@ def validate_presentation(errors: list[str]) -> None:
     pill_fragments = (
         "import qs.Titonium.Overlays.Bluetooth",
         "import qs.Titonium.Services.Bluetooth",
-        "BluetoothPopupCoordinator.toggle(root.screen)",
+        "BluetoothPopupCoordinator.toggle(root.screen, bluetoothButton)",
         "BluetoothService.stateKey",
         "BluetoothService.connectedCount",
         "bluetoothAccessibleName",
         "bluetoothIconName",
-        "bluetoothTone",
-        "tone: root.bluetoothTone",
+        "iconName: root.bluetoothIconName",
     )
     for fragment in pill_fragments:
         if fragment not in pill:
             errors.append(f"missing Bluetooth Bar-button contract: {fragment}")
+    errors.extend(bluetooth_button_errors(pill))
     if "bluetooth_planned" in pill:
         errors.append("Bluetooth Bar button must replace the planned diagnostic glyph")
     for forbidden in ("Quickshell.Bluetooth", "Bluetooth.defaultAdapter", "Timer", "Process", "FileView"):
         if forbidden in pill:
             errors.append(f"forbidden Bluetooth Bar dependency: {forbidden}")
+
+
+def focus_return_errors(coordinator: str, popup: str) -> list[str]:
+    errors = []
+    open_block = function_block(coordinator, "open")
+    toggle_block = function_block(coordinator, "toggle")
+    close_block = function_block(popup, "close")
+    if ("invoker: var" not in open_block or "!invoker" not in open_block
+            or '"invoker": invoker' not in open_block):
+        errors.append("Bluetooth coordinator must require and pass its invoker")
+    if "root.open(routedScreen, invoker)" not in toggle_block:
+        errors.append("Bluetooth toggle must forward its invoker to open")
+    if "readonly property var invoker:" not in popup:
+        errors.append("Bluetooth popup must read its descriptor invoker")
+    return_focus = function_block(popup, "returnFocus")
+    if "root.invoker && root.invoker.forceActiveFocus" not in return_focus:
+        errors.append("Bluetooth popup focus return must guard the invoker")
+    if "root.returnFocus();" not in close_block:
+        errors.append("Bluetooth popup close must return focus before closing")
+    if "Component.onDestruction: root.returnFocus()" not in popup:
+        errors.append("Bluetooth popup must return focus when destroyed")
+    return errors
+
+
+def bluetooth_button_errors(source: str) -> list[str]:
+    errors = []
+    if ("readonly property int diagnosticsWidth: networkIcon.implicitWidth + bluetoothButton.implicitWidth"
+            not in source):
+        errors.append("Bluetooth diagnostics width must count exactly one button")
+    button_start = source.find("id: bluetoothButton")
+    button_block = qml_block(source, source.rfind("Shared.Button", 0, button_start)) \
+        if button_start >= 0 else ""
+    if "iconName: root.bluetoothIconName" not in button_block:
+        errors.append("Bluetooth button must render its icon inside the control")
+    if "anchors.centerIn: bluetoothButton" in source:
+        errors.append("Bluetooth button must not have a sibling icon")
+    return errors
+
+
+def validate_presentation_gate_fixtures(errors: list[str]) -> None:
+    missing_invoker_coordinator = """QtObject {
+    function open(screen: var): bool { return true; }
+    function toggle(screen: var): bool { return true; }
+}"""
+    valid_popup = """FocusScope {
+    readonly property var invoker: descriptor?.invoker || null
+    function returnFocus(): void { if (root.invoker && root.invoker.forceActiveFocus) root.invoker.forceActiveFocus(Qt.PopupFocusReason); }
+    function close(): void { root.returnFocus(); SurfaceManager.close(ownerId); }
+    Component.onDestruction: root.returnFocus()
+}"""
+    if not focus_return_errors(missing_invoker_coordinator, valid_popup):
+        errors.append("Bluetooth focus-return matcher missed missing-invoker fixture")
+
+    duplicate_icon_pill = """Item {
+    readonly property int diagnosticsWidth: networkIcon.implicitWidth + bluetoothButton.implicitWidth
+    Shared.Button { id: bluetoothButton; iconName: root.bluetoothIconName }
+    Shared.Icon { anchors.centerIn: bluetoothButton }
+}"""
+    if not bluetooth_button_errors(duplicate_icon_pill):
+        errors.append("Bluetooth button matcher missed sibling-icon fixture")
 
 
 def main() -> int:
@@ -386,6 +448,7 @@ def main() -> int:
     validate_native_importer(errors)
     validate_service(errors)
     validate_presentation(errors)
+    validate_presentation_gate_fixtures(errors)
     validate_gate_fixtures(errors)
     validate_rules_contract(errors)
 

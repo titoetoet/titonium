@@ -35,9 +35,6 @@ Item {
     readonly property string bluetoothIconName: !BluetoothService.available || !BluetoothService.powered
         ? "bluetooth_disabled" : (BluetoothService.discovering ? "bluetooth_searching"
             : (BluetoothService.connectedCount > 0 ? "bluetooth_connected" : "bluetooth"))
-    readonly property string bluetoothTone: !BluetoothService.available || !BluetoothService.powered
-        ? "disabled" : (BluetoothService.discovering ? "accent"
-            : (BluetoothService.connectedCount > 0 ? "success" : "secondary"))
 
     implicitWidth: root.audioWidth + (root.showDiagnostics
         ? root.diagnosticsWidth + Metrics.spacingSmall : 0)
@@ -65,18 +62,11 @@ Item {
         Shared.Button {
             id: bluetoothButton
             visible: root.showDiagnostics
+            iconName: root.bluetoothIconName
             variant: "quiet"
             size: "small"
             accessibleName: root.bluetoothAccessibleName
-            onTriggered: BluetoothPopupCoordinator.toggle(root.screen)
-        }
-        Shared.Icon {
-            anchors.centerIn: bluetoothButton
-            visible: bluetoothButton.visible
-            name: root.bluetoothIconName
-            size: 18
-            tone: root.bluetoothTone
-            accessibleName: ""
+            onTriggered: BluetoothPopupCoordinator.toggle(root.screen, bluetoothButton)
         }
         Shared.Button {
             id: audioButton

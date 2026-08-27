@@ -14,27 +14,28 @@ QtObject {
         return screen?.name ? "bluetooth:" + screen.name : "";
     }
 
-    function open(screen: var): bool {
+    function open(screen: var, invoker: var): bool {
         const routedScreen = ScreenRouter.screenForName(screen?.name || "");
         const owner = root.ownerFor(routedScreen);
-        if (!owner)
+        if (!owner || !invoker)
             return false;
         return SurfaceManager.open(owner, {
             "source": Qt.resolvedUrl("BluetoothPopupSurface.qml"),
             "keyboardFocus": "exclusive",
             "closeOnMonitorChange": true,
             "ownerId": owner,
+            "invoker": invoker,
         }, routedScreen);
     }
 
-    function toggle(screen: var): bool {
+    function toggle(screen: var, invoker: var): bool {
         const routedScreen = ScreenRouter.screenForName(screen?.name || "");
         const owner = root.ownerFor(routedScreen);
-        if (!owner)
+        if (!owner || !invoker)
             return false;
         if (SurfaceManager.ownerId === owner)
             return SurfaceManager.close(owner);
-        return root.open(routedScreen);
+        return root.open(routedScreen, invoker);
     }
 
     function close(): bool {
