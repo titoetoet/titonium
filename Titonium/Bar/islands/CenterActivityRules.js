@@ -15,3 +15,17 @@ function label(appName, title) {
         return app;
     return app + " · " + task;
 }
+
+function presentation(appName, title, activeLabel, desktopLabel) {
+    const app = text(appName);
+    const task = text(title);
+    const active = text(activeLabel) || "Active";
+    const desktop = text(desktopLabel) || "Desktop";
+    if (!app && !task)
+        return { appName: "Titonium", title: desktop };
+    return {
+        appName: app || "Titonium",
+        title: !task || task.toLocaleLowerCase() === app.toLocaleLowerCase()
+            ? active : task
+    };
+}

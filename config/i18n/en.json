@@ -86,6 +86,8 @@
     "center_notch.tools.title": "Tools",
     "menubar.clock.accessible": "Clock",
     "menubar.center_notch.accessible": "Open Titonium center",
+    "menubar.center_notch.active": "Active",
+    "menubar.center_notch.desktop": "Desktop",
     "menubar.bar_pin.autohide": "Enable TopBar auto-hide",
     "menubar.bar_pin.pin": "Keep TopBar visible",
     "menubar.center_pin.close": "Close pinned Center",

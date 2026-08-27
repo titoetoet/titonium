@@ -25,12 +25,32 @@ assert.equal(rules.label("Kitty", "   "), "Kitty");
 assert.equal(rules.label("", "  Clipboard  "), "Clipboard");
 console.log("PASS Center activity label normalization fixtures");
 
+assert.equal(typeof rules.presentation, "function",
+    "Center activity rules must project separate app and title fields");
+assert.deepEqual(JSON.parse(JSON.stringify(rules.presentation(
+    "Chrome", "Titonium — Settings", "Active", "Desktop"))),
+    { appName: "Chrome", title: "Titonium — Settings" });
+assert.deepEqual(JSON.parse(JSON.stringify(rules.presentation(
+    "Firefox", "Firefox", "Active", "Desktop"))),
+    { appName: "Firefox", title: "Active" });
+assert.deepEqual(JSON.parse(JSON.stringify(rules.presentation(
+    "", "", "Active", "Desktop"))),
+    { appName: "Titonium", title: "Desktop" });
+console.log("PASS Center activity two-field presentation fixtures");
+
 const island = fs.readFileSync(islandPath, "utf8");
 for (const fragment of [
     "HyprlandService.activeWindow",
     "ApplicationService.nameForAppId",
     "CenterActivityRules.label",
-    "implicitWidth: 520",
+    "implicitWidth: 420",
+    "readonly property var presentation:",
+    "id: appNameLabel",
+    "Layout.preferredWidth: 120",
+    "id: activitySeparator",
+    "Layout.preferredWidth: Metrics.borderWidth",
+    "id: titleLabel",
+    "outlined: false",
     "Text.ElideRight",
     "maximumLineCount: 1",
 ]) {

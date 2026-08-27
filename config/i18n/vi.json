@@ -86,6 +86,8 @@
     "center_notch.tools.title": "Công cụ",
     "menubar.clock.accessible": "Đồng hồ",
     "menubar.center_notch.accessible": "Mở trung tâm Titonium",
+    "menubar.center_notch.active": "Đang hoạt động",
+    "menubar.center_notch.desktop": "Desktop",
     "menubar.bar_pin.autohide": "Bật tự động ẩn TopBar",
     "menubar.bar_pin.pin": "Giữ TopBar luôn hiện",
     "menubar.center_pin.close": "Đóng Trung tâm đang ghim",

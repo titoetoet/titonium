@@ -19,9 +19,14 @@ FocusScope {
         ? ApplicationService.nameForAppId(root.activeWindow.appId) : ""
     readonly property string activityLabel: CenterActivityRules.label(
         root.appName, root.activeWindow?.title || "")
+    readonly property var presentation: CenterActivityRules.presentation(
+        root.appName,
+        root.activeWindow?.title || "",
+        I18n.tr("menubar.center_notch.active"),
+        I18n.tr("menubar.center_notch.desktop"))
     readonly property bool notchOpen: CenterNotchCoordinator.ownerScreenName === root.screen.name
 
-    implicitWidth: 520
+    implicitWidth: 420
     implicitHeight: Metrics.controlHeight
     activeFocusOnTab: true
 
@@ -33,6 +38,7 @@ FocusScope {
         anchors.fill: parent
         tone: centerHover.hovered || root.notchOpen ? "interactive" : "elevated"
         radius: Metrics.radiusLarge
+        outlined: false
     }
 
     RowLayout {
@@ -52,8 +58,26 @@ FocusScope {
         }
 
         Shared.TextLabel {
+            id: appNameLabel
+            Layout.preferredWidth: 120
+            text: root.presentation.appName
+            variant: "label"
+            strong: true
+            elide: Text.ElideRight
+            maximumLineCount: 1
+        }
+
+        Rectangle {
+            id: activitySeparator
+            Layout.preferredWidth: Metrics.borderWidth
+            Layout.preferredHeight: 16
+            color: Theme.border
+        }
+
+        Shared.TextLabel {
+            id: titleLabel
             Layout.fillWidth: true
-            text: root.activityLabel
+            text: root.presentation.title
             variant: "label"
             strong: root.notchOpen
             elide: Text.ElideRight
