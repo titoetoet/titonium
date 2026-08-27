@@ -1,0 +1,74 @@
+.pragma library
+
+function text(value) {
+    return typeof value === "string" ? value.replace(/\s+/g, " ").trim() : "";
+}
+
+function positiveId(value) {
+    return Number.isInteger(value) && value > 0 ? value : 0;
+}
+
+function descriptor(raw, receivedAt) {
+    const source = raw && typeof raw === "object" ? raw : {};
+    const id = positiveId(source.id);
+    if (!id)
+        return null;
+    const timestamp = Number(receivedAt);
+    const urgency = Number(source.urgency);
+    return Object.freeze({
+        id: id,
+        appName: text(source.appName),
+        appIcon: text(source.appIcon),
+        summary: text(source.summary),
+        body: text(source.body),
+        urgency: Number.isInteger(urgency) ? Math.max(0, Math.min(2, urgency)) : 1,
+        receivedAt: Number.isFinite(timestamp) ? timestamp : 0,
+    });
+}
+
+function upsert(list, item, limit) {
+    const source = Array.isArray(list) ? list : [];
+    const maximum = Number.isInteger(limit) && limit > 0 ? limit : 100;
+    if (!item || !positiveId(item.id))
+        return Object.freeze(source.slice(0, maximum));
+    const result = [item];
+    for (let index = 0; index < source.length && result.length < maximum; index++) {
+        if (positiveId(source[index]?.id) !== item.id)
+            result.push(source[index]);
+    }
+    return Object.freeze(result);
+}
+
+function addToast(ids, id, limit) {
+    const source = Array.isArray(ids) ? ids : [];
+    const targetId = positiveId(id);
+    const maximum = Number.isInteger(limit) && limit > 0 ? limit : 3;
+    if (!targetId)
+        return Object.freeze(source.slice(0, maximum));
+    const result = [targetId];
+    for (let index = 0; index < source.length && result.length < maximum; index++) {
+        const candidate = positiveId(source[index]);
+        if (candidate && candidate !== targetId)
+            result.push(candidate);
+    }
+    return Object.freeze(result);
+}
+
+function removeId(values, id) {
+    const source = Array.isArray(values) ? values : [];
+    const targetId = positiveId(id);
+    if (!targetId)
+        return Object.freeze(source.slice());
+    return Object.freeze(source.filter(value => {
+        const candidate = typeof value === "object" ? value?.id : value;
+        return positiveId(candidate) !== targetId;
+    }));
+}
+
+function markUnread(ids, id) {
+    return addToast(ids, id, Number.MAX_SAFE_INTEGER);
+}
+
+function unreadCount(ids) {
+    return Array.isArray(ids) ? ids.length : 0;
+}
