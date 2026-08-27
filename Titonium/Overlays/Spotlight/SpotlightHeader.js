@@ -5,7 +5,7 @@ var actions = Object.freeze([
     Object.freeze({
         "id": "applications",
         "icon": "apps",
-        "iconSize": 21,
+        "iconSize": 20,
         "accessibleKey": "spotlight.scope.applications"
     }),
     Object.freeze({
@@ -31,11 +31,11 @@ function identityIconSize() {
 }
 
 function searchFieldWidth() {
-    return 620;
+    return 560;
 }
 
 function searchFieldHeight() {
-    return 48;
+    return 46;
 }
 
 function scopeButtonSize() {
@@ -45,4 +45,8 @@ function scopeButtonSize() {
 function scopeStripWidth(spacing) {
     return actions.length * scopeButtonSize()
         + Math.max(0, actions.length - 1) * Math.max(0, Number(spacing) || 0);
+}
+
+function scopeGroupWidth() {
+    return 200;
 }

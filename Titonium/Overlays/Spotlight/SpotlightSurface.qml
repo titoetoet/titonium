@@ -237,34 +237,41 @@ FocusScope {
                 Accessible.focusable: true
                 }
 
-                Item { Layout.fillWidth: true }
-
-                Row {
-                    spacing: Metrics.spacingSmall
-                    Layout.preferredWidth: SpotlightHeader.scopeStripWidth(spacing)
+                Rectangle {
+                    id: scopeGroup
+                    Layout.preferredWidth: SpotlightHeader.scopeGroupWidth()
                     Layout.preferredHeight: SpotlightHeader.scopeButtonSize()
                     Layout.alignment: Qt.AlignVCenter
+                    radius: height / 2
+                    color: Theme.surfaceElevated
+                    border.width: Metrics.borderWidth
+                    border.color: Theme.border
 
-                    Repeater {
-                        model: root.scopeActions
+                    Row {
+                        anchors.centerIn: parent
+                        spacing: Metrics.spacingMedium
 
-                        Controls.Button {
-                            required property var modelData
-                            width: SpotlightHeader.scopeButtonSize()
-                            height: SpotlightHeader.scopeButtonSize()
-                            iconName: modelData.icon
-                            iconSize: modelData.iconSize
-                            variant: "secondary"
-                            selected: spotlightModel.scope === modelData.id
-                            backgroundRadius: Metrics.radiusLarge
-                            activeFocusOnTab: false
-                            accessibleName: I18n.tr(modelData.accessibleKey)
-                            QtControls.ToolTip.visible: hovered
-                            QtControls.ToolTip.text: accessibleName
-                            QtControls.ToolTip.delay: 500
-                            onTriggered: {
-                                spotlightModel.setScope(modelData.id);
-                                searchField.forceActiveFocus(Qt.MouseFocusReason);
+                        Repeater {
+                            model: root.scopeActions
+
+                            Controls.Button {
+                                required property var modelData
+                                width: SpotlightHeader.scopeButtonSize()
+                                height: SpotlightHeader.scopeButtonSize()
+                                iconName: modelData.icon
+                                iconSize: modelData.iconSize
+                                variant: "quiet"
+                                selected: spotlightModel.scope === modelData.id
+                                backgroundRadius: height / 2
+                                activeFocusOnTab: false
+                                accessibleName: I18n.tr(modelData.accessibleKey)
+                                QtControls.ToolTip.visible: hovered
+                                QtControls.ToolTip.text: accessibleName
+                                QtControls.ToolTip.delay: 500
+                                onTriggered: {
+                                    spotlightModel.setScope(modelData.id);
+                                    searchField.forceActiveFocus(Qt.MouseFocusReason);
+                                }
                             }
                         }
                     }

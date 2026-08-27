@@ -66,14 +66,14 @@ const visual = loadDomain("SpotlightVisual");
 const geometry = loadDomain("SpotlightGeometry");
 
 assertEqual(geometry.panelTop(), 200, "Spotlight panel starts at absolute logical y 200");
-assertEqual(geometry.panelWidth(1000, 16), 920,
-    "Spotlight panel uses the selected wide 920 logical pixel frame");
+assertEqual(geometry.panelWidth(1000, 16), 860,
+    "Spotlight panel uses the balanced 860 logical pixel frame");
 assertEqual(geometry.panelWidth(700, 16), 636,
     "Spotlight panel remains bounded on narrow outputs");
 assertEqual(geometry.panelHeight(800, 16), 584,
     "Spotlight panel height preserves its bottom safety gap after moving down");
-assertEqual(geometry.panelHeight(1200, 16), 800,
-    "Spotlight panel uses the selected roomy 800 logical pixel height");
+assertEqual(geometry.panelHeight(1200, 16), 740,
+    "Spotlight panel uses the balanced 740 logical pixel height");
 
 assertDeepEqual(Array.from(header.scopeActions(), action => ({
     id: action.id,
@@ -81,20 +81,24 @@ assertDeepEqual(Array.from(header.scopeActions(), action => ({
     iconSize: action.iconSize,
     accessibleKey: action.accessibleKey
 })), [
-    { id: "applications", icon: "apps", iconSize: 21, accessibleKey: "spotlight.scope.applications" },
+    { id: "applications", icon: "apps", iconSize: 20, accessibleKey: "spotlight.scope.applications" },
     { id: "clipboard", icon: "content_paste", iconSize: 19, accessibleKey: "spotlight.scope.clipboard" },
     { id: "system", icon: "manage_search", iconSize: 20, accessibleKey: "spotlight.scope.system" }
 ], "header exposes three icon-only scope actions in keyboard cycle order");
 assertEqual(header.identityIconSize(), 28, "header identity icon balances the search control");
-assertEqual(header.searchFieldWidth(), 620, "search keeps a bounded visual width");
-assertEqual(header.searchFieldHeight(), 48, "search and scope controls share one visual height");
+assertEqual(header.searchFieldWidth(), 560, "search keeps the balanced reference proportion");
+assertEqual(header.searchFieldHeight(), 46, "search retains a compact visual height");
 assertEqual(header.scopeButtonSize(), 44, "scope icon buttons keep a compact accessible square hit target");
 assertEqual(header.scopeStripWidth(8), 148,
     "scope icon strip reserves width instead of collapsing inside RowLayout");
+assertEqual(header.scopeGroupWidth(), 200,
+    "scope icons share the same balanced segmented width as the visual reference");
+assertEqual(spotlightSurfaceSource.includes("id: scopeGroup"), true,
+    "scope actions render inside one grouped capsule");
 assertEqual(spotlightSurfaceSource.includes("iconSize: modelData.iconSize"), true,
     "scope buttons apply the optical icon size from their descriptor");
-assertEqual(spotlightSurfaceSource.includes('variant: "secondary"\n                            selected: spotlightModel.scope === modelData.id'), true,
-    "all scope icons use a tonal button while the current scope remains selected");
+assertEqual(spotlightSurfaceSource.includes('variant: "quiet"\n                                selected: spotlightModel.scope === modelData.id'), true,
+    "scope icons use quiet segments while the current scope remains selected");
 assertEqual(visual.appIconSize(), 56, "application icons match the selected visual density");
 assertEqual(visual.appLabelSize(), 13, "application labels retain the approved Spotlight density");
 assertEqual(visual.categoryLabelSize(), 13, "category labels retain the approved Spotlight density");
