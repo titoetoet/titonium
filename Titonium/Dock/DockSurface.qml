@@ -26,6 +26,11 @@ FocusScope {
             SurfaceManager.close(SurfaceManager.ownerId);
     }
 
+    function openApplications(): void {
+        root.closeTransient();
+        root.applicationsRequested(root.screenModel);
+    }
+
     implicitWidth: dockRow.implicitWidth + Metrics.spacingSmall * 2
     implicitHeight: root.bodyHeight
     width: implicitWidth
@@ -88,13 +93,13 @@ FocusScope {
             TapHandler {
                 onTapped: {
                     applicationsButton.forceActiveFocus(Qt.MouseFocusReason);
-                    root.applicationsRequested(root.screenModel);
+                    root.openApplications();
                 }
             }
             Keys.onPressed: event => {
                 if (event.key === Qt.Key_Space || event.key === Qt.Key_Return
                         || event.key === Qt.Key_Enter) {
-                    root.applicationsRequested(root.screenModel);
+                    root.openApplications();
                     event.accepted = true;
                 }
             }

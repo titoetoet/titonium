@@ -103,8 +103,19 @@ def main() -> int:
     dock_surface = require_fragments(DOCK_SURFACE, (
         "import qs.Titonium.Core.Surfaces",
         "SurfaceManager.close(SurfaceManager.ownerId)",
+        "function openApplications(): void",
+        "root.applicationsRequested(root.screenModel);",
         "DockStore.setPinnedOpen",
     ), errors)
+    applications_function = dock_surface.find("function openApplications(): void")
+    applications_close = dock_surface.find("root.closeTransient();", applications_function)
+    applications_emit = dock_surface.find(
+        "root.applicationsRequested(root.screenModel);", applications_function)
+    if applications_function < 0 or applications_close < applications_function \
+            or applications_emit < applications_close:
+        errors.append("Dock Applications intent must close SurfaceManager before opening Spotlight")
+    if dock_surface.count("root.openApplications();") < 2:
+        errors.append("Dock Applications mouse and keyboard activation must share the close-first intent")
     require_ordered(dock_surface, "root.closeTransient();", "pinControl.togglePinnedOpen();",
                     "Dock pin control", errors)
     dock_button = require_fragments(DOCK_BUTTON, (
