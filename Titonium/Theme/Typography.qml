@@ -2,6 +2,7 @@ pragma Singleton
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import "TypographyScale.js" as TypographyScale
 
 QtObject {
     id: root
@@ -10,25 +11,23 @@ QtObject {
     readonly property string fallbackFamily: "Noto Sans"
     readonly property string monoFamily: "JetBrains Mono"
     readonly property string iconFamily: "Material Symbols Rounded"
-    readonly property int microSize: 10
-    readonly property int bodySize: 13
-    readonly property int bodySmallSize: 12
-    readonly property int bodyLargeSize: 14
-    readonly property int captionSize: 11
-    readonly property int labelSize: 13
-    readonly property int titleSmallSize: 15
-    readonly property int titleSize: 16
-    readonly property int titleLargeSize: 20
-    readonly property int displaySize: 28
+    readonly property int microSize: TypographyScale.sizeFor("micro")
+    readonly property int bodySize: TypographyScale.sizeFor("body")
+    readonly property int bodySmallSize: TypographyScale.sizeFor("bodySmall")
+    readonly property int bodyLargeSize: TypographyScale.sizeFor("bodyLarge")
+    readonly property int captionSize: TypographyScale.sizeFor("caption")
+    readonly property int labelSize: TypographyScale.sizeFor("label")
+    readonly property int titleSmallSize: TypographyScale.sizeFor("titleSmall")
+    readonly property int titleSize: TypographyScale.sizeFor("title")
+    readonly property int titleLargeSize: TypographyScale.sizeFor("titleLarge")
+    readonly property int displaySize: TypographyScale.sizeFor("display")
     readonly property int regularWeight: Font.Normal
     readonly property int mediumWeight: Font.Medium
     readonly property int semiboldWeight: Font.DemiBold
     readonly property int boldWeight: Font.Bold
 
     function sizeFor(variant: string): int {
-        const sizes = { micro: 10, caption: 11, bodySmall: 12, body: 13, bodyLarge: 14,
-            label: 13, titleSmall: 15, title: 16, titleLarge: 20, display: 28, mono: 13 };
-        return sizes[variant] || root.bodySize;
+        return TypographyScale.sizeFor(variant);
     }
 
     function weightFor(variant: string): int {

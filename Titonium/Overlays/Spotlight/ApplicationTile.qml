@@ -54,6 +54,7 @@ FocusScope {
                 width: parent.width
                 text: root.application.name
                 variant: "label"
+                font.pixelSize: SpotlightVisual.appLabelSize()
                 strong: root.selected
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.NoWrap

@@ -4,6 +4,18 @@ function appIconSize() {
     return 56;
 }
 
+function appLabelSize() {
+    return 13;
+}
+
+function categoryLabelSize() {
+    return 13;
+}
+
+function searchTextSize() {
+    return 14;
+}
+
 function fallbackIcon(categories) {
     const length = Math.max(0, Math.floor(Number(categories?.length) || 0));
     const normalized = [];

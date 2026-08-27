@@ -11,6 +11,7 @@ import qs.Titonium.Core.Surfaces
 import "SpotlightGeometry.js" as SpotlightGeometry
 import "SpotlightHeader.js" as SpotlightHeader
 import "SpotlightTransition.js" as SpotlightTransition
+import "SpotlightVisual.js" as SpotlightVisual
 
 FocusScope {
     id: root
@@ -175,7 +176,7 @@ FocusScope {
                 color: Theme.textPrimary
                 placeholderTextColor: Theme.textSecondary
                 font.family: Typography.family
-                font.pixelSize: Typography.bodyLargeSize
+                font.pixelSize: SpotlightVisual.searchTextSize()
                 leftPadding: 44
                 rightPadding: Metrics.spacingLarge
                 selectByMouse: true
@@ -252,6 +253,7 @@ FocusScope {
                             width: SpotlightHeader.scopeButtonSize()
                             height: SpotlightHeader.scopeButtonSize()
                             iconName: modelData.icon
+                            iconSize: modelData.iconSize
                             variant: "secondary"
                             selected: spotlightModel.scope === modelData.id
                             backgroundRadius: Metrics.radiusLarge
@@ -290,6 +292,7 @@ FocusScope {
                             label: I18n.tr("spotlight.category." + modelData.id)
                             variant: "quiet"
                             size: "small"
+                            labelPixelSize: SpotlightVisual.categoryLabelSize()
                             selected: spotlightModel.categoryId === modelData.id
                             backgroundRadius: height / 2
                             accessibleName: I18n.tr("spotlight.category_accessible", { "name": label })

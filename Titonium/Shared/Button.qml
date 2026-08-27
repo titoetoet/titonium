@@ -13,6 +13,8 @@ FocusScope {
     property bool checked: false
     property bool selected: false
     property bool showFocusRing: true
+    property int iconSize: 20
+    property int labelPixelSize: 0
     property int backgroundRadius: Metrics.radiusSmall
     property int contentAlignment: Qt.AlignHCenter
     property string accessibleName: root.label.length > 0 ? root.label : root.iconName
@@ -61,8 +63,14 @@ FocusScope {
         anchors.verticalCenter: parent.verticalCenter
         x: root.contentAlignment === Qt.AlignLeft ? Metrics.spacingMedium : (parent.width - width) / 2
         spacing: root.label.length > 0 && root.iconName.length > 0 ? Metrics.spacingSmall : 0
-        Icon { visible: root.iconName.length > 0; name: root.iconName; size: 20; color: root.foregroundColor }
-        TextLabel { visible: root.label.length > 0; text: root.label; variant: "label"; color: root.foregroundColor }
+        Icon { visible: root.iconName.length > 0; name: root.iconName; size: root.iconSize; color: root.foregroundColor }
+        TextLabel {
+            visible: root.label.length > 0
+            text: root.label
+            variant: "label"
+            color: root.foregroundColor
+            font.pixelSize: root.labelPixelSize > 0 ? root.labelPixelSize : Typography.labelSize
+        }
     }
 
     HoverHandler { id: hoverHandler; enabled: root.enabled; cursorShape: Qt.PointingHandCursor }

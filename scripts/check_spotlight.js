@@ -78,21 +78,27 @@ assertEqual(geometry.panelHeight(1200, 16), 800,
 assertDeepEqual(Array.from(header.scopeActions(), action => ({
     id: action.id,
     icon: action.icon,
+    iconSize: action.iconSize,
     accessibleKey: action.accessibleKey
 })), [
-    { id: "applications", icon: "apps", accessibleKey: "spotlight.scope.applications" },
-    { id: "clipboard", icon: "content_paste", accessibleKey: "spotlight.scope.clipboard" },
-    { id: "system", icon: "manage_search", accessibleKey: "spotlight.scope.system" }
+    { id: "applications", icon: "apps", iconSize: 21, accessibleKey: "spotlight.scope.applications" },
+    { id: "clipboard", icon: "content_paste", iconSize: 19, accessibleKey: "spotlight.scope.clipboard" },
+    { id: "system", icon: "manage_search", iconSize: 20, accessibleKey: "spotlight.scope.system" }
 ], "header exposes three icon-only scope actions in keyboard cycle order");
 assertEqual(header.identityIconSize(), 28, "header identity icon balances the search control");
 assertEqual(header.searchFieldWidth(), 620, "search keeps a bounded visual width");
 assertEqual(header.searchFieldHeight(), 48, "search and scope controls share one visual height");
-assertEqual(header.scopeButtonSize(), 48, "scope icon buttons keep a clear square hit target");
-assertEqual(header.scopeStripWidth(8), 160,
+assertEqual(header.scopeButtonSize(), 44, "scope icon buttons keep a compact accessible square hit target");
+assertEqual(header.scopeStripWidth(8), 148,
     "scope icon strip reserves width instead of collapsing inside RowLayout");
+assertEqual(spotlightSurfaceSource.includes("iconSize: modelData.iconSize"), true,
+    "scope buttons apply the optical icon size from their descriptor");
 assertEqual(spotlightSurfaceSource.includes('variant: "secondary"\n                            selected: spotlightModel.scope === modelData.id'), true,
     "all scope icons use a tonal button while the current scope remains selected");
 assertEqual(visual.appIconSize(), 56, "application icons match the selected visual density");
+assertEqual(visual.appLabelSize(), 13, "application labels retain the approved Spotlight density");
+assertEqual(visual.categoryLabelSize(), 13, "category labels retain the approved Spotlight density");
+assertEqual(visual.searchTextSize(), 14, "search text retains the approved Spotlight density");
 assertEqual(visual.fallbackIcon(["Network"]), "public", "network applications use a quiet semantic fallback icon");
 assertEqual(visual.fallbackIcon({ 0: "Network", length: 1 }), "public",
     "QML list-like categories keep their semantic fallback icon");

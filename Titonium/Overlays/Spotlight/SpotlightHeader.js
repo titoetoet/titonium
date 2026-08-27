@@ -5,16 +5,19 @@ var actions = Object.freeze([
     Object.freeze({
         "id": "applications",
         "icon": "apps",
+        "iconSize": 21,
         "accessibleKey": "spotlight.scope.applications"
     }),
     Object.freeze({
         "id": "clipboard",
         "icon": "content_paste",
+        "iconSize": 19,
         "accessibleKey": "spotlight.scope.clipboard"
     }),
     Object.freeze({
         "id": "system",
         "icon": "manage_search",
+        "iconSize": 20,
         "accessibleKey": "spotlight.scope.system"
     })
 ]);
@@ -36,7 +39,7 @@ function searchFieldHeight() {
 }
 
 function scopeButtonSize() {
-    return 48;
+    return 44;
 }
 
 function scopeStripWidth(spacing) {
