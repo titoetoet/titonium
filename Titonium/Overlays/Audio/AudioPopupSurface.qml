@@ -18,11 +18,12 @@ FocusScope {
     readonly property real panelTop: 40 + Metrics.barSpacing
     readonly property real availableHeight: Math.max(0,
         root.height - root.panelTop - Metrics.barPadding)
-    readonly property real fixedContentHeight: Metrics.spacingLarge * 2
-        + outputRow.implicitHeight + inputRow.implicitHeight + Metrics.borderWidth
+    readonly property real fixedContentHeight: outputRow.implicitHeight
+        + inputRow.implicitHeight + Metrics.borderWidth
         + applicationsLabel.implicitHeight + Metrics.spacingMedium * 4
     readonly property real maximumStreamHeight: Math.max(0,
-        Math.min(root.maximumHeight, root.availableHeight) - root.fixedContentHeight)
+        Math.min(root.maximumHeight, root.availableHeight)
+            - root.fixedContentHeight - 2 * panel.padding)
     readonly property real streamContentHeight: streamList.count > 0
         ? Math.max(0, streamList.contentHeight) : emptyLabel.implicitHeight
     readonly property real streamHeight: Math.min(root.streamContentHeight,
@@ -57,7 +58,7 @@ FocusScope {
         id: panel
         width: 380
         height: Math.min(root.maximumHeight, root.availableHeight,
-            root.fixedContentHeight + root.streamHeight)
+            root.fixedContentHeight + root.streamHeight + 2 * panel.padding)
         anchors.top: parent.top
         anchors.right: parent.right
         anchors.topMargin: root.panelTop
@@ -67,7 +68,6 @@ FocusScope {
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: Metrics.spacingLarge
             spacing: Metrics.spacingMedium
 
             AudioControlRow {

@@ -290,8 +290,19 @@ def main() -> int:
             errors.append("Audio slider must expose exactly one tab stop on the inner Slider")
 
     popup_path = OVERLAY_ROOT / "AudioPopupSurface.qml"
-    if popup_path.is_file() and "Math.max(160" in popup_path.read_text(encoding="utf-8"):
-        errors.append("Audio popup must not force a 160px minimum beyond available screen height")
+    if popup_path.is_file():
+        popup_source = popup_path.read_text(encoding="utf-8")
+        if "Math.max(160" in popup_source:
+            errors.append("Audio popup must not force a 160px minimum beyond available screen height")
+        if re.search(r"ColumnLayout\s*\{[\s\S]*?anchors\.margins\s*:", popup_source):
+            errors.append("Audio popup content must rely on Panel padding without nested margins")
+        if not re.search(
+                r"fixedContentHeight\s*\+\s*root\.streamHeight\s*"
+                r"\+\s*2\s*\*\s*panel\.padding", popup_source):
+            errors.append("Audio popup height must include both Panel padding edges")
+        if not re.search(
+                r"fixedContentHeight\s*-\s*2\s*\*\s*panel\.padding", popup_source):
+            errors.append("Audio stream cap must reserve both Panel padding edges")
     require_fragments(errors, OVERLAY_ROOT / "AudioControlRow.qml", (
         'property string kind: "output"',
         "AudioService.setOutputVolume",
