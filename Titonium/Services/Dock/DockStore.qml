@@ -13,6 +13,7 @@ QtObject {
     property var state: DockRules.normalizeState(null)
     property bool ready: false
     property bool warnedRuntimeCorruption: false
+    property int pendingRuntimeWrites: 0
 
     readonly property var pinnedIds: root.state.pinnedIds.slice()
     readonly property bool pinnedOpen: root.state.pinnedOpen
@@ -38,9 +39,19 @@ QtObject {
     function apply(next: var, persist: bool): bool {
         const value = DockRules.normalizeState(next);
         root.state = value;
-        if (persist)
+        if (persist) {
+            root.beginRuntimeWrite();
             runtimeFile.setText(JSON.stringify(value, null, 2));
+        }
         return true;
+    }
+
+    function beginRuntimeWrite(): void {
+        root.pendingRuntimeWrites += 1;
+    }
+
+    function finishRuntimeWrite(): void {
+        root.pendingRuntimeWrites = Math.max(0, root.pendingRuntimeWrites - 1);
     }
 
     function reload(): void {
@@ -114,9 +125,13 @@ QtObject {
         blockLoading: true
         printErrors: false
         atomicWrites: true
-        watchChanges: true
+        watchChanges: root.pendingRuntimeWrites === 0
         onFileChanged: root.reload()
-        onSaveFailed: failure => Logger.warn("dock", "runtime dock state save failed: " + failure)
+        onSaved: root.finishRuntimeWrite()
+        onSaveFailed: failure => {
+            root.finishRuntimeWrite();
+            Logger.warn("dock", "runtime dock state save failed: " + failure);
+        }
     }
 
     Component.onCompleted: root.reload()

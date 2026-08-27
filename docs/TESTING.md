@@ -207,3 +207,18 @@ triggering Applications and repeated pin/unpin leaves typing in the previously f
 app hover shows no text tooltip; and the TopBar Center pin survives outside clicks while Escape,
 Spotlight and unpin close it. DP-3 must remain owned only by the reference shell. Bluetooth is
 intentionally unchanged in this batch and is tested separately by the user.
+
+### Dock Pin exactly-once evidence (2026-08-27)
+
+One manual Pin activation produced exactly one pointer event. The captured transition was
+`tap before=true`, `apply assigned=false`, followed immediately by
+`file changed before reload=false` and `file changed after reload=true`. The atomic file eventually
+contained `pinnedOpen: false`. This selects the runtime-store reload branch: the file watcher read
+the previous document while Titonium's own asynchronous atomic save was still completing and
+reverted the authoritative in-memory state.
+
+The regression contract now requires `DockStore` to suspend its sole runtime watcher while one or
+more self-writes are pending, restore it from both the save-success and save-failure paths, and keep
+the immediate in-memory transaction authoritative. No timer, duplicate persistence write or extra
+pointer handler is used. Manually verify pin, unpin and pin again each react to one click and that
+typing focus remains in the previously focused application.

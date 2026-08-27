@@ -23,7 +23,11 @@ STORE_FRAGMENTS = (
     "Quickshell.dataPath(\"dock.json\")",
     "Quickshell.configPath(\"config/defaults/dock.json\")",
     "atomicWrites: true",
-    "watchChanges: true",
+    "property int pendingRuntimeWrites: 0",
+    "function beginRuntimeWrite(): void",
+    "function finishRuntimeWrite(): void",
+    "watchChanges: root.pendingRuntimeWrites === 0",
+    "onSaved: root.finishRuntimeWrite()",
     "DockRules.normalizeState",
     "function togglePin(appId: string): bool",
     "function setPinnedOpen(value: bool): bool",
@@ -39,6 +43,7 @@ FORBIDDEN_STORE_FRAGMENTS = (
     "hyprctl",
     "defaultsFile.setText",
     "config/schemas/dock.schema.json",
+    "watchChanges: true",
 )
 
 
@@ -102,8 +107,12 @@ def validate_store(errors: list[str]) -> None:
             errors.append(f"Dock store has forbidden runtime dependency: {fragment}")
     if source.count("FileView {") != 2:
         errors.append("Dock store must own exactly runtime and shipped-default FileViews")
-    if source.count("watchChanges: true") != 1:
-        errors.append("Dock store must watch only its runtime data file")
+    if source.count("watchChanges:") != 1:
+        errors.append("Dock store must suspend its sole runtime watcher during self-writes")
+    begin_index = source.find("root.beginRuntimeWrite()")
+    save_index = source.find("runtimeFile.setText(JSON.stringify(value, null, 2))")
+    if begin_index < 0 or save_index < 0 or begin_index > save_index:
+        errors.append("Dock store must suspend runtime watching before every self-write")
     for path in ROOT.rglob("*.qml"):
         if path == STORE:
             continue
