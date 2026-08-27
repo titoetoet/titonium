@@ -15,6 +15,17 @@ REQUIRED_FILES = (
     "Titonium/Services/Bluetooth/BluetoothService.qml",
     "Titonium/Services/Bluetooth/qmldir",
 )
+PRESENTATION_ROOT = ROOT / "Titonium/Overlays/Bluetooth"
+COORDINATOR = PRESENTATION_ROOT / "BluetoothPopupCoordinator.qml"
+POPUP = PRESENTATION_ROOT / "BluetoothPopupSurface.qml"
+DEVICE_ROW = PRESENTATION_ROOT / "BluetoothDeviceRow.qml"
+CONNECTIVITY_PILL = ROOT / "Titonium/Bar/islands/ConnectivityPill.qml"
+PRESENTATION_FILES = (
+    "Titonium/Overlays/Bluetooth/BluetoothPopupCoordinator.qml",
+    "Titonium/Overlays/Bluetooth/BluetoothPopupSurface.qml",
+    "Titonium/Overlays/Bluetooth/BluetoothDeviceRow.qml",
+    "Titonium/Overlays/Bluetooth/qmldir",
+)
 REQUIRED_FRAGMENTS = (
     "pragma Singleton",
     "import Quickshell.Bluetooth",
@@ -251,6 +262,122 @@ def validate_service(errors: list[str]) -> None:
         errors.append("Bluetooth power mutation must fail safely when adapter is missing")
 
 
+def validate_presentation(errors: list[str]) -> None:
+    for relative in PRESENTATION_FILES:
+        if not (ROOT / relative).is_file():
+            errors.append(f"missing Bluetooth presentation file: {relative}")
+    if not COORDINATOR.is_file() or not POPUP.is_file() or not DEVICE_ROW.is_file():
+        return
+
+    coordinator = COORDINATOR.read_text(encoding="utf-8")
+    popup = POPUP.read_text(encoding="utf-8")
+    row = DEVICE_ROW.read_text(encoding="utf-8")
+    pill = CONNECTIVITY_PILL.read_text(encoding="utf-8") if CONNECTIVITY_PILL.is_file() else ""
+    qmldir = (PRESENTATION_ROOT / "qmldir").read_text(encoding="utf-8") \
+        if (PRESENTATION_ROOT / "qmldir").is_file() else ""
+
+    coordinator_fragments = (
+        "pragma Singleton",
+        "import qs.Titonium.Core.Screens",
+        "import qs.Titonium.Core.Surfaces",
+        "readonly property bool active:",
+        "function open(screen: var): bool",
+        "function toggle(screen: var): bool",
+        "function close(): bool",
+        "ScreenRouter",
+        '"bluetooth:"',
+        '"source": Qt.resolvedUrl("BluetoothPopupSurface.qml")',
+        '"keyboardFocus": "exclusive"',
+        "SurfaceManager.open",
+        "SurfaceManager.close",
+    )
+    for fragment in coordinator_fragments:
+        if fragment not in coordinator:
+            errors.append(f"missing Bluetooth popup coordinator contract: {fragment}")
+    for forbidden in ("Loader", "PanelWindow", "Timer", "Process", "FileView", "Quickshell.Bluetooth"):
+        if forbidden in coordinator:
+            errors.append(f"forbidden Bluetooth coordinator dependency: {forbidden}")
+
+    popup_fragments = (
+        "import qs.Titonium.Services.Bluetooth",
+        "readonly property real availableHeight:",
+        "readonly property real contentHeight:",
+        "height: Math.min(root.maximumHeight, root.availableHeight, root.contentHeight",
+        "BluetoothService.adapterName",
+        "BluetoothService.setPowered",
+        "BluetoothService.setDiscovering",
+        "sectionCollapsed",
+        "Motion.normal",
+        '"connected"',
+        '"paired"',
+        '"available"',
+        "TapHandler",
+        "Keys.onEscapePressed",
+        "SurfaceManager.close",
+        "Component.onCompleted: panel.forceActiveFocus",
+    )
+    for fragment in popup_fragments:
+        if fragment not in popup:
+            errors.append(f"missing Bluetooth popup presentation contract: {fragment}")
+    for forbidden in ("Quickshell.Bluetooth", "Bluetooth.defaultAdapter", "Loader", "PanelWindow",
+                      "Timer", "Process", "FileView", "MultiEffect", "ShaderEffect"):
+        if forbidden in popup:
+            errors.append(f"forbidden Bluetooth popup dependency: {forbidden}")
+
+    row_fragments = (
+        "import qs.Titonium.Services.Bluetooth",
+        "property var device:",
+        "I18n.tr(root.device?.stateKey",
+        "batteryAvailable",
+        "readonly property bool transitioning:",
+        '"bluetooth.device.connecting"',
+        '"bluetooth.device.disconnecting"',
+        "BluetoothService.connectDevice",
+        "BluetoothService.disconnectDevice",
+        "BluetoothService.pairDevice",
+        "BluetoothService.cancelPair",
+        "BluetoothService.forgetDevice",
+        "forgetConfirmation",
+        "I18n.tr(\"bluetooth.forget.confirm\")",
+        "I18n.tr(\"bluetooth.forget.cancel\")",
+    )
+    for fragment in row_fragments:
+        if fragment not in row:
+            errors.append(f"missing Bluetooth device-row contract: {fragment}")
+    for forbidden in ("Quickshell.Bluetooth", "Bluetooth.defaultAdapter", "Timer", "Process", "FileView",
+                      "MultiEffect", "ShaderEffect"):
+        if forbidden in row:
+            errors.append(f"forbidden Bluetooth device-row dependency: {forbidden}")
+
+    if "module qs.Titonium.Overlays.Bluetooth" not in qmldir:
+        errors.append("Bluetooth overlay qmldir module name is missing")
+    for export in ("singleton BluetoothPopupCoordinator 1.0 BluetoothPopupCoordinator.qml",
+                   "BluetoothPopupSurface 1.0 BluetoothPopupSurface.qml",
+                   "BluetoothDeviceRow 1.0 BluetoothDeviceRow.qml"):
+        if export not in qmldir:
+            errors.append(f"Bluetooth overlay qmldir export is missing: {export}")
+
+    pill_fragments = (
+        "import qs.Titonium.Overlays.Bluetooth",
+        "import qs.Titonium.Services.Bluetooth",
+        "BluetoothPopupCoordinator.toggle(root.screen)",
+        "BluetoothService.stateKey",
+        "BluetoothService.connectedCount",
+        "bluetoothAccessibleName",
+        "bluetoothIconName",
+        "bluetoothTone",
+        "tone: root.bluetoothTone",
+    )
+    for fragment in pill_fragments:
+        if fragment not in pill:
+            errors.append(f"missing Bluetooth Bar-button contract: {fragment}")
+    if "bluetooth_planned" in pill:
+        errors.append("Bluetooth Bar button must replace the planned diagnostic glyph")
+    for forbidden in ("Quickshell.Bluetooth", "Bluetooth.defaultAdapter", "Timer", "Process", "FileView"):
+        if forbidden in pill:
+            errors.append(f"forbidden Bluetooth Bar dependency: {forbidden}")
+
+
 def main() -> int:
     errors: list[str] = []
     for relative in REQUIRED_FILES:
@@ -258,6 +385,7 @@ def main() -> int:
             errors.append(f"missing Bluetooth file: {relative}")
     validate_native_importer(errors)
     validate_service(errors)
+    validate_presentation(errors)
     validate_gate_fixtures(errors)
     validate_rules_contract(errors)
 

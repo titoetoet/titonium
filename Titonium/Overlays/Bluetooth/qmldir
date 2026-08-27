@@ -1,0 +1,4 @@
+module qs.Titonium.Overlays.Bluetooth
+singleton BluetoothPopupCoordinator 1.0 BluetoothPopupCoordinator.qml
+BluetoothPopupSurface 1.0 BluetoothPopupSurface.qml
+BluetoothDeviceRow 1.0 BluetoothDeviceRow.qml

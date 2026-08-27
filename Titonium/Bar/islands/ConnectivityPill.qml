@@ -3,7 +3,9 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.Titonium.Core.Runtime
 import qs.Titonium.Overlays.Audio
+import qs.Titonium.Overlays.Bluetooth
 import qs.Titonium.Services.Audio
+import qs.Titonium.Services.Bluetooth
 import qs.Titonium.Theme
 import qs.Titonium.Shared as Shared
 
@@ -11,7 +13,7 @@ Item {
     id: root
     required property var screen
     property bool showDiagnostics: true
-    readonly property int diagnosticsWidth: networkIcon.implicitWidth + bluetoothIcon.implicitWidth
+    readonly property int diagnosticsWidth: networkIcon.implicitWidth + bluetoothButton.implicitWidth
         + Metrics.spacingSmall
     readonly property int audioWidth: audioButton.implicitWidth
     readonly property int fullImplicitWidth: root.diagnosticsWidth + Metrics.spacingSmall + root.audioWidth
@@ -25,6 +27,17 @@ Item {
                 "name": root.outputAccessibleName,
                 "percentage": Math.round(AudioService.outputVolume * 100)
             }))
+    readonly property string bluetoothAccessibleName: I18n.tr(
+        "menubar.connectivity.bluetooth.accessible", {
+            "state": I18n.tr(BluetoothService.stateKey),
+            "count": BluetoothService.connectedCount
+        })
+    readonly property string bluetoothIconName: !BluetoothService.available || !BluetoothService.powered
+        ? "bluetooth_disabled" : (BluetoothService.discovering ? "bluetooth_searching"
+            : (BluetoothService.connectedCount > 0 ? "bluetooth_connected" : "bluetooth"))
+    readonly property string bluetoothTone: !BluetoothService.available || !BluetoothService.powered
+        ? "disabled" : (BluetoothService.discovering ? "accent"
+            : (BluetoothService.connectedCount > 0 ? "success" : "secondary"))
 
     implicitWidth: root.audioWidth + (root.showDiagnostics
         ? root.diagnosticsWidth + Metrics.spacingSmall : 0)
@@ -49,13 +62,21 @@ Item {
             tone: "secondary"
             accessibleName: I18n.tr("menubar.connectivity.network_planned")
         }
-        Shared.Icon {
-            id: bluetoothIcon
+        Shared.Button {
+            id: bluetoothButton
             visible: root.showDiagnostics
-            name: "bluetooth"
+            variant: "quiet"
+            size: "small"
+            accessibleName: root.bluetoothAccessibleName
+            onTriggered: BluetoothPopupCoordinator.toggle(root.screen)
+        }
+        Shared.Icon {
+            anchors.centerIn: bluetoothButton
+            visible: bluetoothButton.visible
+            name: root.bluetoothIconName
             size: 18
-            tone: "secondary"
-            accessibleName: I18n.tr("menubar.connectivity.bluetooth_planned")
+            tone: root.bluetoothTone
+            accessibleName: ""
         }
         Shared.Button {
             id: audioButton
