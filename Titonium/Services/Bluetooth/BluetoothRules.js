@@ -154,6 +154,7 @@ function audioConnectionEvent(previousAddresses, devices) {
     previous.forEach(address => previousSet[caseFold(normalizedAddress(address))] = true);
     const current = [];
     const connected = [];
+    const disconnected = [];
     const seen = Object.create(null);
     const source = Array.isArray(devices) ? devices : [];
     source.forEach(device => {
@@ -167,5 +168,10 @@ function audioConnectionEvent(previousAddresses, devices) {
         if (previousSet[key] !== true)
             connected.push(address);
     });
-    return { current: current, connected: connected };
+    previous.forEach(address => {
+        const key = caseFold(normalizedAddress(address));
+        if (key && seen[key] !== true)
+            disconnected.push(key);
+    });
+    return { current: current, connected: connected, disconnected: disconnected };
 }

@@ -50,7 +50,7 @@ PanelWindow {
     WlrLayershell.namespace: "titonium-dock"
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.exclusionMode: root.pinnedOpen ? ExclusionMode.Normal : ExclusionMode.Ignore
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
     anchors { bottom: true; left: true; right: true }
     mask: Region {
         Region { item: dockSurface }

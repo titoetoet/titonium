@@ -97,12 +97,19 @@ assert.deepEqual(plain(rules.audioConnectionEvent([], [
 ])), {
     current: ["54:b7:e5:89:6f:14"],
     connected: ["54:B7:E5:89:6F:14"],
+    disconnected: [],
 });
 assert.deepEqual(plain(rules.audioConnectionEvent(["54:b7:e5:89:6f:14"], [
     { address: "54:B7:E5:89:6F:14", icon: "audio-card", connected: true },
 ])), {
     current: ["54:b7:e5:89:6f:14"],
     connected: [],
+    disconnected: [],
+});
+assert.deepEqual(plain(rules.audioConnectionEvent(["54:b7:e5:89:6f:14"], [])), {
+    current: [],
+    connected: [],
+    disconnected: ["54:b7:e5:89:6f:14"],
 });
 
 console.log("PASS Bluetooth rules fixtures");

@@ -24,6 +24,5 @@ Item {
         spacing: Metrics.spacingXSmall
 
         InputMethod { screen: root.screen }
-        Clock { screen: root.screen }
     }
 }

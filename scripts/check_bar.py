@@ -52,7 +52,7 @@ def main() -> int:
             "StatusPill {",
             "connectivity.fullImplicitWidth",
         ),
-        "islands/StatusPill.qml": ("InputMethod {", "Clock {"),
+        "islands/StatusPill.qml": ("InputMethod {",),
         "notch/CenterNotchWindow.qml": (
             "PanelWindow {",
             "Loader {",
@@ -109,6 +109,10 @@ def main() -> int:
                 errors.append(f"ConnectivityPill missing aligned-control contract: {fragment}")
         if "id: networkIcon" in source:
             errors.append("ConnectivityPill must not mix a raw Wi-Fi icon with button-sized controls")
+
+    status_pill = BAR / "islands/StatusPill.qml"
+    if status_pill.is_file() and "Clock {" in status_pill.read_text(encoding="utf-8"):
+        errors.append("StatusPill must keep Clock temporarily disabled")
 
     if BAR.exists():
         feature = "\n".join(path.read_text(encoding="utf-8") for path in BAR.rglob("*.qml"))

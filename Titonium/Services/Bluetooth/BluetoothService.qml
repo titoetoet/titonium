@@ -56,8 +56,12 @@ QtObject {
         root.previousConnectedAudioAddresses = event.current;
         if (!baselineReady)
             return;
-        for (let index = 0; index < event.connected.length; index += 1)
+        for (let index = 0; index < event.connected.length; index += 1) {
+            Logger.info("bluetooth", "audio device connected " + event.connected[index]);
             root.audioDeviceConnected(event.connected[index]);
+        }
+        for (let index = 0; index < event.disconnected.length; index += 1)
+            Logger.info("bluetooth", "audio device disconnected " + event.disconnected[index]);
     }
 
     function warnOperation(category: string, message: string): void {

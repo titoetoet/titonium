@@ -83,7 +83,7 @@ FocusScope {
 
             Shared.Icon {
                 anchors.centerIn: parent
-                name: "archlinux"
+                name: "rocket_launch"
                 size: 28
                 tone: "accent"
                 accessibleName: ""
@@ -118,52 +118,39 @@ FocusScope {
             }
         }
 
-        FocusScope {
-            id: pinControl
-            width: root.iconSize
-            height: root.iconSize
-            activeFocusOnTab: true
-            Accessible.role: Accessible.Button
-            Accessible.name: I18n.tr(DockStore.pinnedOpen
-                ? "dock.pin_control.close" : "dock.pin_control.open")
-            Accessible.focusable: true
+    }
 
-            Rectangle {
-                anchors.fill: parent
-                radius: Metrics.radiusMedium
-                color: pinHover.hovered || pinControl.activeFocus ? Theme.surfaceInteractive : "transparent"
-                border.width: pinControl.activeFocus ? Metrics.borderWidth : 0
-                border.color: Theme.focus
-                Behavior on color { ColorAnimation { duration: Motion.fast } }
-            }
+    Item {
+        id: pinControl
+        width: 14
+        height: 14
+        anchors.left: parent.left
+        anchors.top: parent.top
+        anchors.leftMargin: 4
+        anchors.topMargin: 3
+        visible: root.hovered
+        opacity: pinHover.hovered ? 1 : 0.62
+        Accessible.role: Accessible.Button
+        Accessible.name: I18n.tr(DockStore.pinnedOpen
+            ? "dock.pin_control.close" : "dock.pin_control.open")
 
-            Shared.Icon {
-                anchors.centerIn: parent
-                name: DockStore.pinnedOpen ? "keep" : "keep_off"
-                size: 22
-                tone: DockStore.pinnedOpen ? "accent" : "secondary"
-                accessibleName: ""
-            }
+        Shared.Icon {
+            anchors.centerIn: parent
+            name: DockStore.pinnedOpen ? "keep" : "keep_off"
+            size: 12
+            tone: DockStore.pinnedOpen ? "accent" : "secondary"
+            accessibleName: ""
+        }
 
-            function togglePinnedOpen(): void {
-                DockStore.setPinnedOpen(!DockStore.pinnedOpen);
-            }
+        function togglePinnedOpen(): void {
+            DockStore.setPinnedOpen(!DockStore.pinnedOpen);
+        }
 
-            HoverHandler { id: pinHover; cursorShape: Qt.PointingHandCursor }
-            TapHandler {
-                onTapped: {
-                    pinControl.forceActiveFocus(Qt.MouseFocusReason);
-                    root.closeTransient();
-                    pinControl.togglePinnedOpen();
-                }
-            }
-            Keys.onPressed: event => {
-                if (event.key === Qt.Key_Space || event.key === Qt.Key_Return
-                        || event.key === Qt.Key_Enter) {
-                    root.closeTransient();
-                    pinControl.togglePinnedOpen();
-                    event.accepted = true;
-                }
+        HoverHandler { id: pinHover; cursorShape: Qt.PointingHandCursor }
+        TapHandler {
+            onTapped: {
+                root.closeTransient();
+                pinControl.togglePinnedOpen();
             }
         }
     }

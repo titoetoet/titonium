@@ -51,6 +51,8 @@ REQUIRED_FRAGMENTS = (
     "BluetoothRules.projectAdapter",
     "signal audioDeviceConnected(string address)",
     "function observeAudioConnections(): void",
+    'Logger.info("bluetooth", "audio device connected " + event.connected[index])',
+    'Logger.info("bluetooth", "audio device disconnected " + event.disconnected[index])',
     "adapter.discovering = false",
 )
 FORBIDDEN_FRAGMENTS = (

@@ -66,7 +66,7 @@ requireFragments("window", [
   "readonly property int reservedHeight: 64", "exclusiveZone: root.pinnedOpen ? root.reservedHeight : 0",
   "mask: Region {", "Region { item: dockSurface }", "Region { item: edgeReveal }",
   "WlrLayershell.exclusionMode: root.pinnedOpen ? ExclusionMode.Normal : ExclusionMode.Ignore",
-  "WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand", "WlrLayershell.layer: WlrLayer.Overlay",
+  "WlrLayershell.keyboardFocus: WlrKeyboardFocus.None", "WlrLayershell.layer: WlrLayer.Overlay",
   "dockSurface.itemMenuActive",
 ]);
 requireFragments("surface", [
@@ -74,6 +74,9 @@ requireFragments("surface", [
   "readonly property real hoverScale: 1.12", "readonly property int hoverLift: 4",
   "Motion.fast", "Behavior on opacity", "Behavior on y", "applicationsRequested",
   "DockAppButton", "DockItemMenuCoordinator", "DockStore.setPinnedOpen", "itemMenu.active",
+  "name: \"rocket_launch\"", "id: pinControl", "width: 14", "height: 14",
+  "visible: root.hovered", "anchors.left: parent.left", "anchors.top: parent.top",
+  "Item {\n        id: pinControl",
 ]);
 requireFragments("button", [
   "readonly property int iconSize: 40", "scale: root.hovered ? root.hoverScale : 1",
@@ -99,7 +102,15 @@ requireFragments("qmldir", ["module qs.Titonium.Dock", "DockHost 1.0 DockHost.qm
 for (const name of Object.keys(files))
   requireAbsent(name, ["Process", "FileView", "Timer {", "MultiEffect", "ShaderEffect", "gradient", "blur", "hyprctl", "bluetoothctl"]);
 
-requireAbsent("window", ["WlrLayershell.keyboardFocus: WlrKeyboardFocus.None", "WlrLayershell.layer: WlrLayer.Top"]);
+requireAbsent("window", ["WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand", "WlrLayershell.layer: WlrLayer.Top"]);
+requireAbsent("surface", ["name: \"archlinux\""]);
+
+const surfaceSource = source("surface");
+const pinStart = surfaceSource.indexOf("id: pinControl");
+const pinBlock = pinStart >= 0 ? surfaceSource.slice(pinStart, surfaceSource.indexOf("HoverHandler { id: surfaceHover", pinStart)) : "";
+for (const forbidden of ["FocusScope", "forceActiveFocus", "Keys.onPressed"])
+  if (pinBlock.includes(forbidden))
+    errors.push(`pin control must not capture keyboard focus: ${forbidden}`);
 
 if (errors.length > 0) {
   for (const error of errors)

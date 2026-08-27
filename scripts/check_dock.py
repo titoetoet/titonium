@@ -166,7 +166,7 @@ def validate_presentation(errors: list[str]) -> None:
     required_files = {
         "DockHost.qml": ("import qs.Titonium.Core.Screens", "model: ScreenPolicy.screens"),
         "DockWindow.qml": ("PanelWindow {", "titonium-dock", "mask: Region {",
-            "WlrKeyboardFocus.OnDemand", "WlrLayer.Overlay", "ExclusionMode.Normal"),
+            "WlrKeyboardFocus.None", "WlrLayer.Overlay", "ExclusionMode.Normal"),
         "DockSurface.qml": ("import qs.Titonium.Services.Dock", "DockAppButton", "itemMenu.active"),
         "DockAppButton.qml": ("DockService.activateOrLaunch", "DockService.launchNew",
             "QtControls.ToolTip", "size: root.iconSize"),
