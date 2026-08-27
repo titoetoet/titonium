@@ -12,6 +12,10 @@ function categoryLabelSize() {
     return 15;
 }
 
+function categoryControlSize() {
+    return "medium";
+}
+
 function searchTextSize() {
     return 15;
 }

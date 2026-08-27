@@ -81,15 +81,15 @@ assertDeepEqual(Array.from(header.scopeActions(), action => ({
     iconSize: action.iconSize,
     accessibleKey: action.accessibleKey
 })), [
-    { id: "applications", icon: "apps", iconSize: 28, accessibleKey: "spotlight.scope.applications" },
-    { id: "clipboard", icon: "content_paste", iconSize: 28, accessibleKey: "spotlight.scope.clipboard" },
-    { id: "system", icon: "manage_search", iconSize: 28, accessibleKey: "spotlight.scope.system" }
+    { id: "applications", icon: "apps", iconSize: 32, accessibleKey: "spotlight.scope.applications" },
+    { id: "clipboard", icon: "content_paste", iconSize: 32, accessibleKey: "spotlight.scope.clipboard" },
+    { id: "system", icon: "manage_search", iconSize: 32, accessibleKey: "spotlight.scope.system" }
 ], "header exposes three icon-only scope actions in keyboard cycle order");
-assertEqual(header.identityIconSize(), 28, "header identity icon balances the search control");
+assertEqual(header.identityIconSize(), 32, "header identity icon balances the enlarged controls");
 assertEqual(header.searchFieldWidth(), 560, "search keeps the balanced reference proportion");
-assertEqual(header.searchFieldHeight(), 46, "search retains a compact visual height");
-assertEqual(header.scopeButtonSize(), 44, "scope icon buttons keep a compact accessible square hit target");
-assertEqual(header.scopeStripWidth(8), 148,
+assertEqual(header.searchFieldHeight(), 50, "search matches the taller reference control");
+assertEqual(header.scopeButtonSize(), 48, "scope icon buttons match the enlarged header rhythm");
+assertEqual(header.scopeStripWidth(8), 160,
     "scope icon strip reserves width instead of collapsing inside RowLayout");
 assertEqual(spotlightSurfaceSource.includes("id: scopeStrip"), true,
     "scope actions render as three independent rounded controls");
@@ -102,6 +102,8 @@ assertEqual(spotlightSurfaceSource.includes("backgroundRadius: Metrics.radiusLar
 assertEqual(visual.appIconSize(), 56, "application icons match the selected visual density");
 assertEqual(visual.appLabelSize(), 14, "application labels match the shell label tier");
 assertEqual(visual.categoryLabelSize(), 15, "category labels keep the approved launcher emphasis");
+assertEqual(visual.categoryControlSize(), "medium",
+    "category selection uses the roomier shared control size");
 assertEqual(visual.searchTextSize(), 15, "search text matches the shell body-large tier");
 assertEqual(visual.fallbackIcon(["Network"]), "public", "network applications use a quiet semantic fallback icon");
 assertEqual(visual.fallbackIcon({ 0: "Network", length: 1 }), "public",
@@ -151,7 +153,7 @@ assertEqual(layout.panelContentTopInset(), 8,
     "Spotlight content keeps a calm inset below the panel edge");
 assertEqual(layout.headerCategoryGap(), 32,
     "header and categories use the measured reference rhythm");
-assertEqual(layout.categoryGridGap(), 44,
+assertEqual(layout.categoryGridGap(), 32,
     "category movement preserves the established application grid position");
 assertEqual(layout.categoryHorizontalInset(), 12,
     "category labels align with the reference's inset text rail");

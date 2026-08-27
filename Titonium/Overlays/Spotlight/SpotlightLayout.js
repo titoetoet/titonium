@@ -44,7 +44,7 @@ function headerCategoryGap() {
 }
 
 function categoryGridGap() {
-    return 44;
+    return 32;
 }
 
 function categoryHorizontalInset() {

@@ -300,7 +300,7 @@ FocusScope {
                             required property var modelData
                             label: I18n.tr("spotlight.category." + modelData.id)
                             variant: "quiet"
-                            size: "small"
+                            size: SpotlightVisual.categoryControlSize()
                             labelPixelSize: SpotlightVisual.categoryLabelSize()
                             selected: spotlightModel.categoryId === modelData.id
                             backgroundRadius: height / 2
