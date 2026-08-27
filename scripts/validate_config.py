@@ -31,8 +31,8 @@ def validate_settings(data: Any) -> list[str]:
     errors: list[str] = []
     if set(data) != REQUIRED_SETTINGS_KEYS:
         errors.append("settings keys do not match the protected contract")
-    if data.get("$schema") != "titonium.settings/v5" or data.get("schemaVersion") != 5:
-        errors.append("settings schema must be titonium.settings/v5")
+    if data.get("$schema") != "titonium.settings/v6" or data.get("schemaVersion") != 6:
+        errors.append("settings schema must be titonium.settings/v6")
     if data.get("locale") not in {"vi", "en"}:
         errors.append("locale must be vi or en")
 
@@ -61,8 +61,8 @@ def validate_settings(data: Any) -> list[str]:
             errors.append("applications.hiddenIds must be unique")
 
     modules = data.get("modules")
-    if not isinstance(modules, dict) or set(modules) != {"spotlight", "clock"}:
-        errors.append("modules must contain only spotlight and clock")
+    if not isinstance(modules, dict) or set(modules) != {"spotlight", "clock", "audio"}:
+        errors.append("modules must contain only spotlight, clock and audio")
         return errors
     spotlight = modules.get("spotlight")
     if not isinstance(spotlight, dict) or set(spotlight) != {"pageTransition", "transitionDuration"}:
@@ -78,6 +78,11 @@ def validate_settings(data: Any) -> list[str]:
         errors.append("modules.clock must contain only use24Hour")
     elif not isinstance(clock.get("use24Hour"), bool):
         errors.append("modules.clock.use24Hour must be a boolean")
+    audio = modules.get("audio")
+    if not isinstance(audio, dict) or set(audio) != {"allowAmplification"}:
+        errors.append("modules.audio must contain only allowAmplification")
+    elif not isinstance(audio.get("allowAmplification"), bool):
+        errors.append("modules.audio.allowAmplification must be a boolean")
     return errors
 
 

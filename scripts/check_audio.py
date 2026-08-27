@@ -33,6 +33,7 @@ REQUIRED_FRAGMENTS = (
     "PwObjectTracker {",
     "objects: Pipewire.nodes.values.filter",
     "readonly property bool outputAvailable",
+    "readonly property bool allowAmplification: Preferences.allowAudioAmplification",
     "readonly property var playbackStreams",
     "signal outputPresentationChanged(real volume, bool muted)",
     "function setOutputVolume(value: real): bool",
@@ -92,6 +93,8 @@ def main() -> int:
                 errors.append(f"forbidden audio service dependency: {fragment}")
         if WRONG_OUTPUT_PRESENTATION_NOTIFIER in source:
             errors.append("output presentation must observe PwNodeAudio.volumesChanged, not volumeChanged")
+        if "Preferences.settings.modules?.audio?.allowAmplification" in source:
+            errors.append("audio service must use Preferences.allowAudioAmplification")
 
     for path in ROOT.rglob("*.qml"):
         if AUDIO_ROOT in path.parents:

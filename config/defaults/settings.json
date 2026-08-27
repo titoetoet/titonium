@@ -1,6 +1,6 @@
 {
-  "$schema": "titonium.settings/v5",
-  "schemaVersion": 5,
+  "$schema": "titonium.settings/v6",
+  "schemaVersion": 6,
   "locale": "vi",
   "appearance": { "mode": "dark" },
   "accessibility": { "reducedMotion": false },
@@ -10,6 +10,7 @@
       "pageTransition": "slide-fade",
       "transitionDuration": 220
     },
-    "clock": { "use24Hour": true }
+    "clock": { "use24Hour": true },
+    "audio": { "allowAmplification": false }
   }
 }

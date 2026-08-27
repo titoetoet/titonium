@@ -17,6 +17,8 @@ QtObject {
     readonly property var hiddenApplicationIds: root.settings.applications?.hiddenIds || []
     readonly property var spotlight: root.settings.modules?.spotlight || ({})
     readonly property bool use24Hour: root.settings.modules?.clock?.use24Hour !== false
+    readonly property bool allowAudioAmplification:
+        root.settings.modules?.audio?.allowAmplification === true
 
     function parse(file: FileView, label: string): var {
         const text = file.text();

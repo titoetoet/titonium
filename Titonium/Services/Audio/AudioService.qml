@@ -12,8 +12,7 @@ QtObject {
     readonly property var outputNode: Pipewire.defaultAudioSink
     readonly property var inputNode: Pipewire.defaultAudioSource
     readonly property bool ready: Pipewire.ready
-    readonly property bool allowAmplification:
-        Preferences.settings.modules?.audio?.allowAmplification === true
+    readonly property bool allowAmplification: Preferences.allowAudioAmplification
     readonly property real maximumOutputVolume:
         AudioRules.maximumOutput(root.allowAmplification)
 

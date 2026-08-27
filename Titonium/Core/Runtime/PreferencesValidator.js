@@ -24,6 +24,10 @@ function project(document, defaults) {
             },
             clock: {
                 use24Hour: source.modules?.clock?.use24Hour !== false
+            },
+            audio: {
+                allowAmplification: source.schemaVersion === 6
+                    && source.modules?.audio?.allowAmplification === true
             }
         }
     };

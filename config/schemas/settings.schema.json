@@ -1,12 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "titonium.settings/v5",
+  "$id": "titonium.settings/v6",
   "type": "object",
   "required": ["$schema", "schemaVersion", "locale", "appearance", "accessibility", "applications", "modules"],
   "additionalProperties": false,
   "properties": {
-    "$schema": { "const": "titonium.settings/v5" },
-    "schemaVersion": { "const": 5 },
+    "$schema": { "const": "titonium.settings/v6" },
+    "schemaVersion": { "const": 6 },
     "locale": { "enum": ["vi", "en"] },
     "appearance": {
       "type": "object",
@@ -34,7 +34,7 @@
     },
     "modules": {
       "type": "object",
-      "required": ["spotlight", "clock"],
+      "required": ["spotlight", "clock", "audio"],
       "additionalProperties": false,
       "properties": {
         "spotlight": {
@@ -51,6 +51,12 @@
           "required": ["use24Hour"],
           "additionalProperties": false,
           "properties": { "use24Hour": { "type": "boolean" } }
+        },
+        "audio": {
+          "type": "object",
+          "required": ["allowAmplification"],
+          "additionalProperties": false,
+          "properties": { "allowAmplification": { "type": "boolean" } }
         }
       }
     }
