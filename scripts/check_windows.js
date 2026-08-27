@@ -34,7 +34,10 @@ const first = rules.descriptor({
     active: 1,
     urgent: false,
     minimized: false,
+    workspaceId: 7,
+    monitorName: " DP-1 ",
     wayland: { activate() {} },
+    workspace: { activate() {} },
     native: { secret: true },
 });
 assert.deepEqual(plain(first), {
@@ -45,10 +48,13 @@ assert.deepEqual(plain(first), {
     active: true,
     urgent: false,
     minimized: false,
+    workspaceId: 7,
+    monitorName: "DP-1",
 });
-assert.deepEqual(Object.keys(first), ["id", "appId", "title", "icon", "active", "urgent", "minimized"]);
+assert.deepEqual(Object.keys(first), ["id", "appId", "title", "icon", "active", "urgent", "minimized", "workspaceId", "monitorName"]);
 assert.equal(Object.isFrozen(first), true);
 assert.equal("wayland" in first, false);
+assert.equal("workspace" in first, false);
 assert.equal("native" in first, false);
 
 const fallback = rules.descriptor({
@@ -60,6 +66,10 @@ const fallback = rules.descriptor({
 });
 assert.equal(fallback.appId, "Terminal");
 assert.equal(fallback.title, "Terminal");
+assert.equal(fallback.workspaceId, 0);
+assert.equal(fallback.monitorName, "");
+assert.equal(rules.descriptor({ id: "0xghi", workspaceId: -2 }).workspaceId, 0);
+assert.equal(rules.descriptor({ id: "0xjkl", monitorName: 42 }).monitorName, "");
 assert.equal(rules.descriptor({ id: "", appId: "ignored" }), null);
 console.log("PASS Window descriptor identity, fallback, immutability, and raw-object rejection fixtures");
 
@@ -74,23 +84,26 @@ assert.deepEqual(plain(rules.orderByIds([
 console.log("PASS Window MRU input fixtures");
 
 const registry = loadLibrary(registryPath).create();
-let activated = 0;
+const activationOrder = [];
 let closed = 0;
 const native = {
     address: "0xabc",
+    workspace: {
+        activate() { activationOrder.push("workspace"); },
+    },
     wayland: {
-        activate() { activated += 1; },
+        activate() { activationOrder.push("window"); },
         close() { closed += 1; },
     },
 };
 registry.replace([{ id: "0xabc", native }]);
-assert.equal(registry.activate("0xabc", [native]), true);
+assert.equal(registry.focus("0xabc", [native]), true);
 assert.equal(registry.close("0xabc", [native]), true);
-assert.equal(activated, 1);
+assert.deepEqual(activationOrder, ["workspace", "window"]);
 assert.equal(closed, 1);
-assert.equal(registry.activate("0xabc", []), false);
+assert.equal(registry.focus("0xabc", []), false);
 assert.equal(registry.close("missing", [native]), false);
-assert.deepEqual(Object.keys(registry).sort(), ["activate", "close", "replace"]);
+assert.deepEqual(Object.keys(registry).sort(), ["close", "focus", "replace"]);
 assert.equal(JSON.stringify(registry).includes("0xabc"), false);
 console.log("PASS Window private registry re-lookup fixtures");
 

@@ -12,6 +12,8 @@ function descriptor(raw) {
     const appId = text(source.appId) || text(source.ipcClass)
         || text(source.initialClass) || text(source.title);
     const title = text(source.title) || appId || "Application";
+    const workspaceId = Number.isInteger(source.workspaceId) && source.workspaceId > 0
+        ? source.workspaceId : 0;
     return Object.freeze({
         id: id,
         appId: appId,
@@ -20,6 +22,8 @@ function descriptor(raw) {
         active: Boolean(source.active),
         urgent: Boolean(source.urgent),
         minimized: Boolean(source.minimized),
+        workspaceId: workspaceId,
+        monitorName: text(source.monitorName),
     });
 }
 

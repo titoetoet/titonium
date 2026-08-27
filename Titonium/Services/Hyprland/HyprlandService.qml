@@ -87,6 +87,10 @@ Singleton {
                 active: toplevel?.activated === true || toplevel?.wayland?.activated === true,
                 urgent: toplevel?.urgent === true,
                 minimized: toplevel?.wayland?.minimized === true,
+                workspaceId: Number(toplevel?.workspace?.id
+                    || toplevel?.lastIpcObject?.workspace?.id || 0),
+                monitorName: toplevel?.workspace?.monitor?.name
+                    || toplevel?.lastIpcObject?.monitor || "",
             });
             if (!window)
                 continue;
@@ -102,8 +106,12 @@ Singleton {
         root.workspaceWindowCount = workspace?.toplevels?.values.length || 0;
     }
 
+    function focusWindow(id: string): bool {
+        return WindowRegistry.focus(id, Hyprland.toplevels.values || []);
+    }
+
     function activateWindow(id: string): bool {
-        return WindowRegistry.activate(id, Hyprland.toplevels.values || []);
+        return root.focusWindow(id);
     }
 
     function closeWindow(id: string): bool {

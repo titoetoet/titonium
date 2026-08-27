@@ -27,10 +27,14 @@ function create() {
             }
         },
 
-        activate: function(id, source) {
-            const target = targetFor(id, Array.isArray(source) ? source : [], "activate");
+        focus: function(id, source) {
+            const records = Array.isArray(source) ? source : [];
+            const native = liveNative(id, records);
+            const target = targetFor(id, records, "activate");
             if (!target)
                 return false;
+            if (native.workspace && typeof native.workspace.activate === "function")
+                native.workspace.activate();
             target.activate();
             return true;
         },
@@ -51,8 +55,8 @@ function replace(records) {
     sharedRegistry.replace(records);
 }
 
-function activate(id, source) {
-    return sharedRegistry.activate(id, source);
+function focus(id, source) {
+    return sharedRegistry.focus(id, source);
 }
 
 function close(id, source) {
