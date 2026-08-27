@@ -60,13 +60,16 @@ if [[ ! "$popup_state" =~ ^open:[^[:space:]]+$ ]]; then
     printf 'FAIL audio popup did not open: %q\n' "$popup_state" >&2
     exit 1
 fi
+popup_screen="${popup_state#open:}"
 if [[ "$(call_ipc audio popupState)" != "$popup_state" ]]; then
     printf 'FAIL audio popup state changed unexpectedly: %q\n' "$(call_ipc audio popupState)" >&2
     exit 1
 fi
 
-if [[ "$(call_ipc centerNotch open overview)" != *";page=overview"* ]]; then
-    printf 'FAIL Center Notch did not open Overview: %q\n' "$(call_ipc centerNotch state)" >&2
+center_notch_state="$(call_ipc centerNotch open overview)"
+if [[ "$center_notch_state" != "open:${popup_screen};page=overview" ]]; then
+    printf 'FAIL Center Notch screen/page mismatch: expected %q, got %q\n' \
+        "open:${popup_screen};page=overview" "$center_notch_state" >&2
     exit 1
 fi
 if [[ "$(call_ipc audio popupState)" != "closed" ]]; then

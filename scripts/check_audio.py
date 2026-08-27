@@ -78,7 +78,11 @@ FORBIDDEN_AUDIO_SERVICE_IMPORTS = re.compile(
 )
 RAW_AUDIO_MUTATION = re.compile(r"\.audio\.(?:volume|muted)\s*=")
 MUTATING_AUDIO_IPC_METHOD = re.compile(
-    r"^\s*function\s+(?:set|adjust|toggleMute|showOsd|device)\w*\s*\(", re.MULTILINE
+    r"^\s*function\s+(?:(?:set|adjust|showOsd|device)\w*|toggle\w*Mute)\s*\(", re.MULTILINE
+)
+MUTATING_AUDIO_IPC_FIXTURES = (
+    "function toggleOutputMute(): string { return \"mutated\"; }",
+    "function toggleInputMute(): string { return \"mutated\"; }",
 )
 
 
@@ -136,6 +140,10 @@ def ipc_handler_source(source: str, target: str) -> str:
 
 
 def validate_audio_hardening(errors: list[str]) -> None:
+    for fixture in MUTATING_AUDIO_IPC_FIXTURES:
+        if not MUTATING_AUDIO_IPC_METHOD.search(fixture):
+            errors.append(f"Audio IPC mutation matcher missed fixture: {fixture.split('(')[0]}")
+
     audio_files = audio_source_files(AUDIO_SOURCE_ROOTS)
     for path in audio_files:
         source = path.read_text(encoding="utf-8")

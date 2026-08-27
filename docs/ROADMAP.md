@@ -23,7 +23,8 @@ The previous feature roadmap is retired. Work now advances by researched capabil
 3. **Network native slice — awaiting design.** Select and validate one NetworkManager DBus pattern
    only after Bluetooth.
 
-The diagnostic connectivity glyphs in the current End island are placeholders, not module state.
+The Wi-Fi and Bluetooth diagnostic glyphs in the current End island are placeholders, not module
+state; the Audio glyph is backed by `AudioService`.
 No service stub should be added before its slice is designed.
 
 ## Continuing reference-repository research

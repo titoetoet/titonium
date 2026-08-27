@@ -35,8 +35,9 @@ cannot overlap. An outside click, Escape, or focused-monitor change releases the
 
 The compact Center island is positioned from the full screen width rather than between the Start
 and End islands. The full Bar input mask is composed from the three island hitboxes, preserving
-click-through elsewhere. The End island currently shows diagnostic-only Wi-Fi, Bluetooth and
-Audio glyphs beside the protected Input Method and Clock; those glyphs are not service state.
+click-through elsewhere. The End island currently shows diagnostic-only Wi-Fi and Bluetooth glyphs
+beside the protected Input Method, Audio and Clock. Audio is backed by `AudioService`; only the
+Wi-Fi and Bluetooth glyphs are placeholders rather than service state.
 
 ## State and presentation
 
