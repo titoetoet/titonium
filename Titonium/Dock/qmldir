@@ -1,0 +1,7 @@
+module qs.Titonium.Dock
+DockHost 1.0 DockHost.qml
+DockWindow 1.0 DockWindow.qml
+DockSurface 1.0 DockSurface.qml
+DockAppButton 1.0 DockAppButton.qml
+DockItemMenuCoordinator 1.0 DockItemMenuCoordinator.qml
+DockItemMenuSurface 1.0 DockItemMenuSurface.qml

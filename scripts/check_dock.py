@@ -6,6 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DOCK_ROOT = ROOT / "Titonium/Services/Dock"
+PRESENTATION_ROOT = ROOT / "Titonium/Dock"
 SERVICE = DOCK_ROOT / "DockService.qml"
 RULES = DOCK_ROOT / "DockRules.js"
 REGISTRY = DOCK_ROOT / "DockNativeRegistry.js"
@@ -56,6 +57,30 @@ FORBIDDEN_SERVICE_FRAGMENTS = (
     "qs.Titonium.Services.Bluetooth",
 )
 PUBLIC_FIELDS = ("appId", "name", "icon", "runningCount", "active", "urgent", "pinned")
+
+
+def validate_presentation(errors: list[str]) -> None:
+    required_files = {
+        "DockHost.qml": ("import qs.Titonium.Core.Screens", "model: ScreenPolicy.screens"),
+        "DockWindow.qml": ("PanelWindow {", "titonium-dock", "mask: Region {"),
+        "DockSurface.qml": ("import qs.Titonium.Services.Dock", "DockAppButton"),
+        "DockAppButton.qml": ("DockService.activateOrLaunch", "DockService.launchNew"),
+        "DockItemMenuCoordinator.qml": ("SurfaceManager.open", "DockItemMenuSurface.qml"),
+        "DockItemMenuSurface.qml": ("SurfaceManager.close", "DockService.closeActive"),
+        "qmldir": ("module qs.Titonium.Dock", "DockHost 1.0 DockHost.qml"),
+    }
+    for filename, fragments in required_files.items():
+        path = PRESENTATION_ROOT / filename
+        if not path.is_file():
+            errors.append(f"missing Dock presentation file: {path.relative_to(ROOT)}")
+            continue
+        source = path.read_text(encoding="utf-8")
+        for fragment in fragments:
+            if fragment not in source:
+                errors.append(f"Dock presentation missing contract: {filename}: {fragment}")
+        for forbidden in ("Process", "FileView", "Timer {", "MultiEffect", "ShaderEffect", "hyprctl"):
+            if forbidden in source:
+                errors.append(f"Dock presentation has forbidden dependency: {filename}: {forbidden}")
 
 
 def qml_block(source: str, start: int) -> str:
@@ -141,6 +166,7 @@ def main() -> int:
     validate_native_owner(errors)
     validate_rules_contract(errors)
     validate_native_registry(errors)
+    validate_presentation(errors)
     if errors:
         for error in errors:
             print(f"FAIL {error}")
