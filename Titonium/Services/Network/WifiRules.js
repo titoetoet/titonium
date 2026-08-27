@@ -10,7 +10,7 @@ function text(value, fallback) {
 function signal(value) {
     if (typeof value !== "number" || !Number.isFinite(value))
         return 0;
-    return Math.round(Math.max(0, Math.min(100, value)));
+    return Math.round(Math.max(0, Math.min(1, value)) * 100);
 }
 
 function signalKey(value) {

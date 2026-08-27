@@ -42,13 +42,13 @@ const projected = plain(rules.projectWifi({
     wifiHardwareEnabled: true,
     scanning: true,
     devices: [
-        { name: "Guest", signal: 95, secure: false, known: false },
-        { name: "Office", signal: 24, secure: true, known: true },
-        { name: "Office", signal: 85, secure: true, known: true, connected: true },
-        { name: "alpha", signal: 55, secure: true, known: false },
-        { name: "Beta", signal: 55, secure: true, known: false },
-        { name: "guest", signal: 4, secure: true, known: true },
-        { name: "  ", signal: 90, secure: true },
+        { name: "Guest", signal: 0.95, secure: false, known: false },
+        { name: "Office", signal: 0.24, secure: true, known: true },
+        { name: "Office", signal: 0.85, secure: true, known: true, connected: true },
+        { name: "alpha", signal: 0.55, secure: true, known: false },
+        { name: "Beta", signal: 0.55, secure: true, known: false },
+        { name: "guest", signal: 0.04, secure: true, known: true },
+        { name: "  ", signal: 0.90, secure: true },
     ],
 }));
 assert.equal(projected.connectedName, "Office");
@@ -86,13 +86,16 @@ const weakKnownNative = { token: "weak-known" };
 const strongUnknownNative = { token: "strong-unknown" };
 const connectedNative = { token: "connected" };
 assert.strictEqual(rules.preferredNativeForId([
-    { native: weakKnownNative, name: "Office", signal: 20, known: true },
-    { native: strongUnknownNative, name: "Office", signal: 90, known: false },
-    { native: connectedNative, name: "Office", signal: 1, known: true, connected: true },
+    { native: weakKnownNative, name: "Office", signal: 0.20, known: true },
+    { native: strongUnknownNative, name: "Office", signal: 0.90, known: false },
+    { native: connectedNative, name: "Office", signal: 0.01, known: true, connected: true },
 ], "Office"), connectedNative);
 assert.strictEqual(rules.preferredNativeForId([
-    { native: weakKnownNative, name: "Office", signal: 20, known: true },
-    { native: strongUnknownNative, name: "Office", signal: 90, known: false },
+    { native: weakKnownNative, name: "Office", signal: 0.20, known: true },
+    { native: strongUnknownNative, name: "Office", signal: 0.90, known: false },
 ], "Office"), strongUnknownNative);
+
+assert.equal(rules.signal(1), 100);
+assert.equal(rules.signal(0.82), 82);
 
 console.log("PASS Wi-Fi rules fixtures");
