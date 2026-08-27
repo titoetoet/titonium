@@ -27,8 +27,7 @@ FocusScope {
         radius: Metrics.radiusLarge
         color: root.selected || root.hovered || root.pressed || root.activeFocus
             ? Theme.surfaceInteractive : "transparent"
-        border.width: root.selected || root.activeFocus ? Metrics.borderWidth : 0
-        border.color: root.activeFocus ? Theme.focus : Theme.accent
+        border.width: 0
         Behavior on color { ColorAnimation { duration: Motion.fast } }
 
         Column {

@@ -237,19 +237,16 @@ FocusScope {
                 Accessible.focusable: true
                 }
 
-                Rectangle {
+                Item {
                     id: scopeGroup
                     Layout.preferredWidth: SpotlightHeader.scopeGroupWidth()
                     Layout.preferredHeight: SpotlightHeader.scopeButtonSize()
                     Layout.alignment: Qt.AlignVCenter
-                    radius: height / 2
-                    color: Theme.surfaceElevated
-                    border.width: Metrics.borderWidth
-                    border.color: Theme.border
 
                     Row {
+                        id: scopeStrip
                         anchors.centerIn: parent
-                        spacing: Metrics.spacingMedium
+                        spacing: Metrics.spacingSmall
 
                         Repeater {
                             model: root.scopeActions
@@ -260,9 +257,9 @@ FocusScope {
                                 height: SpotlightHeader.scopeButtonSize()
                                 iconName: modelData.icon
                                 iconSize: modelData.iconSize
-                                variant: "quiet"
+                                variant: "secondary"
                                 selected: spotlightModel.scope === modelData.id
-                                backgroundRadius: height / 2
+                                backgroundRadius: Metrics.radiusLarge
                                 activeFocusOnTab: false
                                 accessibleName: I18n.tr(modelData.accessibleKey)
                                 QtControls.ToolTip.visible: hovered

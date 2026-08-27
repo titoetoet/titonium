@@ -81,9 +81,9 @@ assertDeepEqual(Array.from(header.scopeActions(), action => ({
     iconSize: action.iconSize,
     accessibleKey: action.accessibleKey
 })), [
-    { id: "applications", icon: "apps", iconSize: 20, accessibleKey: "spotlight.scope.applications" },
-    { id: "clipboard", icon: "content_paste", iconSize: 19, accessibleKey: "spotlight.scope.clipboard" },
-    { id: "system", icon: "manage_search", iconSize: 20, accessibleKey: "spotlight.scope.system" }
+    { id: "applications", icon: "apps", iconSize: 28, accessibleKey: "spotlight.scope.applications" },
+    { id: "clipboard", icon: "content_paste", iconSize: 28, accessibleKey: "spotlight.scope.clipboard" },
+    { id: "system", icon: "manage_search", iconSize: 28, accessibleKey: "spotlight.scope.system" }
 ], "header exposes three icon-only scope actions in keyboard cycle order");
 assertEqual(header.identityIconSize(), 28, "header identity icon balances the search control");
 assertEqual(header.searchFieldWidth(), 560, "search keeps the balanced reference proportion");
@@ -91,18 +91,18 @@ assertEqual(header.searchFieldHeight(), 46, "search retains a compact visual hei
 assertEqual(header.scopeButtonSize(), 44, "scope icon buttons keep a compact accessible square hit target");
 assertEqual(header.scopeStripWidth(8), 148,
     "scope icon strip reserves width instead of collapsing inside RowLayout");
-assertEqual(header.scopeGroupWidth(), 200,
-    "scope icons share the same balanced segmented width as the visual reference");
-assertEqual(spotlightSurfaceSource.includes("id: scopeGroup"), true,
-    "scope actions render inside one grouped capsule");
+assertEqual(spotlightSurfaceSource.includes("id: scopeStrip"), true,
+    "scope actions render as three independent rounded controls");
 assertEqual(spotlightSurfaceSource.includes("iconSize: modelData.iconSize"), true,
     "scope buttons apply the optical icon size from their descriptor");
-assertEqual(spotlightSurfaceSource.includes('variant: "quiet"\n                                selected: spotlightModel.scope === modelData.id'), true,
-    "scope icons use quiet segments while the current scope remains selected");
+assertEqual(spotlightSurfaceSource.includes('variant: "secondary"'), true,
+    "every scope icon keeps its own neutral surface");
+assertEqual(spotlightSurfaceSource.includes("backgroundRadius: Metrics.radiusLarge"), true,
+    "every scope icon keeps the shared rounded TopBar silhouette");
 assertEqual(visual.appIconSize(), 56, "application icons match the selected visual density");
-assertEqual(visual.appLabelSize(), 13, "application labels retain the approved Spotlight density");
-assertEqual(visual.categoryLabelSize(), 13, "category labels retain the approved Spotlight density");
-assertEqual(visual.searchTextSize(), 14, "search text retains the approved Spotlight density");
+assertEqual(visual.appLabelSize(), 14, "application labels match the shell label tier");
+assertEqual(visual.categoryLabelSize(), 14, "category labels match the shell label tier");
+assertEqual(visual.searchTextSize(), 15, "search text matches the shell body-large tier");
 assertEqual(visual.fallbackIcon(["Network"]), "public", "network applications use a quiet semantic fallback icon");
 assertEqual(visual.fallbackIcon({ 0: "Network", length: 1 }), "public",
     "QML list-like categories keep their semantic fallback icon");
@@ -112,6 +112,8 @@ assertEqual(applicationTileSource.includes("Controls.SystemIcon"), true,
     "application tiles share the native icon resolver used by the Dock");
 assertEqual(applicationTileSource.includes("property bool selected: false"), true,
     "application tiles expose an explicit selected state");
+assertEqual(applicationTileSource.includes("border.width: 0"), true,
+    "selected and focused application tiles use tonal fill without an accent border");
 assertEqual(appGridSource.includes("selected: appPage.ListView.isCurrentItem && index === 0"), true,
     "the first application on the current page has a visible default selection");
 assertEqual(spotlightSurfaceSource.includes('name: "search"'), true,

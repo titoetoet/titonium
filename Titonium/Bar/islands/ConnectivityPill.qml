@@ -70,6 +70,7 @@ Item {
             iconName: root.networkIconName
             variant: "quiet"
             size: "small"
+            showFocusRing: false
             enabled: NetworkService.available
             accessibleName: root.networkAccessibleName
             onTriggered: NetworkPopupCoordinator.toggle(root.screen, networkButton)
@@ -82,6 +83,7 @@ Item {
             iconName: root.bluetoothIconName
             variant: "quiet"
             size: "small"
+            showFocusRing: false
             accessibleName: root.bluetoothAccessibleName
             onTriggered: BluetoothPopupCoordinator.toggle(root.screen, bluetoothButton)
         }
@@ -92,6 +94,7 @@ Item {
             iconName: AudioService.outputIcon
             variant: "quiet"
             size: "small"
+            showFocusRing: false
             accessibleName: root.audioAccessibleName
             onTriggered: AudioPopupCoordinator.toggle(root.screen)
 

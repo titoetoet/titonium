@@ -5,15 +5,15 @@ function appIconSize() {
 }
 
 function appLabelSize() {
-    return 13;
+    return 14;
 }
 
 function categoryLabelSize() {
-    return 13;
+    return 14;
 }
 
 function searchTextSize() {
-    return 14;
+    return 15;
 }
 
 function fallbackIcon(categories) {

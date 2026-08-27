@@ -192,6 +192,8 @@ def main() -> int:
             errors.append("Notification Bell must live in its own pill outside ConnectivityPill")
         if "id: networkIcon" in source:
             errors.append("ConnectivityPill must not mix a raw Wi-Fi icon with button-sized controls")
+        if source.count("showFocusRing: false") != 3:
+            errors.append("Connectivity controls must not retain a blue focus ring after pointer activation")
 
     end_island = BAR / "islands/EndIsland.qml"
     if end_island.is_file():
