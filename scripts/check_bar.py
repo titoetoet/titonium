@@ -7,6 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 BAR = ROOT / "Titonium/Bar"
+INTERACTION_ACCEPTANCE = ROOT / "scripts/workspace_interactions_acceptance.sh"
 
 
 def main() -> int:
@@ -257,6 +258,36 @@ def main() -> int:
         ):
             if fragment not in app_source:
                 errors.append(f"App missing Center Notch lifecycle contract: {fragment}")
+
+    check_sh = (ROOT / "scripts/check.sh").read_text(encoding="utf-8")
+    protected_source = (ROOT / "scripts/protected_acceptance.sh").read_text(encoding="utf-8")
+    acceptance_registration = 'bash -n "$project_root/scripts/workspace_interactions_acceptance.sh"'
+    if acceptance_registration not in check_sh:
+        errors.append("check.sh missing workspace interaction acceptance syntax gate")
+    if '"$project_root/scripts/workspace_interactions_acceptance.sh"' not in protected_source:
+        errors.append("protected acceptance missing workspace interaction gate")
+    if not INTERACTION_ACCEPTANCE.is_file():
+        errors.append("missing scripts/workspace_interactions_acceptance.sh")
+    else:
+        acceptance_source = INTERACTION_ACCEPTANCE.read_text(encoding="utf-8")
+        for fragment in (
+            "Configuration Loaded",
+            "Illegal method name",
+            "Type .* unavailable",
+            "hyprctl -j layers",
+            "centerNotch open overview",
+            "centerNotch close",
+            "window-switcher state",
+            "dock state",
+        ):
+            if fragment not in acceptance_source:
+                errors.append(f"workspace acceptance missing contract: {fragment}")
+        for forbidden in (
+            "bluetoothctl", "wpctl set", "clipboard set", "application launch",
+            "window-switcher accept", "activateWorkspace",
+        ):
+            if forbidden in acceptance_source:
+                errors.append(f"workspace acceptance contains mutating boundary: {forbidden}")
 
     if errors:
         print("FAIL direct Bar contract")

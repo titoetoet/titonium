@@ -191,3 +191,19 @@ runtime preference before review. DP-3 must remain free of Titonium surfaces thr
 Every imported module adds a pure fake-driven test, an architecture check and a focused live test
 for its own boundary. Never automate power actions, destructive session actions, real application
 launch or clipboard writes.
+
+## Workspace, Switcher, Dock pin and Center pin checkpoint
+
+`scripts/workspace_interactions_acceptance.sh` is a read-only system-state gate. It validates the
+public window descriptor shape, Center lifecycle, clean runtime log, unchanged repository and
+Hyprland configuration hashes, and Titonium layers on DP-1 only. It does not accept a switcher
+selection, change workspace, launch an application, write clipboard contents, or change audio and
+Bluetooth state.
+
+After the script passes, manually verify Super+Tab then Super release moves to the selected
+window's workspace; the Bar renders exactly five grouped workspace slots with occupied ranges,
+active app icon, click and wheel navigation; the Dock pin overlaps its upper-left border without
+triggering Applications and repeated pin/unpin leaves typing in the previously focused app; Dock
+app hover shows no text tooltip; and the TopBar Center pin survives outside clicks while Escape,
+Spotlight and unpin close it. DP-3 must remain owned only by the reference shell. Bluetooth is
+intentionally unchanged in this batch and is tested separately by the user.
