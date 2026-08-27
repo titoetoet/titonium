@@ -18,6 +18,7 @@ def main() -> int:
         "islands/EndIsland.qml",
         "islands/ConnectivityPill.qml",
         "islands/StatusPill.qml",
+        "widgets/Workspaces.qml",
         "notch/qmldir",
         "notch/CenterNotchCoordinator.qml",
         "notch/CenterNotchWindow.qml",
@@ -113,6 +114,29 @@ def main() -> int:
     status_pill = BAR / "islands/StatusPill.qml"
     if status_pill.is_file() and "Clock {" in status_pill.read_text(encoding="utf-8"):
         errors.append("StatusPill must keep Clock temporarily disabled")
+
+    workspaces = BAR / "widgets/Workspaces.qml"
+    if workspaces.is_file():
+        source = workspaces.read_text(encoding="utf-8")
+        for fragment in (
+            "property int count: 5",
+            "rangeStart",
+            "rangeEnd",
+            "property int previousActiveIndex",
+            "readonly property int activeIndex",
+            "Shared.SystemIcon",
+            "WheelHandler",
+            "HyprlandService.activateWorkspace",
+            "Motion.fast",
+        ):
+            if fragment not in source:
+                errors.append(f"Workspaces missing grouped-view contract: {fragment}")
+        for forbidden in (
+            "Timer {", "Animation.Infinite", "loops: Animation.Infinite",
+            "import Quickshell.Hyprland", "Hyprland.workspaces", "ToplevelManager",
+        ):
+            if forbidden in source:
+                errors.append(f"Workspaces has forbidden ownership/animation: {forbidden}")
 
     if BAR.exists():
         feature = "\n".join(path.read_text(encoding="utf-8") for path in BAR.rglob("*.qml"))
