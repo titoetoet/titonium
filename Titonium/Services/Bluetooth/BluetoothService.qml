@@ -44,25 +44,26 @@ QtObject {
     readonly property string stateKey: root.projection.stateKey
     readonly property int operationWarningLimit: 3
 
-    property int operationWarningCount: 0
+    property var operationWarningCounts: ({})
 
-    function warnOperation(message: string): void {
-        if (root.operationWarningCount >= root.operationWarningLimit)
+    function warnOperation(category: string, message: string): void {
+        const count = root.operationWarningCounts[category] || 0;
+        if (count >= root.operationWarningLimit)
             return;
-        root.operationWarningCount += 1;
+        root.operationWarningCounts[category] = count + 1;
         Logger.warn("bluetooth", message);
     }
 
     function setPowered(value: bool): bool {
         if (typeof value !== "boolean") {
-            root.warnOperation("ignored invalid power request");
+            root.warnOperation("power.invalid", "ignored invalid power request");
             return false;
         }
 
         const bluetooth = Bluetooth;
         const adapter = bluetooth.defaultAdapter;
         if (adapter === null || adapter === undefined) {
-            root.warnOperation("ignored power request without adapter");
+            root.warnOperation("power.adapter", "ignored power request without adapter");
             return false;
         }
 
@@ -72,21 +73,21 @@ QtObject {
             adapter.enabled = value;
             return true;
         } catch (error) {
-            root.warnOperation("power request failed");
+            root.warnOperation("power.failure", "power request failed");
             return false;
         }
     }
 
     function setDiscovering(value: bool): bool {
         if (typeof value !== "boolean") {
-            root.warnOperation("ignored invalid discovery request");
+            root.warnOperation("discovery.invalid", "ignored invalid discovery request");
             return false;
         }
 
         const bluetooth = Bluetooth;
         const adapter = bluetooth.defaultAdapter;
         if (adapter === null || adapter === undefined || adapter.enabled !== true) {
-            root.warnOperation("ignored discovery request without powered adapter");
+            root.warnOperation("discovery.adapter", "ignored discovery request without powered adapter");
             return false;
         }
 
@@ -94,7 +95,7 @@ QtObject {
             adapter.discovering = value;
             return true;
         } catch (error) {
-            root.warnOperation("discovery request failed");
+            root.warnOperation("discovery.failure", "discovery request failed");
             return false;
         }
     }
@@ -117,7 +118,7 @@ QtObject {
         };
         const device = nativeDeviceForAddress(address);
         if (device === null) {
-            root.warnOperation("ignored connect request for stale device");
+            root.warnOperation("connect.stale", "ignored connect request for stale device");
             return false;
         }
 
@@ -125,7 +126,7 @@ QtObject {
             device.connect();
             return true;
         } catch (error) {
-            root.warnOperation("connect request failed");
+            root.warnOperation("connect.failure", "connect request failed");
             return false;
         }
     }
@@ -148,7 +149,7 @@ QtObject {
         };
         const device = nativeDeviceForAddress(address);
         if (device === null) {
-            root.warnOperation("ignored disconnect request for stale device");
+            root.warnOperation("disconnect.stale", "ignored disconnect request for stale device");
             return false;
         }
 
@@ -156,7 +157,7 @@ QtObject {
             device.disconnect();
             return true;
         } catch (error) {
-            root.warnOperation("disconnect request failed");
+            root.warnOperation("disconnect.failure", "disconnect request failed");
             return false;
         }
     }
@@ -179,7 +180,7 @@ QtObject {
         };
         const device = nativeDeviceForAddress(address);
         if (device === null) {
-            root.warnOperation("ignored pair request for stale device");
+            root.warnOperation("pair.stale", "ignored pair request for stale device");
             return false;
         }
 
@@ -187,7 +188,7 @@ QtObject {
             device.pair();
             return true;
         } catch (error) {
-            root.warnOperation("pair request failed");
+            root.warnOperation("pair.failure", "pair request failed");
             return false;
         }
     }
@@ -210,7 +211,7 @@ QtObject {
         };
         const device = nativeDeviceForAddress(address);
         if (device === null) {
-            root.warnOperation("ignored pair cancellation for stale device");
+            root.warnOperation("cancelPair.stale", "ignored pair cancellation for stale device");
             return false;
         }
 
@@ -218,7 +219,7 @@ QtObject {
             device.cancelPair();
             return true;
         } catch (error) {
-            root.warnOperation("pair cancellation failed");
+            root.warnOperation("cancelPair.failure", "pair cancellation failed");
             return false;
         }
     }
@@ -241,7 +242,7 @@ QtObject {
         };
         const device = nativeDeviceForAddress(address);
         if (device === null) {
-            root.warnOperation("ignored forget request for stale device");
+            root.warnOperation("forget.stale", "ignored forget request for stale device");
             return false;
         }
 
@@ -249,7 +250,7 @@ QtObject {
             device.forget();
             return true;
         } catch (error) {
-            root.warnOperation("forget request failed");
+            root.warnOperation("forget.failure", "forget request failed");
             return false;
         }
     }

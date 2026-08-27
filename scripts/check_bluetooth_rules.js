@@ -5,7 +5,8 @@ const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 
-const helperPath = path.join(__dirname, "..", "Titonium", "Services", "Bluetooth", "BluetoothRules.js");
+const helperPath = process.env.TITONIUM_BLUETOOTH_RULES_PATH
+    || path.join(__dirname, "..", "Titonium", "Services", "Bluetooth", "BluetoothRules.js");
 if (!fs.existsSync(helperPath)) {
     console.error("FAIL Bluetooth rules are missing");
     process.exit(1);
@@ -16,6 +17,10 @@ const context = vm.createContext({});
 vm.runInContext(source, context, { filename: helperPath });
 const rules = context;
 const plain = value => JSON.parse(JSON.stringify(value));
+const expectedDeviceFields = [
+    "address", "battery", "batteryAvailable", "blocked", "connected", "icon", "name", "paired", "pairing", "section", "stateKey",
+];
+const assertDeviceDescriptor = device => assert.deepEqual(Object.keys(device).sort(), expectedDeviceFields);
 
 const noAdapter = plain(rules.projectAdapter(null));
 assert.deepEqual(Object.keys(noAdapter).sort(), [
@@ -66,9 +71,7 @@ assert.deepEqual(projected.devices.map(device => device.stateKey), [
     "bluetooth.device.paired",
     "bluetooth.device.blocked",
 ]);
-assert.deepEqual(Object.keys(projected.devices[0]).sort(), [
-    "address", "battery", "batteryAvailable", "blocked", "connected", "icon", "name", "paired", "pairing", "section", "stateKey",
-]);
+projected.devices.forEach(assertDeviceDescriptor);
 assert.equal(projected.devices[0].battery, 100);
 assert.equal(projected.devices[0].batteryAvailable, true);
 assert.equal(projected.devices[1].battery, 56);
