@@ -1,2 +1,3 @@
 module qs.Titonium.Core.Screens
+singleton ScreenPolicy 1.0 ScreenPolicy.qml
 singleton ScreenRouter 1.0 ScreenRouter.qml

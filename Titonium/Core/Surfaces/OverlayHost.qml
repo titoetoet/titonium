@@ -3,11 +3,12 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import qs.Titonium.Core.Screens
 import qs.Titonium.Services.Hyprland
 
 Scope {
     Variants {
-        model: Quickshell.screens
+        model: ScreenPolicy.screens
 
         PanelWindow {
             id: window

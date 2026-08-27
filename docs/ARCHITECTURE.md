@@ -20,15 +20,19 @@ Views ──read──> Services ──adapt──> Quickshell / Hyprland / DBus
 
 ## Screen and window lifecycle
 
-`BarHost` and `OverlayHost` use `Variants` over `Quickshell.screens`. Quickshell creates or
-destroys one delegate as outputs appear or disappear; monitor names are never hardcoded.
-`ScreenRouter` resolves focused or requested outputs with a first-screen fallback.
+`ScreenPolicy` filters Quickshell's reactive output list to the currently assigned Titonium output,
+`DP-1`. `BarHost`, `OverlayHost` and `AudioOsdHost` all use that same eligible-screen model, so
+Titonium creates no window or exclusive zone on `DP-3`; another shell can own that output.
+Disconnecting `DP-1` fails closed with no Titonium surface, and reconnecting it recreates the
+delegates reactively. `ScreenRouter` resolves focused or requested outputs only inside this policy
+and falls back to `DP-1`, never to another connected output.
 
-Each output always owns one lightweight overlay window, but its feature tree exists only when
-`SurfaceManager` has a descriptor for that screen. The manager allows one transient owner across
-the shell. Focused-monitor changes close Spotlight to prevent a stranded exclusive-focus window.
+The eligible output owns one lightweight overlay window, but its feature tree exists only when
+`SurfaceManager` has a descriptor for that screen. Ineligible outputs own no Titonium window. The
+manager allows one transient owner across the shell. Focused-monitor changes close Spotlight to
+prevent a stranded exclusive-focus window.
 
-The Bar owns a second, independent lightweight `CenterNotchWindow` per output. Only the screen
+The Bar owns a second, independent lightweight `CenterNotchWindow` on the eligible output. Only the screen
 named by `CenterNotchCoordinator.ownerScreenName` activates its heavy Loader. Opening Spotlight
 closes the notch; opening the notch closes `SurfaceManager`, so the two exclusive-focus surfaces
 cannot overlap. An outside click, Escape, or focused-monitor change releases the notch window.

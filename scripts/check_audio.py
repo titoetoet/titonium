@@ -331,7 +331,7 @@ def main() -> int:
     ), "Audio OSD coordinator")
     require_fragments(errors, OSD_ROOT / "AudioOsdHost.qml", (
         "Variants {",
-        "model: Quickshell.screens",
+        "model: ScreenPolicy.screens",
     ), "Audio OSD host")
     require_fragments(errors, OSD_ROOT / "AudioOsd.qml", (
         'I18n.tr("audio.muted")',

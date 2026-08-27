@@ -2,7 +2,6 @@ pragma Singleton
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import Quickshell
 import qs.Titonium.Core.Runtime
 
 QtObject {
@@ -15,16 +14,16 @@ QtObject {
     }
 
     function preferredScreen(): var {
-        if (root.activeScreen)
+        if (ScreenPolicy.acceptsScreen(root.activeScreen))
             return root.activeScreen;
-        return Quickshell.screens.length > 0 ? Quickshell.screens[0] : null;
+        return ScreenPolicy.screens.length > 0 ? ScreenPolicy.screens[0] : null;
     }
 
     function screenForName(screenName: string): var {
         if (screenName && screenName.length > 0) {
-            for (let index = 0; index < Quickshell.screens.length; index++) {
-                if (Quickshell.screens[index].name === screenName)
-                    return Quickshell.screens[index];
+            for (let index = 0; index < ScreenPolicy.screens.length; index++) {
+                if (ScreenPolicy.screens[index].name === screenName)
+                    return ScreenPolicy.screens[index];
             }
             Logger.warn("screen", "unknown screen " + screenName + "; using preferred screen");
         }

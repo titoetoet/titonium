@@ -20,6 +20,10 @@ The only allowlisted QML warning is Quickshell 0.3.x metadata marking documented
 uncreatable. New warnings are failures. UI code is rejected when it owns `Process`, `FileView` or
 raw detached execution.
 
+The screen-policy fixture requires Bar, transient overlays and Audio OSD hosts to share the
+`DP-1`-only eligible-screen model. It verifies fail-closed disconnect behavior and reactive
+eligibility when `DP-1` returns, preventing Titonium from reserving or drawing on `DP-3`.
+
 ## Runtime gate
 
 Stop any daemon using the same shell ID, then run:
@@ -48,9 +52,11 @@ It checks state formatting, idle OSD, popup mutual exclusion, clean runtime logs
 isolation and both unchanged Hyprland configuration hashes. It never calls or exposes volume,
 mute, adjustment, OSD-show or device-selection IPC.
 
-After passing, restart with `qs -d -p /home/cole/Projects/titonium` and manually verify every output:
+After passing, restart with `qs -d -p /home/cole/Projects/titonium` and manually verify the assigned
+Titonium output:
 
-- exactly one 40px bar with correct scaling/exclusive zone;
+- exactly one 40px bar with correct scaling/exclusive zone on DP-1 and no Titonium surface or
+  exclusive zone on DP-3;
 - workspace interaction and input-method state;
 - `Super + Space`, typing, Tab/Shift+Tab scopes, category paging and Escape;
 - `Super + V`, Clipboard navigation and close;

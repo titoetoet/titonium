@@ -37,7 +37,7 @@ def main() -> int:
     contracts = {
         "BarHost.qml": (
             "Variants {",
-            "model: Quickshell.screens",
+            "model: ScreenPolicy.screens",
             "CenterNotchWindow {",
         ),
         "BarSurface.qml": ("PanelWindow {", "exclusiveZone: 40", "mask: Region {"),
