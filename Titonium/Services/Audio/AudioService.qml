@@ -15,8 +15,10 @@ QtObject {
     readonly property bool allowAmplification: Preferences.allowAudioAmplification
     readonly property real maximumOutputVolume:
         AudioRules.maximumOutput(root.allowAmplification)
+    readonly property int invalidVolumeWarningLimit: 3
 
     property var previousPresentation: ({})
+    property var invalidVolumeWarningCounts: ({ "output": 0, "input": 0, "stream": 0 })
     property PwObjectTracker tracker: PwObjectTracker {
         objects: Pipewire.nodes.values.filter(node => node?.audio !== null)
     }
@@ -37,7 +39,8 @@ QtObject {
     readonly property bool inputMuted: root.inputAvailable && root.inputNode.audio.muted === true
 
     readonly property var playbackStreams:
-        AudioRules.normalizedStreams(Pipewire.nodes.values, I18n.tr("audio.stream.fallback"))
+        AudioRules.normalizedStreams(Pipewire.nodes.values,
+            I18n.tr("audio.stream.fallback"), root.ready)
 
     signal outputPresentationChanged(real volume, bool muted)
 
@@ -74,10 +77,22 @@ QtObject {
         return root.nodeUsable(node) ? node : null;
     }
 
+    function warnInvalidVolume(target: string): void {
+        const count = root.invalidVolumeWarningCounts[target] || 0;
+        if (count >= root.invalidVolumeWarningLimit)
+            return;
+        root.invalidVolumeWarningCounts[target] = count + 1;
+        Logger.warn("audio", "ignored invalid " + target + " volume");
+    }
+
     function setOutputVolume(value: real): bool {
         const next = AudioRules.clampOutput(value, root.allowAmplification);
+        if (next === null) {
+            root.warnInvalidVolume("output");
+            return false;
+        }
         const node = root.mutableNode(root.outputNode?.id);
-        if (next === null || node === null)
+        if (node === null)
             return false;
         node.audio.volume = next;
         return true;
@@ -85,7 +100,11 @@ QtObject {
 
     function adjustOutputVolume(delta: real): bool {
         const next = AudioRules.adjustOutput(root.outputVolume, delta, root.allowAmplification);
-        return next === null ? false : root.setOutputVolume(next);
+        if (next === null) {
+            root.warnInvalidVolume("output");
+            return false;
+        }
+        return root.setOutputVolume(next);
     }
 
     function toggleOutputMute(): bool {
@@ -98,8 +117,12 @@ QtObject {
 
     function setInputVolume(value: real): bool {
         const next = AudioRules.clampUnit(value);
+        if (next === null) {
+            root.warnInvalidVolume("input");
+            return false;
+        }
         const node = root.mutableNode(root.inputNode?.id);
-        if (next === null || node === null)
+        if (node === null)
             return false;
         node.audio.volume = next;
         return true;
@@ -115,8 +138,12 @@ QtObject {
 
     function setStreamVolume(nodeId: int, value: real): bool {
         const next = AudioRules.clampUnit(value);
+        if (next === null) {
+            root.warnInvalidVolume("stream");
+            return false;
+        }
         const node = root.mutableNode(nodeId);
-        if (next === null || node === null || !AudioRules.isPlaybackStream(node))
+        if (node === null || !AudioRules.isPlaybackStream(node))
             return false;
         node.audio.volume = next;
         return true;
@@ -146,6 +173,8 @@ QtObject {
         root.previousPresentation = null;
         root.observeOutputPresentation();
     }
+
+    function onOutputAvailableChanged(): void { root.resetOutputPresentation(); }
 
     property Connections pipewireConnections: Connections {
         target: Pipewire

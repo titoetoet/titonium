@@ -15,6 +15,16 @@ Item {
         + Metrics.spacingSmall
     readonly property int audioWidth: audioButton.implicitWidth
     readonly property int fullImplicitWidth: root.diagnosticsWidth + Metrics.spacingSmall + root.audioWidth
+    readonly property string outputAccessibleName: AudioService.outputAvailable
+        ? AudioService.outputName : I18n.tr("audio.output")
+    readonly property string audioAccessibleName: !AudioService.outputAvailable
+        ? I18n.tr("audio.output.accessible.unavailable", { "name": root.outputAccessibleName })
+        : (AudioService.outputMuted
+            ? I18n.tr("audio.output.accessible.muted", { "name": root.outputAccessibleName })
+            : I18n.tr("audio.output.accessible.volume", {
+                "name": root.outputAccessibleName,
+                "percentage": Math.round(AudioService.outputVolume * 100)
+            }))
 
     implicitWidth: root.audioWidth + (root.showDiagnostics
         ? root.diagnosticsWidth + Metrics.spacingSmall : 0)
@@ -52,7 +62,7 @@ Item {
             iconName: AudioService.outputIcon
             variant: "quiet"
             size: "small"
-            accessibleName: AudioService.outputName
+            accessibleName: root.audioAccessibleName
             onTriggered: AudioPopupCoordinator.toggle(root.screen)
 
             WheelHandler {

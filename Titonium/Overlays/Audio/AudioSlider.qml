@@ -14,7 +14,6 @@ FocusScope {
 
     implicitWidth: 120
     implicitHeight: Metrics.controlHeight
-    activeFocusOnTab: slider.enabled
 
     function syncFromService(): void {
         if (!slider.pressed)

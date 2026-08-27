@@ -51,6 +51,12 @@ REQUIRED_FRAGMENTS = (
     "function setStreamVolume(nodeId: int, value: real): bool",
     "function toggleStreamMute(nodeId: int): bool",
     "function onVolumesChanged(): void { root.observeOutputPresentation(); }",
+    "function onOutputAvailableChanged(): void { root.resetOutputPresentation(); }",
+    "readonly property int invalidVolumeWarningLimit: 3",
+    "function warnInvalidVolume(target: string): void",
+    'root.warnInvalidVolume("output")',
+    'root.warnInvalidVolume("input")',
+    'root.warnInvalidVolume("stream")',
 )
 FORBIDDEN_SERVICE_FRAGMENTS = (
     "Process",
@@ -80,9 +86,11 @@ RAW_AUDIO_MUTATION = re.compile(r"\.audio\.(?:volume|muted)\s*=")
 MUTATING_AUDIO_IPC_METHOD = re.compile(
     r"^\s*function\s+(?:(?:set|adjust|showOsd|device)\w*|toggle\w*Mute)\s*\(", re.MULTILINE
 )
+FORBIDDEN_AUDIO_IPC_BODY_CALL = re.compile(r"\bAudioOsdCoordinator\s*\.\s*show\s*\(")
 MUTATING_AUDIO_IPC_FIXTURES = (
     "function toggleOutputMute(): string { return \"mutated\"; }",
     "function toggleInputMute(): string { return \"mutated\"; }",
+    "function preview(): string { AudioOsdCoordinator.show(\"DP-1\", 0.5, false); return \"shown\"; }",
 )
 
 
@@ -139,9 +147,14 @@ def ipc_handler_source(source: str, target: str) -> str:
     return ""
 
 
+def audio_ipc_exposes_mutation(source: str) -> bool:
+    return bool(MUTATING_AUDIO_IPC_METHOD.search(source)
+                or FORBIDDEN_AUDIO_IPC_BODY_CALL.search(source))
+
+
 def validate_audio_hardening(errors: list[str]) -> None:
     for fixture in MUTATING_AUDIO_IPC_FIXTURES:
-        if not MUTATING_AUDIO_IPC_METHOD.search(fixture):
+        if not audio_ipc_exposes_mutation(fixture):
             errors.append(f"Audio IPC mutation matcher missed fixture: {fixture.split('(')[0]}")
 
     audio_files = audio_source_files(AUDIO_SOURCE_ROOTS)
@@ -196,7 +209,7 @@ def validate_audio_hardening(errors: list[str]) -> None:
         audio_ipc = ipc_handler_source(app.read_text(encoding="utf-8"), "audio")
         if not audio_ipc:
             errors.append("missing audio IPC handler")
-        elif MUTATING_AUDIO_IPC_METHOD.search(audio_ipc):
+        elif audio_ipc_exposes_mutation(audio_ipc):
             errors.append("Audio IPC exposes a mutating method")
 
 
@@ -252,9 +265,13 @@ def main() -> int:
         "TapHandler {",
         "Keys.onEscapePressed",
         "width: 380",
-        "anchors.topMargin: 40 + Metrics.barSpacing",
+        "readonly property real panelTop: 40 + Metrics.barSpacing",
+        "anchors.topMargin: root.panelTop",
         "anchors.rightMargin: Metrics.barPadding",
         "maximumHeight: 520",
+        "readonly property real availableHeight",
+        "readonly property real fixedContentHeight",
+        "streamList.contentHeight",
         "ListView {",
         "AudioControlRow {",
         "AudioStreamRow {",
@@ -266,6 +283,15 @@ def main() -> int:
         "QtControls.Slider",
         "onMoved:",
     ), "Audio slider")
+    slider_path = OVERLAY_ROOT / "AudioSlider.qml"
+    if slider_path.is_file():
+        slider_source = slider_path.read_text(encoding="utf-8")
+        if len(re.findall(r"\bactiveFocusOnTab\s*:", slider_source)) != 1:
+            errors.append("Audio slider must expose exactly one tab stop on the inner Slider")
+
+    popup_path = OVERLAY_ROOT / "AudioPopupSurface.qml"
+    if popup_path.is_file() and "Math.max(160" in popup_path.read_text(encoding="utf-8"):
+        errors.append("Audio popup must not force a 160px minimum beyond available screen height")
     require_fragments(errors, OVERLAY_ROOT / "AudioControlRow.qml", (
         'property string kind: "output"',
         "AudioService.setOutputVolume",
@@ -369,9 +395,25 @@ def main() -> int:
         if not catalog_path.is_file():
             continue
         strings = json.loads(catalog_path.read_text(encoding="utf-8")).get("strings", {})
-        for key in ("audio.mute.accessible", "audio.unmute.accessible", "audio.osd.volume"):
+        for key in (
+            "audio.mute.accessible",
+            "audio.unmute.accessible",
+            "audio.osd.volume",
+            "audio.output.accessible.unavailable",
+            "audio.output.accessible.muted",
+            "audio.output.accessible.volume",
+        ):
             if key not in strings:
                 errors.append(f"{locale} catalog missing audio accessibility key: {key}")
+        expected_placeholders = {
+            "audio.output.accessible.unavailable": {"name"},
+            "audio.output.accessible.muted": {"name"},
+            "audio.output.accessible.volume": {"name", "percentage"},
+        }
+        for key, expected in expected_placeholders.items():
+            actual = set(re.findall(r"\{([^{}]+)\}", strings.get(key, "")))
+            if actual != expected:
+                errors.append(f"{locale} catalog has invalid placeholders for {key}")
 
     if OVERLAY_ROOT.exists():
         overlay_source = "\n".join(path.read_text(encoding="utf-8") for path in OVERLAY_ROOT.rglob("*.qml"))
@@ -396,6 +438,11 @@ def main() -> int:
 
     require_fragments(errors, ROOT / "Titonium/Bar/islands/ConnectivityPill.qml", (
         "required property var screen",
+        "readonly property string audioAccessibleName",
+        'I18n.tr("audio.output.accessible.unavailable"',
+        'I18n.tr("audio.output.accessible.muted"',
+        'I18n.tr("audio.output.accessible.volume"',
+        "accessibleName: root.audioAccessibleName",
         "AudioPopupCoordinator.toggle(root.screen)",
         "AudioService.adjustOutputVolume",
         "WheelHandler {",

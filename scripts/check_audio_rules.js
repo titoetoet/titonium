@@ -33,7 +33,7 @@ assert.equal(rules.volumeIcon(true, false, 0.0), "volume_mute");
 assert.equal(rules.volumeIcon(true, false, 0.2), "volume_down");
 assert.equal(rules.volumeIcon(true, false, 0.6), "volume_up");
 
-const playback = { id: 7, audio: { volume: 0.4, muted: false },
+const playback = { id: 7, audio: { volume: 0.4, muted: false }, ready: true,
     isStream: true, isSink: false,
     properties: { "application.name": "Firefox", "application.icon-name": "firefox" } };
 assert.equal(rules.isPlaybackStream(playback), true);
@@ -43,23 +43,29 @@ assert.equal(rules.streamIcon(playback), "firefox");
 assert.equal(rules.streamName({ properties: { "media.name": "Track" } }, "Audio stream"), "Track");
 assert.equal(rules.streamIcon({ properties: {} }), "audio-x-generic");
 
-const streams = rules.normalizedStreams([
-    { id: 20, audio: { volume: 0.3, muted: false }, isStream: true, isSink: false,
+const streamNodes = [
+    { id: 20, audio: { volume: 0.3, muted: false }, ready: true,
+        isStream: true, isSink: false,
         properties: { "application.name": "zeta" } },
-    { id: 3, audio: { volume: 0.5, muted: true }, isStream: true, isSink: false,
+    { id: 3, audio: { volume: 0.5, muted: true }, ready: true,
+        isStream: true, isSink: false,
         properties: { "application.name": "Alpha" } },
-    { id: 4, audio: { volume: 0.5, muted: false }, isStream: true, isSink: false,
+    { id: 4, audio: { volume: 0.5, muted: false }, ready: false,
+        isStream: true, isSink: false,
         properties: { "application.name": "alpha" } },
-    { id: 8, audio: { volume: 0.5, muted: false }, isStream: true, isSink: false,
-        isHardware: true, properties: { "application.name": "Hardware" } },
-    { id: 9, audio: { volume: 0.5, muted: false }, isStream: true, isSink: false,
-        isRecording: true, properties: { "application.name": "Recorder" } },
-]);
+    { id: 8, audio: { volume: 0.5, muted: false }, ready: true,
+        isStream: false, isSink: true, properties: { "application.name": "Hardware" } },
+    { id: 9, audio: { volume: 0.5, muted: false }, ready: true,
+        isStream: true, isSink: true, properties: { "application.name": "Recorder" } },
+];
+const streams = rules.normalizedStreams(streamNodes, "Audio stream", true);
 assert.deepEqual(streams.map(stream => stream.name), ["Alpha", "alpha", "zeta"]);
 assert.deepEqual(streams.map(stream => stream.id), [3, 4, 20]);
 assert.deepEqual(Object.keys(streams[0]).sort(), ["available", "icon", "id", "muted", "name", "volume"]);
 assert.equal(streams[0].available, true);
+assert.equal(streams[1].available, false);
 assert.notStrictEqual(streams[0], streams[1]);
+assert.equal(rules.normalizedStreams(streamNodes, "Audio stream", false).length, 0);
 
 assert.equal(rules.presentationEvent(null,
     { key: "sink:1", available: true, volume: 0.5, muted: false }).emit, false);
@@ -75,5 +81,14 @@ assert.equal(rules.presentationEvent(
 assert.equal(rules.presentationEvent(
     { key: "", available: true, volume: 0.5, muted: false },
     { key: "", available: true, volume: 0.6, muted: false }).emit, false);
+
+let baseline = rules.presentationEvent(null,
+    { key: "sink:7", available: false, volume: 0, muted: false }).next;
+let readyBaseline = rules.presentationEvent(baseline,
+    { key: "sink:7", available: true, volume: 0.5, muted: false });
+assert.equal(readyBaseline.emit, false);
+baseline = readyBaseline.next;
+assert.equal(rules.presentationEvent(baseline,
+    { key: "sink:7", available: true, volume: 0.6, muted: false }).emit, true);
 
 console.log("PASS Audio rules fixtures");

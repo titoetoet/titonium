@@ -35,8 +35,7 @@ function volumeIcon(available, muted, volume) {
 }
 
 function isPlaybackStream(node) {
-    return !!node && node.audio != null && node.isStream === true && node.isSink !== true
-        && node.isHardware !== true && node.isRecording !== true && node.isSource !== true;
+    return !!node && node.audio != null && node.isStream === true && node.isSink !== true;
 }
 
 function properties(node) {
@@ -62,7 +61,9 @@ function streamIcon(node) {
     return firstText([properties(node)["application.icon-name"]], "audio-x-generic");
 }
 
-function normalizedStreams(nodes, fallback) {
+function normalizedStreams(nodes, fallback, pipewireReady) {
+    if (pipewireReady !== true)
+        return [];
     var source = Array.isArray(nodes) ? nodes : [];
     return source.filter(isPlaybackStream).map(function (node) {
         var audio = node.audio || {};
@@ -73,7 +74,7 @@ function normalizedStreams(nodes, fallback) {
             icon: streamIcon(node),
             volume: volume === null ? 0 : volume,
             muted: audio.muted === true,
-            available: node.available !== false,
+            available: node.ready === true,
         };
     }).sort(function (left, right) {
         var names = left.name.toLocaleLowerCase().localeCompare(right.name.toLocaleLowerCase());
