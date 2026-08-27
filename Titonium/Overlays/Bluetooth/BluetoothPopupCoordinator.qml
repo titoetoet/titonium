@@ -28,6 +28,20 @@ QtObject {
         }, routedScreen);
     }
 
+    function openForIpc(screen: var): bool {
+        const routedScreen = ScreenRouter.screenForName(screen?.name || "");
+        const owner = root.ownerFor(routedScreen);
+        if (!owner)
+            return false;
+        return SurfaceManager.open(owner, {
+            "source": Qt.resolvedUrl("BluetoothPopupSurface.qml"),
+            "keyboardFocus": "exclusive",
+            "closeOnMonitorChange": true,
+            "ownerId": owner,
+            "invoker": null,
+        }, routedScreen);
+    }
+
     function toggle(screen: var, invoker: var): bool {
         const routedScreen = ScreenRouter.screenForName(screen?.name || "");
         const owner = root.ownerFor(routedScreen);

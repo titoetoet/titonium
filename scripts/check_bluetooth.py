@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import json
 import os
 import re
 import subprocess
@@ -20,6 +21,8 @@ COORDINATOR = PRESENTATION_ROOT / "BluetoothPopupCoordinator.qml"
 POPUP = PRESENTATION_ROOT / "BluetoothPopupSurface.qml"
 DEVICE_ROW = PRESENTATION_ROOT / "BluetoothDeviceRow.qml"
 CONNECTIVITY_PILL = ROOT / "Titonium/Bar/islands/ConnectivityPill.qml"
+APP = ROOT / "Titonium/App.qml"
+BLUETOOTH_ACCEPTANCE = ROOT / "scripts/bluetooth_acceptance.sh"
 PRESENTATION_FILES = (
     "Titonium/Overlays/Bluetooth/BluetoothPopupCoordinator.qml",
     "Titonium/Overlays/Bluetooth/BluetoothPopupSurface.qml",
@@ -108,6 +111,88 @@ def qml_block(source: str, start: int) -> str:
 def function_block(source: str, name: str) -> str:
     match = re.search(rf"function\s+{re.escape(name)}\s*\(", source)
     return qml_block(source, match.start()) if match else ""
+
+
+def ipc_handler_source(source: str, target: str) -> str:
+    for match in re.finditer(r"\bIpcHandler\s*\{", source):
+        block = qml_block(source, match.start())
+        if re.search(rf'\btarget\s*:\s*"{re.escape(target)}"', block):
+            return block
+    return ""
+
+
+def ipc_function_names(source: str) -> set[str]:
+    return set(re.findall(r"^\s*function\s+(\w+)\s*\(", source, re.MULTILINE))
+
+
+def bluetooth_locale_errors() -> list[str]:
+    required = {
+        "bluetooth.title": set(),
+        "bluetooth.unavailable": set(),
+        "bluetooth.off": set(),
+        "bluetooth.on": set(),
+        "bluetooth.scanning": set(),
+        "bluetooth.connected": {"count"},
+        "bluetooth.power.on.accessible": set(),
+        "bluetooth.power.off.accessible": set(),
+        "bluetooth.scan.start.accessible": set(),
+        "bluetooth.scan.stop.accessible": set(),
+        "bluetooth.section.connected": {"count"},
+        "bluetooth.section.paired": {"count"},
+        "bluetooth.section.available": {"count"},
+        "bluetooth.section.accessible": {"name", "count", "collapsed"},
+        "bluetooth.devices.scanning": set(),
+        "bluetooth.devices.empty": set(),
+        "bluetooth.device.available": set(),
+        "bluetooth.device.blocked": set(),
+        "bluetooth.device.connecting": set(),
+        "bluetooth.device.disconnecting": set(),
+        "bluetooth.device.connected": set(),
+        "bluetooth.device.pairing": set(),
+        "bluetooth.device.paired": set(),
+        "bluetooth.device.battery": {"percentage"},
+        "bluetooth.device.connect": set(),
+        "bluetooth.device.disconnect": set(),
+        "bluetooth.device.pair": set(),
+        "bluetooth.device.cancel_pair": set(),
+        "bluetooth.device.action.accessible": {"action", "name"},
+        "bluetooth.forget": set(),
+        "bluetooth.forget.accessible": {"name"},
+        "bluetooth.forget.confirm": set(),
+        "bluetooth.forget.cancel": set(),
+        "bluetooth.forget.confirm_action": set(),
+        "menubar.connectivity.bluetooth.accessible": {"state", "count"},
+    }
+    errors = []
+    catalogs = {}
+    for locale in ("en", "vi"):
+        path = ROOT / f"config/i18n/{locale}.json"
+        try:
+            strings = json.loads(path.read_text(encoding="utf-8")).get("strings", {})
+        except (OSError, json.JSONDecodeError) as error:
+            errors.append(f"cannot read {locale} Bluetooth catalog: {error}")
+            continue
+        catalogs[locale] = strings
+        for key, placeholders in required.items():
+            value = strings.get(key)
+            if not isinstance(value, str) or not value:
+                errors.append(f"{locale} catalog missing Bluetooth key: {key}")
+                continue
+            if set(re.findall(r"\{([^{}]+)\}", value)) != placeholders:
+                errors.append(f"{locale} catalog has invalid placeholders for {key}")
+    if len(catalogs) == 2 and set(catalogs["en"]) != set(catalogs["vi"]):
+        errors.append("Bluetooth locale keys are not identical")
+    return errors
+
+
+def ipc_open_path_errors(coordinator: str) -> list[str]:
+    block = function_block(coordinator, "openForIpc")
+    if ("function openForIpc(screen: var): bool" not in coordinator
+            or "ScreenRouter.screenForName(screen?.name" not in block
+            or '"invoker": null' not in block
+            or "SurfaceManager.open" not in block):
+        return ["Bluetooth coordinator must provide explicit nullable-invoker IPC open path"]
+    return []
 
 
 def root_property_blocks(source: str) -> list[tuple[str, str]]:
@@ -440,6 +525,83 @@ def validate_presentation_gate_fixtures(errors: list[str]) -> None:
         errors.append("Bluetooth button matcher missed sibling-icon fixture")
 
 
+def validate_integration(errors: list[str]) -> None:
+    coordinator = COORDINATOR.read_text(encoding="utf-8") if COORDINATOR.is_file() else ""
+    errors.extend(ipc_open_path_errors(coordinator))
+
+    row = DEVICE_ROW.read_text(encoding="utf-8") if DEVICE_ROW.is_file() else ""
+    if ('label: I18n.tr(root.primaryActionKey)' not in row
+            or 'I18n.tr("bluetooth.device.action.accessible", {' not in row
+            or '"action": I18n.tr(root.primaryActionKey)' not in row
+            or '"name": root.device?.name || ""' not in row):
+        errors.append("Bluetooth row action must retain a plain label and expose action plus device name")
+
+    pill = CONNECTIVITY_PILL.read_text(encoding="utf-8") if CONNECTIVITY_PILL.is_file() else ""
+    connected_state = re.search(
+        r'I18n\.tr\(BluetoothService\.stateKey\s*,\s*\{[^}]*"count"\s*:\s*BluetoothService\.connectedCount',
+        pill, re.DOTALL)
+    if not connected_state:
+        errors.append("Bluetooth Bar accessibility state must pass connected count to translation")
+
+    if not APP.is_file():
+        errors.append("missing App.qml for Bluetooth integration")
+    else:
+        app = APP.read_text(encoding="utf-8")
+        if "import qs.Titonium.Services.Bluetooth" not in app:
+            errors.append("App must import BluetoothService for read-only state IPC")
+        if "import qs.Titonium.Overlays.Bluetooth" not in app:
+            errors.append("App must import Bluetooth popup coordinator")
+        bluetooth_ipc = ipc_handler_source(app, "bluetooth")
+        if not bluetooth_ipc:
+            errors.append("missing Bluetooth IPC handler")
+        elif ipc_function_names(bluetooth_ipc) != {"state", "popup", "closePopup", "popupState"}:
+            errors.append("Bluetooth IPC must expose only state and popup lifecycle")
+        elif ("BluetoothService.snapshot()" not in bluetooth_ipc
+                or "BluetoothPopupCoordinator.openForIpc(screen)" not in bluetooth_ipc
+                or "BluetoothPopupCoordinator.close()" not in bluetooth_ipc):
+            errors.append("Bluetooth IPC must use only state and popup coordinator contracts")
+
+    if not BLUETOOTH_ACCEPTANCE.is_file():
+        errors.append("missing Bluetooth read-only acceptance script")
+    else:
+        acceptance = BLUETOOTH_ACCEPTANCE.read_text(encoding="utf-8")
+        calls = set(re.findall(r"\bcall_ipc\s+bluetooth\s+(\w+)", acceptance))
+        if not calls.issubset({"state", "popup", "closePopup", "popupState"}):
+            errors.append("Bluetooth acceptance may call only state and popup IPC")
+        if not {"state", "popup", "closePopup", "popupState"}.issubset(calls):
+            errors.append("Bluetooth acceptance must cover all read-only popup IPC")
+        for fragment in ("qs -n -p", "hyprctl -j layers", "DP-1", "DP-3"):
+            if fragment not in acceptance:
+                errors.append(f"Bluetooth acceptance missing read-only lifecycle check: {fragment}")
+    protected = ROOT / "scripts/protected_acceptance.sh"
+    if protected.is_file() and "scripts/bluetooth_acceptance.sh" not in protected.read_text(encoding="utf-8"):
+        errors.append("protected acceptance must run Bluetooth acceptance after cleanup")
+    errors.extend(bluetooth_locale_errors())
+
+
+def validate_integration_gate_fixtures(errors: list[str]) -> None:
+    mutating_ipc = """IpcHandler {
+        target: \"bluetooth\"
+        function state(): string { return BluetoothService.snapshot(); }
+        function setPowered(value: bool): string { return \"mutated\"; }
+    }"""
+    if ipc_function_names(mutating_ipc) == {"state", "popup", "closePopup", "popupState"}:
+        errors.append("Bluetooth IPC matcher missed a mutating fixture")
+
+    coordinator_without_null = """QtObject {
+        function openForIpc(screen: var): bool {
+            return SurfaceManager.open(\"bluetooth:DP-1\", {}, screen);
+        }
+    }"""
+    if not ipc_open_path_errors(coordinator_without_null):
+        errors.append("Bluetooth IPC coordinator matcher missed non-nullable fixture")
+
+    bad_acceptance = "call_ipc bluetooth setPowered true"
+    if set(re.findall(r"\bcall_ipc\s+bluetooth\s+(\w+)", bad_acceptance)).issubset(
+            {"state", "popup", "closePopup", "popupState"}):
+        errors.append("Bluetooth acceptance matcher missed a mutation fixture")
+
+
 def main() -> int:
     errors: list[str] = []
     for relative in REQUIRED_FILES:
@@ -449,6 +611,8 @@ def main() -> int:
     validate_service(errors)
     validate_presentation(errors)
     validate_presentation_gate_fixtures(errors)
+    validate_integration(errors)
+    validate_integration_gate_fixtures(errors)
     validate_gate_fixtures(errors)
     validate_rules_contract(errors)
 

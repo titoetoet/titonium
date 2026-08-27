@@ -8,18 +8,23 @@ import qs.Titonium.Bar.notch
 import qs.Titonium.Core.Runtime
 import qs.Titonium.Core.Screens
 import qs.Titonium.Core.Surfaces
+import qs.Titonium.Dock
 import qs.Titonium.Services.Applications
 import qs.Titonium.Services.Audio
+import qs.Titonium.Services.Bluetooth
+import qs.Titonium.Services.Dock
 import qs.Titonium.Services.Hyprland
 import qs.Titonium.Overlays.Audio
+import qs.Titonium.Overlays.Bluetooth
 import qs.Titonium.Osd.Audio
 
 Scope {
     id: root
 
-    function openSpotlight(scope: string, query: string, stateMode: string): string {
+    function openSpotlight(scope: string, query: string, stateMode: string, requestedScreen: var): string {
         CenterNotchCoordinator.close();
-        const screen = ScreenRouter.screenForName(HyprlandService.focusedMonitorName);
+        const screen = ScreenRouter.screenForName(requestedScreen?.name
+            || HyprlandService.focusedMonitorName);
         if (!screen)
             return "unavailable:no-screen";
         const owner = "spotlight:" + screen.name;
@@ -37,6 +42,9 @@ Scope {
     }
 
     BarHost {}
+    DockHost {
+        onApplicationsRequested: screen => root.openSpotlight("applications", "", "browse", screen)
+    }
     OverlayHost {}
     AudioOsdHost {}
 
@@ -88,6 +96,42 @@ Scope {
         function osdState(): string {
             return AudioOsdCoordinator.active
                 ? "active:" + AudioOsdCoordinator.ownerScreenName : "idle";
+        }
+    }
+
+    IpcHandler {
+        target: "dock"
+
+        function state(): string {
+            return DockService.snapshot();
+        }
+    }
+
+    IpcHandler {
+        id: bluetoothIpc
+        target: "bluetooth"
+
+        function state(): string {
+            return BluetoothService.snapshot();
+        }
+
+        function popup(): string {
+            const screen = ScreenRouter.screenForName(HyprlandService.focusedMonitorName);
+            if (!screen)
+                return "unavailable:no-screen";
+            return BluetoothPopupCoordinator.openForIpc(screen)
+                ? bluetoothIpc.popupState() : "unavailable:no-screen";
+        }
+
+        function closePopup(): string {
+            BluetoothPopupCoordinator.close();
+            return "closed";
+        }
+
+        function popupState(): string {
+            if (!BluetoothPopupCoordinator.active)
+                return "closed";
+            return "open:" + (SurfaceManager.screen?.name || "");
         }
     }
 

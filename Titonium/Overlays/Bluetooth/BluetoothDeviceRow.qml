@@ -96,7 +96,8 @@ Item {
                 variant: "quiet"
                 size: "small"
                 enabled: root.actionable
-                accessibleName: I18n.tr(root.primaryActionKey, {
+                accessibleName: I18n.tr("bluetooth.device.action.accessible", {
+                    "action": I18n.tr(root.primaryActionKey),
                     "name": root.device?.name || ""
                 })
                 onTriggered: root.triggerPrimary()

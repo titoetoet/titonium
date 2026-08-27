@@ -29,7 +29,9 @@ Item {
             }))
     readonly property string bluetoothAccessibleName: I18n.tr(
         "menubar.connectivity.bluetooth.accessible", {
-            "state": I18n.tr(BluetoothService.stateKey),
+            "state": I18n.tr(BluetoothService.stateKey, {
+                "count": BluetoothService.connectedCount
+            }),
             "count": BluetoothService.connectedCount
         })
     readonly property string bluetoothIconName: !BluetoothService.available || !BluetoothService.powered
