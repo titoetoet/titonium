@@ -15,7 +15,7 @@ Item {
     Shared.Surface {
         anchors.fill: parent
         tone: "elevated"
-        radius: Metrics.radiusSmall
+        radius: Metrics.radiusLarge
     }
 
     Row {

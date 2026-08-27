@@ -11,19 +11,13 @@ Item {
 
     required property var screen
     property int count: 5
-    readonly property int slotWidth: 28
+    readonly property int emptySlotWidth: 20
+    readonly property int appIconSize: 14
+    readonly property int appSpacing: 2
     readonly property int activeWorkspaceId: HyprlandService.activeWorkspaceId(root.screen)
     readonly property var items: HyprlandService.workspaceSnapshot(root.screen, root.count)
-    readonly property int activeIndex: {
-        for (let index = 0; index < root.items.length; index++) {
-            if (root.items[index]?.active === true)
-                return index;
-        }
-        return 0;
-    }
-    property int previousActiveIndex: 0
 
-    implicitWidth: root.slotWidth * root.count + Metrics.spacingXSmall * 2
+    implicitWidth: workspaceRow.implicitWidth + Metrics.spacingXSmall * 2
     implicitHeight: Metrics.widgetHeight
 
     function activateRelative(delta: int): void {
@@ -31,144 +25,85 @@ Item {
         HyprlandService.activateWorkspace(id);
     }
 
-    Shared.Surface {
-        anchors.fill: parent
-        tone: "elevated"
-        radius: Metrics.radiusSmall
+    function workspaceColor(index: int): color {
+        const palette = Theme.workspacePalette;
+        return palette[Math.max(0, index) % palette.length];
     }
 
-    Item {
-        id: track
-        width: root.slotWidth * root.count
-        height: Metrics.controlHeightSmall - Metrics.spacingXSmall
+    Row {
+        id: workspaceRow
         anchors.centerIn: parent
+        spacing: Metrics.spacingXSmall
 
         Repeater {
             model: root.items
 
-            Rectangle {
-                required property int index
+            Item {
+                id: workspaceItem
                 required property var modelData
-                visible: modelData.occupied && modelData.rangeStart === modelData.id
-                x: index * root.slotWidth + 2
-                anchors.verticalCenter: parent.verticalCenter
-                width: (modelData.rangeEnd - modelData.rangeStart + 1) * root.slotWidth - 4
-                height: 18
-                radius: Metrics.radiusSmall
-                color: Theme.surfaceInteractive
-            }
-        }
+                readonly property int occupiedWidth: Math.max(28,
+                    workspaceItem.modelData.apps.length * root.appIconSize
+                        + Math.max(0, workspaceItem.modelData.apps.length - 1) * root.appSpacing
+                        + Metrics.spacingSmall)
+                width: workspaceItem.modelData.occupied
+                    ? workspaceItem.occupiedWidth : root.emptySlotWidth
+                height: 22
+                Accessible.role: Accessible.Button
+                Accessible.name: I18n.tr("menubar.workspace.accessible", {
+                    id: workspaceItem.modelData.id,
+                    state: workspaceItem.modelData.active
+                        ? I18n.tr("menubar.workspace.active")
+                        : (workspaceItem.modelData.occupied
+                            ? I18n.tr("menubar.workspace.occupied") : "")
+                })
 
-        Rectangle {
-            id: activeHighlight
-            x: root.activeIndex * root.slotWidth + 2
-            anchors.verticalCenter: parent.verticalCenter
-            width: root.slotWidth - 4
-            height: 22
-            radius: Metrics.radiusMedium
-            color: Theme.accent
-        }
-
-        SequentialAnimation {
-            id: activeTravel
-
-            ParallelAnimation {
-                NumberAnimation {
-                    target: activeHighlight
-                    property: "x"
-                    to: Math.min(root.previousActiveIndex, root.activeIndex) * root.slotWidth + 2
-                    duration: Math.round(Motion.fast / 2)
-                    easing.type: Easing.OutCubic
+                Rectangle {
+                    anchors.fill: parent
+                    visible: workspaceItem.modelData.occupied
+                    radius: Metrics.radiusLarge
+                    color: root.workspaceColor(workspaceItem.modelData.colorIndex)
+                    border.width: workspaceItem.modelData.active ? Metrics.borderWidth : 0
+                    border.color: workspaceItem.modelData.urgent ? Theme.warning
+                        : (workspaceItem.modelData.active ? Theme.focus : "transparent")
                 }
-                NumberAnimation {
-                    target: activeHighlight
-                    property: "width"
-                    to: (Math.abs(root.activeIndex - root.previousActiveIndex) + 1)
-                        * root.slotWidth - 4
-                    duration: Math.round(Motion.fast / 2)
-                    easing.type: Easing.OutCubic
+
+                Rectangle {
+                    anchors.centerIn: parent
+                    visible: !workspaceItem.modelData.occupied
+                    width: workspaceItem.modelData.active ? 8 : 6
+                    height: width
+                    radius: width / 2
+                    color: workspaceItem.modelData.active ? Theme.accent : Theme.textSecondary
+                    border.width: workspaceItem.modelData.urgent ? Metrics.borderWidth : 0
+                    border.color: Theme.warning
                 }
-            }
 
-            ParallelAnimation {
-                NumberAnimation {
-                    target: activeHighlight
-                    property: "x"
-                    to: root.activeIndex * root.slotWidth + 2
-                    duration: Math.round(Motion.fast / 2)
-                    easing.type: Easing.OutCubic
+                Row {
+                    anchors.centerIn: parent
+                    spacing: root.appSpacing
+                    visible: workspaceItem.modelData.occupied
+
+                    Repeater {
+                        model: workspaceItem.modelData.apps
+
+                        Shared.SystemIcon {
+                            required property var modelData
+                            sourceName: modelData.icon
+                            fallbackName: "apps"
+                            size: root.appIconSize
+                            tone: "primary"
+                            accessibleName: ""
+                        }
+                    }
                 }
-                NumberAnimation {
-                    target: activeHighlight
-                    property: "width"
-                    to: root.slotWidth - 4
-                    duration: Math.round(Motion.fast / 2)
-                    easing.type: Easing.OutCubic
+
+                Behavior on width {
+                    NumberAnimation { duration: Motion.fast; easing.type: Easing.OutCubic }
                 }
-            }
 
-            onFinished: root.previousActiveIndex = root.activeIndex
-        }
-
-        Row {
-            anchors.fill: parent
-
-            Repeater {
-                model: root.items
-
-                Item {
-                    id: workspaceItem
-                    required property var modelData
-                    width: root.slotWidth
-                    height: track.height
-                    Accessible.role: Accessible.Button
-                    Accessible.name: I18n.tr("menubar.workspace.accessible", {
-                        id: workspaceItem.modelData.id,
-                        state: workspaceItem.modelData.active
-                            ? I18n.tr("menubar.workspace.active")
-                            : (workspaceItem.modelData.occupied
-                                ? I18n.tr("menubar.workspace.occupied") : "")
-                    })
-
-                    Shared.SystemIcon {
-                        anchors.centerIn: parent
-                        visible: workspaceItem.modelData.active
-                            && workspaceItem.modelData.icon.length > 0
-                        sourceName: workspaceItem.modelData.icon
-                        fallbackName: "apps"
-                        size: 16
-                        tone: "primary"
-                        accessibleName: ""
-                    }
-
-                    Shared.TextLabel {
-                        anchors.centerIn: parent
-                        visible: !workspaceItem.modelData.active
-                            || workspaceItem.modelData.icon.length === 0
-                        text: String(workspaceItem.modelData.id)
-                        variant: "caption"
-                        strong: workspaceItem.modelData.active
-                        color: workspaceItem.modelData.active
-                            ? Theme.accentText : Theme.textSecondary
-                    }
-
-                    Rectangle {
-                        visible: workspaceItem.modelData.occupied
-                            && !workspaceItem.modelData.active
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.bottom: parent.bottom
-                        anchors.bottomMargin: 1
-                        width: 3
-                        height: 3
-                        radius: 2
-                        color: workspaceItem.modelData.urgent
-                            ? Theme.warning : Theme.textSecondary
-                    }
-
-                    HoverHandler { cursorShape: Qt.PointingHandCursor }
-                    TapHandler {
-                        onTapped: HyprlandService.activateWorkspace(workspaceItem.modelData.id)
-                    }
+                HoverHandler { cursorShape: Qt.PointingHandCursor }
+                TapHandler {
+                    onTapped: HyprlandService.activateWorkspace(workspaceItem.modelData.id)
                 }
             }
         }
@@ -183,12 +118,4 @@ Item {
             event.accepted = true;
         }
     }
-
-    onActiveIndexChanged: {
-        if (root.previousActiveIndex === root.activeIndex)
-            return;
-        activeTravel.restart();
-    }
-
-    Component.onCompleted: root.previousActiveIndex = root.activeIndex
 }

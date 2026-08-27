@@ -1,7 +1,6 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import qs.Titonium.Bar.notch
 import qs.Titonium.Core.Runtime
 import qs.Titonium.Shared as Shared
 import qs.Titonium.Theme
@@ -10,8 +9,14 @@ Item {
     id: root
 
     required property var screen
-    implicitWidth: centerRow.implicitWidth
+    implicitWidth: centerRow.implicitWidth + Metrics.spacingXSmall * 2
     implicitHeight: Metrics.controlHeight
+
+    Shared.Surface {
+        anchors.fill: parent
+        tone: "elevated"
+        radius: Metrics.radiusLarge
+    }
 
     Row {
         id: centerRow
@@ -25,16 +30,13 @@ Item {
         Shared.Button {
             width: Metrics.controlHeightSmall
             height: Metrics.controlHeightSmall
-            iconName: CenterNotchCoordinator.pinned
-                && CenterNotchCoordinator.ownerScreenName === root.screen.name
-                ? "keep" : "keep_off"
+            iconName: BarVisibilityState.pinned ? "keep" : "keep_off"
             variant: "quiet"
             size: "small"
-            selected: CenterNotchCoordinator.pinned
-                && CenterNotchCoordinator.ownerScreenName === root.screen.name
-            accessibleName: I18n.tr(selected
-                ? "menubar.center_pin.close" : "menubar.center_pin.open")
-            onTriggered: CenterNotchCoordinator.togglePinned(root.screen.name)
+            selected: BarVisibilityState.pinned
+            accessibleName: I18n.tr(BarVisibilityState.pinned
+                ? "menubar.bar_pin.autohide" : "menubar.bar_pin.pin")
+            onTriggered: BarVisibilityState.togglePinned()
         }
     }
 }

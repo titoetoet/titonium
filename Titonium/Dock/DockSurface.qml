@@ -32,7 +32,7 @@ FocusScope {
         root.applicationsRequested(root.screenModel);
     }
 
-    implicitWidth: dockRow.implicitWidth + 32
+    implicitWidth: dockRow.implicitWidth + 40
     implicitHeight: 64
     width: implicitWidth
     height: implicitHeight
@@ -52,7 +52,7 @@ FocusScope {
 
     Rectangle {
         id: dockPanel
-        x: 8
+        x: 12
         y: 8
         width: dockRow.implicitWidth + 16
         height: root.bodyHeight
@@ -128,9 +128,9 @@ FocusScope {
     Item {
         id: pinControl
         x: 0
-        y: 0
-        width: 16
-        height: 16
+        anchors.verticalCenter: dockPanel.verticalCenter
+        width: 20
+        height: 20
         visible: root.hovered
         opacity: pinHover.hovered ? 1 : 0.62
         Accessible.role: Accessible.Button

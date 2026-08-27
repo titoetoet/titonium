@@ -11,6 +11,7 @@ Item {
     readonly property alias startHitbox: startIsland
     readonly property alias centerHitbox: centerGroup
     readonly property alias endHitbox: endIsland
+    readonly property bool hovered: barHover.hovered
     readonly property var optionalPlan: BarLayout.optionalVisibility(
         root.width,
         startIsland.implicitWidth,
@@ -39,4 +40,6 @@ Item {
         screen: root.screen
         showConnectivityDiagnostics: root.optionalPlan.showConnectivityDiagnostics
     }
+
+    HoverHandler { id: barHover }
 }

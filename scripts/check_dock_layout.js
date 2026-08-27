@@ -50,8 +50,8 @@ function layoutFixture() {
   const spacing = 6;
   const reveal = 4;
   const reserve = body + margin;
-  const pinRight = 0 + 16;
-  const launcherLeft = 8 + 8;
+  const pinRight = 0 + 20;
+  const launcherLeft = 12 + 8;
   if (body !== 56 || icon !== 40 || margin !== 8 || spacing !== 6)
     errors.push("dock geometry fixture changed");
   if (reveal !== 4)
@@ -79,9 +79,9 @@ requireFragments("surface", [
   "readonly property real hoverScale: 1.12", "readonly property int hoverLift: 4",
   "Motion.fast", "Behavior on opacity", "Behavior on y", "applicationsRequested",
   "DockAppButton", "DockItemMenuCoordinator", "DockStore.setPinnedOpen", "itemMenu.active",
-  "name: \"rocket_launch\"", "id: dockPanel", "x: 8", "y: 8",
-  "readonly property alias pinHitbox: pinControl", "id: pinControl", "width: 16", "height: 16",
-  "visible: root.hovered", "x: 0", "y: 0",
+  "name: \"rocket_launch\"", "id: dockPanel", "x: 12", "y: 8",
+  "readonly property alias pinHitbox: pinControl", "id: pinControl", "width: 20", "height: 20",
+  "visible: root.hovered", "x: 0", "anchors.verticalCenter: dockPanel.verticalCenter",
   "Item {\n        id: pinControl",
 ]);
 requireFragments("button", [

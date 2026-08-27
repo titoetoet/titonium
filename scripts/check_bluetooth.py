@@ -515,7 +515,7 @@ def focus_return_errors(coordinator: str, popup: str) -> list[str]:
 
 def bluetooth_button_errors(source: str) -> list[str]:
     errors = []
-    if ("readonly property int diagnosticsWidth: networkButton.implicitWidth + bluetoothButton.implicitWidth"
+    if ("readonly property int diagnosticsWidth: networkButton.width + bluetoothButton.width"
             not in source):
         errors.append("Bluetooth diagnostics width must count exactly one button")
     button_start = source.find("id: bluetoothButton")

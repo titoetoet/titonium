@@ -22,7 +22,8 @@ function project(activeId, count, nativeStates, windows) {
     const facts = Array.isArray(nativeStates) ? nativeStates : [];
     const windowSource = Array.isArray(windows) ? windows : [];
     const factsById = {};
-    const activeWindowByWorkspace = {};
+    const appsByWorkspace = {};
+    const appKeysByWorkspace = {};
     const result = [];
 
     for (let index = 0; index < facts.length; index++) {
@@ -31,22 +32,34 @@ function project(activeId, count, nativeStates, windows) {
             factsById[id] = facts[index];
     }
     for (let index = 0; index < windowSource.length; index++) {
-        const workspaceId = positiveInteger(windowSource[index]?.workspaceId, 0);
-        if (workspaceId > 0 && !activeWindowByWorkspace[workspaceId])
-            activeWindowByWorkspace[workspaceId] = windowSource[index];
+        const window = windowSource[index] || {};
+        const workspaceId = positiveInteger(window.workspaceId, 0);
+        const appId = text(window.appId);
+        const icon = text(window.icon);
+        const appKey = appId.toLocaleLowerCase();
+        if (workspaceId <= 0 || !appKey)
+            continue;
+        if (!appsByWorkspace[workspaceId]) {
+            appsByWorkspace[workspaceId] = [];
+            appKeysByWorkspace[workspaceId] = {};
+        }
+        if (appKeysByWorkspace[workspaceId][appKey])
+            continue;
+        appKeysByWorkspace[workspaceId][appKey] = true;
+        appsByWorkspace[workspaceId].push(Object.freeze({ appId: appId, icon: icon }));
     }
 
     for (let offset = 0; offset < size; offset++) {
         const id = start + offset;
         const fact = factsById[id] || {};
-        const activeWindow = id === active ? activeWindowByWorkspace[id] || {} : {};
+        const apps = Object.freeze((appsByWorkspace[id] || []).slice());
         result.push({
             id: id,
             active: id === active,
-            occupied: Boolean(fact.occupied),
+            occupied: Boolean(fact.occupied) || apps.length > 0,
             urgent: Boolean(fact.urgent),
-            icon: text(activeWindow.icon),
-            appId: text(activeWindow.appId),
+            apps: apps,
+            colorIndex: (id - 1) % 5,
             rangeStart: 0,
             rangeEnd: 0,
         });

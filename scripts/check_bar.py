@@ -21,6 +21,7 @@ def main() -> int:
         "islands/ConnectivityPill.qml",
         "islands/StatusPill.qml",
         "widgets/Workspaces.qml",
+        "BarVisibilityRules.js",
         "notch/qmldir",
         "notch/CenterNotchCoordinator.qml",
         "notch/CenterNotchWindow.qml",
@@ -43,22 +44,35 @@ def main() -> int:
             "model: ScreenPolicy.screens",
             "CenterNotchWindow {",
         ),
-        "BarSurface.qml": ("PanelWindow {", "exclusiveZone: 40", "mask: Region {"),
+        "BarSurface.qml": (
+            "PanelWindow {",
+            "BarVisibilityRules.exclusiveZone",
+            "BarVisibilityRules.shouldReveal",
+            "id: edgeReveal",
+            "hideDelay.restart()",
+            "mask: Region {",
+        ),
         "Bar.qml": ("StartIsland {", "CenterGroup {", "EndIsland {",
                     "BarLayout.centerX(root.width, centerGroup.width)",
-                    "readonly property alias centerHitbox: centerGroup"),
+                    "readonly property alias centerHitbox: centerGroup",
+                    "readonly property bool hovered:"),
         "islands/CenterGroup.qml": (
             "CenterIsland {",
-            "CenterNotchCoordinator.togglePinned(root.screen.name)",
-            "menubar.center_pin.open",
-            "menubar.center_pin.close",
+            "BarVisibilityState.togglePinned()",
+            "menubar.bar_pin.pin",
+            "menubar.bar_pin.autohide",
+            "radius: Metrics.radiusLarge",
         ),
         "islands/qmldir": ("CenterGroup 1.0 CenterGroup.qml",),
         "islands/CenterIsland.qml": (
             "CenterNotchCoordinator.toggle",
             "CenterNotchCoordinator.ownerScreenName",
         ),
-        "islands/ConnectivityPill.qml": ("readonly property int fullImplicitWidth",),
+        "islands/ConnectivityPill.qml": (
+            "readonly property int fullImplicitWidth",
+            "radius: Metrics.radiusLarge",
+            "spacing: 0",
+        ),
         "islands/EndIsland.qml": (
             "ConnectivityPill {",
             "StatusPill {",
@@ -116,7 +130,7 @@ def main() -> int:
     if connectivity.is_file():
         source = connectivity.read_text(encoding="utf-8")
         for fragment in (
-            "readonly property int controlSize: Metrics.controlHeightSmall",
+            "readonly property int controlSize: 24",
             "id: networkButton",
             "id: bluetoothButton",
             "id: audioButton",
@@ -137,11 +151,10 @@ def main() -> int:
         source = workspaces.read_text(encoding="utf-8")
         for fragment in (
             "property int count: 5",
-            "rangeStart",
-            "rangeEnd",
-            "property int previousActiveIndex",
-            "readonly property int activeIndex",
             "Shared.SystemIcon",
+            "modelData.apps",
+            "workspaceColor",
+            "? workspaceItem.occupiedWidth",
             "WheelHandler",
             "HyprlandService.activateWorkspace",
             "Motion.fast",
@@ -154,6 +167,13 @@ def main() -> int:
         ):
             if forbidden in source:
                 errors.append(f"Workspaces has forbidden ownership/animation: {forbidden}")
+        if 'text: String(workspaceItem.modelData.id)' in source:
+            errors.append("Workspaces must use dots and app icons instead of visible numbers")
+
+    for relative in ("islands/StartIsland.qml", "islands/StatusPill.qml"):
+        path = BAR / relative
+        if path.is_file() and "radius: Metrics.radiusLarge" not in path.read_text(encoding="utf-8"):
+            errors.append(f"{relative} must use Dock-like rounded group geometry")
 
     if BAR.exists():
         feature = "\n".join(path.read_text(encoding="utf-8") for path in BAR.rglob("*.qml"))
@@ -163,7 +183,6 @@ def main() -> int:
             "ConfigStore",
             "layout.json",
             "Process {",
-            "Timer {",
             "Quickshell.execDetached",
             "MultiEffect",
             "ShaderEffect",
@@ -172,6 +191,12 @@ def main() -> int:
         ):
             if forbidden in feature:
                 errors.append(f"direct Bar contains forbidden dependency: {forbidden}")
+        for path in BAR.rglob("*.qml"):
+            source = path.read_text(encoding="utf-8")
+            if "Timer {" in source and path.name != "BarSurface.qml":
+                errors.append(f"direct Bar contains timer outside auto-hide boundary: {path.name}")
+            if path.name == "BarSurface.qml" and "repeat: true" in source:
+                errors.append("TopBar auto-hide delay must never poll")
 
     notch_dir = BAR / "notch"
     if notch_dir.exists():
@@ -201,6 +226,8 @@ def main() -> int:
         "menubar.center_notch.accessible",
         "menubar.center_pin.open",
         "menubar.center_pin.close",
+        "menubar.bar_pin.pin",
+        "menubar.bar_pin.autohide",
         "menubar.connectivity.network_planned",
         "menubar.connectivity.bluetooth_planned",
         "menubar.connectivity.audio_planned",

@@ -15,11 +15,12 @@ Item {
     id: root
     required property var screen
     property bool showDiagnostics: true
-    readonly property int controlSize: Metrics.controlHeightSmall
-    readonly property int diagnosticsWidth: networkButton.implicitWidth + bluetoothButton.implicitWidth
-        + Metrics.spacingSmall
+    readonly property int controlSize: 24
+    readonly property int innerPadding: 2
+    readonly property int diagnosticsWidth: networkButton.width + bluetoothButton.width
     readonly property int audioWidth: audioButton.implicitWidth
-    readonly property int fullImplicitWidth: root.diagnosticsWidth + Metrics.spacingSmall + root.audioWidth
+    readonly property int fullImplicitWidth: root.diagnosticsWidth + root.audioWidth
+        + root.innerPadding * 2
     readonly property string outputAccessibleName: AudioService.outputAvailable
         ? AudioService.outputName : I18n.tr("audio.output")
     readonly property string audioAccessibleName: !AudioService.outputAvailable
@@ -46,20 +47,20 @@ Item {
     readonly property string networkIconName: !NetworkService.available || !NetworkService.wifiHardwareEnabled
         ? "wifi_off" : (NetworkService.wifiEnabled ? "wifi" : "wifi_off")
 
-    implicitWidth: root.audioWidth + (root.showDiagnostics
-        ? root.diagnosticsWidth + Metrics.spacingSmall : 0)
+    implicitWidth: root.audioWidth + root.innerPadding * 2
+        + (root.showDiagnostics ? root.diagnosticsWidth : 0)
     implicitHeight: Metrics.widgetHeight
 
     Shared.Surface {
         anchors.fill: parent
         tone: "elevated"
-        radius: Metrics.radiusSmall
+        radius: Metrics.radiusLarge
     }
 
     Row {
         id: iconRow
         anchors.centerIn: parent
-        spacing: Metrics.spacingSmall
+        spacing: 0
 
         Shared.Button {
             id: networkButton

@@ -23,4 +23,7 @@ QtObject {
     readonly property color success: light ? "#16825d" : "#3ccb8e"
     readonly property color warning: light ? "#a76000" : "#e8b44f"
     readonly property color danger: light ? "#c43145" : "#f06a75"
+    readonly property var workspacePalette: light
+        ? ["#dbeafe", "#dcfce7", "#fef3c7", "#f3e8ff", "#ffe4e6"]
+        : ["#233a5e", "#1f4a3b", "#58451d", "#49305f", "#5a2934"]
 }
