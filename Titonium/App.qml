@@ -57,6 +57,14 @@ Scope {
         }
     }
 
+    Connections {
+        target: BluetoothService
+
+        function onAudioDeviceConnected(address: string): void {
+            AudioService.requestBluetoothOutput(address);
+        }
+    }
+
     IpcHandler {
         target: "app"
         function status(): string { return Preferences.ready ? "ready" : "not-ready"; }

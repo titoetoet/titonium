@@ -147,3 +147,25 @@ function projectAdapter(adapter) {
         stateKey: adapterStateKey(available, powered, discovering, connectedCount),
     };
 }
+
+function audioConnectionEvent(previousAddresses, devices) {
+    const previous = Array.isArray(previousAddresses) ? previousAddresses : [];
+    const previousSet = Object.create(null);
+    previous.forEach(address => previousSet[caseFold(normalizedAddress(address))] = true);
+    const current = [];
+    const connected = [];
+    const seen = Object.create(null);
+    const source = Array.isArray(devices) ? devices : [];
+    source.forEach(device => {
+        const address = normalizedAddress(device?.address);
+        const key = caseFold(address);
+        const icon = text(device?.icon, "");
+        if (!address || seen[key] || device?.connected !== true || icon.indexOf("audio-") !== 0)
+            return;
+        seen[key] = true;
+        current.push(key);
+        if (previousSet[key] !== true)
+            connected.push(address);
+    });
+    return { current: current, connected: connected };
+}

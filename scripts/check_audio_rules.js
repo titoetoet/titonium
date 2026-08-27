@@ -91,4 +91,18 @@ baseline = readyBaseline.next;
 assert.equal(rules.presentationEvent(baseline,
     { key: "sink:7", available: true, volume: 0.6, muted: false }).emit, true);
 
+assert.equal(rules.normalizedBluetoothAddress("54:B7:E5:89:6F:14"), "54b7e5896f14");
+assert.equal(rules.normalizedBluetoothAddress("bad"), "");
+const bluetoothSink = { id: 81, ready: true, isSink: true, isStream: false, audio: {},
+    name: "bluez_output.54_B7_E5_89_6F_14.1",
+    properties: { "api.bluez5.address": "54:B7:E5:89:6F:14" } };
+const wrongBluetoothSink = { id: 82, ready: true, isSink: true, isStream: false, audio: {},
+    name: "bluez_output.C4_30_18_9D_1C_C5.1", properties: {} };
+assert.strictEqual(rules.bluetoothSinkFor(
+    [wrongBluetoothSink, bluetoothSink], "54:B7:E5:89:6F:14"), bluetoothSink);
+assert.strictEqual(rules.bluetoothSinkFor([wrongBluetoothSink], "54:B7:E5:89:6F:14"), null);
+assert.strictEqual(rules.bluetoothSinkFor([
+    { ...bluetoothSink, isSink: false },
+], "54:B7:E5:89:6F:14"), null);
+
 console.log("PASS Audio rules fixtures");

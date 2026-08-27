@@ -13,11 +13,6 @@ FocusScope {
 
     property var descriptor: ({})
     property var screen: null
-    property var sectionCollapsed: ({
-        "connected": false,
-        "paired": false,
-        "available": false,
-    })
     readonly property string ownerId: root.descriptor?.ownerId || ""
     readonly property var invoker: root.descriptor?.invoker || null
     readonly property int maximumHeight: 520
@@ -47,16 +42,6 @@ FocusScope {
 
     function devicesFor(section: string): var {
         return BluetoothService.devices.filter(device => device.section === section);
-    }
-
-    function sectionCollapsedFor(section: string): bool {
-        return root.sectionCollapsed[section] === true;
-    }
-
-    function toggleSection(section: string): void {
-        const next = Object.assign({}, root.sectionCollapsed);
-        next[section] = !root.sectionCollapsedFor(section);
-        root.sectionCollapsed = next;
     }
 
     Rectangle {
@@ -164,36 +149,46 @@ FocusScope {
                         id: section
                         required property string modelData
                         readonly property var sectionDevices: root.devicesFor(modelData)
+                        readonly property string sectionTitle: I18n.tr(
+                            "bluetooth.section." + section.modelData, {
+                                "count": section.sectionDevices.length
+                            })
 
                         Layout.fillWidth: true
                         spacing: Metrics.spacingSmall
                         visible: sectionDevices.length > 0
 
-                        Shared.Button {
+                        RowLayout {
                             Layout.fillWidth: true
-                            label: I18n.tr("bluetooth.section." + section.modelData, {
-                                "count": section.sectionDevices.length
-                            })
-                            iconName: root.sectionCollapsedFor(section.modelData)
-                                ? "expand_more" : "expand_less"
-                            contentAlignment: Qt.AlignLeft
-                            variant: "quiet"
-                            accessibleName: I18n.tr("bluetooth.section.accessible", {
-                                "name": I18n.tr("bluetooth.section." + section.modelData, {
-                                    "count": section.sectionDevices.length
-                                }),
-                                "count": section.sectionDevices.length,
-                                "collapsed": I18n.tr(root.sectionCollapsedFor(section.modelData)
-                                    ? "bluetooth.section.state.collapsed"
-                                    : "bluetooth.section.state.expanded")
-                            })
-                            onTriggered: root.toggleSection(section.modelData)
+                            spacing: Metrics.spacingSmall
+
+                            Shared.Icon {
+                                name: section.modelData === "connected" ? "link"
+                                    : (section.modelData === "paired" ? "devices" : "radar")
+                                size: 18
+                                tone: section.modelData === "connected" ? "accent" : "secondary"
+                                accessibleName: ""
+                            }
+
+                            Shared.TextLabel {
+                                Layout.fillWidth: true
+                                text: section.sectionTitle
+                                variant: "label"
+                                strong: true
+                                Accessible.role: Accessible.Heading
+                                Accessible.name: section.sectionTitle
+                            }
+
+                            Rectangle {
+                                Layout.preferredWidth: Metrics.spacingLarge
+                                Layout.preferredHeight: Metrics.borderWidth
+                                color: Theme.border
+                            }
                         }
 
                         ColumnLayout {
                             Layout.fillWidth: true
                             spacing: Metrics.spacingMedium
-                            visible: !root.sectionCollapsedFor(section.modelData)
 
                             Repeater {
                                 model: section.sectionDevices

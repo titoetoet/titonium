@@ -86,6 +86,40 @@ function normalizedStreams(nodes, fallback, pipewireReady) {
     });
 }
 
+function normalizedBluetoothAddress(value) {
+    if (typeof value !== "string")
+        return "";
+    var normalized = value.toLocaleLowerCase().replace(/[^0-9a-f]/g, "");
+    return normalized.length === 12 ? normalized : "";
+}
+
+function bluetoothSinkFor(nodes, address) {
+    var target = normalizedBluetoothAddress(address);
+    if (!target)
+        return null;
+    var source = Array.isArray(nodes) ? nodes : [];
+    for (var index = 0; index < source.length; index++) {
+        var node = source[index];
+        if (!node || node.isSink !== true || node.isStream === true || node.ready !== true)
+            continue;
+        var props = properties(node);
+        var candidates = [props["api.bluez5.address"], props["device.string"],
+            props["device.name"], props["node.name"], node.name];
+        for (var candidateIndex = 0; candidateIndex < candidates.length; candidateIndex++) {
+            var candidate = normalizedBluetoothAddress(candidates[candidateIndex]);
+            if (candidate === target)
+                return node;
+            if (typeof candidates[candidateIndex] === "string") {
+                var embedded = candidates[candidateIndex].toLocaleLowerCase()
+                    .replace(/[^0-9a-f]/g, "");
+                if (embedded.indexOf(target) >= 0)
+                    return node;
+            }
+        }
+    }
+    return null;
+}
+
 function presentationEvent(previous, current) {
     var next = {
         key: current && typeof current.key === "string" ? current.key : "",

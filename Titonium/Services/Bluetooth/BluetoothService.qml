@@ -45,6 +45,20 @@ QtObject {
     readonly property int operationWarningLimit: 3
 
     property var operationWarningCounts: ({})
+    property var previousConnectedAudioAddresses: null
+
+    signal audioDeviceConnected(string address)
+
+    function observeAudioConnections(): void {
+        const event = BluetoothRules.audioConnectionEvent(
+            root.previousConnectedAudioAddresses, root.devices);
+        const baselineReady = root.previousConnectedAudioAddresses !== null;
+        root.previousConnectedAudioAddresses = event.current;
+        if (!baselineReady)
+            return;
+        for (let index = 0; index < event.connected.length; index += 1)
+            root.audioDeviceConnected(event.connected[index]);
+    }
 
     function warnOperation(category: string, message: string): void {
         const count = root.operationWarningCounts[category] || 0;
@@ -266,4 +280,8 @@ QtObject {
             stateKey: root.stateKey,
         });
     }
+
+
+    onProjectionChanged: root.observeAudioConnections()
+    Component.onCompleted: root.observeAudioConnections()
 }

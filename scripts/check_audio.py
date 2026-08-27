@@ -54,6 +54,11 @@ REQUIRED_FRAGMENTS = (
     "function onOutputAvailableChanged(): void { root.resetOutputPresentation(); }",
     "readonly property int invalidVolumeWarningLimit: 3",
     "function warnInvalidVolume(target: string): void",
+    "function requestBluetoothOutput(address: string): bool",
+    "function trySelectPendingBluetoothOutput(): bool",
+    "AudioRules.bluetoothSinkFor(Pipewire.nodes.values || [],",
+    "Pipewire.preferredDefaultAudioSink = sink",
+    "function onObjectsChanged(): void { root.trySelectPendingBluetoothOutput(); }",
     'root.warnInvalidVolume("output")',
     'root.warnInvalidVolume("input")',
     'root.warnInvalidVolume("stream")',
@@ -235,6 +240,10 @@ def validate_audio_hardening(errors: list[str]) -> None:
             errors.append("missing audio IPC handler")
         elif audio_ipc_exposes_mutation(audio_ipc):
             errors.append("Audio IPC exposes a mutating method")
+        source = app.read_text(encoding="utf-8")
+        if ("function onAudioDeviceConnected(address: string): void"
+                not in source or "AudioService.requestBluetoothOutput(address)" not in source):
+            errors.append("App must bridge Bluetooth audio connection intent into AudioService")
 
 
 def main() -> int:

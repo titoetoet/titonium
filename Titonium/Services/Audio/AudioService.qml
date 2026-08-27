@@ -18,6 +18,7 @@ QtObject {
     readonly property int invalidVolumeWarningLimit: 3
 
     property var previousPresentation: ({})
+    property string pendingBluetoothAddress: ""
     property var invalidVolumeWarningCounts: ({ "output": 0, "input": 0, "stream": 0 })
     property PwObjectTracker tracker: PwObjectTracker {
         objects: Pipewire.nodes.values.filter(node => node?.audio !== null)
@@ -157,6 +158,26 @@ QtObject {
         return true;
     }
 
+    function requestBluetoothOutput(address: string): bool {
+        const normalized = AudioRules.normalizedBluetoothAddress(address);
+        if (!normalized)
+            return false;
+        root.pendingBluetoothAddress = normalized;
+        return root.trySelectPendingBluetoothOutput();
+    }
+
+    function trySelectPendingBluetoothOutput(): bool {
+        if (!root.pendingBluetoothAddress)
+            return false;
+        const sink = AudioRules.bluetoothSinkFor(Pipewire.nodes.values || [],
+            root.pendingBluetoothAddress);
+        if (sink === null)
+            return false;
+        Pipewire.preferredDefaultAudioSink = sink;
+        root.pendingBluetoothAddress = "";
+        return true;
+    }
+
     function observeOutputPresentation(): void {
         const event = AudioRules.presentationEvent(root.previousPresentation, {
             key: root.outputNode?.id === undefined ? "" : String(root.outputNode.id),
@@ -188,6 +209,11 @@ QtObject {
 
         function onVolumesChanged(): void { root.observeOutputPresentation(); }
         function onMutedChanged(): void { root.observeOutputPresentation(); }
+    }
+
+    property Connections trackerConnections: Connections {
+        target: root.tracker
+        function onObjectsChanged(): void { root.trySelectPendingBluetoothOutput(); }
     }
 
     Component.onCompleted: root.resetOutputPresentation()

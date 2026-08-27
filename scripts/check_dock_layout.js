@@ -80,7 +80,10 @@ requireFragments("button", [
   "y: root.hovered ? -root.hoverLift : 0", "Motion.fast", "DockService.activateOrLaunch",
   "DockService.launchNew", "menuRequested", "Keys.onPressed", "size: root.iconSize",
   "QtControls.ToolTip.visible", "dock.application_tooltip",
+  "Shared.SystemIcon", "sourceName: root.dockItem?.icon || \"\"",
+  "fallbackName: \"dock_to_bottom\"",
 ]);
+requireAbsent("button", ["name: root.dockItem?.icon || \"apps\""]);
 requireFragments("coordinator", [
   "SurfaceManager.open", "DockItemMenuSurface.qml", "function open(dockItem: var, invoker: var, screen: var): bool",
   "function menuItem(dockItem: var): var", "\"item\": item", "function close(): bool", "keyboardFocus\": \"exclusive\"",

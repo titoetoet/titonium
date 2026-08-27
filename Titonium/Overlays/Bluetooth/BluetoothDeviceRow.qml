@@ -48,10 +48,11 @@ Item {
             Layout.fillWidth: true
             spacing: Metrics.spacingMedium
 
-            Shared.Icon {
+            Shared.SystemIcon {
                 Layout.alignment: Qt.AlignTop
                 Layout.topMargin: Metrics.spacingXSmall
-                name: root.device?.icon || "bluetooth"
+                sourceName: root.device?.icon || "bluetooth"
+                fallbackName: "bluetooth"
                 size: 22
                 tone: root.actionable ? "secondary" : "disabled"
                 accessibleName: ""

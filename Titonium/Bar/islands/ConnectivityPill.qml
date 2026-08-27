@@ -13,7 +13,8 @@ Item {
     id: root
     required property var screen
     property bool showDiagnostics: true
-    readonly property int diagnosticsWidth: networkIcon.implicitWidth + bluetoothButton.implicitWidth
+    readonly property int controlSize: Metrics.controlHeightSmall
+    readonly property int diagnosticsWidth: networkButton.implicitWidth + bluetoothButton.implicitWidth
         + Metrics.spacingSmall
     readonly property int audioWidth: audioButton.implicitWidth
     readonly property int fullImplicitWidth: root.diagnosticsWidth + Metrics.spacingSmall + root.audioWidth
@@ -53,17 +54,22 @@ Item {
         anchors.centerIn: parent
         spacing: Metrics.spacingSmall
 
-        Shared.Icon {
-            id: networkIcon
+        Shared.Button {
+            id: networkButton
             visible: root.showDiagnostics
-            name: "wifi"
-            size: 18
-            tone: "secondary"
+            width: root.controlSize
+            height: root.controlSize
+            iconName: "wifi"
+            variant: "quiet"
+            size: "small"
+            enabled: false
             accessibleName: I18n.tr("menubar.connectivity.network_planned")
         }
         Shared.Button {
             id: bluetoothButton
             visible: root.showDiagnostics
+            width: root.controlSize
+            height: root.controlSize
             iconName: root.bluetoothIconName
             variant: "quiet"
             size: "small"
@@ -72,6 +78,8 @@ Item {
         }
         Shared.Button {
             id: audioButton
+            width: root.controlSize
+            height: root.controlSize
             iconName: AudioService.outputIcon
             variant: "quiet"
             size: "small"

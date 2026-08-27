@@ -49,6 +49,8 @@ REQUIRED_FRAGMENTS = (
     "function forgetDevice(address: string): bool",
     "function snapshot(): string",
     "BluetoothRules.projectAdapter",
+    "signal audioDeviceConnected(string address)",
+    "function observeAudioConnections(): void",
     "adapter.discovering = false",
 )
 FORBIDDEN_FRAGMENTS = (
@@ -86,10 +88,11 @@ RAW_BLUETOOTH_REFERENCE = re.compile(
 PUBLIC_PROPERTIES = {
     "projection", "available", "powered", "discovering", "adapterName", "connectedCount",
     "devices", "stateKey", "operationWarningLimit", "operationWarningCounts",
+    "previousConnectedAudioAddresses",
 }
 PUBLIC_FUNCTIONS = {
     "warnOperation", "setPowered", "setDiscovering", "connectDevice", "disconnectDevice",
-    "pairDevice", "cancelPair", "forgetDevice", "snapshot",
+    "pairDevice", "cancelPair", "forgetDevice", "snapshot", "observeAudioConnections",
 }
 
 
@@ -202,23 +205,11 @@ def ipc_open_path_errors(coordinator: str) -> list[str]:
 
 
 def section_accessible_errors(source: str) -> list[str]:
-    start = source.find('I18n.tr("bluetooth.section.accessible",')
-    block = qml_block(source, start) if start >= 0 else ""
-    if not block:
-        return ["Bluetooth section accessibility translation is missing"]
-    errors = []
-    name_with_count = re.search(
-        r'"name"\s*:\s*I18n\.tr\(\s*"bluetooth\.section\."\s*\+\s*section\.modelData\s*,\s*\{\s*'
-        r'"count"\s*:\s*section\.sectionDevices\.length\s*\}\s*\)', block, re.DOTALL)
-    if not name_with_count:
-        errors.append("Bluetooth section accessibility must resolve its label with the section count")
-    collapsed_state = re.search(
-        r'"collapsed"\s*:\s*I18n\.tr\(\s*root\.sectionCollapsedFor\(section\.modelData\)\s*\?\s*'
-        r'"bluetooth\.section\.state\.collapsed"\s*:\s*"bluetooth\.section\.state\.expanded"\s*\)',
-        block, re.DOTALL)
-    if not collapsed_state:
-        errors.append("Bluetooth section accessibility must translate collapsed state text")
-    return errors
+    if ("readonly property string sectionTitle:" not in source
+            or "Accessible.name: section.sectionTitle" not in source
+            or "Accessible.role: Accessible.Heading" not in source):
+        return ["Bluetooth static section heading must expose its counted title"]
+    return []
 
 
 def root_property_blocks(source: str) -> list[tuple[str, str]]:
@@ -419,7 +410,6 @@ def validate_presentation(errors: list[str]) -> None:
         "BluetoothService.adapterName",
         "BluetoothService.setPowered",
         "BluetoothService.setDiscovering",
-        "sectionCollapsed",
         "Motion.normal",
         '"connected"',
         '"paired"',
@@ -428,6 +418,8 @@ def validate_presentation(errors: list[str]) -> None:
         "Keys.onEscapePressed",
         "SurfaceManager.close",
         "Component.onCompleted: panel.forceActiveFocus",
+        "readonly property string sectionTitle:",
+        "Shared.TextLabel",
     )
     for fragment in popup_fragments:
         if fragment not in popup:
@@ -436,6 +428,9 @@ def validate_presentation(errors: list[str]) -> None:
                       "Timer", "Process", "FileView", "MultiEffect", "ShaderEffect"):
         if forbidden in popup:
             errors.append(f"forbidden Bluetooth popup dependency: {forbidden}")
+    for forbidden in ("sectionCollapsed", "toggleSection", "expand_more", "expand_less"):
+        if forbidden in popup:
+            errors.append(f"Bluetooth device sections must be static, not dropdown controls: {forbidden}")
 
     row_fragments = (
         "import qs.Titonium.Services.Bluetooth",
@@ -453,6 +448,9 @@ def validate_presentation(errors: list[str]) -> None:
         "forgetConfirmation",
         "I18n.tr(\"bluetooth.forget.confirm\")",
         "I18n.tr(\"bluetooth.forget.cancel\")",
+        "Shared.SystemIcon",
+        "sourceName: root.device?.icon || \"bluetooth\"",
+        "fallbackName: \"bluetooth\"",
     )
     for fragment in row_fragments:
         if fragment not in row:
@@ -515,7 +513,7 @@ def focus_return_errors(coordinator: str, popup: str) -> list[str]:
 
 def bluetooth_button_errors(source: str) -> list[str]:
     errors = []
-    if ("readonly property int diagnosticsWidth: networkIcon.implicitWidth + bluetoothButton.implicitWidth"
+    if ("readonly property int diagnosticsWidth: networkButton.implicitWidth + bluetoothButton.implicitWidth"
             not in source):
         errors.append("Bluetooth diagnostics width must count exactly one button")
     button_start = source.find("id: bluetoothButton")

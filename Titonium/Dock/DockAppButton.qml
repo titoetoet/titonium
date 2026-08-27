@@ -61,9 +61,10 @@ FocusScope {
         Behavior on color { ColorAnimation { duration: Motion.fast } }
     }
 
-    Shared.Icon {
+    Shared.SystemIcon {
         anchors.centerIn: parent
-        name: root.dockItem?.icon || "apps"
+        sourceName: root.dockItem?.icon || ""
+        fallbackName: "dock_to_bottom"
         size: root.iconSize
         tone: root.dockItem?.urgent ? "warning" : (root.dockItem?.active ? "accent" : "primary")
         accessibleName: ""

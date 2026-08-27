@@ -94,6 +94,22 @@ def main() -> int:
             if fragment not in source:
                 errors.append(f"{filename} missing direct Bar contract: {fragment}")
 
+    connectivity = BAR / "islands/ConnectivityPill.qml"
+    if connectivity.is_file():
+        source = connectivity.read_text(encoding="utf-8")
+        for fragment in (
+            "readonly property int controlSize: Metrics.controlHeightSmall",
+            "id: networkButton",
+            "id: bluetoothButton",
+            "id: audioButton",
+            "width: root.controlSize",
+            "height: root.controlSize",
+        ):
+            if fragment not in source:
+                errors.append(f"ConnectivityPill missing aligned-control contract: {fragment}")
+        if "id: networkIcon" in source:
+            errors.append("ConnectivityPill must not mix a raw Wi-Fi icon with button-sized controls")
+
     if BAR.exists():
         feature = "\n".join(path.read_text(encoding="utf-8") for path in BAR.rglob("*.qml"))
         for forbidden in (

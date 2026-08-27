@@ -91,4 +91,18 @@ assert.equal(connected.connectedCount, 1);
 const poweredOn = plain(rules.projectAdapter({ enabled: true, discovering: false, devices: [] }));
 assert.equal(poweredOn.stateKey, "bluetooth.on");
 
+assert.deepEqual(plain(rules.audioConnectionEvent([], [
+    { address: "54:B7:E5:89:6F:14", icon: "audio-card", connected: true },
+    { address: "11:22:33:44:55:66", icon: "input-keyboard", connected: true },
+])), {
+    current: ["54:b7:e5:89:6f:14"],
+    connected: ["54:B7:E5:89:6F:14"],
+});
+assert.deepEqual(plain(rules.audioConnectionEvent(["54:b7:e5:89:6f:14"], [
+    { address: "54:B7:E5:89:6F:14", icon: "audio-card", connected: true },
+])), {
+    current: ["54:b7:e5:89:6f:14"],
+    connected: [],
+});
+
 console.log("PASS Bluetooth rules fixtures");
