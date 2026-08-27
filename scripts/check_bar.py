@@ -71,8 +71,13 @@ def main() -> int:
         "islands/CenterIsland.qml": (
             "CenterNotchCoordinator.toggle",
             "CenterNotchCoordinator.ownerScreenName",
-            'variant: "quiet"',
-            "backgroundRadius: Metrics.radiusLarge",
+            "HyprlandService.activeWindow",
+            "ApplicationService.nameForAppId",
+            "CenterActivityRules.label",
+            "Math.min(520",
+            "Text.ElideRight",
+            "maximumLineCount: 1",
+            "Shared.SystemIcon",
             "Shared.Surface {",
         ),
         "islands/ConnectivityPill.qml": (
@@ -102,6 +107,9 @@ def main() -> int:
             "CenterNotchCoordinator.close()",
             "!CenterNotchCoordinator.pinned",
             "Keys.onEscapePressed",
+            "readonly property real panelTop: Metrics.barHeight + Metrics.barSpacing",
+            "anchors.topMargin: root.panelTop",
+            "root.height - root.panelTop - Metrics.barPadding",
         ),
         "notch/CenterNotchRail.qml": (
             "width: 48",
@@ -121,6 +129,10 @@ def main() -> int:
             "CenterNotchRail {",
             "CenterNotchViewport {",
             "Layout.preferredWidth: Metrics.borderWidth",
+            "topLeftRadius: 20",
+            "topRightRadius: 20",
+            "bottomLeftRadius: 20",
+            "bottomRightRadius: 20",
         ),
     }
     for filename, fragments in contracts.items():

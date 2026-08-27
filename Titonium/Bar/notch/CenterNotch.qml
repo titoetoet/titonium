@@ -16,8 +16,8 @@ FocusScope {
         color: Theme.surface
         border.width: Metrics.borderWidth
         border.color: Theme.border
-        topLeftRadius: 0
-        topRightRadius: 0
+        topLeftRadius: 20
+        topRightRadius: 20
         bottomLeftRadius: 20
         bottomRightRadius: 20
     }

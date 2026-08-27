@@ -7,6 +7,7 @@ const vm = require("node:vm");
 
 const root = path.join(__dirname, "..");
 const rulesPath = path.join(root, "Titonium", "Bar", "islands", "CenterActivityRules.js");
+const islandPath = path.join(root, "Titonium", "Bar", "islands", "CenterIsland.qml");
 
 if (!fs.existsSync(rulesPath)) {
     console.error("FAIL missing Titonium/Bar/islands/CenterActivityRules.js");
@@ -23,3 +24,16 @@ assert.equal(rules.label("", ""), "Titonium");
 assert.equal(rules.label("Kitty", "   "), "Kitty");
 assert.equal(rules.label("", "  Clipboard  "), "Clipboard");
 console.log("PASS Center activity label normalization fixtures");
+
+const island = fs.readFileSync(islandPath, "utf8");
+for (const fragment of [
+    "HyprlandService.activeWindow",
+    "ApplicationService.nameForAppId",
+    "CenterActivityRules.label",
+    "Math.min(520",
+    "Text.ElideRight",
+    "maximumLineCount: 1",
+]) {
+    assert.equal(island.includes(fragment), true, `CenterIsland missing ${fragment}`);
+}
+console.log("PASS adaptive Center activity presentation contract");

@@ -2,10 +2,12 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell
+import qs.Titonium.Theme
 
 FocusScope {
     id: root
     required property ShellScreen screenModel
+    readonly property real panelTop: Metrics.barHeight + Metrics.barSpacing
 
     anchors.fill: parent
     focus: true
@@ -31,8 +33,9 @@ FocusScope {
     CenterNotch {
         id: notch
         width: Math.min(900, root.width - 32)
-        height: Math.min(430, root.height - 64)
+        height: Math.min(430, root.height - root.panelTop - Metrics.barPadding)
         anchors.top: parent.top
+        anchors.topMargin: root.panelTop
         anchors.horizontalCenter: parent.horizontalCenter
     }
 

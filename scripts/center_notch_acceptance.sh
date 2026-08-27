@@ -12,6 +12,12 @@ before_git="$(git -C "$project_root" status --porcelain=v1)"
 before_live="$(sha256sum -- "$live_hypr")"
 before_dotfiles="$(sha256sum -- "$dotfiles_hypr")"
 
+if ! rg -q 'readonly property real panelTop: Metrics.barHeight \+ Metrics.barSpacing' \
+        "$project_root/Titonium/Bar/notch/CenterNotchSurface.qml"; then
+    echo "FAIL Center Notch is not detached by the shared 52px TopBar gap" >&2
+    exit 1
+fi
+
 cleanup() {
     if [[ -n "$shell_pid" ]] && kill -0 "$shell_pid" 2>/dev/null; then
         kill "$shell_pid" 2>/dev/null || true
