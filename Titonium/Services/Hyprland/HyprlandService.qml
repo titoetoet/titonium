@@ -18,6 +18,7 @@ Singleton {
     property int workspaceWindowCount: 0
 
     readonly property var windows: root.projectedWindows
+    readonly property var activeWindow: WindowRules.activeWindow(root.projectedWindows)
     readonly property int activeWorkspaceWindowCount: root.workspaceWindowCount
 
     function monitorFor(screen: var): var { return screen ? Hyprland.monitorFor(screen) : null; }

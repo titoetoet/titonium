@@ -73,6 +73,11 @@ assert.equal(rules.descriptor({ id: "0xjkl", monitorName: 42 }).monitorName, "")
 assert.equal(rules.descriptor({ id: "", appId: "ignored" }), null);
 console.log("PASS Window descriptor identity, fallback, immutability, and raw-object rejection fixtures");
 
+assert.equal(rules.activeWindow([first, fallback]), first);
+assert.equal(rules.activeWindow([{ id: "0x1", active: false }]), null);
+assert.equal(rules.activeWindow(null), null);
+console.log("PASS active-window projection fixtures");
+
 assert.deepEqual(plain(rules.focusPlan("0xdef", [first, {
     id: "0xdef", workspaceId: 2,
 }])), { id: "0xdef", workspaceId: 2 });
@@ -124,6 +129,8 @@ const serviceSource = fs.readFileSync(servicePath, "utf8");
 const dockSource = fs.readFileSync(dockPath, "utf8");
 assert.equal((serviceSource.match(/Hyprland\.toplevels/g) || []).length > 0, true);
 assert.equal(serviceSource.includes("WindowRules.focusPlan"), true);
+assert.equal(serviceSource.includes("readonly property var activeWindow"), true);
+assert.equal(serviceSource.includes("WindowRules.activeWindow(root.projectedWindows)"), true);
 assert.equal(serviceSource.includes("root.activateWorkspace(plan.workspaceId)"), true);
 assert.equal(serviceSource.includes("function workspaceIdFor(toplevel: var): int"), true,
     "window projection must resolve workspace ownership through a dedicated helper");

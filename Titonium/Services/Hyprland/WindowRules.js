@@ -40,6 +40,15 @@ function focusPlan(id, windows) {
     return null;
 }
 
+function activeWindow(windows) {
+    const source = Array.isArray(windows) ? windows : [];
+    for (let index = 0; index < source.length; index++) {
+        if (source[index]?.active === true)
+            return source[index];
+    }
+    return null;
+}
+
 function windowSelector(id) {
     let value = text(id);
     if (value.indexOf("address:") === 0)
