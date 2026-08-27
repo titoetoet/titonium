@@ -16,6 +16,7 @@ import qs.Titonium.Services.Bluetooth
 import qs.Titonium.Services.Dock
 import qs.Titonium.Services.Hyprland
 import qs.Titonium.Services.Network
+import qs.Titonium.Services.Notifications
 import qs.Titonium.Services.WindowSwitcher
 import qs.Titonium.Overlays.Audio
 import qs.Titonium.Overlays.Bluetooth
@@ -173,6 +174,23 @@ Scope {
             if (!NetworkPopupCoordinator.active)
                 return "closed";
             return "open:" + (SurfaceManager.screen?.name || "");
+        }
+    }
+
+    IpcHandler {
+        target: "notifications"
+
+        function state(): string {
+            return JSON.stringify({
+                descriptorCount: NotificationService.notifications.length,
+                toastCount: NotificationService.toastNotifications.length,
+                unreadCount: NotificationService.unreadCount,
+            });
+        }
+
+        function markRead(): string {
+            NotificationService.markAllRead();
+            return String(NotificationService.unreadCount);
         }
     }
 

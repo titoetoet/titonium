@@ -48,6 +48,7 @@ bash -n "$project_root/scripts/bluetooth_acceptance.sh"
 bash -n "$project_root/scripts/wifi_acceptance.sh"
 bash -n "$project_root/scripts/window_switcher_acceptance.sh"
 bash -n "$project_root/scripts/workspace_interactions_acceptance.sh"
+bash -n "$project_root/scripts/notifications_acceptance.sh"
 bash -n "$project_root/scripts/protected_acceptance.sh"
 
 mapfile -d '' qml_files < <(find "$project_root" -type f -name '*.qml' -print0 | sort -z)

@@ -16,6 +16,11 @@ or future-service dependency and no mutating Audio IPC. Popup content must remai
 `OverlayHost` lifecycle; the click-through OSD Loader must be tied to the active coordinator and
 its owner screen.
 
+The notification gates enforce one native `NotificationServer`, exact immutable descriptor fields,
+100-history/three-toast bounds, session-only unread transitions, DP-1-only Variants, lazy stack
+lifecycle and one non-repeating five-second timer per card. The Bell has one mutation only:
+`markAllRead()`. No view imports the native Notifications module.
+
 The only allowlisted QML warning is Quickshell 0.3.x metadata marking documented `PanelWindow` as
 uncreatable. New warnings are failures. UI code is rejected when it owns `Process`, `FileView` or
 raw detached execution.
@@ -145,6 +150,7 @@ Stop any daemon using the same shell ID, then run:
 ./scripts/protected_acceptance.sh
 ./scripts/center_notch_acceptance.sh
 ./scripts/audio_acceptance.sh
+./scripts/notifications_acceptance.sh
 hyprctl configerrors
 ```
 
@@ -163,6 +169,12 @@ Audio acceptance launches one foreground shell and calls only `audio.state`, `au
 It checks state formatting, idle OSD, popup mutual exclusion, clean runtime logs, repository
 isolation and both unchanged Hyprland configuration hashes. It never calls or exposes volume,
 mute, adjustment, OSD-show or device-selection IPC.
+
+Notification acceptance stops only Titonium, waits boundedly for its shell ID to be released,
+starts one foreground shell and then sends one controlled `notify-send` fixture. It requires one
+DP-1 toast and no DP-3 toast, verifies five-second presentation expiry preserves unread state, then
+uses the same `markRead()` boundary as the Bell. It rejects runtime errors, repository writes and
+changes to either Hyprland configuration. It does not dismiss or invoke notification actions.
 
 After passing, restart with `qs -d -p /home/cole/Projects/titonium` and manually verify the assigned
 Titonium output:
@@ -222,3 +234,17 @@ more self-writes are pending, restore it from both the save-success and save-fai
 the immediate in-memory transaction authoritative. No timer, duplicate persistence write or extra
 pointer handler is used. Manually verify pin, unpin and pin again each react to one click and that
 typing focus remains in the previously focused application.
+
+## Center activity and native toast checkpoint
+
+Automated evidence on 2026-08-27: `./scripts/check.sh`, `./scripts/smoke.sh`,
+`./scripts/center_notch_acceptance.sh`, `./scripts/notifications_acceptance.sh` and the full
+`./scripts/protected_acceptance.sh` passed. Notification D-Bus ownership resolved to `qs`, the toast
+layer appeared only on DP-1, toast count became zero after five seconds while unread stayed one,
+and `markRead()` reduced unread to zero.
+
+Manual review: change focus between apps and confirm Center renders the real icon and
+`App · title`, elides cleanly up to 520px, and opens its four-rounded-corner popup at the shared
+52px top offset. Send one to four notifications and inspect newest-first stacking, icon fallback,
+three-line body cap, close control, five-second expiry and the Bell dot. Clicking the Bell must only
+clear the dot. Notification Center, actions and persisted history remain deliberately deferred.

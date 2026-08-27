@@ -1,0 +1,147 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+project_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+live_hypr="/home/cole/.config/hypr/hyprland.lua"
+dotfiles_hypr="/home/cole/Projects/titonium-hyprland/config/hypr/hyprland.lua"
+test_dir="$(mktemp -d --tmpdir titonium-notifications-acceptance.XXXXXX)"
+log_file="$test_dir/shell.log"
+shell_pid=""
+
+before_git="$(git -C "$project_root" status --porcelain=v1)"
+before_live="$(sha256sum -- "$live_hypr")"
+before_dotfiles="$(sha256sum -- "$dotfiles_hypr")"
+
+cleanup() {
+    if [[ -n "$shell_pid" ]] && kill -0 "$shell_pid" 2>/dev/null; then
+        kill "$shell_pid" 2>/dev/null || true
+        wait "$shell_pid" 2>/dev/null || true
+    fi
+    rm -f -- "$log_file"
+    rmdir -- "$test_dir"
+}
+trap cleanup EXIT
+
+call_ipc() {
+    qs -p "$project_root" ipc --pid "$shell_pid" call "$@"
+}
+
+state_matches() {
+    local expected_descriptors="$1"
+    local expected_toasts="$2"
+    local expected_unread="$3"
+    local state
+    state="$(call_ipc notifications state 2>/dev/null || true)"
+    python3 -c '
+import json, sys
+try:
+    state = json.loads(sys.argv[1])
+except Exception:
+    raise SystemExit(1)
+expected = [int(value) for value in sys.argv[2:]]
+actual = [state.get("descriptorCount"), state.get("toastCount"), state.get("unreadCount")]
+raise SystemExit(0 if actual == expected else 1)
+' "$state" "$expected_descriptors" "$expected_toasts" "$expected_unread"
+}
+
+screen_layers() {
+    local monitor="$1"
+    hyprctl -j layers | python3 -c '
+import json, sys
+data = json.load(sys.stdin)
+monitor = sys.argv[1]
+names = []
+for level in data.get(monitor, {}).get("levels", {}).values():
+    for layer in level:
+        names.append(str(layer.get("namespace", "")))
+print("\n".join(names))
+' "$monitor"
+}
+
+qs -p "$project_root" kill >/dev/null 2>&1 || true
+stopped=false
+for _ in {1..50}; do
+    if ! qs -p "$project_root" ipc call app status >/dev/null 2>&1; then
+        stopped=true
+        break
+    fi
+    sleep 0.1
+done
+if [[ "$stopped" != true ]]; then
+    echo "FAIL existing Titonium instance did not stop" >&2
+    exit 1
+fi
+qs -n -p "$project_root" --no-color >"$log_file" 2>&1 &
+shell_pid=$!
+
+ready=false
+for _ in {1..50}; do
+    if [[ "$(call_ipc app status 2>/dev/null || true)" == "ready" ]]; then
+        ready=true
+        break
+    fi
+    sleep 0.1
+done
+if [[ "$ready" != true ]]; then
+    sed -n '1,260p' "$log_file" >&2
+    echo "FAIL notification acceptance shell did not become ready" >&2
+    exit 1
+fi
+
+notify-send --app-name="Titonium Acceptance" --icon=dialog-information \
+    "Titonium fixture" "toast acceptance"
+
+received=false
+for _ in {1..30}; do
+    if state_matches 1 1 1; then
+        received=true
+        break
+    fi
+    sleep 0.1
+done
+if [[ "$received" != true ]]; then
+    call_ipc notifications state >&2 || true
+    echo "FAIL notification fixture was not projected" >&2
+    exit 1
+fi
+
+if [[ "$(screen_layers DP-1)" != *"titonium-notification-toast"* ]]; then
+    echo "FAIL DP-1 does not own the transient toast layer" >&2
+    exit 1
+fi
+if [[ "$(screen_layers DP-3)" == *"titonium-notification-toast"* ]]; then
+    echo "FAIL notification toast escaped to DP-3" >&2
+    exit 1
+fi
+
+sleep 6
+if ! state_matches 1 0 1; then
+    call_ipc notifications state >&2 || true
+    echo "FAIL toast expiry changed history or unread state" >&2
+    exit 1
+fi
+[[ "$(call_ipc notifications markRead)" == "0" ]]
+state_matches 1 0 0
+
+if [[ "$(git -C "$project_root" status --porcelain=v1)" != "$before_git" ]]; then
+    git -C "$project_root" status --short >&2
+    echo "FAIL notification acceptance changed repository files" >&2
+    exit 1
+fi
+if [[ "$(sha256sum -- "$live_hypr")" != "$before_live" \
+        || "$(sha256sum -- "$dotfiles_hypr")" != "$before_dotfiles" ]]; then
+    echo "FAIL notification acceptance changed a Hyprland configuration" >&2
+    exit 1
+fi
+if ! rg -q "Configuration Loaded" "$log_file"; then
+    echo "FAIL missing Configuration Loaded" >&2
+    exit 1
+fi
+runtime_rejection_pattern="\\b(ERROR|TypeError|duplicate id|missing method|Illegal method name)\\b|Type .* unavailable"
+if rg -i "$runtime_rejection_pattern" "$log_file"; then
+    sed -n '1,260p' "$log_file" >&2
+    echo "FAIL notification runtime error found" >&2
+    exit 1
+fi
+
+echo "PASS native notification toast, unread lifecycle and DP-1-only acceptance"

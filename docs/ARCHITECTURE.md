@@ -9,7 +9,10 @@ shell.qml
     │   ├── BarSurface → Start / Center / End islands
     │   └── CenterNotchWindow → Loader(active for owner screen only)
     │       └── CenterNotch → Rail + lazy StackView viewport
-    └── Core/Surfaces/OverlayHost.qml ── Variants(Quickshell.screens)
+    ├── Dock/DockHost.qml ── Variants(ScreenPolicy.screens)
+    ├── Notifications/ToastHost.qml ── Variants(ScreenPolicy.screens)
+    │   └── ToastWindow → Loader(active only while toast IDs exist)
+    └── Core/Surfaces/OverlayHost.qml ── Variants(ScreenPolicy.screens)
         └── Loader(active only for SurfaceManager owner)
             └── Overlays/Spotlight
 
@@ -21,7 +24,7 @@ Views ──read──> Services ──adapt──> Quickshell / Hyprland / DBus
 ## Screen and window lifecycle
 
 `ScreenPolicy` filters Quickshell's reactive output list to the currently assigned Titonium output,
-`DP-1`. `BarHost`, `OverlayHost` and `AudioOsdHost` all use that same eligible-screen model, so
+`DP-1`. `BarHost`, `DockHost`, `OverlayHost`, `AudioOsdHost` and `ToastHost` all use that same eligible-screen model, so
 Titonium creates no window or exclusive zone on `DP-3`; another shell can own that output.
 Disconnecting `DP-1` fails closed with no Titonium surface, and reconnecting it recreates the
 delegates reactively. `ScreenRouter` resolves focused or requested outputs only inside this policy
@@ -37,11 +40,13 @@ named by `CenterNotchCoordinator.ownerScreenName` activates its heavy Loader. Op
 closes the notch; opening the notch closes `SurfaceManager`, so the two exclusive-focus surfaces
 cannot overlap. An outside click, Escape, or focused-monitor change releases the notch window.
 
-The compact Center island is positioned from the full screen width rather than between the Start
+The adaptive Center island is positioned from the full screen width rather than between the Start
 and End islands. The full Bar input mask is composed from the three island hitboxes, preserving
-click-through elsewhere. The End island currently shows diagnostic-only Wi-Fi and Bluetooth glyphs
-beside the protected Input Method, Audio and Clock. Audio is backed by `AudioService`; only the
-Wi-Fi and Bluetooth glyphs are placeholders rather than service state.
+click-through elsewhere. It projects the active descriptor as app icon plus
+`Application · window title`, falls back to Titonium, elides at 520 logical pixels and opens a
+four-corner popup 52 logical pixels below the screen edge. The End island orders native Wi-Fi,
+Bluetooth, Audio and Notification Bell controls before the protected Input Method. Clock remains
+temporarily disabled.
 
 ## State and presentation
 
@@ -54,6 +59,9 @@ Singleton services expose reactive state once for all consumers:
 - `AudioService`: the sole PipeWire owner. Its `PwObjectTracker` observes audio-capable nodes and
   exposes normalized output, input and playback-stream view data; Bar and overlay code never
   imports PipeWire or writes raw node audio fields.
+- `NotificationService`: the sole `NotificationServer` owner. It turns native objects into frozen,
+  newest-first value descriptors and exposes bounded history, toast IDs and session-only unread
+  state. Native objects never escape the service.
 
 QML views draw, animate and emit intent. They do not spawn commands, store files or duplicate
 system listeners. Pure JavaScript helpers contain searchable/testable domain rules.
@@ -90,6 +98,21 @@ Applications and Clipboard services and publishes query/scope state back through
 
 The dependency direction is `App/View → Core + Services + Shared + Theme`. Reverse imports and
 feature-to-feature imports are architecture violations.
+
+## Native notification boundary
+
+Only `Titonium/Services/Notifications/NotificationService.qml` may import
+`Quickshell.Services.Notifications` or instantiate `NotificationServer`. The server advertises
+plain body support and session persistence only; markup, hyperlinks, images, actions and inline
+reply are disabled until their UI exists. A descriptor contains only `id`, app name/icon, summary,
+plain body, urgency and receive time. History is capped at 100, the active toast queue at three.
+
+`ToastHost` follows `ScreenPolicy.screens`, so DP-3 receives no Titonium toast surface. Its heavy
+stack loads only while toast IDs exist, takes no keyboard focus or exclusive zone, and masks input
+to the 360px stack. Each card owns one non-repeating five-second timer. Expiry removes presentation
+only; unread remains until the Bell is clicked. Notification history, unread and toast state are
+session-only. Because `org.freedesktop.Notifications` is a session-global D-Bus name, only one
+notification daemon can own it at a time; Titonium acceptance starts Titonium before its fixture.
 
 ## Center Notch acceptance seam
 

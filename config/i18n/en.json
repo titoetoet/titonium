@@ -96,6 +96,8 @@
     "menubar.connectivity.network_planned": "Network module planned",
     "notification.bell.none": "No unread notifications",
     "notification.bell.unread": "{count} unread notification(s)",
+    "notification.toast.dismiss": "Dismiss notification",
+    "notification.toast.fallback_app": "Notification",
     "menubar.input_method.accessible": "Input method: {name}",
     "menubar.input_method.unavailable": "Fcitx status is unavailable",
     "menubar.workspace.accessible": "Workspace {id} {state}",

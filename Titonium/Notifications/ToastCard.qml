@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
+import qs.Titonium.Core.Runtime
 import qs.Titonium.Services.Notifications
 import qs.Titonium.Shared as Shared
 import qs.Titonium.Theme
@@ -43,7 +44,7 @@ Item {
 
             Shared.TextLabel {
                 Layout.fillWidth: true
-                text: root.notification.appName || "Notification"
+                text: root.notification.appName || I18n.tr("notification.toast.fallback_app")
                 variant: "caption"
                 tone: "secondary"
                 elide: Text.ElideRight
@@ -52,7 +53,8 @@ Item {
 
             Shared.TextLabel {
                 Layout.fillWidth: true
-                text: root.notification.summary || root.notification.appName || "Notification"
+                text: root.notification.summary || root.notification.appName
+                    || I18n.tr("notification.toast.fallback_app")
                 variant: "label"
                 strong: true
                 elide: Text.ElideRight
@@ -80,7 +82,7 @@ Item {
             variant: "quiet"
             showFocusRing: false
             backgroundRadius: Metrics.radiusLarge
-            accessibleName: "Dismiss notification"
+            accessibleName: I18n.tr("notification.toast.dismiss")
             onTriggered: NotificationService.dismiss(root.notification.id)
         }
     }

@@ -96,6 +96,8 @@
     "menubar.connectivity.network_planned": "Module mạng sẽ được bổ sung",
     "notification.bell.none": "Không có thông báo chưa đọc",
     "notification.bell.unread": "{count} thông báo chưa đọc",
+    "notification.toast.dismiss": "Bỏ thông báo",
+    "notification.toast.fallback_app": "Thông báo",
     "menubar.input_method.accessible": "Bộ gõ: {name}",
     "menubar.input_method.unavailable": "Không tìm thấy trạng thái Fcitx",
     "menubar.workspace.accessible": "Không gian làm việc {id} {state}",

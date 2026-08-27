@@ -23,6 +23,10 @@ outside Git and expose narrow intent methods. It must:
 - contain platform failure and provide a safe unavailable state;
 - have pure JavaScript helpers for transformations worth unit testing.
 
+Native ownership is singular. Exactly one service file may import a capability's Quickshell native
+module. Views consume immutable value descriptors and semantic methods; they never retain or return
+PipeWire nodes, Bluetooth devices, Network objects, Hyprland toplevels or native notifications.
+
 ## View interface
 
 A view receives explicit context such as `screen` and reads a service singleton. It may emit user
@@ -31,6 +35,8 @@ commands, persist state or reach into another feature's private QML objects.
 
 Bar widgets remain cheap while visible. Heavy panels use `SurfaceManager` plus `OverlayHost`; their
 `Loader.active` becomes false on close. Only one transient surface owns exclusive keyboard focus.
+Independent non-focus surfaces such as OSD and notification toasts use their own DP-1-only host,
+`ExclusionMode.Ignore`, `WlrKeyboardFocus.None` and an input mask limited to visible content.
 
 ## Adapting third-party code
 

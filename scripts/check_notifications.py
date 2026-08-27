@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import json
 import re
 from pathlib import Path
 
@@ -126,6 +127,29 @@ def public_native_errors(source: str) -> list[str]:
     return errors
 
 
+def qml_block(source: str, start: int) -> str:
+    opening = source.find("{", start)
+    if opening < 0:
+        return ""
+    depth = 0
+    for index in range(opening, len(source)):
+        if source[index] == "{":
+            depth += 1
+        elif source[index] == "}":
+            depth -= 1
+            if depth == 0:
+                return source[start:index + 1]
+    return ""
+
+
+def notification_ipc(source: str) -> str:
+    for match in re.finditer(r"\bIpcHandler\s*\{", source):
+        block = qml_block(source, match.start())
+        if re.search(r'\btarget\s*:\s*"notifications"', block):
+            return block
+    return ""
+
+
 def validate_gate_fixtures(errors: list[str]) -> None:
     fixtures = (
         "QtObject {\n    property var nativeServer: NotificationServer {}\n}",
@@ -192,6 +216,15 @@ def validate_presentation(errors: list[str]) -> None:
             errors.append(f"notification presentation has forbidden dependency: {fragment}")
     if feature.count("Timer {") != 1:
         errors.append("notification presentation must own exactly one one-shot toast timer")
+    for locale in ("en", "vi"):
+        catalog_path = ROOT / f"config/i18n/{locale}.json"
+        catalog = json.loads(catalog_path.read_text(encoding="utf-8")).get("strings", {})
+        for key in (
+            "notification.bell.none", "notification.bell.unread",
+            "notification.toast.fallback_app", "notification.toast.dismiss",
+        ):
+            if not isinstance(catalog.get(key), str) or not catalog[key]:
+                errors.append(f"{locale} catalog missing notification key: {key}")
 
 
 def validate_composition(errors: list[str]) -> None:
@@ -200,6 +233,24 @@ def validate_composition(errors: list[str]) -> None:
         errors.append("App must compose exactly one ToastHost")
     if "import qs.Titonium.Notifications" not in app_source:
         errors.append("App must import the notification presentation module")
+    ipc = notification_ipc(app_source)
+    if not ipc:
+        errors.append("App must expose the narrow notifications IPC target")
+    else:
+        methods = set(re.findall(r"^\s*function\s+(\w+)\s*\(", ipc, re.MULTILINE))
+        if methods != {"state", "markRead"}:
+            errors.append("notifications IPC must expose exactly state and markRead")
+        for forbidden in ("dismiss", "action", "inject", "send", "reply"):
+            if re.search(rf"\b{forbidden}\w*\s*\(", ipc, re.IGNORECASE):
+                errors.append(f"notifications IPC exposes forbidden mutation: {forbidden}")
+        for fragment in (
+            "NotificationService.notifications.length",
+            "NotificationService.toastNotifications.length",
+            "NotificationService.unreadCount",
+            "NotificationService.markAllRead()",
+        ):
+            if fragment not in ipc:
+                errors.append(f"notifications IPC missing narrow state contract: {fragment}")
     if not BELL.is_file():
         errors.append("missing NotificationBell.qml")
         return
