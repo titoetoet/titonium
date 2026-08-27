@@ -10,6 +10,7 @@ QtObject {
 
     property string ownerScreenName: ""
     property string requestedPage: "overview"
+    property bool pinned: false
     readonly property bool active: root.ownerScreenName.length > 0
 
     function open(screenName: string, pageId: string): bool {
@@ -18,6 +19,7 @@ QtObject {
         SurfaceManager.close("");
         root.ownerScreenName = screenName;
         root.requestedPage = CenterNotchState.normalizePage(pageId);
+        root.pinned = false;
         return true;
     }
 
@@ -34,9 +36,25 @@ QtObject {
         return true;
     }
 
+    function togglePinned(screenName: string): bool {
+        if (!screenName)
+            return false;
+        const transition = CenterNotchState.pinTransition(
+            root.ownerScreenName, screenName, root.pinned, "toggle");
+        if (transition.shouldClose)
+            return root.close();
+        SurfaceManager.close("");
+        if (root.ownerScreenName !== transition.ownerScreenName)
+            root.requestedPage = "overview";
+        root.ownerScreenName = transition.ownerScreenName;
+        root.pinned = transition.pinned;
+        return true;
+    }
+
     function close(): bool {
         root.ownerScreenName = "";
         root.requestedPage = "overview";
+        root.pinned = false;
         return true;
     }
 }

@@ -21,7 +21,8 @@ FocusScope {
 
         TapHandler {
             onTapped: eventPoint => {
-                if (!root.pointInside(notch, eventPoint.position))
+                if (!root.pointInside(notch, eventPoint.position)
+                        && !CenterNotchCoordinator.pinned)
                     CenterNotchCoordinator.close();
             }
         }

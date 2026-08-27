@@ -9,12 +9,12 @@ Item {
     id: root
     required property var screen
     readonly property alias startHitbox: startIsland
-    readonly property alias centerHitbox: centerIsland
+    readonly property alias centerHitbox: centerGroup
     readonly property alias endHitbox: endIsland
     readonly property var optionalPlan: BarLayout.optionalVisibility(
         root.width,
         startIsland.implicitWidth,
-        centerIsland.implicitWidth,
+        centerGroup.implicitWidth,
         endIsland.preferredWidth,
         Metrics.barSpacing)
 
@@ -25,9 +25,9 @@ Item {
         screen: root.screen
     }
 
-    CenterIsland {
-        id: centerIsland
-        x: BarLayout.centerX(root.width, width)
+    CenterGroup {
+        id: centerGroup
+        x: BarLayout.centerX(root.width, centerGroup.width)
         anchors.verticalCenter: parent.verticalCenter
         screen: root.screen
     }

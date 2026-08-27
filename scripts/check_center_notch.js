@@ -37,4 +37,25 @@ assert.equal(
     "reverse navigation uses an upward offset",
 );
 
-console.log("PASS Center Notch state fixtures (8)");
+assert.deepEqual(
+    plain(context.pinTransition("", "DP-1", false, "toggle")),
+    { ownerScreenName: "DP-1", pinned: true, shouldClose: false },
+    "pin opens Center on the requested screen",
+);
+assert.deepEqual(
+    plain(context.pinTransition("DP-1", "DP-1", true, "toggle")),
+    { ownerScreenName: "", pinned: false, shouldClose: true },
+    "toggling an active pin closes and clears it",
+);
+assert.deepEqual(
+    plain(context.pinTransition("DP-1", "DP-3", false, "toggle")),
+    { ownerScreenName: "DP-3", pinned: true, shouldClose: false },
+    "pin ownership transfers to the requested screen",
+);
+assert.deepEqual(
+    plain(context.pinTransition("DP-1", "DP-1", true, "close")),
+    { ownerScreenName: "", pinned: false, shouldClose: true },
+    "explicit close always clears pin state",
+);
+
+console.log("PASS Center Notch state fixtures (12)");

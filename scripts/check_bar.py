@@ -15,6 +15,7 @@ def main() -> int:
         "islands/qmldir",
         "islands/StartIsland.qml",
         "islands/CenterIsland.qml",
+        "islands/CenterGroup.qml",
         "islands/EndIsland.qml",
         "islands/ConnectivityPill.qml",
         "islands/StatusPill.qml",
@@ -42,7 +43,16 @@ def main() -> int:
             "CenterNotchWindow {",
         ),
         "BarSurface.qml": ("PanelWindow {", "exclusiveZone: 40", "mask: Region {"),
-        "Bar.qml": ("StartIsland {", "CenterIsland {", "EndIsland {", "BarLayout.centerX"),
+        "Bar.qml": ("StartIsland {", "CenterGroup {", "EndIsland {",
+                    "BarLayout.centerX(root.width, centerGroup.width)",
+                    "readonly property alias centerHitbox: centerGroup"),
+        "islands/CenterGroup.qml": (
+            "CenterIsland {",
+            "CenterNotchCoordinator.togglePinned(root.screen.name)",
+            "menubar.center_pin.open",
+            "menubar.center_pin.close",
+        ),
+        "islands/qmldir": ("CenterGroup 1.0 CenterGroup.qml",),
         "islands/CenterIsland.qml": (
             "CenterNotchCoordinator.toggle",
             "CenterNotchCoordinator.ownerScreenName",
@@ -61,8 +71,14 @@ def main() -> int:
             "WlrLayershell.exclusionMode: ExclusionMode.Ignore",
             "WlrLayershell.keyboardFocus:",
         ),
+        "notch/CenterNotchCoordinator.qml": (
+            "property bool pinned: false",
+            "function togglePinned(screenName: string): bool",
+            "root.pinned = false",
+        ),
         "notch/CenterNotchSurface.qml": (
             "CenterNotchCoordinator.close()",
+            "!CenterNotchCoordinator.pinned",
             "Keys.onEscapePressed",
         ),
         "notch/CenterNotchRail.qml": (
@@ -182,6 +198,8 @@ def main() -> int:
 
     required_i18n = {
         "menubar.center_notch.accessible",
+        "menubar.center_pin.open",
+        "menubar.center_pin.close",
         "menubar.connectivity.network_planned",
         "menubar.connectivity.bluetooth_planned",
         "menubar.connectivity.audio_planned",

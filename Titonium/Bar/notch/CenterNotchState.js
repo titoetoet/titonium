@@ -27,3 +27,15 @@ function transitionPlan(previousPage, nextPage, reducedMotion, configuredDuratio
         offset: next >= previous ? 12 : -12
     };
 }
+
+function pinTransition(owner, requestedScreen, pinned, action) {
+    const current = typeof owner === "string" ? owner.trim() : "";
+    const requested = typeof requestedScreen === "string" ? requestedScreen.trim() : "";
+    if (action === "close")
+        return { ownerScreenName: "", pinned: false, shouldClose: true };
+    if (!requested)
+        return { ownerScreenName: current, pinned: Boolean(pinned), shouldClose: false };
+    if (current === requested && pinned === true)
+        return { ownerScreenName: "", pinned: false, shouldClose: true };
+    return { ownerScreenName: requested, pinned: true, shouldClose: false };
+}
