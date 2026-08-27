@@ -94,6 +94,8 @@
     "menubar.connectivity.bluetooth.accessible": "Bluetooth: {state}; {count} thiết bị đã kết nối",
     "menubar.connectivity.bluetooth_planned": "Module Bluetooth sẽ được bổ sung",
     "menubar.connectivity.network_planned": "Module mạng sẽ được bổ sung",
+    "notification.bell.none": "Không có thông báo chưa đọc",
+    "notification.bell.unread": "{count} thông báo chưa đọc",
     "menubar.input_method.accessible": "Bộ gõ: {name}",
     "menubar.input_method.unavailable": "Không tìm thấy trạng thái Fcitx",
     "menubar.workspace.accessible": "Không gian làm việc {id} {state}",

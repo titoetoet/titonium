@@ -85,7 +85,7 @@ FORBIDDEN_AUDIO_DEPENDENCIES = (
     "pactl",
 )
 FORBIDDEN_AUDIO_SERVICE_IMPORTS = re.compile(
-    r"^\s*import\s+.*(?:Mpris|Bluetooth|Network)", re.MULTILINE | re.IGNORECASE
+    r"^\s*import\s+.*(?:Mpris|Bluetooth|Network|Notifications)", re.MULTILINE | re.IGNORECASE
 )
 RAW_AUDIO_MUTATION = re.compile(r"\.audio\.(?:volume|muted)\s*=")
 MUTATING_AUDIO_IPC_METHOD = re.compile(
@@ -162,10 +162,12 @@ def forbidden_audio_service_imports(path: Path, source: str) -> list[str]:
     imports = FORBIDDEN_AUDIO_SERVICE_IMPORTS.findall(source)
     if path == ROOT / "Titonium/Bar/islands/ConnectivityPill.qml":
         return [entry for entry in imports
-                if "Bluetooth" not in entry and "Network" not in entry]
+                if "Bluetooth" not in entry and "Network" not in entry
+                and "Notifications" not in entry]
     if path == ROOT / "Titonium/App.qml":
         return [entry for entry in imports
-                if "Bluetooth" not in entry and "Network" not in entry]
+                if "Bluetooth" not in entry and "Network" not in entry
+                and "Notifications" not in entry]
     return imports
 
 
@@ -204,8 +206,18 @@ def validate_audio_hardening(errors: list[str]) -> None:
             shared_pill, "import qs.Titonium.Services.Network\nItem {}"):
         errors.append("Audio import matcher rejected the allowed shared Network pill fixture")
     if forbidden_audio_service_imports(
+            shared_pill, "import qs.Titonium.Services.Notifications\nItem {}"):
+        errors.append("Audio import matcher rejected Notifications at the shared pill")
+    if forbidden_audio_service_imports(
             ROOT / "Titonium/App.qml", "import qs.Titonium.Services.Network\nScope {}"):
         errors.append("Audio import matcher rejected Network at the App composition root")
+    if forbidden_audio_service_imports(
+            ROOT / "Titonium/App.qml", "import qs.Titonium.Services.Notifications\nScope {}"):
+        errors.append("Audio import matcher rejected Notifications at App composition")
+    if not forbidden_audio_service_imports(
+            OVERLAY_ROOT / "BadNotificationImport.qml",
+            "import qs.Titonium.Services.Notifications\nItem {}"):
+        errors.append("Audio import matcher missed Notifications overlay fixture")
     if not forbidden_audio_service_imports(
             ROOT / "Titonium/App.qml", "import qs.Titonium.Services.Mpris\nScope {}"):
         errors.append("Audio import matcher broadly allowlisted unrelated App service imports")

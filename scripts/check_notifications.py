@@ -9,6 +9,8 @@ SERVICE_ROOT = ROOT / "Titonium/Services/Notifications"
 SERVICE = SERVICE_ROOT / "NotificationService.qml"
 QMLDIR = SERVICE_ROOT / "qmldir"
 PRESENTATION_ROOT = ROOT / "Titonium/Notifications"
+APP = ROOT / "Titonium/App.qml"
+BELL = ROOT / "Titonium/Bar/widgets/NotificationBell.qml"
 PRESENTATION_FILES = {
     "ToastHost.qml": (
         "Variants {",
@@ -192,6 +194,29 @@ def validate_presentation(errors: list[str]) -> None:
         errors.append("notification presentation must own exactly one one-shot toast timer")
 
 
+def validate_composition(errors: list[str]) -> None:
+    app_source = APP.read_text(encoding="utf-8") if APP.is_file() else ""
+    if app_source.count("ToastHost {") != 1:
+        errors.append("App must compose exactly one ToastHost")
+    if "import qs.Titonium.Notifications" not in app_source:
+        errors.append("App must import the notification presentation module")
+    if not BELL.is_file():
+        errors.append("missing NotificationBell.qml")
+        return
+    bell_source = BELL.read_text(encoding="utf-8")
+    if "import qs.Titonium.Services.Notifications" not in bell_source:
+        errors.append("NotificationBell must consume the descriptor-only notification service")
+    for fragment in (
+        "width: 24", "height: 24", 'iconName: "notifications"',
+        "visible: NotificationService.hasUnread", "width: 6", "height: 6",
+        "NotificationService.markAllRead()", "NotificationService.unreadCount",
+    ):
+        if fragment not in bell_source:
+            errors.append(f"NotificationBell missing contract: {fragment}")
+    if bell_source.count("NotificationService.markAllRead()") != 1:
+        errors.append("Notification Bell must own exactly one read-state mutation")
+
+
 def main() -> int:
     errors: list[str] = []
     if not QMLDIR.is_file():
@@ -204,6 +229,7 @@ def main() -> int:
     validate_service(errors)
     validate_ownership(errors)
     validate_presentation(errors)
+    validate_composition(errors)
     validate_gate_fixtures(errors)
     if errors:
         print("FAIL notification service architecture")

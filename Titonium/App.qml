@@ -9,6 +9,7 @@ import qs.Titonium.Core.Runtime
 import qs.Titonium.Core.Screens
 import qs.Titonium.Core.Surfaces
 import qs.Titonium.Dock
+import qs.Titonium.Notifications
 import qs.Titonium.Services.Applications
 import qs.Titonium.Services.Audio
 import qs.Titonium.Services.Bluetooth
@@ -50,6 +51,7 @@ Scope {
     }
     OverlayHost {}
     AudioOsdHost {}
+    ToastHost {}
 
     Connections {
         target: SurfaceManager

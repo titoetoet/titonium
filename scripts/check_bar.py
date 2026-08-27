@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import hashlib
 import json
 import re
 from pathlib import Path
@@ -21,6 +22,7 @@ def main() -> int:
         "islands/ConnectivityPill.qml",
         "islands/StatusPill.qml",
         "widgets/Workspaces.qml",
+        "widgets/NotificationBell.qml",
         "BarVisibilityRules.js",
         "notch/qmldir",
         "notch/CenterNotchCoordinator.qml",
@@ -84,6 +86,8 @@ def main() -> int:
             "readonly property int fullImplicitWidth",
             "radius: Metrics.radiusLarge",
             "spacing: 0",
+            "NotificationBell {",
+            "id: notificationBell",
         ),
         "islands/EndIsland.qml": (
             "ConnectivityPill {",
@@ -162,11 +166,14 @@ def main() -> int:
             "id: networkButton",
             "id: bluetoothButton",
             "id: audioButton",
+            "id: notificationBell",
             "width: root.controlSize",
             "height: root.controlSize",
         ):
             if fragment not in source:
                 errors.append(f"ConnectivityPill missing aligned-control contract: {fragment}")
+        if not (source.find("id: audioButton") < source.find("id: notificationBell")):
+            errors.append("Notification Bell must follow Sound inside ConnectivityPill")
         if "id: networkIcon" in source:
             errors.append("ConnectivityPill must not mix a raw Wi-Fi icon with button-sized controls")
 
@@ -227,6 +234,13 @@ def main() -> int:
     input_method = BAR / "widgets/InputMethod.qml"
     if input_method.is_file() and "Shared.Surface" in input_method.read_text(encoding="utf-8"):
         errors.append("Input Method must not draw a nested outlined surface inside StatusPill")
+    protected_hashes = {
+        BAR / "widgets/InputMethod.qml": "cf88d46b009efa2748b03970a7b0e8f586b9167d95687b33cdccfbeb4ff6be61",
+        ROOT / "Titonium/Services/InputMethod/InputMethodService.qml": "cb7eb04be9d6898f2b641f0b4e791e48b146b18bcb9ab8aa3c17188c29144126",
+    }
+    for path, expected_hash in protected_hashes.items():
+        if path.is_file() and hashlib.sha256(path.read_bytes()).hexdigest() != expected_hash:
+            errors.append(f"notification batch changed protected Input Method: {path.relative_to(ROOT)}")
 
     center_island = BAR / "islands/CenterIsland.qml"
     if center_island.is_file() and center_island.read_text(encoding="utf-8").count("Shared.Surface {") != 1:
@@ -302,6 +316,8 @@ def main() -> int:
         "menubar.connectivity.network_planned",
         "menubar.connectivity.bluetooth_planned",
         "menubar.connectivity.audio_planned",
+        "notification.bell.none",
+        "notification.bell.unread",
         "center_notch.title",
         "center_notch.tab.overview",
         "center_notch.tab.tools",

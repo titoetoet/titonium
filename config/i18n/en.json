@@ -94,6 +94,8 @@
     "menubar.connectivity.bluetooth.accessible": "Bluetooth: {state}; {count} connected",
     "menubar.connectivity.bluetooth_planned": "Bluetooth module planned",
     "menubar.connectivity.network_planned": "Network module planned",
+    "notification.bell.none": "No unread notifications",
+    "notification.bell.unread": "{count} unread notification(s)",
     "menubar.input_method.accessible": "Input method: {name}",
     "menubar.input_method.unavailable": "Fcitx status is unavailable",
     "menubar.workspace.accessible": "Workspace {id} {state}",

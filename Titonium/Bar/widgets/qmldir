@@ -2,3 +2,4 @@ module qs.Titonium.Bar.widgets
 Workspaces 1.0 Workspaces.qml
 InputMethod 1.0 InputMethod.qml
 Clock 1.0 Clock.qml
+NotificationBell 1.0 NotificationBell.qml
