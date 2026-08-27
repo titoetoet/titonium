@@ -1,0 +1,2 @@
+module qs.Titonium.Services.Bluetooth
+singleton BluetoothService 1.0 BluetoothService.qml
