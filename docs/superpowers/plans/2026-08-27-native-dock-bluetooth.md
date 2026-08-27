@@ -96,27 +96,27 @@
 - Consumes: `Shared.Panel.padding === Metrics.spacingLarge` and the existing `fixedContentHeight`, `streamHeight`, `maximumHeight` properties.
 - Produces: `panel.height = min(maximumHeight, availableHeight, fixedContentHeight + streamHeight + 2 * panel.padding)` with the child layout filling `panel.contentItem` without another margin.
 
-- [ ] **Step 1: Add the failing geometry and source assertions**
+- [x] **Step 1: Add the failing geometry and source assertions**
 
   In `scripts/check_audio_geometry.js`, calculate fixed content `236`, stream content `120`, padding `16` and assert outer height `388`, then assert capped height never exceeds `availableHeight`. In `scripts/check_audio.py`, reject `ColumnLayout` margins inside `AudioPopupSurface.qml` and require `2 * panel.padding` in the height expression.
 
-- [ ] **Step 2: Prove RED**
+- [x] **Step 2: Prove RED**
 
   Run: `node scripts/check_audio_geometry.js && python3 scripts/check_audio.py`
 
   Expected: FAIL because current height omits outer padding and the child has `anchors.margins`.
 
-- [ ] **Step 3: Make the minimal geometry correction**
+- [x] **Step 3: Make the minimal geometry correction**
 
   Remove `anchors.margins: Metrics.spacingLarge` from the `ColumnLayout`; change panel height to include `2 * panel.padding`; compute `maximumStreamHeight` after subtracting the same outer padding exactly once.
 
-- [ ] **Step 4: Prove GREEN and preserve Audio behavior**
+- [x] **Step 4: Prove GREEN and preserve Audio behavior**
 
   Run: `node scripts/check_audio_geometry.js && python3 scripts/check_audio.py && node scripts/check_audio_rules.js && ./scripts/check.sh`
 
   Expected: all PASS; `qmllint` has only the existing allowlisted `PanelWindow` warnings.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
   ```bash
   git add Titonium/Overlays/Audio/AudioPopupSurface.qml scripts/check_audio.py scripts/check_audio_geometry.js scripts/check.sh
@@ -139,35 +139,35 @@
 - Produces from `DockRules.js`: `normalizeState(raw): object`, `mergeItems(pinnedIds, runningGroups, entriesById, firstSeenIds): array`, `nextCycleIndex(previousIndex, count): int`, `shouldReveal(autoHide, pinnedOpen, activeWorkspaceWindowCount, edgeHovered, dockHovered): bool`.
 - Produces from `DockStore`: read-only `pinnedIds: array`, `pinnedOpen: bool`, `autoHide: bool`, `ready: bool`; methods `togglePin(appId): bool`, `setPinnedOpen(value): bool`, `setAutoHide(value): bool`, `snapshot(): object`.
 
-- [ ] **Step 1: Write failing DockRules fixtures**
+- [x] **Step 1: Write failing DockRules fixtures**
 
   Cover non-empty-string filtering, stable dedupe, unknown pin retention in normalized state, hidden unknown pins in projection, stable pinned order, first-seen unpinned order, active/urgent aggregation, cycle wrap and reveal truth table.
 
-- [ ] **Step 2: Prove domain RED**
+- [x] **Step 2: Prove domain RED**
 
   Run: `node scripts/check_dock_rules.js`
 
   Expected: FAIL because `DockRules.js` does not exist.
 
-- [ ] **Step 3: Implement pure deterministic rules**
+- [x] **Step 3: Implement pure deterministic rules**
 
   Return new arrays/objects, never retain QML/native objects, compare IDs case-insensitively for grouping while preserving the canonical persisted ID, and hide unavailable pinned entries only from `mergeItems()` output.
 
-- [ ] **Step 4: Prove rules GREEN**
+- [x] **Step 4: Prove rules GREEN**
 
   Run: `node scripts/check_dock_rules.js`
 
   Expected: PASS with one summary line for each rule family.
 
-- [ ] **Step 5: Add failing persistence/schema gates**
+- [x] **Step 5: Add failing persistence/schema gates**
 
   Require exact schema `titonium.dock/v1`, version `1`, defaults `[]/false/true`, sole `FileView` ownership in `DockStore.qml`, data path write target, shipped-default read target, bounded corruption warning and no repository/config mutation path.
 
-- [ ] **Step 6: Prove persistence RED, implement store, then prove GREEN**
+- [x] **Step 6: Prove persistence RED, implement store, then prove GREEN**
 
   Run before implementation: `python3 scripts/check_dock_store.py` (expected FAIL). Implement a single watched `FileView`, project through `DockRules.normalizeState`, serialize only the three public values plus schema fields, and call `setText(JSON.stringify(value, null, 2))`. Run again; expected PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
   ```bash
   git add Titonium/Services/Dock config/defaults/dock.json config/schemas/dock.schema.json scripts/check_dock_rules.js scripts/check_dock_store.py
@@ -185,27 +185,27 @@
 - Consumes: `Hyprland.toplevels.values`, `Hyprland.focusedToplevel`, `ApplicationService.desktopEntryForAppId(appId)`, `iconForAppId(appId)`, `nameForAppId(appId)`, `launch(entryId)` and Task 2 contracts.
 - Produces: read-only `items: array`, `activeWorkspaceWindowCount: int`; methods `activateOrLaunch(appId): bool`, `launchNew(appId): bool`, `closeActive(appId): bool`, `togglePin(appId): bool`, `snapshot(): string`. Each item is `{appId,name,icon,runningCount,active,urgent,pinned}` and contains no native object.
 
-- [ ] **Step 1: Add a failing ownership/API gate**
+- [x] **Step 1: Add a failing ownership/API gate**
 
   Assert only `DockService.qml` imports `Quickshell.Hyprland` under the Dock slice, descriptors contain the seven exact public fields, raw toplevels are held in a private lookup keyed by normalized app ID, and mutation methods relookup their target.
 
-- [ ] **Step 2: Prove RED**
+- [x] **Step 2: Prove RED**
 
   Run: `python3 scripts/check_dock.py`
 
   Expected: FAIL because `DockService.qml` is absent.
 
-- [ ] **Step 3: Implement reactive grouping and intents**
+- [x] **Step 3: Implement reactive grouping and intents**
 
   Recompute on toplevel model/focus/workspace signals; append newly observed app IDs to a session-only first-seen list; map classes through `ApplicationService`; use `HyprlandToplevel.activate()` and `.close()` only after lookup; use `ApplicationService.launch(entry.id)` for launch/new-window intents.
 
-- [ ] **Step 4: Prove GREEN without launching applications**
+- [x] **Step 4: Prove GREEN without launching applications**
 
   Run: `python3 scripts/check_dock.py && node scripts/check_dock_rules.js && ./scripts/check.sh`
 
   Expected: PASS; fixtures inspect APIs/source only and invoke no intent method.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
   ```bash
   git add Titonium/Services/Dock/DockService.qml Titonium/Services/Dock/qmldir scripts/check_dock.py
@@ -225,23 +225,23 @@
 - Consumes: `Bluetooth.defaultAdapter`, adapter `enabled`, `discovering`, `devices.values`; native device state, battery and methods from Quickshell 0.3.1.
 - Produces: read-only `available: bool`, `powered: bool`, `discovering: bool`, `adapterName: string`, `connectedCount: int`, `devices: array`, `stateKey: string`; methods `setPowered(value): bool`, `setDiscovering(value): bool`, `connectDevice(address): bool`, `disconnectDevice(address): bool`, `pairDevice(address): bool`, `cancelPair(address): bool`, `forgetDevice(address): bool`, `snapshot(): string`. Device descriptors are `{address,name,icon,section,stateKey,connected,paired,pairing,batteryAvailable,battery,blocked}`.
 
-- [ ] **Step 1: Write failing BluetoothRules fixtures**
+- [x] **Step 1: Write failing BluetoothRules fixtures**
 
   Cover no adapter, powered off/on/scanning, connected count, duplicate-address removal, section order Connected/Paired/Available, case-insensitive name then address sort, pairing precedence and battery clamping to `0..100`.
 
-- [ ] **Step 2: Prove rules RED, implement pure rules, then prove GREEN**
+- [x] **Step 2: Prove rules RED, implement pure rules, then prove GREEN**
 
   Run before: `node scripts/check_bluetooth_rules.js` (expected FAIL). Implement immutable projections with no native-object retention. Run again; expected PASS.
 
-- [ ] **Step 3: Add failing service architecture gate**
+- [x] **Step 3: Add failing service architecture gate**
 
   Require `BluetoothService.qml` as the sole `Quickshell.Bluetooth` importer, a private `nativeDeviceForAddress(address)` lookup before every mutation, false returns for stale objects, and absence of `Process`, DBus wrappers, CLI strings and timers.
 
-- [ ] **Step 4: Implement native service and prove GREEN**
+- [x] **Step 4: Implement native service and prove GREEN**
 
   Bind the default adapter safely, project devices through `BluetoothRules`, turn discovery off before power-off, call native device methods only after relookup and log bounded failures. Run: `node scripts/check_bluetooth_rules.js && python3 scripts/check_bluetooth.py && ./scripts/check.sh`. Expected: PASS without changing host Bluetooth state.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
   ```bash
   git add Titonium/Services/Bluetooth scripts/check_bluetooth_rules.js scripts/check_bluetooth.py
@@ -265,31 +265,31 @@
 - Consumes: Task 3 `DockService`, `ScreenPolicy.screens`, `SurfaceManager.open(ownerId, descriptor, screen)`, Theme/Metrics/Motion and `I18n.tr()`.
 - Produces: `DockHost`; `DockItemMenuCoordinator.open(appId, invoker, screen): bool`, `close(): bool`; a `PanelWindow` namespace `titonium-dock` with 56px body, 8px margin, 4px edge reveal and exclusive zone `64` only when pinned open.
 
-- [ ] **Step 1: Add failing layout/lifecycle fixtures**
+- [x] **Step 1: Add failing layout/lifecycle fixtures**
 
   Assert body/icon/margin/spacing `56/40/8/6`, hover scale/lift `1.12/4`, edge reveal `4`, reserve `64` pinned and `0` auto-hide, reduced-motion duration `0`, `Variants.model: ScreenPolicy.screens`, mask limited to Dock/reveal, and no forbidden render/runtime primitive.
 
-- [ ] **Step 2: Prove RED**
+- [x] **Step 2: Prove RED**
 
   Run: `node scripts/check_dock_layout.js && python3 scripts/check_dock.py`
 
   Expected: FAIL because Dock presentation files are absent.
 
-- [ ] **Step 3: Implement host, window and surface**
+- [x] **Step 3: Implement host, window and surface**
 
   Build one bottom-centered `PanelWindow` per allowed screen; bind visibility to `DockRules.shouldReveal`; reserve only pinned-open mode; implement bounded opacity/translation/scale transitions; preserve click-through outside the visible body and 4px reveal strip.
 
-- [ ] **Step 4: Implement application and item-menu interaction**
+- [x] **Step 4: Implement application and item-menu interaction**
 
   Put Arch/Applications first and pin control last. Left/middle/right and keyboard actions call only Dock service/coordinator contracts. The lazy item menu exposes New Window, Pin/Unpin and Close Active Window, closes on outside click/Escape and returns focus to its invoker.
 
-- [ ] **Step 5: Prove GREEN**
+- [x] **Step 5: Prove GREEN**
 
   Run: `node scripts/check_dock_layout.js && python3 scripts/check_dock.py && ./scripts/check.sh`
 
   Expected: PASS with no new qmllint warning.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
   ```bash
   git add Titonium/Dock scripts/check_dock_layout.js scripts/check_dock.py
@@ -310,31 +310,31 @@
 - Consumes: Task 4 `BluetoothService`, `SurfaceManager`, `ScreenRouter`, Theme/Metrics/Motion and `I18n.tr()`.
 - Produces: `BluetoothPopupCoordinator.open(screen): bool`, `toggle(screen): bool`, `close(): bool`, `active: bool`; owner ID prefix `bluetooth:`; state-aware Bar button.
 
-- [ ] **Step 1: Extend the gate for lazy and state-aware presentation**
+- [x] **Step 1: Extend the gate for lazy and state-aware presentation**
 
   Require coordinator descriptor source, shared transient manager, no eager popup instance, content-driven capped height, collapsible Connected/Paired/Available sections, inline two-step Forget confirmation, Escape/outside close and accessible names.
 
-- [ ] **Step 2: Prove RED**
+- [x] **Step 2: Prove RED**
 
   Run: `python3 scripts/check_bluetooth.py`
 
   Expected: FAIL because popup files and native Bar binding are absent.
 
-- [ ] **Step 3: Implement coordinator and popup**
+- [x] **Step 3: Implement coordinator and popup**
 
   Open on the routed DP-1 screen, render header adapter/power/scan controls, group normalized device rows, cap panel height to available screen height, reset confirmation on row/state change and call only Bluetooth service intents.
 
-- [ ] **Step 4: Replace the diagnostic Bluetooth glyph**
+- [x] **Step 4: Replace the diagnostic Bluetooth glyph**
 
   Keep Wi-Fi diagnostic. Bind icon/tone/accessibility to unavailable/off/on/scanning/connected-count state and open the coordinator from the button.
 
-- [ ] **Step 5: Prove GREEN**
+- [x] **Step 5: Prove GREEN**
 
   Run: `node scripts/check_bluetooth_rules.js && python3 scripts/check_bluetooth.py && ./scripts/check.sh`
 
   Expected: PASS with the popup tree unloaded while closed.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
   ```bash
   git add Titonium/Overlays/Bluetooth Titonium/Bar/islands/ConnectivityPill.qml scripts/check_bluetooth.py
@@ -356,31 +356,31 @@
 - Consumes: `DockHost`, `DockService.snapshot()`, `BluetoothService.snapshot()`, `BluetoothPopupCoordinator` and existing `openSpotlight("applications", "", "browse")`.
 - Produces: read-only IPC targets `dock.state()`, `bluetooth.state()`, `bluetooth.popup()`, `bluetooth.closePopup()`, `bluetooth.popupState()`; no mutating Dock/Bluetooth IPC.
 
-- [ ] **Step 1: Add failing integration/locale assertions**
+- [x] **Step 1: Add failing integration/locale assertions**
 
   Extend static gates to require `DockHost {}`, exact IPC allowlists, Spotlight Applications routing, EN/VI key parity and syntax-valid acceptance scripts. Explicitly reject Dock focus/launch/close/pin IPC and Bluetooth power/scan/device-mutation IPC.
 
-- [ ] **Step 2: Prove RED**
+- [x] **Step 2: Prove RED**
 
   Run: `./scripts/check.sh`
 
   Expected: FAIL on missing composition, IPC and locale keys.
 
-- [ ] **Step 3: Compose and localize**
+- [x] **Step 3: Compose and localize**
 
   Add one `DockHost`, imports and read-only IPC. Route Dock Applications to existing Spotlight on the policy screen. Add complete namespaced strings for actions, device states, section labels, tooltips and accessible names in both locales.
 
-- [ ] **Step 4: Add safe read-only acceptance scripts**
+- [x] **Step 4: Add safe read-only acceptance scripts**
 
   `dock_acceptance.sh` reads state/layers/reserves only. `bluetooth_acceptance.sh` reads state, opens/closes the popup and checks transient mutual exclusion only. Both reject DP-3 Titonium surfaces and never invoke a mutation intent.
 
-- [ ] **Step 5: Prove integration GREEN**
+- [x] **Step 5: Prove integration GREEN**
 
   Run: `./scripts/check.sh && bash -n scripts/dock_acceptance.sh scripts/bluetooth_acceptance.sh scripts/protected_acceptance.sh`
 
   Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
   ```bash
   git add Titonium/App.qml config/i18n/en.json config/i18n/vi.json scripts/check.sh scripts/dock_acceptance.sh scripts/bluetooth_acceptance.sh scripts/protected_acceptance.sh
