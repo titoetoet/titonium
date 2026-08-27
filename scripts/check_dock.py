@@ -29,7 +29,7 @@ REQUIRED_SERVICE_FRAGMENTS = (
     "function snapshot(): string",
     "HyprlandService.windows",
     "HyprlandService.activeWorkspaceWindowCount",
-    "HyprlandService.activateWindow",
+    "HyprlandService.focusWindow",
     "HyprlandService.closeWindow",
     "ApplicationService.desktopEntryForAppId",
     "ApplicationService.iconForAppId",
@@ -41,7 +41,7 @@ REQUIRED_SERVICE_FRAGMENTS = (
     "function onWindowsChanged",
 )
 REQUIRED_MUTATION_RELOOKUPS = {
-    "activateOrLaunch": "HyprlandService.activateWindow",
+    "activateOrLaunch": "HyprlandService.focusWindow",
     "launchNew": "root.entryForAppId(appId)",
     "closeActive": "HyprlandService.closeWindow",
     "togglePin": "DockStore.togglePin(appId)",

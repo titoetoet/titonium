@@ -56,7 +56,7 @@ def main() -> int:
         "function select(id: string): bool",
         "function snapshot(): string",
         "HyprlandService.windows",
-        "HyprlandService.activateWindow",
+        "HyprlandService.focusWindow",
         "WindowSwitcherRules.mruIds",
         "WindowSwitcherRules.orderedWindows",
         "WindowSwitcherRules.reconcileSelection",
@@ -116,6 +116,14 @@ def main() -> int:
         errors.append("Window Switcher must store only selectedId as selection state")
     if service and "selectedId: root.selectedId" not in service:
         errors.append("Window Switcher snapshot must expose selectedId, not a native object")
+    if "HyprlandService.activateWindow" in service:
+        errors.append("Window Switcher must use the shared workspace-aware focus boundary")
+    accept_start = service.find("function accept(): bool")
+    accept_end = service.find("function cancel(): bool", accept_start)
+    accept_block = service[accept_start:accept_end] if accept_start >= 0 and accept_end >= 0 else ""
+    if not (0 <= accept_block.find("root.cancel();")
+            < accept_block.find("HyprlandService.focusWindow(id)")):
+        errors.append("Window Switcher must close before workspace-aware focus")
 
     if not SERVICE_QMLDIR.is_file() or (
             "singleton WindowSwitcherService 1.0 WindowSwitcherService.qml"

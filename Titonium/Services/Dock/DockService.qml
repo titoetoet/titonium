@@ -114,7 +114,7 @@ QtObject {
                 }
             }
         }
-        if (!HyprlandService.activateWindow(windows[selectedIndex].id)) {
+        if (!HyprlandService.focusWindow(windows[selectedIndex].id)) {
             root.warnMutation("activate", appId);
             return false;
         }

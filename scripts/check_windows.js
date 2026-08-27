@@ -114,7 +114,8 @@ assert.equal(dockSource.includes("Hyprland.toplevels"), false);
 assert.equal(dockSource.includes("import Quickshell.Hyprland"), false);
 assert.equal(dockSource.includes("DockNativeRegistry"), false);
 assert.equal(dockSource.includes("HyprlandService.windows"), true);
-assert.equal(dockSource.includes("HyprlandService.activateWindow"), true);
+assert.equal(dockSource.includes("HyprlandService.focusWindow"), true);
+assert.equal(dockSource.includes("HyprlandService.activateWindow"), false);
 assert.equal(dockSource.includes("HyprlandService.closeWindow"), true);
 const nativeOwners = [];
 function collectNativeOwners(directory) {

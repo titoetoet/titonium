@@ -93,7 +93,7 @@ QtObject {
             return false;
         }
         root.cancel();
-        return HyprlandService.activateWindow(id);
+        return HyprlandService.focusWindow(id);
     }
 
     function cancel(): bool {
