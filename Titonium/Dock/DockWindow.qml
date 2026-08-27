@@ -19,7 +19,7 @@ PanelWindow {
         DockStore.pinnedOpen,
         DockService.activeWorkspaceWindowCount,
         edgeReveal.hovered,
-        dockSurface.hovered)
+        dockSurface.hovered || dockSurface.itemMenuActive)
     readonly property bool pinnedOpen: DockStore.pinnedOpen
     signal applicationsRequested(var screen)
 
@@ -30,9 +30,9 @@ PanelWindow {
     exclusiveZone: root.pinnedOpen ? root.reservedHeight : 0
     aboveWindows: true
     WlrLayershell.namespace: "titonium-dock"
-    WlrLayershell.layer: WlrLayer.Top
-    WlrLayershell.exclusionMode: ExclusionMode.Ignore
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+    WlrLayershell.layer: WlrLayer.Overlay
+    WlrLayershell.exclusionMode: root.pinnedOpen ? ExclusionMode.Normal : ExclusionMode.Ignore
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
     anchors { bottom: true; left: true; right: true }
     mask: Region {
         Region { item: dockSurface }

@@ -65,32 +65,38 @@ requireFragments("window", [
   "readonly property int bodyHeight: 56", "readonly property int edgeRevealHeight: 4",
   "readonly property int reservedHeight: 64", "exclusiveZone: root.pinnedOpen ? root.reservedHeight : 0",
   "mask: Region {", "Region { item: dockSurface }", "Region { item: edgeReveal }",
-  "WlrLayershell.exclusionMode: ExclusionMode.Ignore", "WlrLayershell.keyboardFocus: WlrKeyboardFocus.None",
+  "WlrLayershell.exclusionMode: root.pinnedOpen ? ExclusionMode.Normal : ExclusionMode.Ignore",
+  "WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand", "WlrLayershell.layer: WlrLayer.Overlay",
+  "dockSurface.itemMenuActive",
 ]);
 requireFragments("surface", [
   "readonly property int bodyHeight: 56", "readonly property int itemSpacing: 6",
   "readonly property real hoverScale: 1.12", "readonly property int hoverLift: 4",
   "Motion.fast", "Behavior on opacity", "Behavior on y", "applicationsRequested",
-  "DockAppButton", "DockItemMenuCoordinator", "DockStore.setPinnedOpen",
+  "DockAppButton", "DockItemMenuCoordinator", "DockStore.setPinnedOpen", "itemMenu.active",
 ]);
 requireFragments("button", [
   "readonly property int iconSize: 40", "scale: root.hovered ? root.hoverScale : 1",
   "y: root.hovered ? -root.hoverLift : 0", "Motion.fast", "DockService.activateOrLaunch",
-  "DockService.launchNew", "menuRequested", "Keys.onPressed",
+  "DockService.launchNew", "menuRequested", "Keys.onPressed", "size: root.iconSize",
+  "QtControls.ToolTip.visible", "dock.application_tooltip",
 ]);
 requireFragments("coordinator", [
-  "SurfaceManager.open", "DockItemMenuSurface.qml", "function open(appId: string, invoker: var, screen: var): bool",
-  "function close(): bool", "keyboardFocus\": \"exclusive\"",
+  "SurfaceManager.open", "DockItemMenuSurface.qml", "function open(dockItem: var, invoker: var, screen: var): bool",
+  "function menuItem(dockItem: var): var", "\"item\": item", "function close(): bool", "keyboardFocus\": \"exclusive\"",
 ]);
 requireFragments("menu", [
   "SurfaceManager.close", "Keys.onEscapePressed", "dock.menu.new_window", "dock.menu.pin",
-  "dock.menu.close_active",
+  "dock.menu.unpin", "dock.menu.close_active", "root.item?.runningCount > 0",
+  "height: menuColumn.implicitHeight + menuPanel.padding * 2",
   "DockService.launchNew", "DockService.togglePin", "DockService.closeActive", "returnFocus",
 ]);
 requireFragments("qmldir", ["module qs.Titonium.Dock", "DockHost 1.0 DockHost.qml"]);
 
 for (const name of Object.keys(files))
   requireAbsent(name, ["Process", "FileView", "Timer {", "MultiEffect", "ShaderEffect", "gradient", "blur", "hyprctl", "bluetoothctl"]);
+
+requireAbsent("window", ["WlrLayershell.keyboardFocus: WlrKeyboardFocus.None", "WlrLayershell.layer: WlrLayer.Top"]);
 
 if (errors.length > 0) {
   for (const error of errors)

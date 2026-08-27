@@ -62,11 +62,15 @@ PUBLIC_FIELDS = ("appId", "name", "icon", "runningCount", "active", "urgent", "p
 def validate_presentation(errors: list[str]) -> None:
     required_files = {
         "DockHost.qml": ("import qs.Titonium.Core.Screens", "model: ScreenPolicy.screens"),
-        "DockWindow.qml": ("PanelWindow {", "titonium-dock", "mask: Region {"),
-        "DockSurface.qml": ("import qs.Titonium.Services.Dock", "DockAppButton"),
-        "DockAppButton.qml": ("DockService.activateOrLaunch", "DockService.launchNew"),
-        "DockItemMenuCoordinator.qml": ("SurfaceManager.open", "DockItemMenuSurface.qml"),
-        "DockItemMenuSurface.qml": ("SurfaceManager.close", "DockService.closeActive"),
+        "DockWindow.qml": ("PanelWindow {", "titonium-dock", "mask: Region {",
+            "WlrKeyboardFocus.OnDemand", "WlrLayer.Overlay", "ExclusionMode.Normal"),
+        "DockSurface.qml": ("import qs.Titonium.Services.Dock", "DockAppButton", "itemMenu.active"),
+        "DockAppButton.qml": ("DockService.activateOrLaunch", "DockService.launchNew",
+            "QtControls.ToolTip", "size: root.iconSize"),
+        "DockItemMenuCoordinator.qml": ("SurfaceManager.open", "DockItemMenuSurface.qml",
+            "function menuItem(dockItem: var): var"),
+        "DockItemMenuSurface.qml": ("SurfaceManager.close", "DockService.closeActive",
+            "root.item?.runningCount > 0", "menuColumn.implicitHeight + menuPanel.padding * 2"),
         "qmldir": ("module qs.Titonium.Dock", "DockHost 1.0 DockHost.qml"),
     }
     for filename, fragments in required_files.items():
@@ -81,6 +85,9 @@ def validate_presentation(errors: list[str]) -> None:
         for forbidden in ("Process", "FileView", "Timer {", "MultiEffect", "ShaderEffect", "hyprctl"):
             if forbidden in source:
                 errors.append(f"Dock presentation has forbidden dependency: {filename}: {forbidden}")
+    window = PRESENTATION_ROOT / "DockWindow.qml"
+    if window.is_file() and "WlrLayershell.exclusionMode: ExclusionMode.Ignore" in window.read_text(encoding="utf-8"):
+        errors.append("Dock pinned reservation must not use click-through exclusion mode")
 
 
 def qml_block(source: str, start: int) -> str:

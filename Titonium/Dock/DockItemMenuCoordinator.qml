@@ -14,8 +14,23 @@ QtObject {
         return "dock-item-menu:" + screen.name + ":" + appId;
     }
 
-    function open(appId: string, invoker: var, screen: var): bool {
-        const owner = root.ownerFor(appId, screen);
+    function menuItem(dockItem: var): var {
+        if (!dockItem || typeof dockItem.appId !== "string" || dockItem.appId.trim().length === 0)
+            return null;
+        return {
+            "appId": dockItem.appId,
+            "name": typeof dockItem.name === "string" ? dockItem.name : dockItem.appId,
+            "icon": typeof dockItem.icon === "string" ? dockItem.icon : "apps",
+            "runningCount": Math.max(0, Number(dockItem.runningCount) || 0),
+            "active": dockItem.active === true,
+            "urgent": dockItem.urgent === true,
+            "pinned": dockItem.pinned === true,
+        };
+    }
+
+    function open(dockItem: var, invoker: var, screen: var): bool {
+        const item = root.menuItem(dockItem);
+        const owner = root.ownerFor(item?.appId || "", screen);
         if (!owner || !invoker)
             return false;
         if (SurfaceManager.active)
@@ -25,7 +40,7 @@ QtObject {
             "keyboardFocus": "exclusive",
             "closeOnMonitorChange": true,
             "ownerId": owner,
-            "appId": appId,
+            "item": item,
             "invoker": invoker,
         }, screen);
     }

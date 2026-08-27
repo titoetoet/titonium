@@ -17,6 +17,7 @@ FocusScope {
     readonly property real hoverScale: 1.12
     readonly property int hoverLift: 4
     readonly property bool hovered: surfaceHover.hovered
+    readonly property bool itemMenuActive: itemMenu.active
     signal applicationsRequested(var screen)
 
     implicitWidth: dockRow.implicitWidth + Metrics.spacingSmall * 2
@@ -101,8 +102,8 @@ FocusScope {
                 dockItem: modelData
                 hoverScale: root.hoverScale
                 hoverLift: root.hoverLift
-                onMenuRequested: (appId, invoker) => itemMenu.open(
-                    appId, invoker, root.screenModel)
+                onMenuRequested: (dockItem, invoker) => itemMenu.open(
+                    dockItem, invoker, root.screenModel)
             }
         }
 

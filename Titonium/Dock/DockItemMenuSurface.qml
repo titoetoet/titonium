@@ -14,7 +14,8 @@ FocusScope {
     property var descriptor: ({})
     property var screen: null
     readonly property string ownerId: root.descriptor?.ownerId || ""
-    readonly property string appId: root.descriptor?.appId || ""
+    readonly property var item: root.descriptor?.item || null
+    readonly property string appId: root.item?.appId || ""
     readonly property var invoker: root.descriptor?.invoker || null
 
     anchors.fill: parent
@@ -51,12 +52,14 @@ FocusScope {
     Shared.Panel {
         id: menuPanel
         width: 220
+        height: menuColumn.implicitHeight + menuPanel.padding * 2
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
         anchors.bottomMargin: 80
         customColor: Theme.surface
 
         ColumnLayout {
+            id: menuColumn
             anchors.fill: parent
             spacing: Metrics.spacingSmall
 
@@ -73,7 +76,7 @@ FocusScope {
 
             Shared.Button {
                 Layout.fillWidth: true
-                label: I18n.tr("dock.menu.pin")
+                label: I18n.tr(root.item?.pinned ? "dock.menu.unpin" : "dock.menu.pin")
                 iconName: "keep"
                 contentAlignment: Qt.AlignLeft
                 onTriggered: {
@@ -88,6 +91,8 @@ FocusScope {
                 iconName: "close"
                 variant: "danger"
                 contentAlignment: Qt.AlignLeft
+                visible: root.item?.runningCount > 0
+                enabled: root.item?.runningCount > 0
                 onTriggered: {
                     DockService.closeActive(root.appId);
                     root.close();

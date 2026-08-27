@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Controls as QtControls
 import qs.Titonium.Core.Runtime
 import qs.Titonium.Services.Dock
 import qs.Titonium.Shared as Shared
@@ -14,7 +15,7 @@ FocusScope {
     property int hoverLift: 4
     readonly property int iconSize: 40
     readonly property bool hovered: hoverHandler.hovered
-    signal menuRequested(string appId, var invoker)
+    signal menuRequested(var dockItem, var invoker)
 
     width: root.iconSize
     height: root.iconSize
@@ -47,7 +48,7 @@ FocusScope {
     Shared.Icon {
         anchors.centerIn: parent
         name: root.dockItem?.icon || "apps"
-        size: 26
+        size: root.iconSize
         tone: root.dockItem?.urgent ? "warning" : (root.dockItem?.active ? "accent" : "primary")
         accessibleName: ""
     }
@@ -64,6 +65,11 @@ FocusScope {
     }
 
     HoverHandler { id: hoverHandler; cursorShape: Qt.PointingHandCursor }
+    QtControls.ToolTip.visible: root.hovered
+    QtControls.ToolTip.text: I18n.tr("dock.application_tooltip", {
+        "name": root.dockItem?.name || "",
+        "count": root.dockItem?.runningCount || 0,
+    })
     TapHandler {
         acceptedButtons: Qt.LeftButton
         onTapped: {
@@ -82,7 +88,7 @@ FocusScope {
         acceptedButtons: Qt.RightButton
         onTapped: {
             root.forceActiveFocus(Qt.MouseFocusReason);
-            root.menuRequested(root.dockItem.appId, root);
+            root.menuRequested(root.dockItem, root);
         }
     }
     Keys.onPressed: event => {
@@ -91,7 +97,7 @@ FocusScope {
             event.accepted = true;
         } else if (event.key === Qt.Key_Menu || (event.key === Qt.Key_F10
                 && (event.modifiers & Qt.ShiftModifier) !== 0)) {
-            root.menuRequested(root.dockItem.appId, root);
+            root.menuRequested(root.dockItem, root);
             event.accepted = true;
         }
     }
