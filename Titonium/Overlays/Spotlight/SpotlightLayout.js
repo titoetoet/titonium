@@ -44,10 +44,22 @@ function headerCategoryGap() {
 }
 
 function categoryGridGap() {
-    return 32;
+    return 28;
 }
 
 function categoryHorizontalInset() {
+    return 12;
+}
+
+function categoryControlHeight() {
+    return 40;
+}
+
+function categoryWidthBonus() {
+    return 8;
+}
+
+function categorySpacing() {
     return 12;
 }
 

@@ -291,7 +291,7 @@ FocusScope {
 
                 Row {
                     id: categoryRow
-                    spacing: Metrics.spacingSmall
+                    spacing: SpotlightLayout.categorySpacing()
 
                     Repeater {
                         model: spotlightModel.categories
@@ -301,6 +301,8 @@ FocusScope {
                             label: I18n.tr("spotlight.category." + modelData.id)
                             variant: "quiet"
                             size: SpotlightVisual.categoryControlSize()
+                            width: implicitWidth + SpotlightLayout.categoryWidthBonus()
+                            height: SpotlightLayout.categoryControlHeight()
                             labelPixelSize: SpotlightVisual.categoryLabelSize()
                             selected: spotlightModel.categoryId === modelData.id
                             backgroundRadius: height / 2

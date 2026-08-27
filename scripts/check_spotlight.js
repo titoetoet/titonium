@@ -153,10 +153,16 @@ assertEqual(layout.panelContentTopInset(), 8,
     "Spotlight content keeps a calm inset below the panel edge");
 assertEqual(layout.headerCategoryGap(), 32,
     "header and categories use the measured reference rhythm");
-assertEqual(layout.categoryGridGap(), 32,
+assertEqual(layout.categoryGridGap(), 28,
     "category movement preserves the established application grid position");
 assertEqual(layout.categoryHorizontalInset(), 12,
     "category labels align with the reference's inset text rail");
+assertEqual(layout.categoryControlHeight(), 40,
+    "category pills use the approved taller local control height");
+assertEqual(layout.categoryWidthBonus(), 8,
+    "category pills gain local horizontal breathing room");
+assertEqual(layout.categorySpacing(), 12,
+    "category labels use the approved relaxed inter-pill rhythm");
 assertEqual(spotlightSurfaceSource.includes("Layout.bottomMargin: SpotlightLayout.headerCategoryGap()"), true,
     "header-to-category rhythm is explicit instead of inherited from one generic spacing");
 assertEqual(spotlightSurfaceSource.includes("Layout.bottomMargin: SpotlightLayout.categoryGridGap()"), true,

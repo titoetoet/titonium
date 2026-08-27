@@ -3,8 +3,8 @@
 ## Evidence
 
 - Source visual truth: `/home/cole/.codex/generated_images/01a037cb-1907-7283-b61a-d2511a403983/exec-98c7d2ff-8ef8-4088-bdbd-76f38f52e398.png`
-- Verified implementation screenshot: `/tmp/titonium-spotlight-header-final.png`
-- Final normalized comparison: `/tmp/titonium-spotlight-header-final-compare.png`
+- Verified implementation screenshot: `/tmp/titonium-spotlight-category-pill-final.png`
+- Final normalized comparison: `/tmp/titonium-spotlight-category-pill-final-compare.png`
 - Source pixels: 1672 × 941, generated desktop reference, density unspecified.
 - Implementation pixels: 3840 × 2160 on DP-1; Quickshell logical viewport 2560 × 1440 at scale 1.5.
 - Density normalization: source panel crop 600 × 520 and implementation panel crop 1290 × 1110 were both normalized to 860 × 740 before side-by-side inspection.
@@ -37,6 +37,7 @@ The normalized panel comparison was required because the header controls, search
 7. The final user-directed pass restored three independent rounded scope controls and found a P2 vertical-rhythm mismatch: one generic 12px layout gap placed the category rail and first application row too high while stretching later rows. The content now uses an 8px top inset, a 20px header-to-category gap and a 56px category-to-grid break. Horizontal app centers and the 860 × 740 frame were retained because normalized comparison showed they already matched the reference. Browse pages no longer preselect the first application; search-result selection and Enter activation remain unchanged.
 8. The category-rail pass moved only the text controls 12px down and 12px inward, raised their label size from 14px to 15px, and compensated the lower gap from 56px to 44px. The normalized comparison confirms the application icons and indicator did not move while the text baseline now follows the reference.
 9. The final header-scale pass raised the identity and scope glyphs from 28px to 32px, the scope controls from 44px to 48px and the search field from 46px to 50px. Category controls now use the shared 36px medium size; reducing the category-to-grid gap to 32px compensates for the larger header and category controls, preserving the established app-grid and indicator positions.
+10. The category-pill refinement remains local to Spotlight: pill height is 40px, each pill gains 8px of width, and inter-pill spacing is 12px. The category-to-grid gap falls to 28px so the larger text rail does not move the application grid or density indicator. Shared Button, Metrics and global typography contracts remain unchanged.
 
 ## Interaction and accessibility checks
 
