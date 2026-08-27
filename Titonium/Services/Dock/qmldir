@@ -1,0 +1,2 @@
+module qs.Titonium.Services.Dock
+singleton DockStore 1.0 DockStore.qml

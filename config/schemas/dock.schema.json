@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "titonium.dock/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schemaVersion",
+    "pinnedIds",
+    "pinnedOpen",
+    "autoHide"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "const": "titonium.dock/v1"
+    },
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "pinnedIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "pinnedOpen": {
+      "type": "boolean"
+    },
+    "autoHide": {
+      "type": "boolean"
+    }
+  }
+}
