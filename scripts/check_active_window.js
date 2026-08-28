@@ -6,11 +6,15 @@ const path = require("node:path");
 const vm = require("node:vm");
 
 const root = path.join(__dirname, "..");
-const rulesPath = path.join(root, "Titonium", "Bar", "islands", "CenterActivityRules.js");
-const islandPath = path.join(root, "Titonium", "Bar", "islands", "CenterIsland.qml");
+const rulesPath = path.join(root, "Titonium", "Bar", "islands", "ActiveWindowRules.js");
+const pillPath = path.join(root, "Titonium", "Bar", "islands", "ActiveWindowPill.qml");
 
 if (!fs.existsSync(rulesPath)) {
-    console.error("FAIL missing Titonium/Bar/islands/CenterActivityRules.js");
+    console.error("FAIL missing Titonium/Bar/islands/ActiveWindowRules.js");
+    process.exit(1);
+}
+if (!fs.existsSync(pillPath)) {
+    console.error("FAIL missing Titonium/Bar/islands/ActiveWindowPill.qml");
     process.exit(1);
 }
 
@@ -38,11 +42,11 @@ assert.deepEqual(JSON.parse(JSON.stringify(rules.presentation(
     { appName: "Titonium", title: "Desktop" });
 console.log("PASS Center activity two-field presentation fixtures");
 
-const island = fs.readFileSync(islandPath, "utf8");
+const pill = fs.readFileSync(pillPath, "utf8");
 for (const fragment of [
     "HyprlandService.activeWindow",
     "ApplicationService.nameForAppId",
-    "CenterActivityRules.label",
+    "ActiveWindowRules.label",
     "implicitWidth: Math.min(520",
     "activityRow.implicitWidth",
     "readonly property var presentation:",
@@ -55,12 +59,12 @@ for (const fragment of [
     "Text.ElideRight",
     "maximumLineCount: 1",
 ]) {
-    assert.equal(island.includes(fragment), true, `CenterIsland missing ${fragment}`);
+    assert.equal(pill.includes(fragment), true, `ActiveWindowPill missing ${fragment}`);
 }
-assert.equal(island.includes("implicitWidth: 420"), false,
+assert.equal(pill.includes("implicitWidth: 420"), false,
     "Active Window must not retain the old fixed width");
-assert.equal(island.includes("id: activitySeparator"), false,
+assert.equal(pill.includes("id: activitySeparator"), false,
     "Center content must not use a vertical divider");
-assert.equal(island.includes("Layout.preferredWidth: 120"), false,
+assert.equal(pill.includes("Layout.preferredWidth: 120"), false,
     "short app names must not leave a fixed-width gap before the title");
 console.log("PASS bounded natural-width active-window presentation contract");

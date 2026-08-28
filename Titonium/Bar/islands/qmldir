@@ -1,6 +1,6 @@
 module qs.Titonium.Bar.islands
 StartIsland 1.0 StartIsland.qml
-CenterIsland 1.0 CenterIsland.qml
+ActiveWindowPill 1.0 ActiveWindowPill.qml
 CenterGroup 1.0 CenterGroup.qml
 EndIsland 1.0 EndIsland.qml
 NotificationPill 1.0 NotificationPill.qml

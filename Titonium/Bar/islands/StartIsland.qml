@@ -35,7 +35,7 @@ Item {
             }
         }
 
-        CenterIsland {
+        ActiveWindowPill {
             screen: root.screen
         }
     }

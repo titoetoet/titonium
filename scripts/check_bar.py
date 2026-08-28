@@ -16,7 +16,7 @@ def main() -> int:
     required = (
         "islands/qmldir",
         "islands/StartIsland.qml",
-        "islands/CenterIsland.qml",
+        "islands/ActiveWindowPill.qml",
         "islands/CenterGroup.qml",
         "islands/EndIsland.qml",
         "islands/NotificationPill.qml",
@@ -69,15 +69,16 @@ def main() -> int:
             "backgroundRadius: Metrics.radiusLarge",
         ),
         "islands/qmldir": (
+            "ActiveWindowPill 1.0 ActiveWindowPill.qml",
             "CenterGroup 1.0 CenterGroup.qml",
             "NotificationPill 1.0 NotificationPill.qml",
         ),
-        "islands/CenterIsland.qml": (
+        "islands/ActiveWindowPill.qml": (
             "CenterNotchCoordinator.toggle",
             "CenterNotchCoordinator.ownerScreenName",
             "HyprlandService.activeWindow",
             "ApplicationService.nameForAppId",
-            "CenterActivityRules.label",
+            "ActiveWindowRules.label",
             "implicitWidth: Math.min(520",
             "activityRow.implicitWidth",
             "readonly property var presentation:",
@@ -243,9 +244,9 @@ def main() -> int:
         if "Theme.focus" in source:
             errors.append("Active workspace must not use the global blue focus border")
 
-    center_island = BAR / "islands/CenterIsland.qml"
-    if center_island.is_file():
-        source = center_island.read_text(encoding="utf-8")
+    active_window_pill = BAR / "islands/ActiveWindowPill.qml"
+    if active_window_pill.is_file():
+        source = active_window_pill.read_text(encoding="utf-8")
         if "implicitWidth: 420" in source:
             errors.append("Active Window must size naturally instead of retaining a fixed width")
         if "id: activitySeparator" in source or "Layout.preferredWidth: 120" in source:
@@ -254,8 +255,10 @@ def main() -> int:
     start_island = BAR / "islands/StartIsland.qml"
     if start_island.is_file():
         source = start_island.read_text(encoding="utf-8")
-        if not (0 <= source.find("Workspaces {") < source.find("CenterIsland {")):
+        if not (0 <= source.find("Workspaces {") < source.find("ActiveWindowPill {")):
             errors.append("Active Window must sit immediately after Workspaces in StartIsland")
+        if "CenterIsland {" in source:
+            errors.append("StartIsland must not use CenterIsland for Active Window")
         if "count: 5" not in source:
             errors.append("StartIsland must render five workspace slots")
 
@@ -303,9 +306,9 @@ def main() -> int:
         if path.is_file() and hashlib.sha256(path.read_bytes()).hexdigest() != expected_hash:
             errors.append(f"notification batch changed protected Input Method: {path.relative_to(ROOT)}")
 
-    center_island = BAR / "islands/CenterIsland.qml"
-    if center_island.is_file() and center_island.read_text(encoding="utf-8").count("Shared.Surface {") != 1:
-        errors.append("Titonium Center must own one rounded surface after Pin is detached")
+    active_window_pill = BAR / "islands/ActiveWindowPill.qml"
+    if active_window_pill.is_file() and active_window_pill.read_text(encoding="utf-8").count("Shared.Surface {") != 1:
+        errors.append("Active Window must own one rounded surface after Pin is detached")
 
     for relative in (
         "Overlays/Audio/AudioPopupSurface.qml",

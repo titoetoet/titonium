@@ -8,7 +8,7 @@ import qs.Titonium.Services.Applications
 import qs.Titonium.Services.Hyprland
 import qs.Titonium.Shared as Shared
 import qs.Titonium.Theme
-import "CenterActivityRules.js" as CenterActivityRules
+import "ActiveWindowRules.js" as ActiveWindowRules
 
 FocusScope {
     id: root
@@ -17,9 +17,9 @@ FocusScope {
     readonly property var activeWindow: HyprlandService.activeWindow
     readonly property string appName: root.activeWindow
         ? ApplicationService.nameForAppId(root.activeWindow.appId) : ""
-    readonly property string activityLabel: CenterActivityRules.label(
+    readonly property string activityLabel: ActiveWindowRules.label(
         root.appName, root.activeWindow?.title || "")
-    readonly property var presentation: CenterActivityRules.presentation(
+    readonly property var presentation: ActiveWindowRules.presentation(
         root.appName,
         root.activeWindow?.title || "",
         I18n.tr("menubar.center_notch.active"),
