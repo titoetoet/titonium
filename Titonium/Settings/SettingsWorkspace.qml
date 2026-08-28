@@ -13,6 +13,14 @@ Item {
 
     readonly property var navigationEntries: SettingsCatalog.navigationEntries()
 
+    function componentFor(pageId: string): Component {
+        if (pageId === "appearance")
+            return appearancePage;
+        if (pageId === "spotlight")
+            return spotlightPage;
+        return generalPage;
+    }
+
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
@@ -106,7 +114,7 @@ Item {
                 Layout.fillHeight: true
                 Layout.margins: 24
                 active: SettingsCoordinator.active
-                sourceComponent: generalPage
+                sourceComponent: root.componentFor(SettingsCoordinator.requestedPage)
             }
         }
 
@@ -155,6 +163,16 @@ Item {
     Component {
         id: generalPage
         GeneralPage {}
+    }
+
+    Component {
+        id: appearancePage
+        AppearancePage {}
+    }
+
+    Component {
+        id: spotlightPage
+        SpotlightPage {}
     }
 
     Rectangle {

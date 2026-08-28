@@ -73,7 +73,7 @@ FocusScope {
             nextMode,
             Preferences.reducedMotion,
             root.spotlightSettings.pageTransition || "slide-fade",
-            root.spotlightSettings.transitionDuration || 220
+            root.spotlightSettings.transitionDuration ?? 220
         );
         root.loadedBodyMode = nextMode;
         root.activeBodyTransitionDuration = transitionPlan.duration;

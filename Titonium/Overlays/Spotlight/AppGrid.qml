@@ -18,7 +18,8 @@ FocusScope {
     readonly property int gap: Metrics.spacingSmall
     readonly property var spotlightSettings: Preferences.spotlight
     readonly property int transitionDuration: Preferences.reducedMotion
-        || root.spotlightSettings.pageTransition === "none" ? 0 : (root.spotlightSettings.transitionDuration || 220)
+        || root.spotlightSettings.pageTransition === "none" ? 0
+            : (root.spotlightSettings.transitionDuration ?? 220)
 
     ColumnLayout {
         anchors.fill: parent
@@ -40,7 +41,8 @@ FocusScope {
                 highlightRangeMode: ListView.StrictlyEnforceRange
                 preferredHighlightBegin: 0
                 preferredHighlightEnd: width
-                highlightMoveDuration: root.transitionDuration
+                highlightMoveDuration: root.spotlightSettings.pageTransition === "fade" ? 0
+                    : root.transitionDuration
                 clip: true
 
                 delegate: Item {
@@ -49,6 +51,7 @@ FocusScope {
                     width: pageView.width
                     height: pageView.height
                     opacity: root.spotlightSettings.pageTransition === "slide-fade"
+                            || root.spotlightSettings.pageTransition === "fade"
                         ? (ListView.isCurrentItem ? 1.0 : 0.18) : 1.0
                     scale: root.spotlightSettings.pageTransition === "slide-scale"
                         ? (ListView.isCurrentItem ? 1.0 : 0.94) : 1.0

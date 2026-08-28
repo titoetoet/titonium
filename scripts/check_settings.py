@@ -70,7 +70,8 @@ def main() -> int:
     workspace = require(SETTINGS / "SettingsWorkspace.qml", (
         "Layout.preferredHeight: 64", "Layout.preferredWidth: 208",
         "Loader {", "id: pageLoader", "active: SettingsCoordinator.active",
-        "GeneralPage {", "Preferences.dirty && !Preferences.savePending",
+        "GeneralPage {", "sourceComponent: root.componentFor(SettingsCoordinator.requestedPage)",
+        "Preferences.dirty && !Preferences.savePending",
         "SettingsCoordinator.discardAndClose()", "SettingsCoordinator.apply()",
         "SettingsCoordinator.requestClose()", "SettingsCoordinator.discardConfirmationVisible",
     ), errors)

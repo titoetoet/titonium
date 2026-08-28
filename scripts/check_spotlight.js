@@ -150,6 +150,12 @@ assertEqual(spotlightSurfaceSource.includes("ignoreUnknownSignals: true"), true,
     "the polymorphic body Loader does not warn when a scope lacks the app activation signal");
 assertEqual(spotlightSurfaceSource.includes("Layout.preferredWidth: SpotlightHeader.searchFieldWidth()"), true,
     "search width no longer consumes every remaining header pixel");
+assertEqual(spotlightSurfaceSource.includes("transitionDuration ?? 220"), true,
+    "Spotlight body transition preserves a configured zero duration");
+assertEqual(appGridSource.includes("transitionDuration ?? 220"), true,
+    "application page transition preserves a configured zero duration");
+assertEqual(appGridSource.includes('pageTransition === "fade" ? 0'), true,
+    "fade changes pages without horizontal travel");
 
 assertEqual(scope.next("applications", 1), "clipboard", "Tab advances Apps to Clipboard");
 assertEqual(scope.next("clipboard", 1), "system", "Tab advances Clipboard to System Search");
@@ -289,11 +295,15 @@ assertEqual(stableOrder.compare("Zulu", "Álpha"), -1, "stable comparator is loc
 
 assertDeepEqual(transition.plan("browse", "results", false, "slide-fade", 500), {
     animated: true,
-    duration: 220,
+    duration: 500,
     startOpacity: 0,
     startOffset: 8
-}, "grid-to-results transition is short and bounded");
-assertEqual(transition.plan("results", "browse", false, "slide", 120).startOffset, -8, "results-to-grid reverses position offset");
+}, "grid-to-results transition honors the validated Settings range");
+assertEqual(transition.plan("results", "browse", false, "slide-fade", 120).startOffset, -8, "results-to-grid reverses position offset");
+assertEqual(transition.plan("browse", "results", false, "fade", 120).startOffset, 0,
+    "fade does not inherit slide displacement");
+assertEqual(transition.plan("browse", "results", false, "fade", 0).animated, false,
+    "zero duration disables animation instead of falling back to 220ms");
 assertEqual(transition.plan("browse", "results", true, "slide-fade", 220).animated, false, "reduced motion disables grid-result motion");
 assertEqual(transition.plan("browse", "results", false, "none", 220).duration, 0, "none transition has zero duration");
 assertEqual(transition.plan("results", "clipboard", false, "slide-fade", 220).animated, false, "Clipboard branch does not inherit grid-result motion");

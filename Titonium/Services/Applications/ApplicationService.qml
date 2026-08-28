@@ -99,6 +99,10 @@ QtObject {
         return Visibility.isVisible(Preferences.hiddenApplicationIds, entryId);
     }
 
+    function hiddenIdsForVisibility(hiddenIds: var, entryId: string, visible: bool): var {
+        return Visibility.setVisible(hiddenIds, entryId, visible);
+    }
+
     property Connections desktopEntryConnections: Connections {
         target: DesktopEntries
         function onApplicationsChanged(): void { root.refresh(); }
