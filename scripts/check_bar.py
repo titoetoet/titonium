@@ -19,6 +19,7 @@ def main() -> int:
         "islands/ActiveWindowPill.qml",
         "islands/CenterIsland.qml",
         "islands/CenterGroup.qml",
+        "islands/TopbarPin.qml",
         "islands/EndIsland.qml",
         "islands/NotificationPill.qml",
         "islands/ConnectivityPill.qml",
@@ -55,27 +56,33 @@ def main() -> int:
             "id: edgeReveal",
             "hideDelay.restart()",
             "mask: Region {",
+            "Region { item: bar.pinHitbox }",
         ),
         "Bar.qml": ("StartIsland {", "CenterGroup {", "EndIsland {",
+                    "TopbarPin {", "id: topbarPin",
+                    "x: centerGroup.x + centerGroup.width + Metrics.spacingSmall",
                     "BarLayout.centerX(root.width, centerGroup.width)",
                     "readonly property alias centerHitbox: centerGroup",
+                    "readonly property alias pinHitbox: topbarPin",
+                    "signal centerRequested(var screen)",
                     "readonly property bool hovered:"),
         "islands/CenterGroup.qml": (
             "CenterIsland {",
             "id: centerIsland",
+            "signal notchRequested(var screen)",
+            "onNotchRequested: screen => root.notchRequested(screen)",
+        ),
+        "islands/TopbarPin.qml": (
             "BarVisibilityState.togglePinned()",
-            "menubar.bar_pin.pin",
-            "menubar.bar_pin.autohide",
-            "id: pinPill",
-            "radius: Metrics.radiusLarge",
-            "showFocusRing: false",
+            "menubar.bar_pin.pin", "menubar.bar_pin.autohide",
+            "radius: Metrics.radiusLarge", "showFocusRing: false",
             "backgroundRadius: Metrics.radiusLarge",
-            "Row {",
         ),
         "islands/qmldir": (
             "ActiveWindowPill 1.0 ActiveWindowPill.qml",
             "CenterIsland 1.0 CenterIsland.qml",
             "CenterGroup 1.0 CenterGroup.qml",
+            "TopbarPin 1.0 TopbarPin.qml",
             "NotificationPill 1.0 NotificationPill.qml",
         ),
         "islands/ActiveWindowPill.qml": (
@@ -270,14 +277,9 @@ def main() -> int:
     center_group = BAR / "islands/CenterGroup.qml"
     if center_group.is_file():
         source = center_group.read_text(encoding="utf-8")
-        if "id: pinPill" not in source:
-            errors.append("TopBar Pin must remain in the centered group")
-        if not (0 <= source.find("CenterIsland {") < source.find("id: pinPill")):
-            errors.append("CenterGroup must place CenterIsland before the independent Pin")
-        if source.count("Shared.Surface {") != 1:
-            errors.append("CenterGroup must give the detached Pin exactly one rounded surface")
-        if "implicitWidth: centerRow.implicitWidth +" in source:
-            errors.append("Center hover controls must meet the outer pill edge without inset padding")
+        for forbidden in ("BarVisibilityState", "pinPill", "keep_off", "menubar.bar_pin"):
+            if forbidden in source:
+                errors.append(f"CenterGroup must not own detached Pin behavior: {forbidden}")
 
     center_island = BAR / "islands/CenterIsland.qml"
     if center_island.is_file():
@@ -286,7 +288,7 @@ def main() -> int:
             "CenterAttentionService.presentation",
             "CenterAttentionService.indicators",
             "CenterFocusStore.text",
-            "CenterFocusStore.openScratchpad()",
+            "signal notchRequested(var screen)",
             "Text.ElideRight",
             "maximumLineCount: 1",
             "Layout.maximumWidth: 320",
@@ -294,7 +296,7 @@ def main() -> int:
             "Shared.Surface {",
             "Repeater {",
             "TapHandler {",
-            "menubar.center.accessible",
+            "menubar.center_notch.accessible",
         ):
             if fragment not in source:
                 errors.append(f"CenterIsland missing attention-view contract: {fragment}")
@@ -310,6 +312,7 @@ def main() -> int:
             "FileView {",
             "ShaderEffect",
             "loops: Animation.Infinite",
+            "CenterFocusStore.openScratchpad()",
         ):
             if forbidden in source:
                 errors.append(f"CenterIsland has forbidden ownership: {forbidden}")
@@ -437,6 +440,8 @@ def main() -> int:
         "center_notch.tab.settings",
         "center_notch.settings.unavailable",
         "center_notch.overview.description",
+        "center_notch.overview.daily_focus",
+        "center_notch.overview.daily_focus.open",
         "center_notch.overview.layout",
         "center_notch.overview.keyboard",
         "center_notch.overview.lazy",
@@ -475,6 +480,10 @@ def main() -> int:
     if app_path.is_file():
         app_source = app_path.read_text(encoding="utf-8")
         for fragment in (
+            "function openCenterNotch(requestedScreen: var, pageId: string): string",
+            "SettingsCoordinator.forceCancelAndClose()",
+            "onCenterRequested: screen => root.openCenterNotch(screen, \"overview\")",
+            "onSettingsRequested: screen => root.openSettings(screen, \"general\")",
             'target: "centerNotch"',
             "CenterNotchCoordinator.close()",
             "function open(page: string): string",

@@ -11,6 +11,7 @@ FocusScope {
     id: root
 
     required property var screen
+    signal notchRequested(var screen)
 
     readonly property var eventPresentation: CenterAttentionService.presentation
     readonly property var indicators: CenterAttentionService.indicators
@@ -26,7 +27,7 @@ FocusScope {
     activeFocusOnTab: true
 
     function activate(): void {
-        CenterFocusStore.openScratchpad();
+        root.notchRequested(root.screen);
     }
 
     Shared.Surface {
@@ -79,7 +80,7 @@ FocusScope {
     TapHandler {
         onTapped: {
             root.forceActiveFocus(Qt.MouseFocusReason);
-            CenterFocusStore.openScratchpad();
+            root.activate();
         }
     }
 
@@ -92,6 +93,6 @@ FocusScope {
     }
 
     Accessible.role: Accessible.Button
-    Accessible.name: I18n.tr("menubar.center.accessible") + ": " + root.primaryText
+    Accessible.name: I18n.tr("menubar.center_notch.accessible") + ": " + root.primaryText
     Accessible.focusable: true
 }

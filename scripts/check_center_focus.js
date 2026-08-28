@@ -60,3 +60,16 @@ for (let day = 1; day <= 31; day += 1)
     observed.add(rules.deterministicFallback("One\nTwo\nThree", new Date(2026, 7, day)));
 assert.equal(observed.size > 1, true);
 console.log("PASS stable date hashing distributes normalized prompts");
+
+const centerIsland = fs.readFileSync(path.join(root, "Titonium", "Bar", "islands",
+    "CenterIsland.qml"), "utf8");
+const overview = fs.readFileSync(path.join(root, "Titonium", "Bar", "notch",
+    "OverviewPage.qml"), "utf8");
+assert.equal(centerIsland.includes("CenterFocusStore.openScratchpad()"), false,
+    "TopBar Center must open the Notch instead of Daily Focus directly");
+assert.match(centerIsland, /signal notchRequested\(var screen\)/);
+assert.equal((overview.match(/CenterFocusStore\.openScratchpad\(\)/g) || []).length, 1,
+    "Overview owns one explicit Daily Focus action");
+assert.match(overview, /center_notch\.overview\.daily_focus/);
+assert.match(overview, /center_notch\.overview\.daily_focus\.open/);
+console.log("PASS Daily Focus moved behind explicit Center Overview action");

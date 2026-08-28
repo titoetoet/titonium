@@ -8,6 +8,7 @@ import qs.Titonium.Services.Hyprland
 PanelWindow {
     id: window
     required property ShellScreen screenModel
+    signal settingsRequested(var screen)
     readonly property bool ownsNotch: CenterNotchCoordinator.ownerScreenName === screenModel.name
 
     screen: window.screenModel
@@ -26,6 +27,7 @@ PanelWindow {
         active: window.ownsNotch
         sourceComponent: CenterNotchSurface {
             screenModel: window.screenModel
+            onSettingsRequested: screen => window.settingsRequested(screen)
         }
     }
 

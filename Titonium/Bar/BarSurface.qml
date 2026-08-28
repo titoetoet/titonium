@@ -10,6 +10,7 @@ import "BarVisibilityRules.js" as BarVisibilityRules
 PanelWindow {
     id: root
     required property ShellScreen screenModel
+    signal centerRequested(var screen)
     readonly property int barHeight: Metrics.barHeight
     readonly property int edgeRevealHeight: 2
     readonly property bool revealRequested: BarVisibilityRules.shouldReveal(
@@ -27,6 +28,7 @@ PanelWindow {
     mask: Region {
         Region { item: bar.startHitbox }
         Region { item: bar.centerHitbox }
+        Region { item: bar.pinHitbox }
         Region { item: bar.endHitbox }
         Region { item: edgeReveal }
     }
@@ -37,6 +39,7 @@ PanelWindow {
         height: root.barHeight
         y: root.barRevealed ? 0 : -root.barHeight + root.edgeRevealHeight
         screen: root.screenModel
+        onCenterRequested: screen => root.centerRequested(screen)
 
         Behavior on y {
             NumberAnimation { duration: Motion.fast; easing.type: Easing.OutCubic }

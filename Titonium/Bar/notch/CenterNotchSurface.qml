@@ -7,6 +7,7 @@ import qs.Titonium.Theme
 FocusScope {
     id: root
     required property ShellScreen screenModel
+    signal settingsRequested(var screen)
     readonly property real panelTop: Metrics.barHeight + Metrics.barSpacing
 
     anchors.fill: parent
@@ -37,6 +38,7 @@ FocusScope {
         anchors.top: parent.top
         anchors.topMargin: root.panelTop
         anchors.horizontalCenter: parent.horizontalCenter
+        onSettingsRequested: root.settingsRequested(root.screenModel)
     }
 
     Keys.onEscapePressed: event => {

@@ -68,7 +68,22 @@ Scope {
             + SettingsCoordinator.requestedPage : "unavailable:busy";
     }
 
-    BarHost {}
+    function openCenterNotch(requestedScreen: var, pageId: string): string {
+        const screen = ScreenRouter.screenForName(requestedScreen?.name
+            || HyprlandService.focusedMonitorName);
+        if (!screen)
+            return "unavailable:no-screen";
+        SettingsCoordinator.forceCancelAndClose();
+        SurfaceManager.close("");
+        const opened = CenterNotchCoordinator.open(screen.name, pageId);
+        return opened ? "open:" + screen.name + ";page="
+            + CenterNotchCoordinator.requestedPage : "unavailable:no-screen";
+    }
+
+    BarHost {
+        onCenterRequested: screen => root.openCenterNotch(screen, "overview")
+        onSettingsRequested: screen => root.openSettings(screen, "general")
+    }
     DockHost {
         onApplicationsRequested: screen => root.openSpotlight("applications", "", "browse", screen)
     }
@@ -85,6 +100,15 @@ Scope {
                 SettingsCoordinator.forceCancelAndClose();
                 CenterNotchCoordinator.close();
             }
+        }
+    }
+
+    Connections {
+        target: CenterNotchCoordinator
+
+        function onActiveChanged(): void {
+            if (CenterNotchCoordinator.active)
+                SettingsCoordinator.forceCancelAndClose();
         }
     }
 
@@ -351,8 +375,7 @@ Scope {
             const screen = ScreenRouter.screenForName(HyprlandService.focusedMonitorName);
             if (!screen)
                 return "unavailable:no-screen";
-            CenterNotchCoordinator.open(screen.name, page);
-            return centerNotchIpc.state();
+            return root.openCenterNotch(screen, page);
         }
 
         function page(page: string): string {

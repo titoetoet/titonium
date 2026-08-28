@@ -93,6 +93,8 @@
     "center_notch.action.sleep": "Sleep",
     "center_notch.action.unavailable": "This action is not available yet.",
     "center_notch.overview.description": "A lightweight QML-native system hub built one capability at a time.",
+    "center_notch.overview.daily_focus": "Daily Focus",
+    "center_notch.overview.daily_focus.open": "Open today's focus scratchpad",
     "center_notch.overview.keyboard": "Keyboard navigation",
     "center_notch.overview.layout": "Screen-centered layout",
     "center_notch.overview.lazy": "Lazy page lifecycle",

@@ -10,7 +10,9 @@ Item {
     required property var screen
     readonly property alias startHitbox: startIsland
     readonly property alias centerHitbox: centerGroup
+    readonly property alias pinHitbox: topbarPin
     readonly property alias endHitbox: endIsland
+    signal centerRequested(var screen)
     readonly property bool hovered: barHover.hovered
     readonly property var optionalPlan: BarLayout.optionalVisibility(
         root.width,
@@ -31,6 +33,13 @@ Item {
         x: BarLayout.centerX(root.width, centerGroup.width)
         anchors.verticalCenter: parent.verticalCenter
         screen: root.screen
+        onNotchRequested: screen => root.centerRequested(screen)
+    }
+
+    TopbarPin {
+        id: topbarPin
+        x: centerGroup.x + centerGroup.width + Metrics.spacingSmall
+        anchors.verticalCenter: parent.verticalCenter
     }
 
     EndIsland {

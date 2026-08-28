@@ -59,3 +59,17 @@ assert.deepEqual(
 );
 
 console.log("PASS Center Notch state fixtures (12)");
+
+const barRoot = path.join(__dirname, "..", "Titonium", "Bar");
+const sources = Object.fromEntries([
+    "CenterNotch.qml", "CenterNotchSurface.qml", "CenterNotchWindow.qml", "../BarHost.qml",
+].map(relative => {
+    const file = path.join(barRoot, "notch", relative);
+    return [relative, fs.existsSync(file) ? fs.readFileSync(file, "utf8") : ""];
+}));
+assert.match(sources["CenterNotch.qml"], /signal settingsRequested\(\)/);
+assert.match(sources["CenterNotch.qml"], /onSettingsRequested: root\.settingsRequested\(\)/);
+assert.match(sources["CenterNotchSurface.qml"], /signal settingsRequested\(var screen\)/);
+assert.match(sources["CenterNotchWindow.qml"], /signal settingsRequested\(var screen\)/);
+assert.match(sources["../BarHost.qml"], /signal settingsRequested\(var screen\)/);
+console.log("PASS Center Notch Settings intent propagation");

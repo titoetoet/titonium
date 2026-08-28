@@ -10,6 +10,7 @@ FocusScope {
     id: root
     focus: true
     property string feedbackKey: ""
+    signal settingsRequested()
 
     Rectangle {
         anchors.fill: parent
@@ -36,7 +37,7 @@ FocusScope {
                 root.feedbackKey = "";
                 CenterNotchCoordinator.requestPage(pageId);
             }
-            onSettingsRequested: root.feedbackKey = "center_notch.settings.unavailable"
+            onSettingsRequested: root.settingsRequested()
         }
 
         Rectangle {

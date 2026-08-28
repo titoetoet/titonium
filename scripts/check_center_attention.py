@@ -11,6 +11,7 @@ FOCUS_STORE = CENTER / "CenterFocusStore.qml"
 QMLDIR = CENTER / "qmldir"
 APP = ROOT / "Titonium/App.qml"
 CENTER_VIEW = ROOT / "Titonium/Bar/islands/CenterIsland.qml"
+CENTER_OVERVIEW = ROOT / "Titonium/Bar/notch/OverviewPage.qml"
 ACCEPTANCE = ROOT / "scripts/center_attention_acceptance.sh"
 
 
@@ -131,10 +132,18 @@ def main() -> int:
             "CenterAttentionService.presentation",
             "CenterAttentionService.indicators",
             "CenterFocusStore.text",
-            "CenterFocusStore.openScratchpad()",
         ):
             if fragment not in source:
                 errors.append(f"Center view missing service projection: {fragment}")
+        if "CenterFocusStore.openScratchpad()" in source:
+            errors.append("TopBar Center must not bypass the Center Notch")
+
+    if CENTER_OVERVIEW.is_file():
+        source = CENTER_OVERVIEW.read_text(encoding="utf-8")
+        if source.count("CenterFocusStore.openScratchpad()") != 1:
+            errors.append("Center Overview must own exactly one explicit Daily Focus action")
+    else:
+        errors.append("missing Center Overview Daily Focus owner")
 
     bar_root = ROOT / "Titonium/Bar"
     for path in bar_root.rglob("*.qml"):

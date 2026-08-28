@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import qs.Titonium.Core.Runtime
+import qs.Titonium.Services.Center
 import qs.Titonium.Theme
 import qs.Titonium.Shared as Shared
 
@@ -26,6 +27,16 @@ FocusScope {
             text: I18n.tr("center_notch.overview.description")
             tone: "secondary"
             wrapMode: Text.WordWrap
+        }
+
+        Shared.Button {
+            Layout.fillWidth: true
+            label: I18n.tr("center_notch.overview.daily_focus")
+            iconName: "edit_note"
+            variant: "secondary"
+            contentAlignment: Qt.AlignLeft
+            accessibleName: I18n.tr("center_notch.overview.daily_focus.open")
+            onTriggered: CenterFocusStore.openScratchpad()
         }
 
         GridLayout {

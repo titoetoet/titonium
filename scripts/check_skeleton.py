@@ -90,9 +90,11 @@ def main() -> int:
     shell_path = ROOT / "shell.qml"
     if app_path.is_file():
         app_source = app_path.read_text(encoding="utf-8")
-        for contract in ("BarHost {}", "OverlayHost {}", 'target: "app"', 'target: "spotlight"'):
+        for contract in ("BarHost {", "OverlayHost {}", 'target: "app"', 'target: "spotlight"'):
             if contract not in app_source:
                 errors.append(f"minimal App is missing contract: {contract}")
+        if app_source.count("BarHost {") != 1:
+            errors.append("minimal App must compose exactly one BarHost")
         for retired in (
             "FrameHost",
             "SettingsCenter",

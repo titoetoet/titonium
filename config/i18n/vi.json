@@ -93,6 +93,8 @@
     "center_notch.action.sleep": "Tạm nghỉ",
     "center_notch.action.unavailable": "Tính năng này chưa khả dụng.",
     "center_notch.overview.description": "Trung tâm hệ thống QML-native nhẹ, được hoàn thiện theo từng chức năng.",
+    "center_notch.overview.daily_focus": "Tập trung hôm nay",
+    "center_notch.overview.daily_focus.open": "Mở ghi chú tập trung hôm nay",
     "center_notch.overview.keyboard": "Điều hướng bàn phím",
     "center_notch.overview.layout": "Bố cục giữa màn hình",
     "center_notch.overview.lazy": "Vòng đời trang lazy",
