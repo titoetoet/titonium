@@ -13,6 +13,7 @@ import qs.Titonium.Notifications
 import qs.Titonium.Services.Applications
 import qs.Titonium.Services.Audio
 import qs.Titonium.Services.Bluetooth
+import qs.Titonium.Services.Center
 import qs.Titonium.Services.Dock
 import qs.Titonium.Services.Hyprland
 import qs.Titonium.Services.Network

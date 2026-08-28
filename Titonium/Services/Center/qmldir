@@ -1,0 +1,2 @@
+module qs.Titonium.Services.Center
+singleton CenterAttentionService 1.0 CenterAttentionService.qml
