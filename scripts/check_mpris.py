@@ -88,7 +88,7 @@ def main() -> int:
     if app.count("import qs.Titonium.Services.Mpris") != 1:
         errors.append("App must import the MPRIS service module exactly once")
     for fragment in (
-        "Component.onCompleted: MprisService.activate()",
+        "MprisService.activate()",
         'target: "mpris"',
         "function state(): string { return MprisService.snapshot(); }",
     ):

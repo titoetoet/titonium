@@ -105,6 +105,13 @@ removes the passive media indicator without publishing a takeover. The Bar never
 The `mpris` IPC target exposes only `state()`. It provides no play, pause, seek, next, previous or
 player-selection method; controls remain deliberately outside this slice.
 
+`CenterTimerService` owns session-only named countdowns as absolute deadlines.
+`CenterTimerRules.js` selects the five-minute, one-minute and completion milestones, while one
+non-repeating QML timer wakes only for the nearest pending milestone across all countdowns.
+Active timers contribute a passive indicator; milestones publish semantic events into the shared
+Center arbiter. The dedicated `timer` IPC target exposes `start`, `cancel`, `acknowledge` and
+`state` without exposing raw priority or TTL.
+
 ## Audio slice boundaries
 
 `AudioService` is the only Titonium module permitted to import `Quickshell.Services.Pipewire`.

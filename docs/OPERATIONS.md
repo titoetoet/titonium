@@ -23,6 +23,18 @@ Hyprland owns `Super + Space` and `Super + V`. Feature work must not edit or rel
 `/home/cole/.config/hypr/hyprland.lua` or the dotfiles copy. `protected_acceptance.sh` verifies
 their hashes and bindings.
 
+## Center timers
+
+```bash
+qs -p /home/cole/Projects/titonium ipc call timer start tea 300 "Pha trà"
+qs -p /home/cole/Projects/titonium ipc call timer state
+qs -p /home/cole/Projects/titonium ipc call timer cancel tea
+qs -p /home/cole/Projects/titonium ipc call timer acknowledge tea
+```
+
+Timer IDs are replaced on a repeated `start`. Countdowns are session-only and disappear when
+Titonium restarts.
+
 ## Recovery
 
 If the current daemon fails, stop it and inspect foreground output:

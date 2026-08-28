@@ -28,7 +28,10 @@ import qs.Titonium.Osd.Audio
 Scope {
     id: root
 
-    Component.onCompleted: MprisService.activate()
+    Component.onCompleted: {
+        MprisService.activate();
+        CenterTimerService.activate();
+    }
 
     function openSpotlight(scope: string, query: string, stateMode: string, requestedScreen: var): string {
         CenterNotchCoordinator.close();
@@ -90,6 +93,29 @@ Scope {
     IpcHandler {
         target: "mpris"
         function state(): string { return MprisService.snapshot(); }
+    }
+
+    IpcHandler {
+        target: "timer"
+
+        function state(): string {
+            return CenterTimerService.snapshot();
+        }
+
+        function start(id: string, durationSeconds: int, label: string): string {
+            CenterTimerService.start(id, durationSeconds, label);
+            return CenterTimerService.snapshot();
+        }
+
+        function cancel(id: string): string {
+            CenterTimerService.cancel(id);
+            return CenterTimerService.snapshot();
+        }
+
+        function acknowledge(id: string): string {
+            CenterTimerService.acknowledge(id);
+            return CenterTimerService.snapshot();
+        }
     }
 
     IpcHandler {

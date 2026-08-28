@@ -290,3 +290,12 @@ shows track changes for 6 seconds, pause for 2 seconds and resume for 3 seconds,
 Daily Focus. The small media icon must remain only while playing. Restart Titonium while a player
 exists and confirm there is no startup flash; closing/stopping the selected player must not take
 over Center. No playback control is expected from the Bar in this slice.
+
+## Center Timer checkpoint
+
+Automated coverage includes absolute deadlines, future-only thresholds, simultaneous countdowns,
+exact cancellation, overdue completion, one-shot scheduler ownership and isolated IPC acceptance.
+For a manual check, start a short named timer and confirm the passive timer icon appears without
+replacing Daily Focus. Completion must take over Center, remove the passive icon and return to
+Daily Focus after acknowledgement. Restart Titonium with an active timer and confirm the
+session-only timer does not reappear.
