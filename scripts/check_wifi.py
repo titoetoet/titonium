@@ -70,6 +70,8 @@ def service_errors(value: str) -> list[str]:
         "readonly property bool wifiHardwareEnabled:",
         "readonly property bool scanning:",
         "readonly property string connectedName:",
+        "readonly property int connectedSignal:",
+        "readonly property string iconName:",
         "readonly property var networks:",
         "readonly property string stateKey:",
         "function setWifiEnabled(value: bool): bool",
@@ -128,6 +130,7 @@ def presentation_errors() -> list[str]:
         "import qs.Titonium.Services.Network", '"connected"', '"known"', '"available"',
         "onTriggered: NetworkService.setScanning(!NetworkService.scanning)",
         "WifiNetworkRow", "TapHandler", "Keys.onEscapePressed", "Component.onDestruction",
+        "name: NetworkService.iconName",
     ):
         if fragment not in popup:
             errors.append(f"missing Wi-Fi popup contract: {fragment}")
@@ -141,6 +144,9 @@ def presentation_errors() -> list[str]:
         "checked: root.network?.connected === true",
         "visible: root.network?.connected === true",
         "onToggled: checked =>",
+        "name: root.network?.signalIcon || \"signal_wifi_0_bar\"",
+        'name: "lock"',
+        "visible: root.network?.secure === true",
     ):
         if fragment not in row:
             errors.append(f"missing Wi-Fi row contract: {fragment}")
@@ -161,7 +167,7 @@ def presentation_errors() -> list[str]:
     for fragment in (
         "import qs.Titonium.Overlays.Network", "import qs.Titonium.Services.Network",
         "NetworkPopupCoordinator.toggle(root.screen, networkButton)", "NetworkService.stateKey",
-        "iconName: root.networkIconName", "enabled: NetworkService.available",
+        "iconName: NetworkService.iconName", "enabled: NetworkService.available",
     ):
         if fragment not in pill:
             errors.append(f"missing Wi-Fi Bar-button contract: {fragment}")

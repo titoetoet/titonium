@@ -42,6 +42,8 @@ QtObject {
     readonly property bool wifiHardwareEnabled: root.projection.wifiHardwareEnabled
     readonly property bool scanning: root.projection.scanning
     readonly property string connectedName: root.projection.connectedName
+    readonly property int connectedSignal: root.projection.connectedSignal
+    readonly property string iconName: root.projection.iconName
     readonly property var networks: root.projection.networks
     readonly property string stateKey: root.projection.stateKey
     readonly property int operationWarningLimit: 3
@@ -247,6 +249,8 @@ QtObject {
             wifiHardwareEnabled: root.wifiHardwareEnabled,
             scanning: root.scanning,
             connectedName: root.connectedName,
+            connectedSignal: root.connectedSignal,
+            iconName: root.iconName,
             networks: root.networks,
             stateKey: root.stateKey,
         });

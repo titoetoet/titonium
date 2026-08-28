@@ -29,9 +29,9 @@ function adjustOutput(value, delta, allowAmplification) {
 function volumeIcon(available, muted, volume) {
     if (available !== true || muted === true)
         return "volume_off";
-    if (!finite(volume) || volume <= 0)
+    if (!finite(volume) || volume <= 0.33)
         return "volume_mute";
-    return volume <= 0.5 ? "volume_down" : "volume_up";
+    return volume <= 0.66 ? "volume_down" : "volume_up";
 }
 
 function isPlaybackStream(node) {

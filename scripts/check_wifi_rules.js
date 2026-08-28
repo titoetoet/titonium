@@ -19,13 +19,13 @@ const rules = context;
 const plain = value => JSON.parse(JSON.stringify(value));
 
 const expectedFields = [
-    "connected", "id", "known", "name", "section", "secure", "securityKey", "signal", "signalKey", "stateKey", "transitioning",
+    "connected", "id", "known", "name", "section", "secure", "securityKey", "signal", "signalIcon", "signalKey", "stateKey", "transitioning",
 ];
 const assertDescriptor = network => assert.deepEqual(Object.keys(network).sort(), expectedFields);
 
 const unavailable = plain(rules.projectWifi(null));
 assert.deepEqual(Object.keys(unavailable).sort(), [
-    "available", "connectedName", "networks", "scanning", "stateKey", "wifiEnabled", "wifiHardwareEnabled",
+    "available", "connectedName", "connectedSignal", "iconName", "networks", "scanning", "stateKey", "wifiEnabled", "wifiHardwareEnabled",
 ]);
 assert.equal(unavailable.available, false);
 assert.equal(unavailable.stateKey, "wifi.unavailable");
@@ -52,6 +52,8 @@ const projected = plain(rules.projectWifi({
     ],
 }));
 assert.equal(projected.connectedName, "Office");
+assert.equal(projected.connectedSignal, 85);
+assert.equal(projected.iconName, "network_wifi");
 assert.equal(projected.scanning, true);
 assert.equal(projected.stateKey, "wifi.scanning");
 assert.deepEqual(projected.networks.map(network => network.name), ["Office", "guest", "Guest", "alpha", "Beta"]);
@@ -61,6 +63,9 @@ assert.equal(projected.networks[0].stateKey, "wifi.network.connected");
 assert.equal(projected.networks[0].securityKey, "wifi.security.secured");
 assert.equal(projected.networks[2].securityKey, "wifi.security.open");
 assert.equal(projected.networks[0].signalKey, "wifi.signal.excellent");
+assert.equal(projected.networks[0].signalIcon, "network_wifi");
+assert.equal(projected.networks[1].signalIcon, "network_wifi_1_bar");
+assert.equal(projected.networks[3].signalIcon, "network_wifi_3_bar");
 assert.equal(projected.networks[3].signalKey, "wifi.signal.good");
 projected.networks.forEach(assertDescriptor);
 assert.ok(!JSON.stringify(projected).match(/password|psk|secret/i));
@@ -97,5 +102,18 @@ assert.strictEqual(rules.preferredNativeForId([
 
 assert.equal(rules.signal(1), 100);
 assert.equal(rules.signal(0.82), 82);
+assert.equal(rules.signalIcon(0), "signal_wifi_0_bar");
+assert.equal(rules.signalIcon(1), "network_wifi_1_bar");
+assert.equal(rules.signalIcon(29), "network_wifi_1_bar");
+assert.equal(rules.signalIcon(30), "network_wifi_2_bar");
+assert.equal(rules.signalIcon(54), "network_wifi_2_bar");
+assert.equal(rules.signalIcon(55), "network_wifi_3_bar");
+assert.equal(rules.signalIcon(79), "network_wifi_3_bar");
+assert.equal(rules.signalIcon(80), "network_wifi");
+assert.equal(rules.barIcon(false, false, false, false, "", 0), "wifi_off");
+assert.equal(rules.barIcon(true, false, true, false, "", 0), "wifi_off");
+assert.equal(rules.barIcon(true, true, true, true, "", 0), "wifi_find");
+assert.equal(rules.barIcon(true, true, true, false, "", 0), "signal_wifi_0_bar");
+assert.equal(rules.barIcon(true, true, true, true, "Office", 55), "network_wifi_3_bar");
 
 console.log("PASS Wi-Fi rules fixtures");

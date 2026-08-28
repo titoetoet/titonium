@@ -25,6 +25,29 @@ function signalKey(value) {
     return "wifi.signal.none";
 }
 
+function signalIcon(value) {
+    const strength = typeof value === "number" && Number.isFinite(value)
+        ? Math.max(0, Math.min(100, value)) : 0;
+    if (strength >= 80)
+        return "network_wifi";
+    if (strength >= 55)
+        return "network_wifi_3_bar";
+    if (strength >= 30)
+        return "network_wifi_2_bar";
+    if (strength > 0)
+        return "network_wifi_1_bar";
+    return "signal_wifi_0_bar";
+}
+
+function barIcon(available, wifiEnabled, wifiHardwareEnabled, scanning, connectedName,
+                 connectedSignal) {
+    if (available !== true || wifiHardwareEnabled !== true || wifiEnabled !== true)
+        return "wifi_off";
+    if (typeof connectedName === "string" && connectedName.length > 0)
+        return signalIcon(connectedSignal);
+    return scanning === true ? "wifi_find" : "signal_wifi_0_bar";
+}
+
 function securityKey(secure) {
     return secure ? "wifi.security.secured" : "wifi.security.open";
 }
@@ -58,6 +81,7 @@ function normalizedNetwork(network) {
         known: known,
         transitioning: state === "connecting" || state === "disconnecting",
         signal: strength,
+        signalIcon: signalIcon(strength),
         signalKey: signalKey(strength),
         secure: network?.secure === true,
         securityKey: securityKey(network?.secure === true),
@@ -153,12 +177,16 @@ function projectWifi(adapter) {
     const networks = wifiEnabled ? normalizedNetworks(adapter?.devices) : [];
     const connected = networks.find(network => network.connected);
     const connectedName = connected ? connected.name : "";
+    const connectedSignal = connected ? connected.signal : 0;
     return {
         available: available,
         wifiEnabled: wifiEnabled,
         wifiHardwareEnabled: wifiHardwareEnabled,
         scanning: scanning,
         connectedName: connectedName,
+        connectedSignal: connectedSignal,
+        iconName: barIcon(available, wifiEnabled, wifiHardwareEnabled, scanning,
+            connectedName, connectedSignal),
         networks: networks,
         stateKey: stateKey(available, wifiEnabled, wifiHardwareEnabled, scanning, connectedName),
     };

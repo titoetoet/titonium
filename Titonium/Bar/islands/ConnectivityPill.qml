@@ -46,8 +46,6 @@ Item {
     readonly property string networkAccessibleName: I18n.tr(NetworkService.stateKey, {
         "name": NetworkService.connectedName
     })
-    readonly property string networkIconName: !NetworkService.available || !NetworkService.wifiHardwareEnabled
-        ? "wifi_off" : (NetworkService.wifiEnabled ? "wifi" : "wifi_off")
 
     implicitWidth: root.audioWidth + root.innerPadding * 2
         + (root.showDiagnostics ? root.diagnosticsWidth : 0)
@@ -69,7 +67,7 @@ Item {
             visible: root.showDiagnostics
             width: root.controlSize
             height: root.controlSize
-            iconName: root.networkIconName
+            iconName: NetworkService.iconName
             variant: "quiet"
             size: "small"
             showFocusRing: false

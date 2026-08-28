@@ -85,7 +85,7 @@ FocusScope {
                     spacing: Metrics.spacingMedium
 
                     Shared.Icon {
-                        name: root.networkIconName
+                        name: NetworkService.iconName
                         size: 24
                         tone: NetworkService.wifiEnabled ? "accent" : "disabled"
                         accessibleName: ""
@@ -192,9 +192,6 @@ FocusScope {
             }
         }
     }
-
-    readonly property string networkIconName: !NetworkService.available || !NetworkService.wifiHardwareEnabled
-        ? "wifi_off" : (NetworkService.wifiEnabled ? "wifi" : "wifi_off")
 
     Keys.onEscapePressed: event => {
         root.close();

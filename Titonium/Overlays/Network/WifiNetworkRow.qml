@@ -54,7 +54,7 @@ Item {
             spacing: Metrics.spacingMedium
 
             Shared.Icon {
-                name: root.network?.secure === true ? "wifi_lock" : "wifi"
+                name: root.network?.signalIcon || "signal_wifi_0_bar"
                 size: 22
                 tone: root.actionable ? "secondary" : "disabled"
                 accessibleName: ""
@@ -64,12 +64,24 @@ Item {
                 Layout.fillWidth: true
                 spacing: Metrics.spacingXSmall
 
-                Shared.TextLabel {
+                RowLayout {
                     Layout.fillWidth: true
-                    text: root.network?.name || ""
-                    variant: "label"
-                    strong: true
-                    elide: Text.ElideRight
+
+                    Shared.TextLabel {
+                        Layout.fillWidth: true
+                        text: root.network?.name || ""
+                        variant: "label"
+                        strong: true
+                        elide: Text.ElideRight
+                    }
+
+                    Shared.Icon {
+                        visible: root.network?.secure === true
+                        name: "lock"
+                        size: 14
+                        tone: "secondary"
+                        accessibleName: ""
+                    }
                 }
 
                 Shared.TextLabel {

@@ -30,8 +30,11 @@ assert.equal(rules.adjustOutput("bad", 0.05, true), null);
 assert.equal(rules.volumeIcon(false, false, 0.5), "volume_off");
 assert.equal(rules.volumeIcon(true, true, 0.5), "volume_off");
 assert.equal(rules.volumeIcon(true, false, 0.0), "volume_mute");
-assert.equal(rules.volumeIcon(true, false, 0.2), "volume_down");
-assert.equal(rules.volumeIcon(true, false, 0.6), "volume_up");
+assert.equal(rules.volumeIcon(true, false, 0.01), "volume_mute");
+assert.equal(rules.volumeIcon(true, false, 0.33), "volume_mute");
+assert.equal(rules.volumeIcon(true, false, 0.34), "volume_down");
+assert.equal(rules.volumeIcon(true, false, 0.66), "volume_down");
+assert.equal(rules.volumeIcon(true, false, 0.67), "volume_up");
 
 const playback = { id: 7, audio: { volume: 0.4, muted: false }, ready: true,
     isStream: true, isSink: true,
