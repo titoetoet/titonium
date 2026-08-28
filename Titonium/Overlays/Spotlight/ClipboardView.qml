@@ -93,12 +93,16 @@ FocusScope {
                     strong: true
                 }
                 Controls.Button {
-                    label: I18n.tr("spotlight.clipboard.clear")
-                    iconName: "delete_sweep"
+                    id: clearAllButton
+                    iconName: "clear_all"
                     variant: "quiet"
                     size: "small"
                     enabled: ClipboardService.items.length > 0
+                    accessibleName: I18n.tr("spotlight.clipboard.clear")
                     onTriggered: ClipboardService.clear()
+                    QtControls.ToolTip.visible: hovered
+                    QtControls.ToolTip.text: accessibleName
+                    QtControls.ToolTip.delay: 500
                 }
             }
 
@@ -127,6 +131,9 @@ FocusScope {
                     width: historyList.width
                     height: 60
                     activeFocusOnTab: true
+                    readonly property bool actionsVisible:
+                        historyRow.index === (root.spotlightModel?.selectedIndex || 0)
+                        || rowHover.hovered || historyRow.activeFocus
 
                     Rectangle {
                         anchors.fill: parent
@@ -176,6 +183,50 @@ FocusScope {
                                 text: I18n.tr("spotlight.clipboard.kind." + historyRow.modelData.kind)
                                 variant: "caption"
                                 tone: "secondary"
+                            }
+                        }
+
+                        RowLayout {
+                            id: rowActions
+                            spacing: Metrics.spacingXSmall
+                            opacity: historyRow.actionsVisible ? 1 : 0
+                            enabled: historyRow.actionsVisible
+
+                            Behavior on opacity {
+                                NumberAnimation { duration: Motion.fast }
+                            }
+
+                            Controls.Button {
+                                iconName: "content_copy"
+                                variant: "quiet"
+                                size: "small"
+                                enabled: rowActions.enabled && ClipboardService.available
+                                accessibleName: I18n.tr("spotlight.clipboard.copy")
+                                onTriggered: {
+                                    if (ClipboardService.copy(historyRow.modelData.id))
+                                        root.activatedSuccessfully();
+                                }
+                                QtControls.ToolTip.visible: hovered
+                                QtControls.ToolTip.text: accessibleName
+                                QtControls.ToolTip.delay: 500
+                            }
+
+                            Controls.Button {
+                                iconName: "delete"
+                                variant: "danger"
+                                size: "small"
+                                enabled: rowActions.enabled
+                                accessibleName: I18n.tr("spotlight.clipboard.delete")
+                                onTriggered: {
+                                    ClipboardService.remove(historyRow.modelData.id);
+                                    if (root.spotlightModel)
+                                        root.spotlightModel.selectedIndex = Math.max(0,
+                                            Math.min(root.spotlightModel.selectedIndex,
+                                                root.filteredItems.length - 1));
+                                }
+                                QtControls.ToolTip.visible: hovered
+                                QtControls.ToolTip.text: accessibleName
+                                QtControls.ToolTip.delay: 500
                             }
                         }
                     }
@@ -243,24 +294,6 @@ FocusScope {
                             : I18n.tr("spotlight.clipboard.kind." + root.selectedItem.kind)
                         variant: "title"
                         strong: true
-                    }
-                    Controls.Button {
-                        label: I18n.tr("spotlight.clipboard.copy")
-                        iconName: "content_copy"
-                        size: "small"
-                        enabled: ClipboardService.available && root.selectedItem !== null
-                        onTriggered: {
-                            if (root.activateSelected())
-                                root.activatedSuccessfully();
-                        }
-                    }
-                    Controls.Button {
-                        label: I18n.tr("spotlight.clipboard.delete")
-                        iconName: "delete"
-                        variant: "danger"
-                        size: "small"
-                        enabled: root.selectedItem !== null
-                        onTriggered: root.deleteSelected()
                     }
                 }
 

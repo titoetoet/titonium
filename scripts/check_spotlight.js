@@ -13,6 +13,8 @@ const appGridSource = fs.readFileSync(
     path.join(spotlightRoot, "AppGrid.qml"), "utf8");
 const pageIndicatorSource = fs.readFileSync(
     path.join(spotlightRoot, "PageIndicator.qml"), "utf8");
+const clipboardViewSource = fs.readFileSync(
+    path.join(spotlightRoot, "ClipboardView.qml"), "utf8");
 
 function loadDomain(name, globals = {}) {
     const sourcePath = path.join(spotlightRoot, name + ".js");
@@ -298,4 +300,23 @@ assertEqual(state.escape({ mode: "results", query: "fire", categoryId: "games" }
 assertEqual(state.escape({ mode: "browse", query: "", categoryId: "games" }).closeRequested, true, "escape requests close from browse mode");
 assertDeepEqual(state.initial("browse"), { mode: "browse", query: "", categoryId: "all", closeRequested: false }, "initial browse state");
 
-console.log("PASS spotlight domain fixtures (71)");
+assertEqual(clipboardViewSource.includes('id: clearAllButton'), true,
+    "Clipboard header exposes one named Clear All control");
+assertEqual(clipboardViewSource.includes('iconName: "clear_all"'), true,
+    "Clipboard Clear All uses the icon-only clear-all glyph");
+assertEqual(clipboardViewSource.includes('label: I18n.tr("spotlight.clipboard.clear")'), false,
+    "Clipboard Clear All does not retain a text label");
+assertEqual(clipboardViewSource.includes('id: rowActions'), true,
+    "Clipboard history row owns its Copy/Delete action cluster");
+assertEqual(clipboardViewSource.includes('readonly property bool actionsVisible:'), true,
+    "Clipboard row actions follow selection, hover and keyboard focus");
+assertEqual(clipboardViewSource.includes('ClipboardService.copy(historyRow.modelData.id)'), true,
+    "Clipboard row Copy acts on the row under interaction");
+assertEqual(clipboardViewSource.includes('ClipboardService.remove(historyRow.modelData.id)'), true,
+    "Clipboard row Delete acts on the row under interaction");
+assertEqual(clipboardViewSource.includes('label: I18n.tr("spotlight.clipboard.copy")'), false,
+    "Clipboard preview does not retain the Copy text action");
+assertEqual(clipboardViewSource.includes('label: I18n.tr("spotlight.clipboard.delete")'), false,
+    "Clipboard preview does not retain the Delete text action");
+
+console.log("PASS spotlight domain and Clipboard action-layout fixtures (80)");
