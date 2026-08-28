@@ -1,0 +1,13 @@
+{
+  "$schema": "titonium.dock/v1",
+  "schemaVersion": 1,
+  "pinnedIds": [
+    "firefox.desktop",
+    "org.kde.dolphin.desktop",
+    "FIREFOX.DESKTOP",
+    "",
+    7
+  ],
+  "pinnedOpen": true,
+  "autoHide": true
+}

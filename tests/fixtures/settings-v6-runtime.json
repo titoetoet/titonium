@@ -1,0 +1,13 @@
+{
+  "$schema": "titonium.settings/v6",
+  "schemaVersion": 6,
+  "locale": "en",
+  "appearance": { "mode": "light" },
+  "accessibility": { "reducedMotion": true },
+  "applications": { "hiddenIds": ["hidden.desktop", "hidden.desktop", 7] },
+  "modules": {
+    "spotlight": { "pageTransition": "fade", "transitionDuration": 480 },
+    "clock": { "use24Hour": false },
+    "audio": { "allowAmplification": true }
+  }
+}

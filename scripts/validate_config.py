@@ -31,8 +31,8 @@ def validate_settings(data: Any) -> list[str]:
     errors: list[str] = []
     if set(data) != REQUIRED_SETTINGS_KEYS:
         errors.append("settings keys do not match the protected contract")
-    if data.get("$schema") != "titonium.settings/v6" or data.get("schemaVersion") != 6:
-        errors.append("settings schema must be titonium.settings/v6")
+    if data.get("$schema") != "titonium.settings/v7" or data.get("schemaVersion") != 7:
+        errors.append("settings schema must be titonium.settings/v7")
     if data.get("locale") not in {"vi", "en"}:
         errors.append("locale must be vi or en")
 
@@ -61,8 +61,9 @@ def validate_settings(data: Any) -> list[str]:
             errors.append("applications.hiddenIds must be unique")
 
     modules = data.get("modules")
-    if not isinstance(modules, dict) or set(modules) != {"spotlight", "clock", "audio"}:
-        errors.append("modules must contain only spotlight, clock and audio")
+    expected_modules = {"spotlight", "bar", "dock", "notifications", "clock", "audio"}
+    if not isinstance(modules, dict) or set(modules) != expected_modules:
+        errors.append("modules must contain the exact v7 module preferences")
         return errors
     spotlight = modules.get("spotlight")
     if not isinstance(spotlight, dict) or set(spotlight) != {"pageTransition", "transitionDuration"}:
@@ -73,6 +74,38 @@ def validate_settings(data: Any) -> list[str]:
         duration = spotlight.get("transitionDuration")
         if not isinstance(duration, int) or isinstance(duration, bool) or not 0 <= duration <= 500:
             errors.append("modules.spotlight.transitionDuration must be an integer from 0 to 500")
+    bar = modules.get("bar")
+    if not isinstance(bar, dict) or set(bar) != {"workspaceCount", "autoHide"}:
+        errors.append("modules.bar has an invalid shape")
+    else:
+        count = bar.get("workspaceCount")
+        if not isinstance(count, int) or isinstance(count, bool) or not 1 <= count <= 8:
+            errors.append("modules.bar.workspaceCount must be an integer from 1 to 8")
+        if not isinstance(bar.get("autoHide"), bool):
+            errors.append("modules.bar.autoHide must be a boolean")
+    dock = modules.get("dock")
+    if not isinstance(dock, dict) or set(dock) != {"visibilityMode", "pinnedIds"}:
+        errors.append("modules.dock has an invalid shape")
+    else:
+        if dock.get("visibilityMode") not in {"auto-hide", "always-visible", "reserve-space"}:
+            errors.append("modules.dock.visibilityMode is invalid")
+        pinned_ids = dock.get("pinnedIds")
+        if not isinstance(pinned_ids, list):
+            errors.append("modules.dock.pinnedIds must be an array")
+        elif any(not isinstance(entry, str) or not entry for entry in pinned_ids):
+            errors.append("modules.dock.pinnedIds must contain non-empty strings")
+        elif len({entry.casefold() for entry in pinned_ids}) != len(pinned_ids):
+            errors.append("modules.dock.pinnedIds must be case-insensitively unique")
+    notifications = modules.get("notifications")
+    if not isinstance(notifications, dict) or set(notifications) != {"toastsEnabled", "toastDuration"}:
+        errors.append("modules.notifications has an invalid shape")
+    else:
+        if not isinstance(notifications.get("toastsEnabled"), bool):
+            errors.append("modules.notifications.toastsEnabled must be a boolean")
+        toast_duration = notifications.get("toastDuration")
+        if (not isinstance(toast_duration, int) or isinstance(toast_duration, bool)
+                or not 2000 <= toast_duration <= 10000):
+            errors.append("modules.notifications.toastDuration must be an integer from 2000 to 10000")
     clock = modules.get("clock")
     if not isinstance(clock, dict) or set(clock) != {"use24Hour"}:
         errors.append("modules.clock must contain only use24Hour")

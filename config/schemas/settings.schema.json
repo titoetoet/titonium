@@ -1,12 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "titonium.settings/v6",
+  "$id": "titonium.settings/v7",
   "type": "object",
   "required": ["$schema", "schemaVersion", "locale", "appearance", "accessibility", "applications", "modules"],
   "additionalProperties": false,
   "properties": {
-    "$schema": { "const": "titonium.settings/v6" },
-    "schemaVersion": { "const": 6 },
+    "$schema": { "const": "titonium.settings/v7" },
+    "schemaVersion": { "const": 7 },
     "locale": { "enum": ["vi", "en"] },
     "appearance": {
       "type": "object",
@@ -34,7 +34,7 @@
     },
     "modules": {
       "type": "object",
-      "required": ["spotlight", "clock", "audio"],
+      "required": ["spotlight", "bar", "dock", "notifications", "clock", "audio"],
       "additionalProperties": false,
       "properties": {
         "spotlight": {
@@ -42,8 +42,39 @@
           "required": ["pageTransition", "transitionDuration"],
           "additionalProperties": false,
           "properties": {
-            "pageTransition": { "enum": ["none", "fade", "slide-fade"] },
+            "pageTransition": { "enum": ["slide-fade", "fade", "none"] },
             "transitionDuration": { "type": "integer", "minimum": 0, "maximum": 500 }
+          }
+        },
+        "bar": {
+          "type": "object",
+          "required": ["workspaceCount", "autoHide"],
+          "additionalProperties": false,
+          "properties": {
+            "workspaceCount": { "type": "integer", "minimum": 1, "maximum": 8 },
+            "autoHide": { "type": "boolean" }
+          }
+        },
+        "dock": {
+          "type": "object",
+          "required": ["visibilityMode", "pinnedIds"],
+          "additionalProperties": false,
+          "properties": {
+            "visibilityMode": { "enum": ["auto-hide", "always-visible", "reserve-space"] },
+            "pinnedIds": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "notifications": {
+          "type": "object",
+          "required": ["toastsEnabled", "toastDuration"],
+          "additionalProperties": false,
+          "properties": {
+            "toastsEnabled": { "type": "boolean" },
+            "toastDuration": { "type": "integer", "minimum": 2000, "maximum": 10000 }
           }
         },
         "clock": {
