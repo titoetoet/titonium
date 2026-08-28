@@ -12,6 +12,10 @@ Item {
     id: root
 
     readonly property var navigationEntries: SettingsCatalog.navigationEntries()
+    readonly property var primaryNavigationEntries:
+        root.navigationEntries.filter(entry => entry.id !== "about")
+    readonly property var aboutNavigationEntry:
+        root.navigationEntries.find(entry => entry.id === "about")
 
     function componentFor(pageId: string): Component {
         if (pageId === "appearance")
@@ -22,6 +26,12 @@ Item {
             return barPage;
         if (pageId === "dock")
             return dockPage;
+        if (pageId === "notifications")
+            return notificationsPage;
+        if (pageId === "audio")
+            return audioPage;
+        if (pageId === "about")
+            return aboutPage;
         return generalPage;
     }
 
@@ -87,7 +97,7 @@ Item {
                     spacing: Metrics.spacingSmall
 
                     Repeater {
-                        model: root.navigationEntries
+                        model: root.primaryNavigationEntries
 
                         Shared.Button {
                             required property var modelData
@@ -103,6 +113,19 @@ Item {
                     }
 
                     Item { Layout.fillHeight: true }
+
+                    Shared.Button {
+                        Layout.fillWidth: true
+                        label: I18n.tr(root.aboutNavigationEntry.labelKey)
+                        iconName: root.aboutNavigationEntry.icon
+                        variant: "quiet"
+                        selected: SettingsCoordinator.requestedPage
+                            === root.aboutNavigationEntry.id
+                        contentAlignment: Qt.AlignLeft
+                        accessibleName: label
+                        onTriggered: SettingsCoordinator.requestPage(
+                            root.aboutNavigationEntry.id)
+                    }
                 }
             }
 
@@ -187,6 +210,21 @@ Item {
     Component {
         id: dockPage
         DockPage {}
+    }
+
+    Component {
+        id: notificationsPage
+        NotificationsPage {}
+    }
+
+    Component {
+        id: audioPage
+        AudioPage {}
+    }
+
+    Component {
+        id: aboutPage
+        AboutPage {}
     }
 
     Rectangle {

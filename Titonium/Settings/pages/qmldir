@@ -4,3 +4,6 @@ AppearancePage 1.0 AppearancePage.qml
 SpotlightPage 1.0 SpotlightPage.qml
 BarPage 1.0 BarPage.qml
 DockPage 1.0 DockPage.qml
+NotificationsPage 1.0 NotificationsPage.qml
+AudioPage 1.0 AudioPage.qml
+AboutPage 1.0 AboutPage.qml

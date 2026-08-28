@@ -32,6 +32,13 @@ Singleton {
     readonly property int unreadCount: NotificationRules.unreadCount(root.unreadIds)
     readonly property bool hasUnread: root.unreadCount > 0
     readonly property int operationWarningLimit: 3
+    readonly property bool toastsEnabled:
+        Preferences.notifications.toastsEnabled !== false
+
+    onToastsEnabledChanged: {
+        if (!root.toastsEnabled && root.toastIds.length > 0)
+            root.toastIds = Object.freeze([]);
+    }
 
     function warnOperation(category: string, message: string): void {
         const count = root.operationWarningCounts[category] || 0;
@@ -112,7 +119,8 @@ Singleton {
             }
             root.projectedNotifications = NotificationRules.upsert(
                 root.projectedNotifications, item, 100);
-            root.toastIds = NotificationRules.addToast(root.toastIds, item.id, 3);
+            if (root.toastsEnabled)
+                root.toastIds = NotificationRules.addToast(root.toastIds, item.id, 3);
             root.unreadIds = NotificationRules.markUnread(root.unreadIds, item.id);
             notification.closed.connect(() => root.expireToast(item.id));
         }

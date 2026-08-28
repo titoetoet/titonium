@@ -92,7 +92,7 @@ Item {
     }
 
     Timer {
-        interval: 5000
+        interval: Preferences.notifications.toastDuration
         repeat: false
         running: true
         onTriggered: NotificationService.expireToast(root.notification.id)

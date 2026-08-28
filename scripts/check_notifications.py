@@ -42,7 +42,7 @@ PRESENTATION_FILES = {
         "NotificationService.expireToast(root.notification.id)",
         "NotificationService.dismiss(root.notification.id)",
         "Timer {",
-        "interval: 5000",
+        "interval: Preferences.notifications.toastDuration",
         "repeat: false",
     ),
     "qmldir": (
@@ -86,6 +86,9 @@ REQUIRED = (
     "server.trackedNotifications.values",
     "nativeNotification.dismiss()",
     "readonly property int operationWarningLimit: 3",
+    "readonly property bool toastsEnabled:",
+    "onToastsEnabledChanged:",
+    "if (root.toastsEnabled)",
     "operationWarningCounts[category]",
     'Logger.warn("notifications"',
 )

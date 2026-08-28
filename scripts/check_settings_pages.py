@@ -29,6 +29,9 @@ def main() -> int:
     bar = source(PAGES / "BarPage.qml", errors)
     dock = source(PAGES / "DockPage.qml", errors)
     dock_editor = source(COMPONENTS / "DockApplicationEditor.qml", errors)
+    notifications = source(PAGES / "NotificationsPage.qml", errors)
+    audio = source(PAGES / "AudioPage.qml", errors)
+    about = source(PAGES / "AboutPage.qml", errors)
     applications = source(COMPONENTS / "ApplicationVisibilityList.qml", errors)
     workspace = source(ROOT / "Titonium/Settings/SettingsWorkspace.qml", errors)
     service = source(ROOT / "Titonium/Services/Applications/ApplicationService.qml", errors)
@@ -76,6 +79,25 @@ def main() -> int:
     for forbidden in ("ApplicationService.launch", "DockService.launchNew", "activateOrLaunch"):
         if forbidden in dock + dock_editor:
             errors.append(f"Dock Settings must not launch applications: {forbidden}")
+    require(notifications, "NotificationsPage", (
+        "Shared.Toggle", "Shared.Slider", "from: 2000", "to: 10000", "stepSize: 500",
+        'Preferences.patch("modules.notifications.toastsEnabled"',
+        'Preferences.patch("modules.notifications.toastDuration"',
+    ), errors)
+    require(audio, "AudioPage", (
+        "Shared.Toggle", "Preferences.allowAudioAmplification",
+        'Preferences.patch("modules.audio.allowAmplification"',
+    ), errors)
+    require(about, "AboutPage", (
+        "ScreenPolicy.targetScreenName", "Preferences.runtimePath",
+        "ApplicationService.allApplications.length", "AudioService.ready",
+        "NetworkService.available", "BluetoothService.available",
+        "NotificationService.notifications.length", "NotificationService.unreadCount",
+        "settings.state.ready", "settings.state.unavailable",
+    ), errors)
+    for forbidden in ("Preferences.patch", "Preferences.apply", "Timer {", "Process", "FileView"):
+        if forbidden in about:
+            errors.append(f"About page must stay read-only/event-driven: {forbidden}")
     require(applications, "ApplicationVisibilityList", (
         'property string query: ""', "ApplicationService.allApplications",
         "ListView {", "reuseItems: true", "currentIndex: -1", "Shared.SystemIcon",
@@ -89,13 +111,18 @@ def main() -> int:
         "return Visibility.setVisible(hiddenIds, entryId, visible)",
     ), errors)
     require(workspace, "SettingsWorkspace", (
-        "function componentFor(pageId: string): Component", "appearancePage", "spotlightPage", "barPage", "dockPage",
+        "function componentFor(pageId: string): Component", "appearancePage", "spotlightPage",
+        "barPage", "dockPage", "notificationsPage", "audioPage", "aboutPage",
+        "primaryNavigationEntries", "aboutNavigationEntry",
+        "model: root.primaryNavigationEntries",
         "sourceComponent: root.componentFor(SettingsCoordinator.requestedPage)",
     ), errors)
     require(pages_qmldir, "pages/qmldir", (
         "AppearancePage 1.0 AppearancePage.qml", "SpotlightPage 1.0 SpotlightPage.qml",
         "BarPage 1.0 BarPage.qml",
         "DockPage 1.0 DockPage.qml",
+        "NotificationsPage 1.0 NotificationsPage.qml", "AudioPage 1.0 AudioPage.qml",
+        "AboutPage 1.0 AboutPage.qml",
     ), errors)
     require(components_qmldir, "components/qmldir", (
         "ApplicationVisibilityList 1.0 ApplicationVisibilityList.qml",
@@ -121,6 +148,15 @@ def main() -> int:
         "settings.dock.pinned", "settings.dock.catalog", "settings.dock.search",
         "settings.dock.add", "settings.dock.remove", "settings.dock.move_up",
         "settings.dock.move_down", "settings.dock.unavailable",
+        "settings.nav.notifications", "settings.notifications.title",
+        "settings.notifications.description", "settings.notifications.toasts",
+        "settings.notifications.duration", "settings.nav.audio", "settings.audio.title",
+        "settings.audio.description", "settings.audio.amplification",
+        "settings.audio.amplification.description", "settings.nav.about",
+        "settings.about.title", "settings.about.description", "settings.about.schema",
+        "settings.about.screen", "settings.about.runtime", "settings.about.applications",
+        "settings.about.audio", "settings.about.network", "settings.about.bluetooth",
+        "settings.about.notifications", "settings.state.ready", "settings.state.unavailable",
     )
     for locale in ("en", "vi"):
         catalog = json.loads((ROOT / f"config/i18n/{locale}.json").read_text(encoding="utf-8"))["strings"]
@@ -128,7 +164,8 @@ def main() -> int:
             if not isinstance(catalog.get(key), str) or not catalog[key]:
                 errors.append(f"{locale} catalog missing Settings page key: {key}")
 
-    feature = appearance + spotlight + applications
+    feature = appearance + spotlight + applications + bar + dock + dock_editor \
+        + notifications + audio + about
     for forbidden in ("Process", "FileView", "Quickshell.Services", "MultiEffect", "ShaderEffect"):
         if forbidden in feature:
             errors.append(f"Settings pages have forbidden dependency: {forbidden}")
