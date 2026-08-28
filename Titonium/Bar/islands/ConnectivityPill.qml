@@ -41,6 +41,8 @@ Item {
     readonly property string bluetoothIconName: !BluetoothService.available || !BluetoothService.powered
         ? "bluetooth_disabled" : (BluetoothService.discovering ? "bluetooth_searching"
             : (BluetoothService.connectedCount > 0 ? "bluetooth_connected" : "bluetooth"))
+    readonly property color bluetoothIconColor: BluetoothService.connectedCount > 0 ? Theme.accent
+        : (bluetoothButton.enabled ? Theme.textPrimary : Theme.textDisabled)
     readonly property string networkAccessibleName: I18n.tr(NetworkService.stateKey, {
         "name": NetworkService.connectedName
     })
@@ -81,6 +83,7 @@ Item {
             width: root.controlSize
             height: root.controlSize
             iconName: root.bluetoothIconName
+            iconColor: root.bluetoothIconColor
             variant: "quiet"
             size: "small"
             showFocusRing: false

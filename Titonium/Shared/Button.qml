@@ -17,6 +17,7 @@ FocusScope {
     property int labelPixelSize: 0
     property int backgroundRadius: Metrics.radiusSmall
     property int contentAlignment: Qt.AlignHCenter
+    property color iconColor: root.foregroundColor
     property string accessibleName: root.label.length > 0 ? root.label : root.iconName
     signal triggered()
 
@@ -63,7 +64,7 @@ FocusScope {
         anchors.verticalCenter: parent.verticalCenter
         x: root.contentAlignment === Qt.AlignLeft ? Metrics.spacingMedium : (parent.width - width) / 2
         spacing: root.label.length > 0 && root.iconName.length > 0 ? Metrics.spacingSmall : 0
-        Icon { visible: root.iconName.length > 0; name: root.iconName; size: root.iconSize; color: root.foregroundColor }
+        Icon { visible: root.iconName.length > 0; name: root.iconName; size: root.iconSize; color: root.iconColor }
         TextLabel {
             visible: root.label.length > 0
             text: root.label

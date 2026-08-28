@@ -26,7 +26,7 @@ FocusScope {
         I18n.tr("menubar.center_notch.desktop"))
     readonly property bool notchOpen: CenterNotchCoordinator.ownerScreenName === root.screen.name
 
-    implicitWidth: 420
+    implicitWidth: Math.min(520, activityRow.implicitWidth + Metrics.spacingLarge * 2)
     implicitHeight: Metrics.controlHeight
     activeFocusOnTab: true
 
@@ -76,7 +76,7 @@ FocusScope {
 
         Shared.TextLabel {
             id: titleLabel
-            Layout.fillWidth: true
+            Layout.maximumWidth: 320
             text: root.presentation.title
             variant: "label"
             strong: root.notchOpen

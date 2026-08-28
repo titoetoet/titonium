@@ -24,4 +24,4 @@ assert.equal(context.tileColor(3, false, false, palette, "idle"), "idle");
 assert.equal(context.tileColor(3, true, false, palette, "idle"), "amber");
 assert.equal(context.tileColor(4, false, true, palette, "idle"), "purple");
 
-console.log("PASS shared eight-workspace interaction colors");
+console.log("PASS shared workspace interaction color cycling");

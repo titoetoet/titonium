@@ -40,11 +40,12 @@ named by `CenterNotchCoordinator.ownerScreenName` activates its heavy Loader. Op
 closes the notch; opening the notch closes `SurfaceManager`, so the two exclusive-focus surfaces
 cannot overlap. An outside click, Escape, or focused-monitor change releases the notch window.
 
-The adaptive Center island is positioned from the full screen width rather than between the Start
-and End islands. The full Bar input mask is composed from the three island hitboxes, preserving
-click-through elsewhere. It projects the active descriptor as app icon plus
-`Application · window title`, falls back to Titonium, elides at 520 logical pixels and opens a
-four-corner popup 52 logical pixels below the screen edge. The End island orders native Wi-Fi,
+The TopBar pin remains positioned from the full screen width, independent of the outer islands.
+The Active Window pill sits directly after the six-slot Workspace group, sizes naturally up to
+520 logical pixels, and projects the active descriptor as app icon plus
+`Application · window title`. It falls back to Titonium and continues to open the centered
+four-corner popup 52 logical pixels below the screen edge. The full Bar input mask is composed
+from the three island hitboxes, preserving click-through elsewhere. The End island orders native Wi-Fi,
 Bluetooth, Audio and Notification Bell controls before the protected Input Method. Clock remains
 temporarily disabled.
 

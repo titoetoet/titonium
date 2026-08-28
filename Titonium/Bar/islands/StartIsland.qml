@@ -9,19 +9,34 @@ Item {
     id: root
     required property var screen
 
-    implicitWidth: workspaces.implicitWidth + Metrics.spacingXSmall * 2
+    implicitWidth: startRow.implicitWidth
     implicitHeight: Metrics.widgetHeight
 
-    Shared.Surface {
-        anchors.fill: parent
-        tone: "elevated"
-        radius: Metrics.radiusLarge
-    }
+    Row {
+        id: startRow
+        anchors.verticalCenter: parent.verticalCenter
+        spacing: Metrics.spacingSmall
 
-    Workspaces {
-        id: workspaces
-        anchors.centerIn: parent
-        screen: root.screen
-        count: 8
+        Item {
+            width: workspaces.implicitWidth + Metrics.spacingXSmall * 2
+            height: Metrics.widgetHeight
+
+            Shared.Surface {
+                anchors.fill: parent
+                tone: "elevated"
+                radius: Metrics.radiusLarge
+            }
+
+            Workspaces {
+                id: workspaces
+                anchors.centerIn: parent
+                screen: root.screen
+                count: 6
+            }
+        }
+
+        CenterIsland {
+            screen: root.screen
+        }
     }
 }

@@ -452,8 +452,12 @@ def validate_presentation(errors: list[str]) -> None:
         "visible: root.device?.connected === true",
         "onToggled: checked =>",
         "forgetConfirmation",
-        "I18n.tr(\"bluetooth.forget.confirm\")",
         "I18n.tr(\"bluetooth.forget.cancel\")",
+        "id: moreButton",
+        'iconName: "more_horiz"',
+        "id: cancelForgetButton",
+        "id: confirmForgetButton",
+        "opacity: root.hovered || moreButton.activeFocus ? 1 : 0",
         "Shared.SystemIcon",
         "sourceName: root.device?.icon || \"bluetooth\"",
         "fallbackName: \"bluetooth\"",
@@ -483,6 +487,9 @@ def validate_presentation(errors: list[str]) -> None:
         "bluetoothAccessibleName",
         "bluetoothIconName",
         "iconName: root.bluetoothIconName",
+        "readonly property color bluetoothIconColor:",
+        "BluetoothService.connectedCount > 0 ? Theme.accent",
+        "iconColor: root.bluetoothIconColor",
     )
     for fragment in pill_fragments:
         if fragment not in pill:
@@ -560,18 +567,20 @@ def validate_integration(errors: list[str]) -> None:
     errors.extend(ipc_open_path_errors(coordinator))
 
     row = DEVICE_ROW.read_text(encoding="utf-8") if DEVICE_ROW.is_file() else ""
-    if ('id: forgetButton' not in row
+    if ('id: confirmForgetButton' not in row
             or 'iconName: "delete"' not in row
             or 'I18n.tr("bluetooth.forget.accessible", {' not in row
             or '"name": root.device?.name || ""' not in row):
-        errors.append("Bluetooth Forget must be an accessible icon-only remove control")
-    forget_start = row.find("id: forgetButton")
+        errors.append("Bluetooth Forget must use an accessible inline icon-only remove control")
+    forget_start = row.find("id: confirmForgetButton")
     forget_block = qml_block(row, row.rfind("Shared.Button", 0, forget_start)) \
         if forget_start >= 0 else ""
     if "label:" in forget_block:
         errors.append("Bluetooth Forget remove control must not retain a text label")
     if '? "bluetooth.device.disconnect"' in row:
         errors.append("Bluetooth connected state must not route through the text-button action key")
+    if "Layout.leftMargin: 22 + Metrics.spacingMedium" in row:
+        errors.append("Bluetooth Forget controls must not create a second indented row")
 
     popup = POPUP.read_text(encoding="utf-8") if POPUP.is_file() else ""
     errors.extend(section_accessible_errors(popup))

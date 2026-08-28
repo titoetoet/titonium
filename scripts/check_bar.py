@@ -60,7 +60,6 @@ def main() -> int:
                     "readonly property alias centerHitbox: centerGroup",
                     "readonly property bool hovered:"),
         "islands/CenterGroup.qml": (
-            "CenterIsland {",
             "BarVisibilityState.togglePinned()",
             "menubar.bar_pin.pin",
             "menubar.bar_pin.autohide",
@@ -68,7 +67,6 @@ def main() -> int:
             "radius: Metrics.radiusLarge",
             "showFocusRing: false",
             "backgroundRadius: Metrics.radiusLarge",
-            "spacing: Metrics.spacingSmall",
         ),
         "islands/qmldir": (
             "CenterGroup 1.0 CenterGroup.qml",
@@ -80,7 +78,8 @@ def main() -> int:
             "HyprlandService.activeWindow",
             "ApplicationService.nameForAppId",
             "CenterActivityRules.label",
-            "implicitWidth: 420",
+            "implicitWidth: Math.min(520",
+            "activityRow.implicitWidth",
             "readonly property var presentation:",
             "id: appNameLabel",
             "Layout.maximumWidth: 120",
@@ -212,7 +211,7 @@ def main() -> int:
     if workspaces.is_file():
         source = workspaces.read_text(encoding="utf-8")
         for fragment in (
-            "property int count: 8",
+            "property int count: 6",
             "readonly property int emptySlotWidth: 24",
             "readonly property int appIconSize: 17",
             "readonly property int appSpacing: 3",
@@ -247,16 +246,26 @@ def main() -> int:
     center_island = BAR / "islands/CenterIsland.qml"
     if center_island.is_file():
         source = center_island.read_text(encoding="utf-8")
-        if "activityRow.implicitWidth" in source:
-            errors.append("Center width must remain fixed when the active-window title changes")
+        if "implicitWidth: 420" in source:
+            errors.append("Active Window must size naturally instead of retaining a fixed width")
         if "id: activitySeparator" in source or "Layout.preferredWidth: 120" in source:
             errors.append("Center app content must sit naturally beside its title without a divider gap")
+
+    start_island = BAR / "islands/StartIsland.qml"
+    if start_island.is_file():
+        source = start_island.read_text(encoding="utf-8")
+        if not (0 <= source.find("Workspaces {") < source.find("CenterIsland {")):
+            errors.append("Active Window must sit immediately after Workspaces in StartIsland")
+        if "count: 6" not in source:
+            errors.append("StartIsland must render six workspace slots")
 
     center_group = BAR / "islands/CenterGroup.qml"
     if center_group.is_file():
         source = center_group.read_text(encoding="utf-8")
-        if not (0 <= source.find("id: pinPill") < source.find("CenterIsland {")):
-            errors.append("TopBar Pin must be a separate pill left of Titonium Center")
+        if "id: pinPill" not in source:
+            errors.append("TopBar Pin must remain in the centered group")
+        if "CenterIsland {" in source:
+            errors.append("Centered group must not retain the Active Window pill")
         if source.count("Shared.Surface {") != 1:
             errors.append("CenterGroup must give the detached Pin exactly one rounded surface")
         if "implicitWidth: centerRow.implicitWidth +" in source:

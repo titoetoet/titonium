@@ -30,9 +30,9 @@ assert.equal(context.groupStart(5, 5), 1);
 assert.equal(context.groupStart(6, 5), 6);
 assert.equal(context.groupStart(-1, 5), 1);
 
-const eight = context.project(8, 8, [], []);
-assert.deepEqual(plain(eight.map(item => item.id)), [1, 2, 3, 4, 5, 6, 7, 8]);
-assert.deepEqual(plain(eight.map(item => item.colorIndex)), [0, 1, 2, 3, 4, 5, 6, 7]);
+const six = context.project(6, 6, [], []);
+assert.deepEqual(plain(six.map(item => item.id)), [1, 2, 3, 4, 5, 6]);
+assert.deepEqual(plain(six.map(item => item.colorIndex)), [0, 1, 2, 3, 4, 5]);
 
 const projected = context.project(7, 5, [
     { id: 6, occupied: true, urgent: false },

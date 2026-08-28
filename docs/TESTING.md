@@ -185,8 +185,9 @@ Titonium output:
 - `Super + Space`, typing, Tab/Shift+Tab scopes, category paging and Escape;
 - `Super + V`, Clipboard navigation and close;
 - unplug/replug or focus another monitor without a stranded overlay.
-- open the compact Center island on DP-1 scale 1.5 and DP-3 scale 1.0;
-- confirm true centering, top attachment, 48px rail proportions and outside-click/Escape close;
+- confirm six Workspace slots and the naturally sized Active Window pill immediately after them;
+- open the Active Window pill on DP-1 scale 1.5;
+- confirm the popup remains centered, top-attached, keeps 48px rail proportions and closes on outside-click/Escape;
 - switch pages rapidly and confirm only the latest page remains, without vertically stretched tiles;
 - activate a Tools/Session tile and confirm translated feedback with no system action.
 

@@ -43,7 +43,8 @@ for (const fragment of [
     "HyprlandService.activeWindow",
     "ApplicationService.nameForAppId",
     "CenterActivityRules.label",
-    "implicitWidth: 420",
+    "implicitWidth: Math.min(520",
+    "activityRow.implicitWidth",
     "readonly property var presentation:",
     "id: appNameLabel",
     "Layout.maximumWidth: 120",
@@ -56,10 +57,10 @@ for (const fragment of [
 ]) {
     assert.equal(island.includes(fragment), true, `CenterIsland missing ${fragment}`);
 }
-assert.equal(island.includes("activityRow.implicitWidth"), false,
-    "Center width must not change with the active-window title");
+assert.equal(island.includes("implicitWidth: 420"), false,
+    "Active Window must not retain the old fixed width");
 assert.equal(island.includes("id: activitySeparator"), false,
     "Center content must not use a vertical divider");
 assert.equal(island.includes("Layout.preferredWidth: 120"), false,
     "short app names must not leave a fixed-width gap before the title");
-console.log("PASS fixed-width Center activity presentation contract");
+console.log("PASS bounded natural-width active-window presentation contract");
