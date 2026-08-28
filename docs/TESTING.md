@@ -193,6 +193,17 @@ directly with:
 
 ```bash
 ./scripts/center_attention_acceptance.sh
+
+Center Activity acceptance starts an isolated foreground shell and drives only fixture-prefixed
+Job and Timer entries. It verifies the ranked `Focus → Timer → Important Job → Normal Job → Focus`
+round, progress replacement, Attention pause/resume with a fresh dwell interval, exact cleanup and
+the unchanged Center Notch lifecycle. It creates no process scanner or user runtime activity and
+restores all fixture state in its exit trap. Run it directly with:
+
+```bash
+./scripts/center_activity_acceptance.sh
+```
+
 ```
 
 MPRIS acceptance starts an isolated foreground shell and calls only `mpris.state()` and

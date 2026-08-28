@@ -15,6 +15,8 @@ CHECK = ROOT / "scripts/check.sh"
 EN = ROOT / "config/i18n/en.json"
 VI = ROOT / "config/i18n/vi.json"
 CENTER_VIEW = ROOT / "Titonium/Bar/islands/CenterIsland.qml"
+ACCEPTANCE = ROOT / "scripts/center_activity_acceptance.sh"
+TESTING = ROOT / "docs/TESTING.md"
 
 
 def main() -> int:
@@ -74,6 +76,7 @@ def main() -> int:
     for fragment in (
         'node "$project_root/scripts/check_center_activity_rules.js"',
         'python3 "$project_root/scripts/check_center_activity.py"',
+        'bash -n "$project_root/scripts/center_activity_acceptance.sh"',
     ):
         if fragment not in check:
             errors.append(f"check.sh missing Center Activity gate: {fragment}")
@@ -114,6 +117,46 @@ def main() -> int:
         ):
             if forbidden in source:
                 errors.append(f"CenterIsland owns forbidden runtime behavior: {forbidden}")
+
+    if not ACCEPTANCE.is_file():
+        errors.append("missing center_activity_acceptance.sh")
+    else:
+        if ACCEPTANCE.stat().st_mode & 0o111 == 0:
+            errors.append("Center Activity acceptance must be executable")
+        source = ACCEPTANCE.read_text(encoding="utf-8")
+        for fragment in (
+            "set -euo pipefail",
+            'runtime_root="$test_dir/runtime"',
+            'XDG_DATA_HOME="$test_dir/data"',
+            'XDG_STATE_HOME="$test_dir/state"',
+            'XDG_CACHE_HOME="$test_dir/cache"',
+            'qs -n -p "$runtime_root"',
+            "acceptance:activity:",
+            "center activityState",
+            "center state",
+            "job start",
+            "job progress",
+            "job complete",
+            "job clear",
+            "timer start",
+            "timer cancel",
+            "centerNotch open overview",
+            "centerNotch close",
+            "before_git",
+            "before_live",
+            "before_dotfiles",
+            "Configuration Loaded",
+            "trap cleanup EXIT",
+        ):
+            if fragment not in source:
+                errors.append(f"Center Activity acceptance missing contract: {fragment}")
+        for forbidden in ("pkill", "/proc", "pgrep"):
+            if forbidden in source:
+                errors.append(f"Center Activity acceptance has forbidden behavior: {forbidden}")
+
+    docs = TESTING.read_text(encoding="utf-8")
+    if "./scripts/center_activity_acceptance.sh" not in docs:
+        errors.append("TESTING.md missing Center Activity acceptance command")
 
     if errors:
         print("FAIL Center Activity architecture")
