@@ -5,12 +5,17 @@ import QtQuick.Layouts
 import qs.Titonium.Services.WindowSwitcher
 import qs.Titonium.Shared as Shared
 import qs.Titonium.Theme
+import "../../Theme/WorkspaceColors.js" as WorkspaceColors
 
 FocusScope {
     id: root
 
     required property var window
     readonly property bool selected: WindowSwitcherService.selectedId === root.window?.id
+    readonly property bool hovered: hoverHandler.hovered
+    readonly property color tileColor: WorkspaceColors.tileColor(
+        root.window?.workspaceId || 0, root.selected, root.hovered,
+        Theme.workspacePalette, Theme.surface)
 
     width: 152
     height: 118
@@ -20,9 +25,9 @@ FocusScope {
     Rectangle {
         anchors.fill: parent
         radius: Metrics.radiusMedium
-        color: root.selected ? Theme.surfaceInteractive : Theme.surface
-        border.width: root.selected ? Metrics.borderWidth : 0
-        border.color: root.selected ? Theme.focus : "transparent"
+        color: root.hovered ? Qt.lighter(root.tileColor, 1.12) : root.tileColor
+        border.width: 0
+        Behavior on color { ColorAnimation { duration: Motion.fast } }
     }
 
     ColumnLayout {
@@ -35,7 +40,7 @@ FocusScope {
             sourceName: root.window?.icon || ""
             fallbackName: "web_asset"
             size: 56
-            tone: root.window?.urgent ? "warning" : (root.selected ? "accent" : "primary")
+            tone: root.window?.urgent ? "warning" : "primary"
             accessibleName: ""
         }
 

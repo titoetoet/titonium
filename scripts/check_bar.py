@@ -212,7 +212,7 @@ def main() -> int:
     if workspaces.is_file():
         source = workspaces.read_text(encoding="utf-8")
         for fragment in (
-            "property int count: 5",
+            "property int count: 8",
             "readonly property int emptySlotWidth: 24",
             "readonly property int appIconSize: 17",
             "readonly property int appSpacing: 3",
@@ -229,6 +229,7 @@ def main() -> int:
             "WheelHandler",
             "HyprlandService.activateWorkspace",
             "Motion.fast",
+            "hoverHandler.hovered",
         ):
             if fragment not in source:
                 errors.append(f"Workspaces missing grouped-view contract: {fragment}")

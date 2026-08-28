@@ -49,3 +49,25 @@ The normalized panel comparison was required because the header controls, search
 ## Final result
 
 final result: passed
+
+---
+
+# Titonium Window Switcher Workspace-State QA
+
+## Evidence
+
+- Approved visual direction: `/home/cole/.codex/generated_images/01a037cb-1907-7283-b61a-d2511a403983/exec-e955fda2-c532-4a9a-b91a-c4e05599f7d0.png`
+- Verified implementation screenshot: `/tmp/titonium-window-switcher-workspace-color.png`
+- State: five live windows, Chrome selected on workspace 2, DP-1 at scale 1.5.
+
+## Findings
+
+- Idle tiles remain neutral and no longer carry a blue focus border.
+- The keyboard-selected tile uses the muted color assigned to its workspace; pointer hover uses the same workspace identity with a slightly brighter tonal state.
+- No workspace number, badge or separate marker competes with the application icon and title.
+- The workspace model and palettes now expose eight stable dark workspace colors and cycle safely above workspace 8.
+- No actionable P0, P1 or P2 visual findings remain in this batch.
+
+## Final result
+
+final result: passed

@@ -59,7 +59,7 @@ function project(activeId, count, nativeStates, windows) {
             occupied: Boolean(fact.occupied) || apps.length > 0,
             urgent: Boolean(fact.urgent),
             apps: apps,
-            colorIndex: (id - 1) % 5,
+            colorIndex: id - 1,
             rangeStart: 0,
             rangeEnd: 0,
         });

@@ -101,7 +101,11 @@ def main() -> int:
         "HoverHandler",
         "TapHandler",
         "Theme.surface",
+        "WorkspaceColors.tileColor",
+        "hoverHandler.hovered",
     ), errors)
+    if "Theme.focus" in tile or "border.color: root.selected" in tile:
+        errors.append("Window Switcher selection must not retain the blue focus border")
 
     for path, source in ((SURFACE, surface), (TILE, tile)):
         for forbidden in (

@@ -4,6 +4,7 @@
 *.log
 *.qmlc
 __pycache__/
+.superpowers/
 
 # Editor files
 .idea/

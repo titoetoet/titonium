@@ -30,6 +30,10 @@ assert.equal(context.groupStart(5, 5), 1);
 assert.equal(context.groupStart(6, 5), 6);
 assert.equal(context.groupStart(-1, 5), 1);
 
+const eight = context.project(8, 8, [], []);
+assert.deepEqual(plain(eight.map(item => item.id)), [1, 2, 3, 4, 5, 6, 7, 8]);
+assert.deepEqual(plain(eight.map(item => item.colorIndex)), [0, 1, 2, 3, 4, 5, 6, 7]);
+
 const projected = context.project(7, 5, [
     { id: 6, occupied: true, urgent: false },
     { id: 7, occupied: true, urgent: false },
@@ -46,7 +50,7 @@ const projected = context.project(7, 5, [
 assert.deepEqual(plain(projected.map(item => item.id)), [6, 7, 8, 9, 10]);
 assert.deepEqual(plain(projected[0]), {
     id: 6, active: false, occupied: true, urgent: false,
-    apps: [{ appId: "Code", icon: "editor" }], colorIndex: 0,
+    apps: [{ appId: "Code", icon: "editor" }], colorIndex: 5,
     rangeStart: 6, rangeEnd: 7,
 });
 assert.deepEqual(plain(projected[1]), {
@@ -55,11 +59,11 @@ assert.deepEqual(plain(projected[1]), {
         { appId: "Firefox", icon: "firefox" },
         { appId: "kitty", icon: "terminal" },
     ],
-    colorIndex: 1, rangeStart: 6, rangeEnd: 7,
+    colorIndex: 6, rangeStart: 6, rangeEnd: 7,
 });
 assert.deepEqual(plain(projected[2]), {
     id: 8, active: false, occupied: false, urgent: false,
-    apps: [], colorIndex: 2, rangeStart: 0, rangeEnd: 0,
+    apps: [], colorIndex: 7, rangeStart: 0, rangeEnd: 0,
 });
 assert.equal(projected[3].rangeStart, 9);
 assert.equal(projected[3].rangeEnd, 10);

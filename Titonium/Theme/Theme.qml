@@ -24,9 +24,9 @@ QtObject {
     readonly property color warning: light ? "#a76000" : "#e8b44f"
     readonly property color danger: light ? "#c43145" : "#f06a75"
     readonly property var workspacePalette: light
-        ? ["#dbeafe", "#dcfce7", "#fef3c7", "#f3e8ff", "#ffe4e6"]
-        : ["#233a5e", "#1f4a3b", "#58451d", "#49305f", "#5a2934"]
+        ? ["#dbeafe", "#dcfce7", "#fef3c7", "#f3e8ff", "#ffe4e6", "#cffafe", "#e0e7ff", "#ede0d4"]
+        : ["#233a5e", "#1f4a3b", "#58451d", "#49305f", "#5a2934", "#1f4650", "#303b5f", "#4b382b"]
     readonly property var workspaceActivePalette: light
-        ? ["#93c5fd", "#86efac", "#fcd34d", "#d8b4fe", "#fda4af"]
-        : ["#5b8fce", "#479a72", "#aa7d2d", "#8a5fb0", "#ad5265"]
+        ? ["#93c5fd", "#86efac", "#fcd34d", "#d8b4fe", "#fda4af", "#67e8f9", "#a5b4fc", "#c4a484"]
+        : ["#5b8fce", "#479a72", "#aa7d2d", "#8a5fb0", "#ad5265", "#458998", "#6578b0", "#8c6b52"]
 }

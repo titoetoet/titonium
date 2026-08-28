@@ -11,7 +11,7 @@ Item {
     id: root
 
     required property var screen
-    property int count: 5
+    property int count: 8
     readonly property int emptySlotWidth: 24
     readonly property int appIconSize: 17
     readonly property int appSpacing: 3
@@ -44,6 +44,8 @@ Item {
                 required property var modelData
                 readonly property int occupiedWidth: WorkspaceVisualRules.occupiedWidth(
                     workspaceItem.modelData.apps.length, root.appIconSize, root.appSpacing)
+                readonly property color baseColor: root.workspaceColor(
+                    workspaceItem.modelData.colorIndex, workspaceItem.modelData.active)
                 width: workspaceItem.modelData.occupied
                     ? workspaceItem.occupiedWidth : root.emptySlotWidth
                 height: WorkspaceVisualRules.slotHeight()
@@ -63,8 +65,8 @@ Item {
                     visible: workspaceItem.modelData.occupied
                     height: WorkspaceVisualRules.pillHeight(workspaceItem.modelData.active)
                     radius: Metrics.radiusLarge
-                    color: root.workspaceColor(workspaceItem.modelData.colorIndex,
-                        workspaceItem.modelData.active)
+                    color: hoverHandler.hovered
+                        ? Qt.lighter(workspaceItem.baseColor, 1.12) : workspaceItem.baseColor
                     opacity: workspaceItem.modelData.active ? 1.0 : 0.76
                     border.width: workspaceItem.modelData.urgent ? Metrics.borderWidth : 0
                     border.color: workspaceItem.modelData.urgent ? Theme.warning : "transparent"
@@ -83,7 +85,10 @@ Item {
                     width: workspaceItem.modelData.active ? 10 : 7
                     height: width
                     radius: width / 2
-                    color: workspaceItem.modelData.active ? Theme.accent : Theme.textSecondary
+                    color: hoverHandler.hovered
+                        ? Qt.lighter(workspaceItem.modelData.active
+                            ? Theme.accent : Theme.textSecondary, 1.12)
+                        : (workspaceItem.modelData.active ? Theme.accent : Theme.textSecondary)
                     border.width: workspaceItem.modelData.urgent ? Metrics.borderWidth : 0
                     border.color: Theme.warning
                 }
@@ -111,7 +116,7 @@ Item {
                     NumberAnimation { duration: Motion.fast; easing.type: Easing.OutCubic }
                 }
 
-                HoverHandler { cursorShape: Qt.PointingHandCursor }
+                HoverHandler { id: hoverHandler; cursorShape: Qt.PointingHandCursor }
                 TapHandler {
                     onTapped: HyprlandService.activateWorkspace(workspaceItem.modelData.id)
                 }

@@ -22,6 +22,6 @@ Item {
         id: workspaces
         anchors.centerIn: parent
         screen: root.screen
-        count: 5
+        count: 8
     }
 }
