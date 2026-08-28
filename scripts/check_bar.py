@@ -224,7 +224,7 @@ def main() -> int:
     if workspaces.is_file():
         source = workspaces.read_text(encoding="utf-8")
         for fragment in (
-            "property int count: 5",
+            "readonly property int count: Preferences.bar.workspaceCount",
             "readonly property int emptySlotWidth: 24",
             "readonly property int appIconSize: 17",
             "readonly property int appSpacing: 3",
@@ -271,8 +271,8 @@ def main() -> int:
             errors.append("Active Window must sit immediately after Workspaces in StartIsland")
         if "CenterIsland {" in source:
             errors.append("StartIsland must not use CenterIsland for Active Window")
-        if "count: 5" not in source:
-            errors.append("StartIsland must render five workspace slots")
+        if "count: 5" in source:
+            errors.append("StartIsland must not override the effective workspace count")
 
     center_group = BAR / "islands/CenterGroup.qml"
     if center_group.is_file():

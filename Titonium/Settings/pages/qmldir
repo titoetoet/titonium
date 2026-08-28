@@ -2,3 +2,4 @@ module qs.Titonium.Settings.pages
 GeneralPage 1.0 GeneralPage.qml
 AppearancePage 1.0 AppearancePage.qml
 SpotlightPage 1.0 SpotlightPage.qml
+BarPage 1.0 BarPage.qml

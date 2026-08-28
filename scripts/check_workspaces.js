@@ -92,3 +92,12 @@ assert.equal(visual.backgroundColor(3, true, mutedPalette, activeBlue), activeBl
 assert.equal(visual.backgroundColor(8, true, mutedPalette, activeBlue), activeBlue);
 
 console.log("PASS workspace projection, muted palette, active-blue highlight and roomy pill fixtures");
+
+const workspacesSource = fs.readFileSync(path.join(root, "Titonium", "Bar", "widgets",
+    "Workspaces.qml"), "utf8");
+const startSource = fs.readFileSync(path.join(root, "Titonium", "Bar", "islands",
+    "StartIsland.qml"), "utf8");
+assert.match(workspacesSource, /readonly property int count: Preferences\.bar\.workspaceCount/);
+assert.equal(workspacesSource.includes("property int count: 5"), false);
+assert.equal(startSource.includes("count: 5"), false);
+console.log("PASS workspace count follows effective Settings preview");

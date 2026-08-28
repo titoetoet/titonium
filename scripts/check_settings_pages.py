@@ -26,6 +26,7 @@ def main() -> int:
     errors: list[str] = []
     appearance = source(PAGES / "AppearancePage.qml", errors)
     spotlight = source(PAGES / "SpotlightPage.qml", errors)
+    bar = source(PAGES / "BarPage.qml", errors)
     applications = source(COMPONENTS / "ApplicationVisibilityList.qml", errors)
     workspace = source(ROOT / "Titonium/Settings/SettingsWorkspace.qml", errors)
     service = source(ROOT / "Titonium/Services/Applications/ApplicationService.qml", errors)
@@ -49,6 +50,11 @@ def main() -> int:
         'Preferences.patch("modules.spotlight.transitionDuration"',
         "Preferences.hiddenApplicationIds.length", "ApplicationVisibilityList {",
     ), errors)
+    require(bar, "BarPage", (
+        "from: 1", "to: 8", "stepSize: 1", "Shared.Slider", "Shared.Toggle",
+        'Preferences.patch("modules.bar.workspaceCount"',
+        'Preferences.patch("modules.bar.autoHide"', "settings.bar.workspace_count",
+    ), errors)
     require(applications, "ApplicationVisibilityList", (
         'property string query: ""', "ApplicationService.allApplications",
         "ListView {", "reuseItems: true", "currentIndex: -1", "Shared.SystemIcon",
@@ -62,11 +68,12 @@ def main() -> int:
         "return Visibility.setVisible(hiddenIds, entryId, visible)",
     ), errors)
     require(workspace, "SettingsWorkspace", (
-        "function componentFor(pageId: string): Component", "appearancePage", "spotlightPage",
+        "function componentFor(pageId: string): Component", "appearancePage", "spotlightPage", "barPage",
         "sourceComponent: root.componentFor(SettingsCoordinator.requestedPage)",
     ), errors)
     require(pages_qmldir, "pages/qmldir", (
         "AppearancePage 1.0 AppearancePage.qml", "SpotlightPage 1.0 SpotlightPage.qml",
+        "BarPage 1.0 BarPage.qml",
     ), errors)
     require(components_qmldir, "components/qmldir", (
         "ApplicationVisibilityList 1.0 ApplicationVisibilityList.qml",
@@ -82,6 +89,9 @@ def main() -> int:
         "settings.spotlight.duration", "settings.spotlight.hidden_count",
         "settings.spotlight.applications.search", "settings.spotlight.applications.empty",
         "settings.spotlight.applications.visible", "settings.spotlight.applications.hidden",
+        "settings.nav.bar", "settings.bar.title", "settings.bar.description",
+        "settings.bar.workspace_count", "settings.bar.auto_hide",
+        "settings.bar.auto_hide.description",
     )
     for locale in ("en", "vi"):
         catalog = json.loads((ROOT / f"config/i18n/{locale}.json").read_text(encoding="utf-8"))["strings"]

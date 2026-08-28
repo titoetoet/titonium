@@ -7,6 +7,7 @@ const vm = require("node:vm");
 
 const root = path.resolve(__dirname, "..");
 const rulesPath = path.join(root, "Titonium", "Bar", "BarVisibilityRules.js");
+const statePath = path.join(root, "Titonium", "Core", "Runtime", "BarVisibilityState.qml");
 
 if (!fs.existsSync(rulesPath)) {
     console.error("FAIL Bar visibility rules are missing");
@@ -26,3 +27,10 @@ assert.equal(context.exclusiveZone(false, 44), 0);
 assert.equal(context.exclusiveZone(true, -1), 0);
 
 console.log("PASS TopBar pin, edge reveal, and exclusive-zone fixtures");
+
+const stateSource = fs.existsSync(statePath) ? fs.readFileSync(statePath, "utf8") : "";
+assert.match(stateSource, /readonly property bool pinned: Preferences\.bar\.autoHide !== true/);
+assert.match(stateSource, /Preferences\.previewActive\s*\? Preferences\.patch\("modules\.bar\.autoHide", nextAutoHide\)\s*: Preferences\.commitPatch\("modules\.bar\.autoHide", nextAutoHide\)/s);
+assert.equal(stateSource.includes("property bool pinned: true"), false,
+    "Bar visibility cannot retain independent mutable pin state");
+console.log("PASS TopBar visibility maps through transactional Preferences");

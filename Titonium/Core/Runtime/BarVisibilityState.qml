@@ -6,10 +6,12 @@ import QtQuick
 QtObject {
     id: root
 
-    property bool pinned: true
+    readonly property bool pinned: Preferences.bar.autoHide !== true
 
     function togglePinned(): bool {
-        root.pinned = !root.pinned;
-        return root.pinned;
+        const nextAutoHide = root.pinned;
+        return Preferences.previewActive
+            ? Preferences.patch("modules.bar.autoHide", nextAutoHide)
+            : Preferences.commitPatch("modules.bar.autoHide", nextAutoHide);
     }
 }

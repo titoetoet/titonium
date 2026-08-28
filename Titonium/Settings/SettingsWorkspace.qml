@@ -18,6 +18,8 @@ Item {
             return appearancePage;
         if (pageId === "spotlight")
             return spotlightPage;
+        if (pageId === "bar")
+            return barPage;
         return generalPage;
     }
 
@@ -173,6 +175,11 @@ Item {
     Component {
         id: spotlightPage
         SpotlightPage {}
+    }
+
+    Component {
+        id: barPage
+        BarPage {}
     }
 
     Rectangle {
