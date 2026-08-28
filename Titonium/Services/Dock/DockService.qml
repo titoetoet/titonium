@@ -59,6 +59,17 @@ QtObject {
         const groupsById = {};
         const entriesById = {};
         const order = [];
+        const installed = ApplicationService.allApplications;
+        for (let index = 0; index < installed.length; index++) {
+            const application = installed[index];
+            if (!application?.id)
+                continue;
+            entriesById[application.id] = {
+                id: application.id,
+                name: application.name,
+                icon: application.icon,
+            };
+        }
         for (let index = 0; index < source.length; index++) {
             const window = source[index];
             const sourceId = root.normalizedAppId(window?.appId);
@@ -72,7 +83,8 @@ QtObject {
             if (!groupsById[key]) {
                 groupsById[key] = { appId: appId, runningCount: 0, active: false, urgent: false,
                     activeWorkspaceId: 0 };
-                entriesById[appId] = root.descriptorForAppId(appId, entry);
+                if (!DockRules.entryForId(entriesById, appId))
+                    entriesById[appId] = root.descriptorForAppId(appId, entry);
                 order.push(key);
                 root.rememberFirstSeen(appId);
             }
@@ -87,7 +99,8 @@ QtObject {
             groups.push(groupsById[order[index]]);
         root.workspaceWindowCount = HyprlandService.activeWorkspaceWindowCount;
         root.projectedItems = DockRules.mergeItems(
-            DockStore.pinnedIds, groups, entriesById, root.firstSeenIds);
+            DockStore.pinnedIds, groups, entriesById, root.firstSeenIds,
+            Preferences.hiddenApplicationIds);
     }
 
     function warnMutation(action: string, appId: string): void {
@@ -180,6 +193,11 @@ QtObject {
     property Connections applicationConnections: Connections {
         target: ApplicationService
         function onAllApplicationsChanged(): void { root.recompute(); }
+    }
+
+    property Connections preferencesConnections: Connections {
+        target: Preferences
+        function onHiddenApplicationIdsChanged(): void { root.recompute(); }
     }
 
     Component.onCompleted: root.recompute()

@@ -18,32 +18,26 @@ EXPECTED_DEFAULTS = {
     "autoHide": True,
 }
 STORE_FRAGMENTS = (
-    "import Quickshell.Io",
     "import qs.Titonium.Core.Runtime",
-    "Quickshell.dataPath(\"dock.json\")",
-    "Quickshell.configPath(\"config/defaults/dock.json\")",
-    "atomicWrites: true",
-    "property int pendingRuntimeWrites: 0",
-    "function beginRuntimeWrite(): void",
-    "function finishRuntimeWrite(): void",
-    "watchChanges: root.pendingRuntimeWrites === 0",
-    "onSaved: root.finishRuntimeWrite()",
-    "DockRules.normalizeState",
+    "readonly property string visibilityMode: Preferences.dock.visibilityMode",
+    "readonly property var pinnedIds:",
+    "readonly property bool pinnedOpen:",
+    "readonly property bool autoHide:",
+    "function setVisibilityMode(mode: string): bool",
+    "function setPinnedIds(ids: var): bool",
     "function togglePin(appId: string): bool",
+    "function movePin(fromIndex: int, toIndex: int): bool",
     "function setPinnedOpen(value: bool): bool",
-    "function setAutoHide(value: bool): bool",
     "function snapshot(): var",
-    "setText(JSON.stringify(value, null, 2))",
-    "Logger.warn(\"dock\"",
-    "runtime dock state contains invalid JSON",
+    "Preferences.previewActive",
+    "Preferences.patch(\"modules.dock.",
+    "Preferences.commitPatch(\"modules.dock.",
+    "DockRules.movePinnedId",
+    "DockRules.visibilityPolicy",
 )
 FORBIDDEN_STORE_FRAGMENTS = (
-    "Process",
-    "execDetached",
-    "hyprctl",
-    "defaultsFile.setText",
-    "config/schemas/dock.schema.json",
-    "watchChanges: true",
+    "Process", "FileView", "Quickshell.Io", "dock.json", "atomicWrites",
+    "property var state:", "setText", "execDetached", "hyprctl",
 )
 
 
@@ -105,14 +99,8 @@ def validate_store(errors: list[str]) -> None:
     for fragment in FORBIDDEN_STORE_FRAGMENTS:
         if fragment in source:
             errors.append(f"Dock store has forbidden runtime dependency: {fragment}")
-    if source.count("FileView {") != 2:
-        errors.append("Dock store must own exactly runtime and shipped-default FileViews")
-    if source.count("watchChanges:") != 1:
-        errors.append("Dock store must suspend its sole runtime watcher during self-writes")
-    begin_index = source.find("root.beginRuntimeWrite()")
-    save_index = source.find("runtimeFile.setText(JSON.stringify(value, null, 2))")
-    if begin_index < 0 or save_index < 0 or begin_index > save_index:
-        errors.append("Dock store must suspend runtime watching before every self-write")
+    if "FileView {" in source:
+        errors.append("DockStore must not own persistence after settings v7 migration")
     for path in ROOT.rglob("*.qml"):
         if path == STORE:
             continue

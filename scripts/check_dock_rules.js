@@ -49,6 +49,7 @@ const merged = rules.mergeItems(
     runningGroups,
     entriesById,
     ["FIREFOX", "org.gnome.Nautilus", "Firefox"],
+    [],
 );
 assert.deepEqual(plain(merged), [
     { appId: "Firefox", name: "Firefox", icon: "firefox", runningCount: 5,
@@ -57,11 +58,29 @@ assert.deepEqual(plain(merged), [
         active: false, urgent: true, pinned: false, workspaceColorIndex: -1 },
 ]);
 assert.deepEqual(plain(rules.mergeItems([], runningGroups, entriesById,
-    ["org.gnome.Nautilus", "FIREFOX"]).map(item => item.appId)),
+    ["org.gnome.Nautilus", "FIREFOX"], []).map(item => item.appId)),
     ["org.gnome.Nautilus", "Firefox"]);
 assert.deepEqual(plain(Object.keys(merged[0]).sort()),
     ["active", "appId", "icon", "name", "pinned", "runningCount", "urgent", "workspaceColorIndex"]);
 console.log("PASS Dock rules merge fixtures");
+
+const visibilityEntries = {
+    "hidden.desktop": { id: "hidden.desktop", name: "Hidden", icon: "hidden" },
+    "offline.desktop": { id: "offline.desktop", name: "Offline", icon: "offline" },
+};
+const hiddenRunning = [{ appId: "hidden.desktop", runningCount: 1, active: false, urgent: false }];
+assert.deepEqual(plain(rules.mergeItems(["hidden.desktop"], hiddenRunning,
+    visibilityEntries, [], ["hidden.desktop"]).map(item => item.appId)), ["hidden.desktop"]);
+assert.deepEqual(plain(rules.mergeItems([], hiddenRunning,
+    visibilityEntries, [], ["hidden.desktop"]).map(item => item.appId)), []);
+assert.deepEqual(plain(rules.mergeItems(["offline.desktop"], [],
+    visibilityEntries, [], []).map(item => ({ id: item.appId, count: item.runningCount }))),
+    [{ id: "offline.desktop", count: 0 }]);
+assert.deepEqual(plain(rules.movePinnedId(["a", "b", "c"], 2, 0)), ["c", "a", "b"]);
+assert.deepEqual(plain(rules.visibilityPolicy("auto-hide")), { autoHide: true, pinnedOpen: false });
+assert.deepEqual(plain(rules.visibilityPolicy("always-visible")), { autoHide: false, pinnedOpen: false });
+assert.deepEqual(plain(rules.visibilityPolicy("reserve-space")), { autoHide: false, pinnedOpen: true });
+console.log("PASS Dock v7 visibility and hidden-precedence fixtures");
 
 assert.equal(rules.nextCycleIndex(-1, 3), 0);
 assert.equal(rules.nextCycleIndex(0, 3), 1);

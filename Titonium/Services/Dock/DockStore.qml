@@ -2,104 +2,63 @@ pragma Singleton
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import Quickshell
-import Quickshell.Io
 import qs.Titonium.Core.Runtime
 import "DockRules.js" as DockRules
 
 QtObject {
     id: root
 
-    property var state: DockRules.normalizeState(null)
-    property bool ready: false
-    property bool warnedRuntimeCorruption: false
-    property int pendingRuntimeWrites: 0
+    readonly property string visibilityMode: Preferences.dock.visibilityMode
+    readonly property var pinnedIds: DockRules.uniqueIds(Preferences.dock.pinnedIds)
+    readonly property var visibilityPolicy: DockRules.visibilityPolicy(root.visibilityMode)
+    readonly property bool pinnedOpen: root.visibilityPolicy.pinnedOpen
+    readonly property bool autoHide: root.visibilityPolicy.autoHide
+    readonly property bool ready: Preferences.ready
 
-    readonly property var pinnedIds: root.state.pinnedIds.slice()
-    readonly property bool pinnedOpen: root.state.pinnedOpen
-    readonly property bool autoHide: root.state.autoHide
-    readonly property string runtimePath: Quickshell.dataPath("dock.json")
-    readonly property string defaultsPath: Quickshell.configPath("config/defaults/dock.json")
-
-    function parse(file: FileView, label: string, warnOnFailure: bool): var {
-        const text = file.text();
-        if (!text || text.trim().length === 0)
-            return null;
-        try {
-            return JSON.parse(text);
-        } catch (failure) {
-            if (warnOnFailure && !root.warnedRuntimeCorruption) {
-                root.warnedRuntimeCorruption = true;
-                Logger.warn("dock", "runtime dock state contains invalid JSON: " + failure);
-            }
-            return null;
-        }
+    function write(path: string, value: var): bool {
+        return Preferences.previewActive
+            ? Preferences.patch("modules.dock." + path, value)
+            : Preferences.commitPatch("modules.dock." + path, value);
     }
 
-    function apply(next: var, persist: bool): bool {
-        const value = DockRules.normalizeState(next);
-        root.state = value;
-        if (persist) {
-            root.beginRuntimeWrite();
-            runtimeFile.setText(JSON.stringify(value, null, 2));
-        }
-        return true;
+    function setVisibilityMode(mode: string): bool {
+        const normalized = DockRules.normalizeVisibilityMode(mode);
+        if (normalized !== mode)
+            return false;
+        return root.write("visibilityMode", normalized);
     }
 
-    function beginRuntimeWrite(): void {
-        root.pendingRuntimeWrites += 1;
-    }
-
-    function finishRuntimeWrite(): void {
-        root.pendingRuntimeWrites = Math.max(0, root.pendingRuntimeWrites - 1);
-    }
-
-    function reload(): void {
-        const defaults = root.parse(defaultsFile, "shipped dock defaults", false)
-            || DockRules.normalizeState(null);
-        const runtime = root.parse(runtimeFile, "runtime dock state", true);
-        root.state = DockRules.normalizeState(runtime || defaults);
-        root.ready = true;
+    function setPinnedIds(ids: var): bool {
+        return root.write("pinnedIds", DockRules.uniqueIds(ids));
     }
 
     function togglePin(appId: string): bool {
-        const id = (appId || "").trim();
+        const id = typeof appId === "string" ? appId.trim() : "";
         if (!id)
             return false;
         const key = id.toLocaleLowerCase();
-        const nextPinnedIds = root.pinnedIds.slice();
-        for (let index = 0; index < nextPinnedIds.length; index++) {
-            if (nextPinnedIds[index].toLocaleLowerCase() !== key)
+        const next = root.pinnedIds.slice();
+        for (let index = 0; index < next.length; index++) {
+            if (next[index].toLocaleLowerCase() !== key)
                 continue;
-            nextPinnedIds.splice(index, 1);
-            return root.apply({
-                pinnedIds: nextPinnedIds,
-                pinnedOpen: root.pinnedOpen,
-                autoHide: root.autoHide,
-            }, true);
+            next.splice(index, 1);
+            return root.setPinnedIds(next);
         }
-        nextPinnedIds.push(id);
-        return root.apply({
-            pinnedIds: nextPinnedIds,
-            pinnedOpen: root.pinnedOpen,
-            autoHide: root.autoHide,
-        }, true);
+        next.push(id);
+        return root.setPinnedIds(next);
+    }
+
+    function movePin(fromIndex: int, toIndex: int): bool {
+        return root.setPinnedIds(DockRules.movePinnedId(
+            root.pinnedIds, fromIndex, toIndex));
     }
 
     function setPinnedOpen(value: bool): bool {
-        return root.apply({
-            pinnedIds: root.pinnedIds,
-            pinnedOpen: value === true,
-            autoHide: root.autoHide,
-        }, true);
+        return root.setVisibilityMode(value ? "reserve-space" : "auto-hide");
     }
 
     function setAutoHide(value: bool): bool {
-        return root.apply({
-            pinnedIds: root.pinnedIds,
-            pinnedOpen: root.pinnedOpen,
-            autoHide: value === true,
-        }, true);
+        return root.setVisibilityMode(value ? "auto-hide" : "always-visible");
     }
 
     function snapshot(): var {
@@ -109,30 +68,7 @@ QtObject {
             pinnedIds: root.pinnedIds,
             pinnedOpen: root.pinnedOpen,
             autoHide: root.autoHide,
+            visibilityMode: root.visibilityMode,
         };
     }
-
-    property FileView defaultsFile: FileView {
-        path: root.defaultsPath
-        preload: false
-        blockLoading: true
-        printErrors: false
-    }
-
-    property FileView runtimeFile: FileView {
-        path: root.runtimePath
-        preload: false
-        blockLoading: true
-        printErrors: false
-        atomicWrites: true
-        watchChanges: root.pendingRuntimeWrites === 0
-        onFileChanged: root.reload()
-        onSaved: root.finishRuntimeWrite()
-        onSaveFailed: failure => {
-            root.finishRuntimeWrite();
-            Logger.warn("dock", "runtime dock state save failed: " + failure);
-        }
-    }
-
-    Component.onCompleted: root.reload()
 }

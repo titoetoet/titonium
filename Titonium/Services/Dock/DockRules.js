@@ -23,6 +23,34 @@ function uniqueIds(values) {
     return result;
 }
 
+function normalizeVisibilityMode(value) {
+    return ["auto-hide", "always-visible", "reserve-space"].indexOf(value) >= 0
+        ? value : "auto-hide";
+}
+
+function visibilityPolicy(mode) {
+    const normalized = normalizeVisibilityMode(mode);
+    return {
+        autoHide: normalized === "auto-hide",
+        pinnedOpen: normalized === "reserve-space",
+    };
+}
+
+function movePinnedId(values, fromIndex, toIndex) {
+    const result = uniqueIds(values);
+    const source = Math.floor(Number(fromIndex));
+    const target = Math.floor(Number(toIndex));
+    if (!Number.isFinite(source) || !Number.isFinite(target)
+            || source < 0 || source >= result.length || result.length < 2)
+        return result;
+    const boundedTarget = Math.max(0, Math.min(result.length - 1, target));
+    if (source === boundedTarget)
+        return result;
+    const moved = result.splice(source, 1)[0];
+    result.splice(boundedTarget, 0, moved);
+    return result;
+}
+
 function normalizeState(raw) {
     const source = raw && typeof raw === "object" ? raw : {};
     return {
@@ -92,11 +120,13 @@ function canonicalUnpinnedId(group, entriesById) {
     return normalizedId(entry.id) || group.appId;
 }
 
-function mergeItems(pinnedIds, runningGroups, entriesById, firstSeenIds) {
+function mergeItems(pinnedIds, runningGroups, entriesById, firstSeenIds, hiddenIds) {
     const groups = combinedGroups(runningGroups);
     const pinned = uniqueIds(pinnedIds);
     const emitted = {};
+    const hidden = {};
     const result = [];
+    uniqueIds(hiddenIds).forEach(id => hidden[keyForId(id)] = true);
 
     for (let index = 0; index < pinned.length; index++) {
         const appId = pinned[index];
@@ -114,7 +144,7 @@ function mergeItems(pinnedIds, runningGroups, entriesById, firstSeenIds) {
         const appId = firstSeen[index];
         const key = keyForId(appId);
         const group = groups.byId[key];
-        if (!group || emitted[key])
+        if (!group || emitted[key] || hidden[key])
             continue;
         result.push(itemFor(canonicalUnpinnedId(group, entriesById), group, entriesById, false));
         emitted[key] = true;
@@ -122,7 +152,7 @@ function mergeItems(pinnedIds, runningGroups, entriesById, firstSeenIds) {
 
     for (let index = 0; index < groups.order.length; index++) {
         const key = groups.order[index];
-        if (emitted[key])
+        if (emitted[key] || hidden[key])
             continue;
         const group = groups.byId[key];
         result.push(itemFor(canonicalUnpinnedId(group, entriesById), group, entriesById, false));
