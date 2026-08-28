@@ -1,7 +1,7 @@
 # Center Attention System Design
 
 **Date:** 2026-08-28
-**Status:** Approved in conversation; awaiting written-spec review
+**Status:** Approved for implementation planning
 **Scope:** Daily Focus, passive activity indicators, priority arbitration, MPRIS media events,
 user timers and explicit external job events for the true center of the TopBar
 
@@ -29,6 +29,10 @@ The implementation will:
 - create a new `CenterIsland.qml` for the attention surface;
 - compose that new island beside the existing Bar pin in `CenterGroup` and continue centering the
   whole group from the full screen width.
+
+The old component's final name is `ActiveWindowPill`. `FocusWindow` is rejected because “focus”
+would be ambiguous between the active compositor window, keyboard focus and the Daily Focus mental
+anchor introduced by this system.
 
 ## Locked behavior
 
@@ -79,7 +83,7 @@ Initial policy:
 |---:|---|---:|
 | 100 | critical Center/system integration failure | until acknowledged |
 | 80 | external job requires user action | until acknowledged or source clears it |
-| 70 | timer finished; external job failed | 15 seconds unless acknowledged |
+| 70 | timer finished; external job failed; Center action failed | 15 seconds unless acknowledged |
 | 40 | external job completed | 5 seconds |
 | 30 | timer has 5 minutes or 1 minute remaining | 4 or 6 seconds |
 | 20 | media track changed, resumed or paused | 6, 3 or 2 seconds |
@@ -148,6 +152,9 @@ only.
 5. A lower-priority actionable event remains pending while it has not been cleared.
 6. On expiry, acknowledgement or source clear, the highest-priority newest actionable event wins;
    otherwise presentation falls back directly to Daily Focus.
+
+The service also exposes exact-ID clear for timer/job cancellation. Exact clear removes only the
+matching current/pending descriptor; source clear is reserved for producer shutdown or reload.
 
 Each accepted presentation change increments a generation token. The single non-repeating expiry
 timer captures that generation and event ID. A timeout mutates state only when both still match,
@@ -319,6 +326,9 @@ Daily Focus, timers and job lifecycle are Titonium-owned designs, so no GPL sour
 
 Quickshell's native `Quickshell.Services.Mpris` singleton is the selected Linux integration because
 it exposes connected MPRIS players reactively. No process poller or external media CLI is added.
+Quickshell `FileView` exposes reactive contents but no modification timestamp in the installed
+runtime, so `CenterFocusStore` runs `stat -c %Y` only on startup and `fileChanged`; it never samples
+the file periodically.
 
 ## Testing and acceptance
 
