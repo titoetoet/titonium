@@ -7,6 +7,7 @@ import qs.Titonium.Services.Applications
 import qs.Titonium.Services.Clipboard
 import "Calculator.js" as Calculator
 import "CategoryCatalog.js" as CategoryCatalog
+import "ClipboardSelection.js" as ClipboardSelection
 import "SearchEngine.js" as SearchEngine
 import "SpotlightLayout.js" as SpotlightLayout
 import "SpotlightScope.js" as SpotlightScope
@@ -41,7 +42,7 @@ QtObject {
         root.mode = SpotlightScope.modeFor(root.scope, root.query);
         root.categoryId = initial.categoryId;
         root.pageIndex = 0;
-        root.selectedIndex = 0;
+        root.selectedIndex = ClipboardSelection.initialIndex(root.scope);
         root.selectionMoved = false;
     }
 
@@ -49,7 +50,7 @@ QtObject {
         if (root.scope !== "applications") {
             root.query = typeof nextQuery === "string" ? nextQuery : "";
             root.mode = SpotlightScope.modeFor(root.scope, root.query);
-            root.selectedIndex = 0;
+            root.selectedIndex = ClipboardSelection.initialIndex(root.scope);
             root.selectionMoved = false;
             return;
         }
@@ -61,7 +62,7 @@ QtObject {
         root.query = next.query;
         root.mode = next.mode;
         root.categoryId = next.categoryId;
-        root.selectedIndex = 0;
+        root.selectedIndex = ClipboardSelection.initialIndex(root.scope);
         root.selectionMoved = false;
     }
 
@@ -73,7 +74,7 @@ QtObject {
         root.scope = SpotlightScope.normalize(nextScope);
         root.mode = SpotlightScope.modeFor(root.scope, root.query);
         root.pageIndex = 0;
-        root.selectedIndex = 0;
+        root.selectedIndex = ClipboardSelection.initialIndex(root.scope);
         root.selectionMoved = false;
     }
 
@@ -143,7 +144,7 @@ QtObject {
 
     function handleEscape(): bool {
         if (root.mode === "clipboard") {
-            root.selectedIndex = 0;
+            root.selectedIndex = -1;
             root.selectionMoved = false;
             return true;
         }

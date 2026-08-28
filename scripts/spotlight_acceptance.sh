@@ -92,7 +92,7 @@ results_state="$(wait_for_spotlight_state \
 require_contains "$results_state" "mode=results;query=fire;selected=0" "Spotlight search state"
 
 require_contains "$(call_ipc spotlight setScope clipboard)" "open:clipboard:" "Spotlight Tab scope Clipboard"
-wait_for_spotlight_state "mode=clipboard;query=fire;selected=0" "Clipboard scope preserves query" >/dev/null
+wait_for_spotlight_state "mode=clipboard;query=fire;selected=-1" "Clipboard scope preserves query without implicit selection" >/dev/null
 require_contains "$(call_ipc spotlight setScope system)" "open:system:" "Spotlight Tab scope System Search"
 wait_for_spotlight_state "mode=system;query=fire;selected=0" "System Search scope preserves query" >/dev/null
 require_contains "$(call_ipc spotlight setScope applications)" "open:applications:" "Spotlight Tab scope wraps to Apps"

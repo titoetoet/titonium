@@ -11,7 +11,7 @@ Item {
     id: root
 
     required property var screen
-    property int count: 6
+    property int count: 5
     readonly property int emptySlotWidth: 24
     readonly property int appIconSize: 17
     readonly property int appSpacing: 3

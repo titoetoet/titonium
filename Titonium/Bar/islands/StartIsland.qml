@@ -31,7 +31,7 @@ Item {
                 id: workspaces
                 anchors.centerIn: parent
                 screen: root.screen
-                count: 6
+                count: 5
             }
         }
 

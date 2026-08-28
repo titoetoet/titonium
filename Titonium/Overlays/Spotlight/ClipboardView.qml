@@ -8,6 +8,7 @@ import qs.Titonium.Theme
 import qs.Titonium.Shared as Controls
 import qs.Titonium.Core.Runtime
 import qs.Titonium.Services.Clipboard
+import "ClipboardSelection.js" as ClipboardSelection
 
 FocusScope {
     id: root
@@ -24,9 +25,10 @@ FocusScope {
             item.text.toLowerCase().indexOf(query) >= 0
             || item.kind.toLowerCase().indexOf(query) >= 0);
     }
-    readonly property var selectedItem: root.filteredItems.length > 0
-        ? root.filteredItems[Math.min(root.spotlightModel?.selectedIndex || 0, root.filteredItems.length - 1)]
-        : null
+    readonly property int selectedIndex: typeof root.spotlightModel?.selectedIndex === "number"
+        ? root.spotlightModel.selectedIndex : -1
+    readonly property var selectedItem: ClipboardSelection.itemAt(
+        root.filteredItems, root.selectedIndex)
 
     function select(index: int): void {
         if (!root.spotlightModel || index < 0 || index >= root.filteredItems.length)
@@ -38,8 +40,8 @@ FocusScope {
     function moveSelection(delta: int): void {
         if (!root.spotlightModel || root.filteredItems.length === 0)
             return;
-        const length = root.filteredItems.length;
-        root.spotlightModel.selectedIndex = (root.spotlightModel.selectedIndex + delta + length) % length;
+        root.spotlightModel.selectedIndex = ClipboardSelection.move(
+            root.selectedIndex, delta, root.filteredItems.length);
         root.spotlightModel.selectionMoved = true;
         historyList.positionViewAtIndex(root.spotlightModel.selectedIndex, ListView.Contain);
     }
@@ -54,14 +56,14 @@ FocusScope {
             return;
         ClipboardService.remove(root.selectedItem.id);
         if (root.spotlightModel)
-            root.spotlightModel.selectedIndex = Math.max(0,
-                Math.min(root.spotlightModel.selectedIndex, root.filteredItems.length - 1));
+            root.spotlightModel.selectedIndex = ClipboardSelection.clamp(
+                root.selectedIndex, root.filteredItems.length);
     }
 
     onFilteredItemsChanged: {
         if (root.spotlightModel)
-            root.spotlightModel.selectedIndex = Math.max(0,
-                Math.min(root.spotlightModel.selectedIndex, root.filteredItems.length - 1));
+            root.spotlightModel.selectedIndex = ClipboardSelection.clamp(
+                root.selectedIndex, root.filteredItems.length);
     }
 
     Connections {
@@ -119,7 +121,7 @@ FocusScope {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 model: root.filteredItems
-                currentIndex: root.spotlightModel?.selectedIndex || 0
+                currentIndex: root.selectedIndex
                 clip: true
                 spacing: Metrics.spacingXSmall
                 boundsBehavior: Flickable.StopAtBounds
@@ -132,13 +134,13 @@ FocusScope {
                     height: 60
                     activeFocusOnTab: true
                     readonly property bool actionsVisible:
-                        historyRow.index === (root.spotlightModel?.selectedIndex || 0)
+                        historyRow.index === root.selectedIndex
                         || rowHover.hovered || historyRow.activeFocus
 
                     Rectangle {
                         anchors.fill: parent
                         radius: Metrics.radiusMedium
-                        color: historyRow.index === (root.spotlightModel?.selectedIndex || 0)
+                        color: historyRow.index === root.selectedIndex
                             || historyRow.activeFocus || rowHover.hovered
                             ? Theme.surfaceInteractive : "transparent"
                         border.width: historyRow.activeFocus ? Metrics.borderWidth : 0
@@ -175,7 +177,7 @@ FocusScope {
                                 Layout.fillWidth: true
                                 text: historyRow.modelData.preview
                                 variant: historyRow.modelData.kind === "code" ? "mono" : "label"
-                                strong: historyRow.index === (root.spotlightModel?.selectedIndex || 0)
+                                strong: historyRow.index === root.selectedIndex
                                 wrapMode: Text.NoWrap
                                 elide: Text.ElideRight
                             }
@@ -220,9 +222,8 @@ FocusScope {
                                 onTriggered: {
                                     ClipboardService.remove(historyRow.modelData.id);
                                     if (root.spotlightModel)
-                                        root.spotlightModel.selectedIndex = Math.max(0,
-                                            Math.min(root.spotlightModel.selectedIndex,
-                                                root.filteredItems.length - 1));
+                                        root.spotlightModel.selectedIndex = ClipboardSelection.clamp(
+                                            root.selectedIndex, root.filteredItems.length);
                                 }
                                 QtControls.ToolTip.visible: hovered
                                 QtControls.ToolTip.text: accessibleName
@@ -258,7 +259,7 @@ FocusScope {
                     Accessible.role: Accessible.ListItem
                     Accessible.name: historyRow.modelData.preview
                     Accessible.focusable: true
-                    Accessible.selected: historyRow.index === (root.spotlightModel?.selectedIndex || 0)
+                    Accessible.selected: historyRow.index === root.selectedIndex
                 }
 
                 Controls.TextLabel {

@@ -41,7 +41,7 @@ closes the notch; opening the notch closes `SurfaceManager`, so the two exclusiv
 cannot overlap. An outside click, Escape, or focused-monitor change releases the notch window.
 
 The TopBar pin remains positioned from the full screen width, independent of the outer islands.
-The Active Window pill sits directly after the six-slot Workspace group, sizes naturally up to
+The Active Window pill sits directly after the five-slot Workspace group, sizes naturally up to
 520 logical pixels, and projects the active descriptor as app icon plus
 `Application · window title`. It falls back to Titonium and continues to open the centered
 four-corner popup 52 logical pixels below the screen edge. The full Bar input mask is composed

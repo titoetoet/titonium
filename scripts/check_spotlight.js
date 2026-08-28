@@ -66,6 +66,24 @@ const scope = loadDomain("SpotlightScope");
 const header = loadDomain("SpotlightHeader");
 const visual = loadDomain("SpotlightVisual");
 const geometry = loadDomain("SpotlightGeometry");
+const clipboardSelection = loadDomain("ClipboardSelection");
+
+assertEqual(clipboardSelection.initialIndex("clipboard"), -1,
+    "Clipboard opens without an implicit first selection");
+assertEqual(clipboardSelection.initialIndex("applications"), 0,
+    "application search keeps its first-result activation contract");
+assertEqual(clipboardSelection.move(-1, 1, 3), 0,
+    "first Clipboard Down selects the first item");
+assertEqual(clipboardSelection.move(-1, -1, 3), 2,
+    "first Clipboard Up selects the last item");
+assertEqual(clipboardSelection.move(2, 1, 3), 0,
+    "Clipboard selection wraps forward");
+assertEqual(clipboardSelection.clamp(-1, 3), -1,
+    "Clipboard filtering preserves no-selection state");
+assertEqual(clipboardSelection.clamp(2, 1), 0,
+    "Clipboard filtering clamps an existing selection");
+assertEqual(clipboardSelection.itemAt([{ id: "first" }], -1), null,
+    "Clipboard preview stays empty before user selection");
 
 assertEqual(geometry.panelTop(), 200, "Spotlight panel starts at absolute logical y 200");
 assertEqual(geometry.panelWidth(1000, 16), 860,
@@ -319,4 +337,4 @@ assertEqual(clipboardViewSource.includes('label: I18n.tr("spotlight.clipboard.co
 assertEqual(clipboardViewSource.includes('label: I18n.tr("spotlight.clipboard.delete")'), false,
     "Clipboard preview does not retain the Delete text action");
 
-console.log("PASS spotlight domain and Clipboard action-layout fixtures (80)");
+console.log("PASS spotlight domain and Clipboard selection/action fixtures (88)");

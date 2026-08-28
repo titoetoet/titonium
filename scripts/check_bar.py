@@ -211,7 +211,7 @@ def main() -> int:
     if workspaces.is_file():
         source = workspaces.read_text(encoding="utf-8")
         for fragment in (
-            "property int count: 6",
+            "property int count: 5",
             "readonly property int emptySlotWidth: 24",
             "readonly property int appIconSize: 17",
             "readonly property int appSpacing: 3",
@@ -256,8 +256,8 @@ def main() -> int:
         source = start_island.read_text(encoding="utf-8")
         if not (0 <= source.find("Workspaces {") < source.find("CenterIsland {")):
             errors.append("Active Window must sit immediately after Workspaces in StartIsland")
-        if "count: 6" not in source:
-            errors.append("StartIsland must render six workspace slots")
+        if "count: 5" not in source:
+            errors.append("StartIsland must render five workspace slots")
 
     center_group = BAR / "islands/CenterGroup.qml"
     if center_group.is_file():
@@ -280,10 +280,23 @@ def main() -> int:
             errors.append(f"Shared Button missing configurable rounded hover contract: {fragment}")
 
     input_method = BAR / "widgets/InputMethod.qml"
-    if input_method.is_file() and "Shared.Surface" in input_method.read_text(encoding="utf-8"):
-        errors.append("Input Method must not draw a nested outlined surface inside StatusPill")
+    if input_method.is_file():
+        input_source = input_method.read_text(encoding="utf-8")
+        if "Shared.Surface" in input_source:
+            errors.append("Input Method must not draw a nested outlined surface inside StatusPill")
+        for fragment in (
+            "readonly property string keyboardIcon:",
+            "InputMethodService.vietnamese",
+            '"keyboard_keys"',
+            "InputMethodService.english",
+            '"keyboard_off"',
+            "name: root.keyboardIcon",
+        ):
+            if fragment not in input_source:
+                errors.append(f"Input Method missing icon-only language contract: {fragment}")
+        if "Shared.TextLabel" in input_source or "InputMethodService.shortLabel" in input_source:
+            errors.append("Input Method must not retain a visible VI/EN text label")
     protected_hashes = {
-        BAR / "widgets/InputMethod.qml": "cf88d46b009efa2748b03970a7b0e8f586b9167d95687b33cdccfbeb4ff6be61",
         ROOT / "Titonium/Services/InputMethod/InputMethodService.qml": "cb7eb04be9d6898f2b641f0b4e791e48b146b18bcb9ab8aa3c17188c29144126",
     }
     for path, expected_hash in protected_hashes.items():
