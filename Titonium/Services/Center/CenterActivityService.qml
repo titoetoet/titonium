@@ -125,7 +125,7 @@ QtObject {
 
     function activate(): void {}
 
-    Connections {
+    property Connections attentionConnections: Connections {
         target: CenterAttentionService
 
         function onHasTransientChanged(): void {

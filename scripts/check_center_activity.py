@@ -14,6 +14,7 @@ APP = ROOT / "Titonium/App.qml"
 CHECK = ROOT / "scripts/check.sh"
 EN = ROOT / "config/i18n/en.json"
 VI = ROOT / "config/i18n/vi.json"
+CENTER_VIEW = ROOT / "Titonium/Bar/islands/CenterIsland.qml"
 
 
 def main() -> int:
@@ -37,6 +38,7 @@ def main() -> int:
             "function upsert(descriptor: var): bool",
             "function remove(activityId: string): bool",
             "function snapshot(): string",
+            "property Connections attentionConnections: Connections {",
             "function activate(): void",
             "repeat: false",
         ):
@@ -86,6 +88,32 @@ def main() -> int:
     for key in required_keys:
         if key not in en or key not in vi:
             errors.append(f"missing Center Activity locale key: {key}")
+
+    if not CENTER_VIEW.is_file():
+        errors.append("missing CenterIsland.qml")
+    else:
+        source = CENTER_VIEW.read_text(encoding="utf-8")
+        for fragment in (
+            "readonly property var eventPresentation: CenterAttentionService.presentation",
+            "readonly property var activityPresentation: CenterActivityService.presentation",
+            "readonly property var primaryPresentation: root.eventPresentation || root.activityPresentation",
+            "root.primaryPresentation.title",
+            "CenterFocusStore.text",
+            'root.activityPresentation ? "primary" : "secondary"',
+            "strong: root.primaryPresentation !== null",
+        ):
+            if fragment not in source:
+                errors.append(f"CenterIsland missing Activity projection: {fragment}")
+        for forbidden in (
+            "Timer {",
+            "Process {",
+            "FileView {",
+            "CenterActivityService.upsert",
+            "CenterActivityService.remove",
+            "CenterFocusStore.openScratchpad()",
+        ):
+            if forbidden in source:
+                errors.append(f"CenterIsland owns forbidden runtime behavior: {forbidden}")
 
     if errors:
         print("FAIL Center Activity architecture")

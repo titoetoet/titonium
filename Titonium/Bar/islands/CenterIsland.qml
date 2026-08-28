@@ -14,13 +14,15 @@ FocusScope {
     signal notchRequested(var screen)
 
     readonly property var eventPresentation: CenterAttentionService.presentation
+    readonly property var activityPresentation: CenterActivityService.presentation
+    readonly property var primaryPresentation: root.eventPresentation || root.activityPresentation
     readonly property var indicators: CenterAttentionService.indicators
-    readonly property string primaryText: root.eventPresentation
-        ? root.eventPresentation.title
+    readonly property string primaryText: root.primaryPresentation
+        ? root.primaryPresentation.title
         : (CenterFocusStore.text || I18n.tr("menubar.center.focus_fallback"))
-    readonly property string textTone: !root.eventPresentation
-        ? "secondary"
-        : (root.eventPresentation.priority >= 70 ? "danger" : "primary")
+    readonly property string textTone: root.eventPresentation
+        ? (root.eventPresentation.priority >= 70 ? "danger" : "primary")
+        : (root.activityPresentation ? "primary" : "secondary")
 
     implicitWidth: Math.min(480, contentRow.implicitWidth + Metrics.spacingLarge * 2)
     implicitHeight: Metrics.controlHeight
@@ -65,7 +67,7 @@ FocusScope {
             text: root.primaryText
             variant: "label"
             tone: root.textTone
-            strong: root.eventPresentation !== null
+            strong: root.primaryPresentation !== null
             elide: Text.ElideRight
             maximumLineCount: 1
             wrapMode: Text.NoWrap

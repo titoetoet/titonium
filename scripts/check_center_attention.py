@@ -130,6 +130,7 @@ def main() -> int:
         source = CENTER_VIEW.read_text(encoding="utf-8")
         for fragment in (
             "CenterAttentionService.presentation",
+            "CenterActivityService.presentation",
             "CenterAttentionService.indicators",
             "CenterFocusStore.text",
         ):
