@@ -28,6 +28,10 @@ The previous feature roadmap is retired. Work now advances by researched capabil
 4. **Notification toast slice — complete.** One native service, immutable bounded history,
    session-only unread Bell and a DP-1-only lazy stack of at most three five-second toasts passed
    focused and protected acceptance on 2026-08-27.
+5. **Settings Center V1 — implementation and isolated acceptance complete; visual approval
+   pending.** Eight lazy pages now edit a single transactional settings v7 model with
+   Preview/Apply/Cancel, legacy Dock projection and DP-1-only lifecycle. The remaining checkpoint
+   is manual visual review plus persistence/rollback verification against backed-up live data.
 
 Deferred notification work is a real Notification Center, action invocation, persistence and
 per-application policy. None belongs in the completed toast slice.
@@ -50,8 +54,8 @@ code. The first research set should cover:
 3. Establish animation and theme-input policy (static JSON or matugen) without coupling features.
 4. Add Notification Center/actions as a separate Service-contract extension → lazy View → live
    acceptance milestone; do not expand the ToastHost into a god surface.
-5. Revisit Settings only after several real modules expose stable preferences.
+5. Extend Settings only when another real module exposes a stable preference; keep mutation in the
+   existing v7 transaction instead of adding per-page stores.
 
-Spotlight and Input Method remain protected throughout. Major surfaces such as Window Switcher or
-a new Settings Center require their own design and test checkpoint; they are not placeholders in
-the skeleton.
+Spotlight and Input Method remain protected throughout. Major surfaces continue to require their
+own design and test checkpoint; they are not placeholders in the skeleton.

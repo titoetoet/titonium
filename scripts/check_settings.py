@@ -8,6 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SETTINGS = ROOT / "Titonium/Settings"
 APP = ROOT / "Titonium/App.qml"
+ACCEPTANCE = ROOT / "scripts/settings_acceptance.sh"
 
 
 def require(path: Path, fragments: tuple[str, ...], errors: list[str]) -> str:
@@ -137,7 +138,21 @@ def main() -> int:
     if errors:
         print("\n".join("FAIL " + error for error in errors))
         return 1
-    print("PASS lazy Settings shell, General page and lifecycle composition")
+    acceptance = require(ACCEPTANCE, (
+        "XDG_DATA_HOME=", "XDG_STATE_HOME=", "XDG_CACHE_HOME=",
+        "trap cleanup EXIT", "hyprctl -j layers", "DP-1", "DP-3",
+        "runtime_rejection_pattern", "before_git=", "before_live=", "before_dotfiles=",
+        "settings open general", "settings page dock", "settings cancel",
+    ), errors)
+    for forbidden in (
+        "settings apply", "settings patch", "settings restore",
+    ):
+        if forbidden in acceptance:
+            errors.append(f"Settings acceptance exposes forbidden mutation IPC: {forbidden}")
+    if errors:
+        print("\n".join("FAIL " + error for error in errors))
+        return 1
+    print("PASS lazy Settings shell, General page and lifecycle acceptance contracts")
     return 0
 
 

@@ -29,6 +29,19 @@ The screen-policy fixture requires Bar, transient overlays and Audio OSD hosts t
 `DP-1`-only eligible-screen model. It verifies fail-closed disconnect behavior and reactive
 eligibility when `DP-1` returns, preventing Titonium from reserving or drawing on `DP-3`.
 
+Settings contracts additionally enforce one coordinator, one lazy DP-1 host, lifecycle-only IPC,
+no native/service ownership in presentation, all eight catalog pages, and v7 transaction/migration
+fixtures. Run the isolated lifecycle gate with:
+
+```bash
+./scripts/settings_acceptance.sh
+```
+
+It seeds v6 settings plus legacy Dock data under temporary XDG data/state/cache roots. It verifies
+General/Dock navigation, mutual exclusion with Spotlight and Center Notch, Cancel, exactly one
+Settings layer on DP-1, no Titonium layer on DP-3, clean logs, a clean repository and unchanged
+live/dotfiles Hyprland hashes. It exposes no Apply or patch IPC and cannot alter the user's runtime.
+
 ## Native Dock + Bluetooth handoff (Task 8)
 
 The implementation has static contracts and read-only acceptance seams. The controller completed
@@ -151,6 +164,7 @@ Stop any daemon using the same shell ID, then run:
 ./scripts/center_notch_acceptance.sh
 ./scripts/audio_acceptance.sh
 ./scripts/notifications_acceptance.sh
+./scripts/settings_acceptance.sh
 hyprctl configerrors
 ```
 
@@ -225,6 +239,19 @@ runtime preference before review. DP-3 must remain free of Titonium surfaces thr
 Every imported module adds a pure fake-driven test, an architecture check and a focused live test
 for its own boundary. Never automate power actions, destructive session actions, real application
 launch or clipboard writes.
+
+### Settings Center V1 visual/transaction checkpoint
+
+Back up live `settings.json` and legacy `dock.json` before manual testing. From Center Notch, open
+Settings and check the eight pages, 980×700 centering, keyboard focus and unloaded close. Preview
+then Cancel appearance, workspace count, Dock mode and toast duration; all consuming surfaces must
+roll back together. Repeat and Apply, wait for save completion, restart Titonium and confirm V7
+persistence, then restore the captured runtime files.
+
+Also verify Dock mode semantics, pin add/remove/reorder, installed-app visibility, unavailable-ID
+removal and hidden-pinned precedence. Escape and close on a dirty preview must show the internal
+discard confirmation. Center opens Notch, the rail Settings action opens the standalone surface,
+Daily Focus is available only from Overview, and Topbar Pin remains separately clickable.
 
 ## Workspace, Switcher, Dock pin and Center pin checkpoint
 

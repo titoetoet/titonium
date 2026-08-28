@@ -14,6 +14,8 @@ shell.qml
     ├── Dock/DockHost.qml ── Variants(ScreenPolicy.screens)
     ├── Notifications/ToastHost.qml ── Variants(ScreenPolicy.screens)
     │   └── ToastWindow → Loader(active only while toast IDs exist)
+    ├── Settings/SettingsHost.qml ── Variants(ScreenPolicy.screens)
+    │   └── SettingsWindow → Loader(active for DP-1 owner only)
     └── Core/Surfaces/OverlayHost.qml ── Variants(ScreenPolicy.screens)
         └── Loader(active only for SurfaceManager owner)
             └── Overlays/Spotlight
@@ -153,6 +155,23 @@ Applications and Clipboard services and publishes query/scope state back through
 
 The dependency direction is `App/View → Core + Services + Shared + Theme`. Reverse imports and
 feature-to-feature imports are architecture violations.
+
+## Settings ownership and transactions
+
+`SettingsCoordinator` owns the standalone Settings lifecycle and requested page; `SettingsHost`
+applies the same DP-1-only `ScreenPolicy` as the Bar, Dock and overlays. The 980×700 presentation
+tree is created only while Settings is open. Opening Settings closes Center Notch and transient
+overlays; opening Spotlight or Center Notch cancels the Settings preview before closing it.
+
+`Preferences` is the sole `settings.json` owner. Views emit typed paths through `patch()` and read
+only `effectiveState`. `beginPreview()` copies committed state, `cancel()` restores it across all
+surfaces, and `apply()` promotes the preview only after the atomic `FileView` save succeeds. The
+Settings IPC is deliberately lifecycle-only: `open`, `page`, `cancel` and `state`; it cannot patch,
+restore or apply preferences remotely.
+
+Center's primary click opens Center Notch. Its rail Settings intent routes through `App.qml` to the
+standalone Settings surface. Daily Focus remains an explicit Overview action, and the Topbar Pin
+is an independent Bar control rather than a Center action.
 
 ## Native notification boundary
 

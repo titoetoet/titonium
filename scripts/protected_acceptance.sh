@@ -23,6 +23,7 @@ fi
 "$project_root/scripts/workspace_interactions_acceptance.sh"
 "$project_root/scripts/notifications_acceptance.sh"
 "$project_root/scripts/center_attention_acceptance.sh"
+"$project_root/scripts/settings_acceptance.sh"
 
 after_live="$(sha256sum -- "$live_hypr")"
 after_dotfiles="$(sha256sum -- "$dotfiles_hypr")"
@@ -32,4 +33,4 @@ if [[ "$after_live" != "$before_live" || "$after_dotfiles" != "$before_dotfiles"
     exit 1
 fi
 
-echo "PASS protected Spotlight, Input Method, Dock, Bluetooth, Wi-Fi, Window Switcher, workspace, notification and Center attention acceptance"
+echo "PASS protected Spotlight, Input Method, Dock, Bluetooth, Wi-Fi, Window Switcher, workspace, notification, Center attention and Settings acceptance"
