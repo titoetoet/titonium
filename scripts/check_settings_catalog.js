@@ -16,7 +16,7 @@ const context = vm.createContext({});
 vm.runInContext(source, context, { filename: catalogPath });
 const plain = value => JSON.parse(JSON.stringify(value));
 
-assert.deepEqual(plain(context.pageIds()), ["general", "appearance", "spotlight", "bar"]);
+assert.deepEqual(plain(context.pageIds()), ["general", "appearance", "spotlight", "bar", "dock"]);
 assert.equal(context.normalizePage("general"), "general");
 assert.equal(context.normalizePage(" GENERAL "), "general");
 assert.equal(context.normalizePage(""), "general");
@@ -29,6 +29,7 @@ assert.deepEqual(entries, [
     { id: "appearance", icon: "palette", labelKey: "settings.nav.appearance" },
     { id: "spotlight", icon: "rocket_launch", labelKey: "settings.nav.spotlight" },
     { id: "bar", icon: "toolbar", labelKey: "settings.nav.bar" },
+    { id: "dock", icon: "dock_to_bottom", labelKey: "settings.nav.dock" },
 ]);
 assert.equal(Object.isFrozen(context.navigationEntries()), true);
 assert.equal(Object.isFrozen(context.navigationEntries()[0]), true);

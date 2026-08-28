@@ -27,6 +27,8 @@ def main() -> int:
     appearance = source(PAGES / "AppearancePage.qml", errors)
     spotlight = source(PAGES / "SpotlightPage.qml", errors)
     bar = source(PAGES / "BarPage.qml", errors)
+    dock = source(PAGES / "DockPage.qml", errors)
+    dock_editor = source(COMPONENTS / "DockApplicationEditor.qml", errors)
     applications = source(COMPONENTS / "ApplicationVisibilityList.qml", errors)
     workspace = source(ROOT / "Titonium/Settings/SettingsWorkspace.qml", errors)
     service = source(ROOT / "Titonium/Services/Applications/ApplicationService.qml", errors)
@@ -55,6 +57,25 @@ def main() -> int:
         'Preferences.patch("modules.bar.workspaceCount"',
         'Preferences.patch("modules.bar.autoHide"', "settings.bar.workspace_count",
     ), errors)
+    require(dock, "DockPage", (
+        '"auto-hide"', '"always-visible"', '"reserve-space"',
+        "DockStore.setVisibilityMode", "DockApplicationEditor {",
+    ), errors)
+    require(dock_editor, "DockApplicationEditor", (
+        'property string query: ""', "DockStore.pinnedIds",
+        "ApplicationService.allApplications", "ApplicationService.desktopEntryForAppId",
+        "ListView {", "reuseItems: true", "DragHandler {", "dragOffsetY",
+        "DockStore.movePin(pinnedRow.sourceIndex, targetIndex)",
+        "DockStore.movePin(pinnedRow.index, pinnedRow.index - 1)",
+        "DockStore.movePin(pinnedRow.index, pinnedRow.index + 1)", "DockStore.togglePin",
+        "DockStore.isPinned(catalogRow.modelData.id)",
+        "settings.dock.unavailable", "settings.dock.move_up", "settings.dock.move_down",
+        "settings.dock.remove", "settings.dock.add",
+        "Qt.Key_Up", "Qt.Key_Down",
+    ), errors)
+    for forbidden in ("ApplicationService.launch", "DockService.launchNew", "activateOrLaunch"):
+        if forbidden in dock + dock_editor:
+            errors.append(f"Dock Settings must not launch applications: {forbidden}")
     require(applications, "ApplicationVisibilityList", (
         'property string query: ""', "ApplicationService.allApplications",
         "ListView {", "reuseItems: true", "currentIndex: -1", "Shared.SystemIcon",
@@ -68,15 +89,17 @@ def main() -> int:
         "return Visibility.setVisible(hiddenIds, entryId, visible)",
     ), errors)
     require(workspace, "SettingsWorkspace", (
-        "function componentFor(pageId: string): Component", "appearancePage", "spotlightPage", "barPage",
+        "function componentFor(pageId: string): Component", "appearancePage", "spotlightPage", "barPage", "dockPage",
         "sourceComponent: root.componentFor(SettingsCoordinator.requestedPage)",
     ), errors)
     require(pages_qmldir, "pages/qmldir", (
         "AppearancePage 1.0 AppearancePage.qml", "SpotlightPage 1.0 SpotlightPage.qml",
         "BarPage 1.0 BarPage.qml",
+        "DockPage 1.0 DockPage.qml",
     ), errors)
     require(components_qmldir, "components/qmldir", (
         "ApplicationVisibilityList 1.0 ApplicationVisibilityList.qml",
+        "DockApplicationEditor 1.0 DockApplicationEditor.qml",
     ), errors)
 
     keys = (
@@ -92,6 +115,12 @@ def main() -> int:
         "settings.nav.bar", "settings.bar.title", "settings.bar.description",
         "settings.bar.workspace_count", "settings.bar.auto_hide",
         "settings.bar.auto_hide.description",
+        "settings.nav.dock", "settings.dock.title", "settings.dock.description",
+        "settings.dock.mode", "settings.dock.mode.auto_hide",
+        "settings.dock.mode.always_visible", "settings.dock.mode.reserve_space",
+        "settings.dock.pinned", "settings.dock.catalog", "settings.dock.search",
+        "settings.dock.add", "settings.dock.remove", "settings.dock.move_up",
+        "settings.dock.move_down", "settings.dock.unavailable",
     )
     for locale in ("en", "vi"):
         catalog = json.loads((ROOT / f"config/i18n/{locale}.json").read_text(encoding="utf-8"))["strings"]

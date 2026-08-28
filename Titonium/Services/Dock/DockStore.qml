@@ -32,6 +32,13 @@ QtObject {
         return root.write("pinnedIds", DockRules.uniqueIds(ids));
     }
 
+    function isPinned(appId: string): bool {
+        const key = typeof appId === "string" ? appId.trim().toLocaleLowerCase() : "";
+        if (!key)
+            return false;
+        return root.pinnedIds.some(id => id.toLocaleLowerCase() === key);
+    }
+
     function togglePin(appId: string): bool {
         const id = typeof appId === "string" ? appId.trim() : "";
         if (!id)

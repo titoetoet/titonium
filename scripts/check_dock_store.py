@@ -26,6 +26,7 @@ STORE_FRAGMENTS = (
     "function setVisibilityMode(mode: string): bool",
     "function setPinnedIds(ids: var): bool",
     "function togglePin(appId: string): bool",
+    "function isPinned(appId: string): bool",
     "function movePin(fromIndex: int, toIndex: int): bool",
     "function setPinnedOpen(value: bool): bool",
     "function snapshot(): var",

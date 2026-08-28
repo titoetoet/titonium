@@ -5,6 +5,7 @@ const entries = Object.freeze([
     Object.freeze({ id: "appearance", icon: "palette", labelKey: "settings.nav.appearance" }),
     Object.freeze({ id: "spotlight", icon: "rocket_launch", labelKey: "settings.nav.spotlight" }),
     Object.freeze({ id: "bar", icon: "toolbar", labelKey: "settings.nav.bar" }),
+    Object.freeze({ id: "dock", icon: "dock_to_bottom", labelKey: "settings.nav.dock" }),
 ]);
 
 function navigationEntries() {

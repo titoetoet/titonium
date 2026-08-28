@@ -20,6 +20,8 @@ Item {
             return spotlightPage;
         if (pageId === "bar")
             return barPage;
+        if (pageId === "dock")
+            return dockPage;
         return generalPage;
     }
 
@@ -180,6 +182,11 @@ Item {
     Component {
         id: barPage
         BarPage {}
+    }
+
+    Component {
+        id: dockPage
+        DockPage {}
     }
 
     Rectangle {
