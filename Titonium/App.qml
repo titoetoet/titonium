@@ -32,6 +32,7 @@ Scope {
 
     Component.onCompleted: {
         MprisService.activate();
+        CenterActivityService.activate();
         CenterJobService.activate();
         CenterTimerService.activate();
     }
@@ -138,6 +139,7 @@ Scope {
     IpcHandler {
         target: "center"
         function state(): string { return CenterAttentionService.snapshot(); }
+        function activityState(): string { return CenterActivityService.snapshot(); }
         function focusState(): string { return CenterFocusStore.snapshot(); }
     }
 
