@@ -1,2 +1,3 @@
 module qs.Titonium.Services.Center
 singleton CenterAttentionService 1.0 CenterAttentionService.qml
+singleton CenterFocusStore 1.0 CenterFocusStore.qml
