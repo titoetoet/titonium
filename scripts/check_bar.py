@@ -17,6 +17,7 @@ def main() -> int:
         "islands/qmldir",
         "islands/StartIsland.qml",
         "islands/ActiveWindowPill.qml",
+        "islands/CenterIsland.qml",
         "islands/CenterGroup.qml",
         "islands/EndIsland.qml",
         "islands/NotificationPill.qml",
@@ -60,6 +61,8 @@ def main() -> int:
                     "readonly property alias centerHitbox: centerGroup",
                     "readonly property bool hovered:"),
         "islands/CenterGroup.qml": (
+            "CenterIsland {",
+            "id: centerIsland",
             "BarVisibilityState.togglePinned()",
             "menubar.bar_pin.pin",
             "menubar.bar_pin.autohide",
@@ -67,9 +70,11 @@ def main() -> int:
             "radius: Metrics.radiusLarge",
             "showFocusRing: false",
             "backgroundRadius: Metrics.radiusLarge",
+            "Row {",
         ),
         "islands/qmldir": (
             "ActiveWindowPill 1.0 ActiveWindowPill.qml",
+            "CenterIsland 1.0 CenterIsland.qml",
             "CenterGroup 1.0 CenterGroup.qml",
             "NotificationPill 1.0 NotificationPill.qml",
         ),
@@ -267,12 +272,47 @@ def main() -> int:
         source = center_group.read_text(encoding="utf-8")
         if "id: pinPill" not in source:
             errors.append("TopBar Pin must remain in the centered group")
-        if "CenterIsland {" in source:
-            errors.append("Centered group must not retain the Active Window pill")
+        if not (0 <= source.find("CenterIsland {") < source.find("id: pinPill")):
+            errors.append("CenterGroup must place CenterIsland before the independent Pin")
         if source.count("Shared.Surface {") != 1:
             errors.append("CenterGroup must give the detached Pin exactly one rounded surface")
         if "implicitWidth: centerRow.implicitWidth +" in source:
             errors.append("Center hover controls must meet the outer pill edge without inset padding")
+
+    center_island = BAR / "islands/CenterIsland.qml"
+    if center_island.is_file():
+        source = center_island.read_text(encoding="utf-8")
+        for fragment in (
+            "CenterAttentionService.presentation",
+            "CenterAttentionService.indicators",
+            "CenterFocusStore.text",
+            "CenterFocusStore.openScratchpad()",
+            "Text.ElideRight",
+            "maximumLineCount: 1",
+            "Layout.maximumWidth: 320",
+            "implicitHeight: Metrics.controlHeight",
+            "Shared.Surface {",
+            "Repeater {",
+            "TapHandler {",
+            "menubar.center.accessible",
+        ):
+            if fragment not in source:
+                errors.append(f"CenterIsland missing attention-view contract: {fragment}")
+        for forbidden in (
+            "HyprlandService",
+            "ApplicationService",
+            "NotificationService",
+            "AudioService",
+            "activeWindow",
+            "window.title",
+            "Timer {",
+            "Process {",
+            "FileView {",
+            "ShaderEffect",
+            "loops: Animation.Infinite",
+        ):
+            if forbidden in source:
+                errors.append(f"CenterIsland has forbidden ownership: {forbidden}")
 
     shared_button = (ROOT / "Titonium/Shared/Button.qml").read_text(encoding="utf-8")
     for fragment in (
@@ -379,6 +419,12 @@ def main() -> int:
         "menubar.center_pin.close",
         "menubar.bar_pin.pin",
         "menubar.bar_pin.autohide",
+        "menubar.center.focus_fallback",
+        "menubar.center.accessible",
+        "menubar.center.scratchpad_open_failed",
+        "menubar.center.indicator.media",
+        "menubar.center.indicator.timer",
+        "menubar.center.indicator.jobs",
         "menubar.connectivity.network_planned",
         "menubar.connectivity.bluetooth_planned",
         "menubar.connectivity.audio_planned",

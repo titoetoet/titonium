@@ -10,6 +10,7 @@ SERVICE = CENTER / "CenterAttentionService.qml"
 FOCUS_STORE = CENTER / "CenterFocusStore.qml"
 QMLDIR = CENTER / "qmldir"
 APP = ROOT / "Titonium/App.qml"
+CENTER_VIEW = ROOT / "Titonium/Bar/islands/CenterIsland.qml"
 
 
 def main() -> int:
@@ -104,6 +105,17 @@ def main() -> int:
     app = APP.read_text(encoding="utf-8")
     if app.count("import qs.Titonium.Services.Center") != 1:
         errors.append("App must import the Center service module exactly once")
+
+    if CENTER_VIEW.is_file():
+        source = CENTER_VIEW.read_text(encoding="utf-8")
+        for fragment in (
+            "CenterAttentionService.presentation",
+            "CenterAttentionService.indicators",
+            "CenterFocusStore.text",
+            "CenterFocusStore.openScratchpad()",
+        ):
+            if fragment not in source:
+                errors.append(f"Center view missing service projection: {fragment}")
 
     bar_root = ROOT / "Titonium/Bar"
     for path in bar_root.rglob("*.qml"):
