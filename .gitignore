@@ -5,6 +5,7 @@
 *.qmlc
 __pycache__/
 .superpowers/
+.worktrees/
 
 # Editor files
 .idea/
