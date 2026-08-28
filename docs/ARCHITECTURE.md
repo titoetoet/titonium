@@ -112,6 +112,13 @@ Active timers contribute a passive indicator; milestones publish semantic events
 Center arbiter. The dedicated `timer` IPC target exposes `start`, `cancel`, `acknowledge` and
 `state` without exposing raw priority or TTL.
 
+`CenterJobService` is an explicit session-only registry for builds, downloads, renders and other
+external work. It never scans processes, terminals or download directories. Callers drive the
+`start`, `progress`, `complete`, `fail`, `requireAction` and `clear` lifecycle through the
+`job` IPC target. Progress updates only the frozen registry; semantic lifecycle events and the
+passive jobs indicator flow through `CenterAttentionService`, which remains the sole priority and
+TTL owner.
+
 ## Audio slice boundaries
 
 `AudioService` is the only Titonium module permitted to import `Quickshell.Services.Pipewire`.

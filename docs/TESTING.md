@@ -299,3 +299,11 @@ For a manual check, start a short named timer and confirm the passive timer icon
 replacing Daily Focus. Completion must take over Center, remove the passive icon and return to
 Daily Focus after acknowledgement. Restart Titonium with an active timer and confirm the
 session-only timer does not reappear.
+
+## Center external Job checkpoint
+
+Automated coverage exercises the complete explicit Job state machine, malformed and unknown IDs,
+normal/important priority bounds, progress silence, exact clear and isolated IPC acceptance.
+For a manual check, start a long-running job and confirm the jobs icon remains while progress calls
+do not repeatedly replace Daily Focus. Complete, fail and require-action events must use their
+policy priorities, and `clear` must remove only the matching active job or terminal event.

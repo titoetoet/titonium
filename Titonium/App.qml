@@ -30,6 +30,7 @@ Scope {
 
     Component.onCompleted: {
         MprisService.activate();
+        CenterJobService.activate();
         CenterTimerService.activate();
     }
 
@@ -115,6 +116,38 @@ Scope {
         function acknowledge(id: string): string {
             CenterTimerService.acknowledge(id);
             return CenterTimerService.snapshot();
+        }
+    }
+
+    IpcHandler {
+        target: "job"
+
+        function state(): string {
+            return CenterJobService.snapshot();
+        }
+
+        function start(id: string, label: string, importance: string): string {
+            return CenterJobService.start(id, label, importance);
+        }
+
+        function progress(id: string, percent: string, label: string): string {
+            return CenterJobService.progress(id, percent, label);
+        }
+
+        function complete(id: string, summary: string): string {
+            return CenterJobService.complete(id, summary);
+        }
+
+        function fail(id: string, summary: string): string {
+            return CenterJobService.fail(id, summary);
+        }
+
+        function requireAction(id: string, summary: string): string {
+            return CenterJobService.requireAction(id, summary);
+        }
+
+        function clear(id: string): string {
+            return CenterJobService.clear(id);
         }
     }
 

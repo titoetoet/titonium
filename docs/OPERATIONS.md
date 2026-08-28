@@ -35,6 +35,21 @@ qs -p /home/cole/Projects/titonium ipc call timer acknowledge tea
 Timer IDs are replaced on a repeated `start`. Countdowns are session-only and disappear when
 Titonium restarts.
 
+## Center external jobs
+
+```bash
+qs -p /home/cole/Projects/titonium ipc call job start build "Build Titonium" important
+qs -p /home/cole/Projects/titonium ipc call job progress build 50 "Compiling"
+qs -p /home/cole/Projects/titonium ipc call job complete build "Build complete"
+qs -p /home/cole/Projects/titonium ipc call job fail build "Build failed"
+qs -p /home/cole/Projects/titonium ipc call job requireAction build "Approve deployment"
+qs -p /home/cole/Projects/titonium ipc call job clear build
+qs -p /home/cole/Projects/titonium ipc call job state
+```
+
+Importance is exactly `normal` or `important`. Jobs are explicit and session-only; Titonium does
+not infer them from terminal processes or filesystem activity.
+
 ## Recovery
 
 If the current daemon fails, stop it and inspect foreground output:
