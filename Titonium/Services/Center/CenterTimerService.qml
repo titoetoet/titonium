@@ -48,6 +48,50 @@ QtObject {
         );
     }
 
+    function syncActivity(timer: var, now: double): void {
+        if (!timer)
+            return;
+        CenterActivityService.upsert({
+            "id": "timer:" + timer.id,
+            "source": "timer",
+            "label": timer.label,
+            "icon": "timer",
+            "importance": "normal",
+            "progress": -1,
+            "deadline": timer.deadline,
+            "updatedAt": now
+        });
+    }
+
+    function removeActivity(id: string): void {
+        CenterActivityService.remove("timer:" + id.trim());
+    }
+
+    function removeMissingActivities(previousState: var, nextState: var): void {
+        for (let previousIndex = 0; previousIndex < previousState.length;
+                previousIndex++) {
+            const previous = previousState[previousIndex];
+            let found = false;
+            for (let nextIndex = 0; nextIndex < nextState.length; nextIndex++) {
+                if (nextState[nextIndex].id === previous.id) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found)
+                root.removeActivity(previous.id);
+        }
+    }
+
+    function timerById(state: var, id: string): var {
+        const normalizedId = id.trim();
+        for (let index = 0; index < state.length; index++) {
+            if (state[index].id === normalizedId)
+                return state[index];
+        }
+        return null;
+    }
+
     function replaceState(nextState: var): void {
         root.timerState = nextState;
         root.syncIndicator(nextState.length > 0);
@@ -55,12 +99,14 @@ QtObject {
     }
 
     function start(id: string, durationSeconds: int, label: string): bool {
+        const now = Date.now();
         const nextState = CenterTimerRules.start(
-            root.timerState, id, durationSeconds, label, Date.now());
+            root.timerState, id, durationSeconds, label, now);
         if (nextState === root.timerState)
             return false;
         CenterAttentionService.clear("timer:" + id.trim());
         root.replaceState(nextState);
+        root.syncActivity(root.timerById(nextState, id), now);
         return true;
     }
 
@@ -68,6 +114,7 @@ QtObject {
         const nextState = CenterTimerRules.cancel(root.timerState, id);
         const stateChanged = nextState !== root.timerState;
         const eventCleared = CenterAttentionService.clear("timer:" + id.trim());
+        root.removeActivity(id);
         if (stateChanged)
             root.replaceState(nextState);
         return stateChanged || eventCleared;
@@ -97,9 +144,12 @@ QtObject {
     }
 
     function processDue(): void {
-        const result = CenterTimerRules.advance(root.timerState, Date.now());
+        const previousState = root.timerState;
+        const now = Date.now();
+        const result = CenterTimerRules.advance(previousState, now);
         root.timerState = result.next;
         root.syncIndicator(result.next.length > 0);
+        root.removeMissingActivities(previousState, result.next);
         result.events.forEach(event => root.publishEvent(event));
         root.reschedule();
     }

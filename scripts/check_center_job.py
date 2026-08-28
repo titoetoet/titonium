@@ -44,6 +44,18 @@ def main() -> int:
             "CenterAttentionService.clear",
             "CenterAttentionService.setIndicator",
             '"menubar.center.indicator.jobs"',
+            "function syncActivity(job: var): void",
+            "function removeActivity(id: string): void",
+            "CenterActivityService.upsert({",
+            "CenterActivityService.remove(\"job:\" + id.trim())",
+            '"id": "job:" + job.id',
+            '"source": "job"',
+            '"label": job.label',
+            '"icon": "work"',
+            '"importance": job.importance',
+            '"progress": job.percent',
+            '"deadline": 0',
+            '"updatedAt": job.changedAt',
         ):
             if fragment not in source:
                 errors.append(f"CenterJobService missing contract: {fragment}")

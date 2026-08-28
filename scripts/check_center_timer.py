@@ -46,6 +46,19 @@ def main() -> int:
             '"menubar.center.timer.one_minute"',
             '"menubar.center.timer.finished"',
             "repeat: false",
+            "function syncActivity(timer: var, now: double): void",
+            "function removeActivity(id: string): void",
+            "function removeMissingActivities(previousState: var, nextState: var): void",
+            "CenterActivityService.upsert({",
+            "CenterActivityService.remove(\"timer:\" + id.trim())",
+            '"id": "timer:" + timer.id',
+            '"source": "timer"',
+            '"label": timer.label',
+            '"icon": "timer"',
+            '"importance": "normal"',
+            '"progress": -1',
+            '"deadline": timer.deadline',
+            '"updatedAt": now',
         ):
             if fragment not in source:
                 errors.append(f"CenterTimerService missing contract: {fragment}")
