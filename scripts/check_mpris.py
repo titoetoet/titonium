@@ -10,6 +10,7 @@ MPRIS = TITONIUM / "Services/Mpris"
 SERVICE = MPRIS / "MprisService.qml"
 QMLDIR = MPRIS / "qmldir"
 APP = TITONIUM / "App.qml"
+ACCEPTANCE = ROOT / "scripts/mpris_acceptance.sh"
 
 
 def main() -> int:
@@ -84,11 +85,59 @@ def main() -> int:
     app = APP.read_text(encoding="utf-8")
     if app.count("import qs.Titonium.Services.Mpris") != 1:
         errors.append("App must import the MPRIS service module exactly once")
+    for fragment in (
+        'target: "mpris"',
+        "function state(): string { return MprisService.snapshot(); }",
+    ):
+        if fragment not in app:
+            errors.append(f"App missing read-only MPRIS IPC contract: {fragment}")
+    mpris_ipc = re.search(
+        r'IpcHandler\s*\{\s*target:\s*"mpris"(?P<body>.*?)(?=\n\s*IpcHandler\s*\{|\Z)',
+        app,
+        re.DOTALL,
+    )
+    if mpris_ipc:
+        body = mpris_ipc.group("body")
+        for forbidden in ("play(", "pause(", "seek(", "next(", "previous(", "publish("):
+            if forbidden in body:
+                errors.append(f"MPRIS IPC exposes mutation: {forbidden}")
 
     for path in (TITONIUM / "Bar").rglob("*.qml"):
         source = path.read_text(encoding="utf-8")
         if "Quickshell.Services.Mpris" in source or "Mpris.players" in source:
             errors.append(f"Bar view owns native MPRIS state: {path.relative_to(ROOT)}")
+
+    if not ACCEPTANCE.is_file():
+        errors.append("missing scripts/mpris_acceptance.sh")
+    else:
+        acceptance = ACCEPTANCE.read_text(encoding="utf-8")
+        for fragment in (
+            "qs -n -p",
+            "mpris state",
+            "center state",
+            "hyprctl -j layers",
+            "titonium-menubar",
+            "DP-1",
+            "DP-3",
+            "Configuration Loaded",
+            "before_git",
+            "before_live",
+            "before_dotfiles",
+        ):
+            if fragment not in acceptance:
+                errors.append(f"MPRIS acceptance missing read-only contract: {fragment}")
+        for forbidden in (
+            "playerctl",
+            "dbus-send",
+            "mpris play",
+            "mpris pause",
+            "mpris seek",
+            "mpris next",
+            "mpris previous",
+            "center publish",
+        ):
+            if forbidden in acceptance:
+                errors.append(f"MPRIS acceptance contains mutation: {forbidden}")
 
     if errors:
         print("FAIL MPRIS service architecture")

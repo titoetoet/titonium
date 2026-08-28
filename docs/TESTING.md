@@ -181,6 +181,16 @@ directly with:
 ./scripts/center_attention_acceptance.sh
 ```
 
+MPRIS acceptance starts an isolated foreground shell and calls only `mpris.state()` and
+`center.state()`. It validates the value-descriptor shape, verifies that discovery produces no
+startup transient, checks that the passive media indicator exactly matches projected playing state,
+and keeps Bar ownership to DP-1. It reports the native player snapshot but never invokes a playback
+method or external media command:
+
+```bash
+./scripts/mpris_acceptance.sh
+```
+
 Notification acceptance stops only Titonium, waits boundedly for its shell ID to be released,
 starts one foreground shell and then sends one controlled `notify-send` fixture. It requires one
 DP-1 toast and no DP-3 toast, verifies five-second presentation expiry preserves unread state, then
@@ -270,3 +280,13 @@ centered, the Daily Focus text is visually quiet and elides on one line, and one
 configured Markdown handler. Confirm the Pin remains independently targetable. Also confirm
 `ActiveWindowPill` remains immediately after Workspaces and still opens Center Notch. DP-3 must
 remain free of Titonium surfaces throughout.
+
+## MPRIS Center checkpoint
+
+Automated coverage includes deterministic player ranking, normalized transition fixtures, sole
+native-import ownership, full qmllint, foreground smoke and read-only MPRIS acceptance. Before
+starting the Timer slice, manually play one track, change track, pause and resume. Verify Center
+shows track changes for 6 seconds, pause for 2 seconds and resume for 3 seconds, then returns to
+Daily Focus. The small media icon must remain only while playing. Restart Titonium while a player
+exists and confirm there is no startup flash; closing/stopping the selected player must not take
+over Center. No playback control is expected from the Bar in this slice.

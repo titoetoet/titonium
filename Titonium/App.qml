@@ -86,6 +86,11 @@ Scope {
     }
 
     IpcHandler {
+        target: "mpris"
+        function state(): string { return MprisService.snapshot(); }
+    }
+
+    IpcHandler {
         id: audioIpc
         target: "audio"
         function state(): string {

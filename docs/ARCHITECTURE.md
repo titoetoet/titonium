@@ -95,6 +95,16 @@ island concern and continues to open Center Notch.
 The `center` IPC target exposes only `state()` and `focusState()` snapshots. It intentionally has
 no publish, acknowledgement, timer/job mutation or scratchpad-launch endpoint.
 
+`MprisService` is the only Titonium file allowed to import `Quickshell.Services.Mpris`. It projects
+native players into frozen value facts, ranks playing before paused players and resolves ties by
+meaningful-change time then stable D-Bus identity. `MprisRules.js` establishes discovery as a silent
+baseline, suppresses unchanged normalized signatures and derives only `track_changed`, `paused` and
+`resumed` semantic events. Center owns their priorities and TTLs. Playback disappearance or stop
+removes the passive media indicator without publishing a takeover. The Bar never imports MPRIS.
+
+The `mpris` IPC target exposes only `state()`. It provides no play, pause, seek, next, previous or
+player-selection method; controls remain deliberately outside this slice.
+
 ## Audio slice boundaries
 
 `AudioService` is the only Titonium module permitted to import `Quickshell.Services.Pipewire`.
