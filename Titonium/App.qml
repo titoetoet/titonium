@@ -16,6 +16,7 @@ import qs.Titonium.Services.Bluetooth
 import qs.Titonium.Services.Center
 import qs.Titonium.Services.Dock
 import qs.Titonium.Services.Hyprland
+import qs.Titonium.Services.Mpris
 import qs.Titonium.Services.Network
 import qs.Titonium.Services.Notifications
 import qs.Titonium.Services.WindowSwitcher

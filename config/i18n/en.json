@@ -99,6 +99,7 @@
     "menubar.center.indicator.jobs": "Background jobs active",
     "menubar.center.indicator.media": "Media playing",
     "menubar.center.indicator.timer": "Timer active",
+    "menubar.center.media_unknown": "Media",
     "menubar.center.scratchpad_open_failed": "Could not open the focus scratchpad",
     "menubar.center_pin.close": "Close pinned Center",
     "menubar.center_pin.open": "Keep Center open",

@@ -174,7 +174,7 @@ def forbidden_audio_service_imports(path: Path, source: str) -> list[str]:
     if path == ROOT / "Titonium/App.qml":
         return [entry for entry in imports
                 if "Bluetooth" not in entry and "Network" not in entry
-                and "Notifications" not in entry]
+                and "Notifications" not in entry and "Mpris" not in entry]
     return imports
 
 
@@ -225,9 +225,13 @@ def validate_audio_hardening(errors: list[str]) -> None:
             OVERLAY_ROOT / "BadNotificationImport.qml",
             "import qs.Titonium.Services.Notifications\nItem {}"):
         errors.append("Audio import matcher missed Notifications overlay fixture")
-    if not forbidden_audio_service_imports(
+    if forbidden_audio_service_imports(
             ROOT / "Titonium/App.qml", "import qs.Titonium.Services.Mpris\nScope {}"):
-        errors.append("Audio import matcher broadly allowlisted unrelated App service imports")
+        errors.append("Audio import matcher rejected MPRIS at the App composition root")
+    if not forbidden_audio_service_imports(
+            OVERLAY_ROOT / "BadMprisImport.qml",
+            "import qs.Titonium.Services.Mpris\nItem {}"):
+        errors.append("Audio import matcher missed MPRIS overlay fixture")
 
     for pattern in ("*.qml", "*.js"):
         for path in ROOT.rglob(pattern):

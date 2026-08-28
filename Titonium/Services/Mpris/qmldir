@@ -1,0 +1,2 @@
+module qs.Titonium.Services.Mpris
+singleton MprisService 1.0 MprisService.qml
