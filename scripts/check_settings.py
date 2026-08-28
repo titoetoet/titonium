@@ -103,7 +103,10 @@ def main() -> int:
     app = APP.read_text(encoding="utf-8") if APP.is_file() else ""
     for fragment in (
         "import qs.Titonium.Settings", "function openSettings(requestedScreen: var, pageId: string): string",
+        'import "Settings/SettingsLifecycleRules.js" as SettingsLifecycleRules',
         "SettingsHost {}", "SettingsCoordinator.forceCancelAndClose()",
+        "SettingsLifecycleRules.canYield(SettingsCoordinator.active, Preferences.savePending)",
+        'return "unavailable:busy";', "SurfaceManager.close(ownerId)",
     ):
         if fragment not in app:
             errors.append(f"App missing Settings composition contract: {fragment}")

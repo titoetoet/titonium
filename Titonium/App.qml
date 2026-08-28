@@ -25,6 +25,7 @@ import qs.Titonium.Overlays.Bluetooth
 import qs.Titonium.Overlays.Network
 import qs.Titonium.Osd.Audio
 import qs.Titonium.Settings
+import "Settings/SettingsLifecycleRules.js" as SettingsLifecycleRules
 
 Scope {
     id: root
@@ -36,7 +37,9 @@ Scope {
     }
 
     function openSpotlight(scope: string, query: string, stateMode: string, requestedScreen: var): string {
-        SettingsCoordinator.forceCancelAndClose();
+        if (!SettingsLifecycleRules.canYield(SettingsCoordinator.active, Preferences.savePending)
+                || !SettingsCoordinator.forceCancelAndClose())
+            return "unavailable:busy";
         CenterNotchCoordinator.close();
         const screen = ScreenRouter.screenForName(requestedScreen?.name
             || HyprlandService.focusedMonitorName);
@@ -73,7 +76,9 @@ Scope {
             || HyprlandService.focusedMonitorName);
         if (!screen)
             return "unavailable:no-screen";
-        SettingsCoordinator.forceCancelAndClose();
+        if (!SettingsLifecycleRules.canYield(SettingsCoordinator.active, Preferences.savePending)
+                || !SettingsCoordinator.forceCancelAndClose())
+            return "unavailable:busy";
         SurfaceManager.close("");
         const opened = CenterNotchCoordinator.open(screen.name, pageId);
         return opened ? "open:" + screen.name + ";page="
@@ -97,7 +102,10 @@ Scope {
 
         function onOpened(ownerId: string, descriptor: var, screen: var): void {
             if (ownerId.length > 0) {
-                SettingsCoordinator.forceCancelAndClose();
+                if (!SettingsCoordinator.forceCancelAndClose()) {
+                    SurfaceManager.close(ownerId);
+                    return;
+                }
                 CenterNotchCoordinator.close();
             }
         }
@@ -107,8 +115,9 @@ Scope {
         target: CenterNotchCoordinator
 
         function onActiveChanged(): void {
-            if (CenterNotchCoordinator.active)
-                SettingsCoordinator.forceCancelAndClose();
+            if (CenterNotchCoordinator.active
+                    && !SettingsCoordinator.forceCancelAndClose())
+                CenterNotchCoordinator.close();
         }
     }
 

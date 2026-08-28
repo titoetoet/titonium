@@ -92,7 +92,7 @@ function project(document, defaults, legacyDock) {
     const clock = record(sourceModules.clock);
     const audio = record(sourceModules.audio);
     const currentDock = source.schemaVersion === 7
-        && Object.keys(record(sourceModules.dock)).length > 0
+        && Object.prototype.hasOwnProperty.call(sourceModules, "dock")
         ? record(sourceModules.dock) : null;
     const dock = currentDock || (record(legacyDock).schemaVersion === 1
         ? {

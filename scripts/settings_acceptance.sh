@@ -48,7 +48,7 @@ print(json.dumps(json.load(sys.stdin).get(sys.argv[1], {}), sort_keys=True))
 
 mkdir -p -- "$runtime_dir" "$test_dir/state" "$test_dir/cache"
 cp -- "$project_root/tests/fixtures/settings-v6-runtime.json" "$runtime_dir/settings.json"
-cp -- "$project_root/config/defaults/dock.json" "$runtime_dir/dock.json"
+cp -- "$project_root/tests/fixtures/dock-v1-runtime.json" "$runtime_dir/dock.json"
 
 XDG_DATA_HOME="$test_dir/data" \
 XDG_STATE_HOME="$test_dir/state" \

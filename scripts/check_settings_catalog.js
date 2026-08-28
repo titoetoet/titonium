@@ -6,8 +6,13 @@ const path = require("node:path");
 const vm = require("node:vm");
 
 const catalogPath = path.join(__dirname, "..", "Titonium", "Settings", "SettingsCatalog.js");
+const lifecyclePath = path.join(__dirname, "..", "Titonium", "Settings", "SettingsLifecycleRules.js");
 if (!fs.existsSync(catalogPath)) {
     console.error("FAIL Settings catalog is missing");
+    process.exit(1);
+}
+if (!fs.existsSync(lifecyclePath)) {
+    console.error("FAIL Settings lifecycle rules are missing");
     process.exit(1);
 }
 
@@ -39,3 +44,16 @@ assert.equal(Object.isFrozen(context.navigationEntries()), true);
 assert.equal(Object.isFrozen(context.navigationEntries()[0]), true);
 
 console.log("PASS Settings catalog normalization fixtures");
+
+const lifecycleSource = fs.readFileSync(lifecyclePath, "utf8")
+    .replace(/^\.pragma library\s*\n/, "");
+const lifecycle = vm.createContext({});
+vm.runInContext(lifecycleSource, lifecycle, { filename: lifecyclePath });
+assert.equal(lifecycle.canYield(false, false), true,
+    "an inactive Settings surface never blocks another transient");
+assert.equal(lifecycle.canYield(true, false), true,
+    "an idle preview can cancel before another transient opens");
+assert.equal(lifecycle.canYield(true, true), false,
+    "an in-flight Apply blocks competing transient surfaces");
+
+console.log("PASS Settings save-pending mutual-exclusion fixtures");

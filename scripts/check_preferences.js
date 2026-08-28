@@ -63,6 +63,15 @@ assert.deepEqual(currentProjection.modules.dock.pinnedIds,
 assert.equal(currentProjection.modules.notifications.toastsEnabled, false);
 assert.equal(currentProjection.modules.notifications.toastDuration, 9000);
 
+const emptyCurrentDock = plain(context.project({
+    schemaVersion: 7,
+    modules: { dock: {} },
+}, defaults, legacyDock));
+assert.equal(emptyCurrentDock.modules.dock.visibilityMode, "auto-hide",
+    "a present v7 Dock subtree wins over legacy visibility");
+assert.deepEqual(emptyCurrentDock.modules.dock.pinnedIds, [],
+    "a present v7 Dock subtree wins over legacy pins");
+
 const invalid = plain(context.project({
     schemaVersion: 7,
     locale: "invalid",
@@ -112,4 +121,4 @@ assert.throws(() => context.setPath(migrated, "modules..bar", 4));
 assert.throws(() => context.setPath(migrated, "__proto__.polluted", true));
 assert.throws(() => context.setPath(migrated, "modules.constructor.value", true));
 
-console.log("PASS settings v7 projection, migration and path fixtures (37)");
+console.log("PASS settings v7 projection, migration and path fixtures (39)");
