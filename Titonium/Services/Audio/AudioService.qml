@@ -39,9 +39,26 @@ QtObject {
     readonly property real inputVolume: root.audioVolume(root.inputNode, false)
     readonly property bool inputMuted: root.inputAvailable && root.inputNode.audio.muted === true
 
+    readonly property var audioNodeFacts: Pipewire.nodes.values.map(node => ({
+        id: node?.id,
+        ready: node?.ready === true,
+        isSink: node?.isSink === true,
+        isStream: node?.isStream === true,
+        audio: node?.audio ? ({
+            volume: node.audio.volume,
+            muted: node.audio.muted === true,
+        }) : null,
+        description: node?.description || "",
+        nickname: node?.nickname || "",
+        name: node?.name || "",
+        properties: node?.properties || ({}),
+    }))
     readonly property var playbackStreams:
-        AudioRules.normalizedStreams(Pipewire.nodes.values,
+        AudioRules.normalizedStreams(root.audioNodeFacts,
             I18n.tr("audio.stream.fallback"), root.ready)
+    readonly property var outputDevices: root.ready
+        ? AudioRules.normalizedOutputDevices(root.audioNodeFacts,
+            root.outputNode?.id, I18n.tr("audio.output")) : []
 
     signal outputPresentationChanged(real volume, bool muted)
 
@@ -134,6 +151,14 @@ QtObject {
         if (node === null)
             return false;
         node.audio.muted = node.audio.muted !== true;
+        return true;
+    }
+
+    function selectOutputDevice(nodeId: int): bool {
+        const node = root.mutableNode(nodeId);
+        if (node === null || !AudioRules.isOutputDevice(node))
+            return false;
+        Pipewire.preferredDefaultAudioSink = node;
         return true;
     }
 

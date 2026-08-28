@@ -137,10 +137,15 @@ def presentation_errors() -> list[str]:
     for fragment in (
         "property var network:", "property string password:", "onNetworkChanged:",
         "NetworkService.connect", "NetworkService.connectWithPassword", "NetworkService.disconnect",
-        "NetworkService.forget", "password = \"\"",
+        "NetworkService.forget", "password = \"\"", "Shared.Toggle",
+        "checked: root.network?.connected === true",
+        "visible: root.network?.connected === true",
+        "onToggled: checked =>",
     ):
         if fragment not in row:
             errors.append(f"missing Wi-Fi row contract: {fragment}")
+    if "label: I18n.tr(root.primaryActionKey)" in row:
+        errors.append("Wi-Fi connected state must use Toggle instead of a disconnect text button")
     if "property string password:" in popup:
         errors.append("Wi-Fi password must remain local to its row")
     if (("Component.onCompleted" in popup and "NetworkService.setScanning(true)" in popup)

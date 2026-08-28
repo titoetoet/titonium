@@ -44,9 +44,13 @@ if [[ $ready != true ]]; then
 fi
 
 audio_state="$(call_ipc audio state)"
-state_pattern='^ready=(true|false);output=(true|false);volume=[0-9]+;muted=(true|false);input=(true|false);streams=[0-9]+$'
+state_pattern='^ready=(true|false);output=(true|false);volume=[0-9]+;muted=(true|false);input=(true|false);outputs=[0-9]+;streams=[0-9]+$'
 if [[ ! "$audio_state" =~ $state_pattern ]]; then
     printf 'FAIL audio state has unexpected shape: %q\n' "$audio_state" >&2
+    exit 1
+fi
+if [[ "$audio_state" == *"output=true"* && "$audio_state" == *"outputs=0"* ]]; then
+    printf 'FAIL audio state lost ready output devices: %q\n' "$audio_state" >&2
     exit 1
 fi
 

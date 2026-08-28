@@ -35,7 +35,12 @@ function volumeIcon(available, muted, volume) {
 }
 
 function isPlaybackStream(node) {
-    return !!node && node.audio != null && node.isStream === true && node.isSink !== true;
+    if (!node || node.audio == null || node.isStream !== true)
+        return false;
+    var mediaClass = properties(node)["media.class"];
+    if (typeof mediaClass === "string" && mediaClass.length > 0)
+        return mediaClass.indexOf("Stream/Output/") === 0;
+    return node.isSink !== true;
 }
 
 function properties(node) {
@@ -83,6 +88,39 @@ function normalizedStreams(nodes, fallback, pipewireReady) {
         if (typeof left.id === "number" && typeof right.id === "number")
             return left.id - right.id;
         return String(left.id).localeCompare(String(right.id));
+    });
+}
+
+function isOutputDevice(node) {
+    return !!node && node.audio != null && node.isSink === true
+        && node.isStream !== true && node.ready === true;
+}
+
+function outputDeviceName(node, fallback) {
+    return firstText([node && node.description, node && node.nickname, node && node.name],
+        typeof fallback === "string" ? fallback : "Output");
+}
+
+function outputDeviceIcon(node) {
+    var props = properties(node);
+    return firstText([props["device.icon-name"], props["media.icon-name"]], "volume_up");
+}
+
+function normalizedOutputDevices(nodes, selectedId, fallback) {
+    var source = Array.isArray(nodes) ? nodes : [];
+    var selected = Number(selectedId);
+    return source.filter(isOutputDevice).map(function (node) {
+        return Object.freeze({
+            id: node.id,
+            name: outputDeviceName(node, fallback),
+            icon: outputDeviceIcon(node),
+            selected: Number(node.id) === selected,
+        });
+    }).sort(function (left, right) {
+        if (left.selected !== right.selected)
+            return left.selected ? -1 : 1;
+        var names = left.name.toLocaleLowerCase().localeCompare(right.name.toLocaleLowerCase());
+        return names !== 0 ? names : Number(left.id) - Number(right.id);
     });
 }
 

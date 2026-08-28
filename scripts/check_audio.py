@@ -26,6 +26,7 @@ REQUIRED_OVERLAY_FILES = (
     "Titonium/Overlays/Audio/AudioPopupCoordinator.qml",
     "Titonium/Overlays/Audio/AudioPopupSurface.qml",
     "Titonium/Overlays/Audio/AudioControlRow.qml",
+    "Titonium/Overlays/Audio/AudioOutputDeviceRow.qml",
     "Titonium/Overlays/Audio/AudioStreamRow.qml",
     "Titonium/Overlays/Audio/AudioSlider.qml",
 )
@@ -42,12 +43,17 @@ REQUIRED_FRAGMENTS = (
     "readonly property bool outputAvailable",
     "readonly property bool allowAmplification: Preferences.allowAudioAmplification",
     "readonly property var playbackStreams",
+    "readonly property var outputDevices",
+    "readonly property var audioNodeFacts:",
+    "audio: node?.audio ? ({",
+    "AudioRules.normalizedStreams(root.audioNodeFacts",
     "signal outputPresentationChanged(real volume, bool muted)",
     "function setOutputVolume(value: real): bool",
     "function adjustOutputVolume(delta: real): bool",
     "function toggleOutputMute(): bool",
     "function setInputVolume(value: real): bool",
     "function toggleInputMute(): bool",
+    "function selectOutputDevice(nodeId: int): bool",
     "function setStreamVolume(nodeId: int, value: real): bool",
     "function toggleStreamMute(nodeId: int): bool",
     "function onVolumesChanged(): void { root.observeOutputPresentation(); }",
@@ -57,6 +63,7 @@ REQUIRED_FRAGMENTS = (
     "function requestBluetoothOutput(address: string): bool",
     "function trySelectPendingBluetoothOutput(): bool",
     "AudioRules.bluetoothSinkFor(Pipewire.nodes.values || [],",
+    "AudioRules.normalizedOutputDevices(root.audioNodeFacts",
     "Pipewire.preferredDefaultAudioSink = sink",
     "function onObjectsChanged(): void { root.trySelectPendingBluetoothOutput(); }",
     'root.warnInvalidVolume("output")',
@@ -306,6 +313,7 @@ def main() -> int:
     require_fragments(errors, OVERLAY_ROOT / "qmldir", (
         "module qs.Titonium.Overlays.Audio",
         "singleton AudioPopupCoordinator 1.0 AudioPopupCoordinator.qml",
+        "AudioOutputDeviceRow 1.0 AudioOutputDeviceRow.qml",
     ), "Audio overlay module")
     require_fragments(errors, OVERLAY_ROOT / "AudioPopupCoordinator.qml", (
         "pragma Singleton",
@@ -331,6 +339,9 @@ def main() -> int:
         "streamList.contentHeight",
         "ListView {",
         "AudioControlRow {",
+        "AudioOutputDeviceRow {",
+        "AudioService.outputDevices",
+        "property bool streamsExpanded: false",
         "AudioStreamRow {",
     ), "Audio popup surface")
     require_fragments(errors, OVERLAY_ROOT / "AudioSlider.qml", (
@@ -369,6 +380,12 @@ def main() -> int:
         'I18n.tr(root.muted ? "audio.unmute.accessible" : "audio.mute.accessible", {',
         '"name": root.label',
     ), "Audio control row")
+    require_fragments(errors, OVERLAY_ROOT / "AudioOutputDeviceRow.qml", (
+        "required property var device",
+        "AudioService.selectOutputDevice(root.device.id)",
+        "checked: root.device?.selected === true",
+        'I18n.tr("audio.output.select.accessible", {',
+    ), "Audio output device row")
     require_fragments(errors, OVERLAY_ROOT / "AudioStreamRow.qml", (
         "required property var stream",
         "AudioService.setStreamVolume",
@@ -470,6 +487,10 @@ def main() -> int:
             "audio.output.accessible.unavailable",
             "audio.output.accessible.muted",
             "audio.output.accessible.volume",
+            "audio.output.devices",
+            "audio.output.select.accessible",
+            "audio.applications.expand.accessible",
+            "audio.applications.collapse.accessible",
         ):
             if key not in strings:
                 errors.append(f"{locale} catalog missing audio accessibility key: {key}")
@@ -517,6 +538,7 @@ def main() -> int:
     ), "Connectivity pill")
     require_fragments(errors, ROOT / "Titonium/App.qml", (
         "import qs.Titonium.Overlays.Audio",
+        '";outputs=" + AudioService.outputDevices.length',
         "function popup(): string",
         "function closePopup(): string",
         "function popupState(): string",

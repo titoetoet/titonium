@@ -57,8 +57,10 @@ Singleton services expose reactive state once for all consumers:
 - `HyprlandService`: focused monitor and workspace state/actions.
 - `InputMethodService`: event-driven Fcitx SystemTray state.
 - `AudioService`: the sole PipeWire owner. Its `PwObjectTracker` observes audio-capable nodes and
-  exposes normalized output, input and playback-stream view data; Bar and overlay code never
-  imports PipeWire or writes raw node audio fields.
+  exposes normalized output, input, selectable output-device and playback-stream view data; Bar
+  and overlay code never imports PipeWire or writes raw node audio fields. Output selection
+  re-resolves the requested descriptor ID inside the service before assigning PipeWire's preferred
+  default sink.
 - `NotificationService`: the sole `NotificationServer` owner. It turns native objects into frozen,
   newest-first value descriptors and exposes bounded history, toast IDs and session-only unread
   state. Native objects never escape the service.
@@ -83,6 +85,8 @@ false startup or output-change OSD. Timers only coalesce/hide OSD presentation a
 acceptance may open and close surfaces, but must not change volume, mute, device selection or any
 other PipeWire setting. Manual visual testing is the only place to exercise those mutations, and
 the tester restores the original audio level, mute state and runtime preference afterward.
+The state snapshot reports the number of ready output descriptors so acceptance catches delayed
+PipeWire-node binding without selecting a device.
 
 Inside the expanded notch, the 48-pixel rail requests a page from the coordinator. A `StackView`
 creates the incoming page for a bounded transition and destroys the replaced page afterward; rapid

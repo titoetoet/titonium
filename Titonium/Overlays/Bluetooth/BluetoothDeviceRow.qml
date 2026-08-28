@@ -16,10 +16,9 @@ Item {
         || root.device?.stateKey === "bluetooth.device.disconnecting"
     readonly property bool actionable: root.device !== null && root.device.blocked !== true
         && !root.transitioning
-    readonly property string primaryActionKey: root.device?.connected === true
-        ? "bluetooth.device.disconnect" : (root.device?.pairing === true
-            ? "bluetooth.device.cancel_pair" : (root.device?.paired === true
-                ? "bluetooth.device.connect" : "bluetooth.device.pair"))
+    readonly property string primaryActionKey: root.device?.pairing === true
+        ? "bluetooth.device.cancel_pair" : (root.device?.paired === true
+            ? "bluetooth.device.connect" : "bluetooth.device.pair")
 
     implicitHeight: content.implicitHeight
     implicitWidth: content.implicitWidth
@@ -29,9 +28,7 @@ Item {
     function triggerPrimary(): void {
         if (!root.actionable)
             return;
-        if (root.device.connected)
-            BluetoothService.disconnectDevice(root.device.address);
-        else if (root.device.pairing)
+        if (root.device.pairing)
             BluetoothService.cancelPair(root.device.address);
         else if (root.device.paired)
             BluetoothService.connectDevice(root.device.address);
@@ -91,8 +88,23 @@ Item {
                 }
             }
 
+            Shared.Toggle {
+                visible: root.device?.connected === true
+                checked: root.device?.connected === true
+                enabled: root.actionable
+                accessibleName: I18n.tr("bluetooth.device.action.accessible", {
+                    "action": I18n.tr("bluetooth.device.disconnect"),
+                    "name": root.device?.name || ""
+                })
+                onToggled: checked => {
+                    if (!checked && root.device?.connected === true)
+                        BluetoothService.disconnectDevice(root.device.address);
+                }
+            }
+
             Shared.Button {
                 Layout.alignment: Qt.AlignVCenter
+                visible: root.device?.connected !== true
                 label: I18n.tr(root.primaryActionKey)
                 variant: "quiet"
                 size: "small"
@@ -111,7 +123,7 @@ Item {
             visible: root.device?.paired === true && !root.forgetConfirmation
 
             Shared.Button {
-                label: I18n.tr("bluetooth.forget")
+                id: forgetButton
                 iconName: "delete"
                 variant: "danger"
                 size: "small"

@@ -86,6 +86,7 @@ Scope {
                 + ";volume=" + Math.round(AudioService.outputVolume * 100)
                 + ";muted=" + AudioService.outputMuted
                 + ";input=" + AudioService.inputAvailable
+                + ";outputs=" + AudioService.outputDevices.length
                 + ";streams=" + AudioService.playbackStreams.length;
         }
 

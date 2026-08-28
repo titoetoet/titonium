@@ -447,6 +447,10 @@ def validate_presentation(errors: list[str]) -> None:
         "BluetoothService.pairDevice",
         "BluetoothService.cancelPair",
         "BluetoothService.forgetDevice",
+        "Shared.Toggle",
+        "checked: root.device?.connected === true",
+        "visible: root.device?.connected === true",
+        "onToggled: checked =>",
         "forgetConfirmation",
         "I18n.tr(\"bluetooth.forget.confirm\")",
         "I18n.tr(\"bluetooth.forget.cancel\")",
@@ -556,11 +560,18 @@ def validate_integration(errors: list[str]) -> None:
     errors.extend(ipc_open_path_errors(coordinator))
 
     row = DEVICE_ROW.read_text(encoding="utf-8") if DEVICE_ROW.is_file() else ""
-    if ('label: I18n.tr(root.primaryActionKey)' not in row
-            or 'I18n.tr("bluetooth.device.action.accessible", {' not in row
-            or '"action": I18n.tr(root.primaryActionKey)' not in row
+    if ('id: forgetButton' not in row
+            or 'iconName: "delete"' not in row
+            or 'I18n.tr("bluetooth.forget.accessible", {' not in row
             or '"name": root.device?.name || ""' not in row):
-        errors.append("Bluetooth row action must retain a plain label and expose action plus device name")
+        errors.append("Bluetooth Forget must be an accessible icon-only remove control")
+    forget_start = row.find("id: forgetButton")
+    forget_block = qml_block(row, row.rfind("Shared.Button", 0, forget_start)) \
+        if forget_start >= 0 else ""
+    if "label:" in forget_block:
+        errors.append("Bluetooth Forget remove control must not retain a text label")
+    if '? "bluetooth.device.disconnect"' in row:
+        errors.append("Bluetooth connected state must not route through the text-button action key")
 
     popup = POPUP.read_text(encoding="utf-8") if POPUP.is_file() else ""
     errors.extend(section_accessible_errors(popup))

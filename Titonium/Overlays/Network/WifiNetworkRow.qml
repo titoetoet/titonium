@@ -16,8 +16,6 @@ Item {
     readonly property bool actionable: root.network !== null && root.network.transitioning !== true
     readonly property bool requiresPassword: root.network?.secure === true
         && root.network?.known !== true && root.network?.connected !== true
-    readonly property string primaryActionKey: root.network?.connected === true
-        ? "wifi.network.disconnect" : "wifi.network.connect"
 
     implicitWidth: content.implicitWidth
     implicitHeight: content.implicitHeight
@@ -29,13 +27,10 @@ Item {
         root.passwordPromptOpen = false;
     }
 
-    function triggerPrimary(): void {
+    function triggerConnect(): void {
         if (!root.actionable || root.network === null)
             return;
-        if (root.network.connected) {
-            NetworkService.disconnect(root.network.id);
-            root.clearPassword();
-        } else if (root.requiresPassword) {
+        if (root.requiresPassword) {
             root.passwordPromptOpen = true;
         } else {
             NetworkService.connect(root.network.id);
@@ -87,16 +82,33 @@ Item {
                 }
             }
 
+            Shared.Toggle {
+                visible: root.network?.connected === true
+                checked: root.network?.connected === true
+                enabled: root.actionable
+                accessibleName: I18n.tr("wifi.network.action.accessible", {
+                    "action": I18n.tr("wifi.network.disconnect"),
+                    "name": root.network?.name || ""
+                })
+                onToggled: checked => {
+                    if (!checked && root.network?.connected === true) {
+                        NetworkService.disconnect(root.network.id);
+                        root.clearPassword();
+                    }
+                }
+            }
+
             Shared.Button {
-                label: I18n.tr(root.primaryActionKey)
+                visible: root.network?.connected !== true
+                label: I18n.tr("wifi.network.connect")
                 variant: "quiet"
                 size: "small"
                 enabled: root.actionable
                 accessibleName: I18n.tr("wifi.network.action.accessible", {
-                    "action": I18n.tr(root.primaryActionKey),
+                    "action": I18n.tr("wifi.network.connect"),
                     "name": root.network?.name || ""
                 })
-                onTriggered: root.triggerPrimary()
+                onTriggered: root.triggerConnect()
             }
         }
 

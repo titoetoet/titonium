@@ -4,6 +4,15 @@ const fs = require("fs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
+const helperPath = path.join(root, "Titonium/Overlays/Audio/AudioGeometry.js");
+if (!fs.existsSync(helperPath)) {
+    console.error("FAIL audio geometry helper is missing");
+    process.exit(1);
+}
+const vm = require("node:vm");
+const helperSource = fs.readFileSync(helperPath, "utf8").replace(/^\.pragma library\s*\n/, "");
+const geometry = vm.createContext({ Math, Number });
+vm.runInContext(helperSource, geometry, { filename: helperPath });
 const source = fs.readFileSync(
     path.join(root, "Titonium/Overlays/Audio/AudioPopupSurface.qml"), "utf8");
 
@@ -27,6 +36,12 @@ if (streamCap(fixed, padding, 520, 360) !== 92)
     failures.push("stream cap must reserve fixed content and both outer padding edges");
 if (outerHeight(fixed, 500, padding, 360) !== 360)
     failures.push("outer height must remain capped by available height");
+if (geometry.deviceListHeight(0, 36, 4, 132) !== 0)
+    failures.push("empty output-device model must use zero height");
+if (geometry.deviceListHeight(1, 36, 4, 132) !== 36)
+    failures.push("one output device must instantiate one complete row");
+if (geometry.deviceListHeight(5, 36, 4, 132) !== 132)
+    failures.push("many output devices must expose a bounded scroll viewport");
 if (/ColumnLayout\s*\{[\s\S]*?anchors\.margins\s*:/.test(source))
     failures.push("Audio ColumnLayout must not add margins inside Panel padding");
 if (!/fixedContentHeight\s*\+\s*root\.streamHeight\s*\+\s*2\s*\*\s*panel\.padding/.test(source))
