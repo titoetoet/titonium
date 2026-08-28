@@ -114,10 +114,10 @@ Item {
         }
 
         Shared.Button {
-            id: moreButton
+            id: deviceInfoButton
             visible: root.device?.paired === true && !root.forgetConfirmation
-            opacity: root.hovered || moreButton.activeFocus ? 1 : 0
-            iconName: "more_horiz"
+            opacity: root.hovered || deviceInfoButton.activeFocus ? 1 : 0.45
+            iconName: "info"
             variant: "quiet"
             size: "small"
             accessibleName: I18n.tr("bluetooth.forget.accessible", {

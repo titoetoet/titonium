@@ -453,11 +453,11 @@ def validate_presentation(errors: list[str]) -> None:
         "onToggled: checked =>",
         "forgetConfirmation",
         "I18n.tr(\"bluetooth.forget.cancel\")",
-        "id: moreButton",
-        'iconName: "more_horiz"',
+        "id: deviceInfoButton",
+        'iconName: "info"',
         "id: cancelForgetButton",
         "id: confirmForgetButton",
-        "opacity: root.hovered || moreButton.activeFocus ? 1 : 0",
+        "opacity: root.hovered || deviceInfoButton.activeFocus ? 1 : 0.45",
         "Shared.SystemIcon",
         "sourceName: root.device?.icon || \"bluetooth\"",
         "fallbackName: \"bluetooth\"",
@@ -469,6 +469,8 @@ def validate_presentation(errors: list[str]) -> None:
                       "MultiEffect", "ShaderEffect"):
         if forbidden in row:
             errors.append(f"forbidden Bluetooth device-row dependency: {forbidden}")
+    if 'iconName: "more_horiz"' in row:
+        errors.append("Bluetooth device options must not use an ambiguous overflow glyph")
 
     if "module qs.Titonium.Overlays.Bluetooth" not in qmldir:
         errors.append("Bluetooth overlay qmldir module name is missing")
