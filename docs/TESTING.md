@@ -170,6 +170,17 @@ It checks state formatting, idle OSD, popup mutual exclusion, clean runtime logs
 isolation and both unchanged Hyprland configuration hashes. It never calls or exposes volume,
 mute, adjustment, OSD-show or device-selection IPC.
 
+Center attention acceptance runs with isolated XDG data, state and cache roots, then calls only
+`center.state()` and `center.focusState()`. It requires an empty transient arbiter, the translated
+Daily Focus fallback, one `titonium-menubar` layer on DP-1 and no Titonium layer on DP-3. It also
+rejects runtime errors, repository changes and changes to either Hyprland configuration hash. The
+script never invokes `openScratchpad()`, creates a user focus file or launches an editor. Run it
+directly with:
+
+```bash
+./scripts/center_attention_acceptance.sh
+```
+
 Notification acceptance stops only Titonium, waits boundedly for its shell ID to be released,
 starts one foreground shell and then sends one controlled `notify-send` fixture. It requires one
 DP-1 toast and no DP-3 toast, verifies five-second presentation expiry preserves unread state, then
@@ -249,3 +260,13 @@ Manual review: change focus between apps and confirm Center renders the real ico
 52px top offset. Send one to four notifications and inspect newest-first stacking, icon fallback,
 three-line body cap, close control, five-second expiry and the Bell dot. Clicking the Bell must only
 clear the dot. Notification Center, actions and persisted history remain deliberately deferred.
+
+## Daily Focus Center checkpoint
+
+Automated coverage consists of the pure priority and Daily Focus fixtures, the Center ownership
+contract, full qmllint gate, foreground smoke and read-only Center acceptance. Before starting the
+MPRIS slice, manually verify on DP-1 that the combined `CenterIsland + Pin` group remains physically
+centered, the Daily Focus text is visually quiet and elides on one line, and one click opens the
+configured Markdown handler. Confirm the Pin remains independently targetable. Also confirm
+`ActiveWindowPill` remains immediately after Workspaces and still opens Center Notch. DP-3 must
+remain free of Titonium surfaces throughout.

@@ -79,6 +79,12 @@ Scope {
     }
 
     IpcHandler {
+        target: "center"
+        function state(): string { return CenterAttentionService.snapshot(); }
+        function focusState(): string { return CenterFocusStore.snapshot(); }
+    }
+
+    IpcHandler {
         id: audioIpc
         target: "audio"
         function state(): string {

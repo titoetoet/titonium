@@ -23,6 +23,7 @@ QtObject {
     readonly property string focusPath: Quickshell.dataPath("center/daily-focus.md")
     readonly property string promptsPath: Quickshell.dataPath("center/focus-prompts.txt")
     readonly property string text: root.selectedText
+        || I18n.tr("menubar.center.focus_fallback")
     readonly property bool ready: root.storeReady
 
     function readText(file: FileView): string {
@@ -155,6 +156,7 @@ QtObject {
         stdout: StdioCollector {
             id: statOutput
         }
+        stderr: StdioCollector {}
         onExited: exitCode => {
             const epochSeconds = exitCode === 0 ? Number(statOutput.text.trim()) : 0;
             root.focusModifiedAt = Number.isFinite(epochSeconds) ? epochSeconds * 1000 : 0;

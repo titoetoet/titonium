@@ -11,6 +11,7 @@ FOCUS_STORE = CENTER / "CenterFocusStore.qml"
 QMLDIR = CENTER / "qmldir"
 APP = ROOT / "Titonium/App.qml"
 CENTER_VIEW = ROOT / "Titonium/Bar/islands/CenterIsland.qml"
+ACCEPTANCE = ROOT / "scripts/center_attention_acceptance.sh"
 
 
 def main() -> int:
@@ -105,6 +106,23 @@ def main() -> int:
     app = APP.read_text(encoding="utf-8")
     if app.count("import qs.Titonium.Services.Center") != 1:
         errors.append("App must import the Center service module exactly once")
+    for fragment in (
+        'target: "center"',
+        "function state(): string { return CenterAttentionService.snapshot(); }",
+        "function focusState(): string { return CenterFocusStore.snapshot(); }",
+    ):
+        if fragment not in app:
+            errors.append(f"App missing read-only Center IPC contract: {fragment}")
+    center_ipc_match = re.search(
+        r'IpcHandler\s*\{\s*target:\s*"center"(?P<body>.*?)(?=\n\s*IpcHandler\s*\{|\Z)',
+        app,
+        re.DOTALL,
+    )
+    if center_ipc_match:
+        body = center_ipc_match.group("body")
+        for forbidden in ("openScratchpad", "publish(", "acknowledge(", "clear(", "start(", "cancel("):
+            if forbidden in body:
+                errors.append(f"Center IPC exposes a mutating method: {forbidden}")
 
     if CENTER_VIEW.is_file():
         source = CENTER_VIEW.read_text(encoding="utf-8")
@@ -123,6 +141,43 @@ def main() -> int:
         for forbidden in ("CenterAttentionRules", "Process {", "FileView {"):
             if forbidden in source:
                 errors.append(f"Bar view owns Center runtime logic: {path.relative_to(ROOT)}: {forbidden}")
+
+    if not ACCEPTANCE.is_file():
+        errors.append("missing scripts/center_attention_acceptance.sh")
+    else:
+        acceptance = ACCEPTANCE.read_text(encoding="utf-8")
+        for fragment in (
+            "qs -n -p",
+            "XDG_DATA_HOME=",
+            "XDG_STATE_HOME=",
+            "XDG_CACHE_HOME=",
+            "center state",
+            "center focusState",
+            '"transient"',
+            "Focus for today",
+            "Tập trung cho hôm nay",
+            "hyprctl -j layers",
+            "titonium-menubar",
+            "DP-1",
+            "DP-3",
+            "Configuration Loaded",
+            "before_git",
+            "before_live",
+            "before_dotfiles",
+        ):
+            if fragment not in acceptance:
+                errors.append(f"Center acceptance missing read-only contract: {fragment}")
+        for forbidden in (
+            "center openScratchpad",
+            "center publish",
+            "center acknowledge",
+            "center clear",
+            "center timer",
+            "center job",
+            "xdg-open",
+        ):
+            if forbidden in acceptance:
+                errors.append(f"Center acceptance contains mutation: {forbidden}")
 
     if errors:
         print("FAIL Center attention architecture")

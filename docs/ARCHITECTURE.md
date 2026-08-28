@@ -7,6 +7,8 @@ shell.qml
 └── Titonium/App.qml
     ├── Bar/BarHost.qml ── Variants(Quickshell.screens)
     │   ├── BarSurface → Start / Center / End islands
+    │   │   ├── Start → Workspaces + ActiveWindowPill
+    │   │   └── CenterGroup → CenterIsland + independent Bar pin
     │   └── CenterNotchWindow → Loader(active for owner screen only)
     │       └── CenterNotch → Rail + lazy StackView viewport
     ├── Dock/DockHost.qml ── Variants(ScreenPolicy.screens)
@@ -40,8 +42,9 @@ named by `CenterNotchCoordinator.ownerScreenName` activates its heavy Loader. Op
 closes the notch; opening the notch closes `SurfaceManager`, so the two exclusive-focus surfaces
 cannot overlap. An outside click, Escape, or focused-monitor change releases the notch window.
 
-The TopBar pin remains positioned from the full screen width, independent of the outer islands.
-The Active Window pill sits directly after the five-slot Workspace group, sizes naturally up to
+The true-center `CenterGroup` remains positioned from the full screen width and contains the
+attention `CenterIsland` followed by the independently targetable TopBar pin. The Active Window
+pill sits directly after the five-slot Workspace group, sizes naturally up to
 520 logical pixels, and projects the active descriptor as app icon plus
 `Application · window title`. It falls back to Titonium and continues to open the centered
 four-corner popup 52 logical pixels below the screen edge. The full Bar input mask is composed
@@ -68,6 +71,29 @@ Singleton services expose reactive state once for all consumers:
 
 QML views draw, animate and emit intent. They do not spawn commands, store files or duplicate
 system listeners. Pure JavaScript helpers contain searchable/testable domain rules.
+
+## Center attention and Daily Focus
+
+`CenterAttentionService` is the sole priority-arbitration owner. Publishers submit semantic
+`source`/`kind` events; `CenterAttentionRules.js` assigns the allowlisted priority and lifetime,
+drops stale lower-priority ephemeral events, retains only bounded actionable pending events and
+uses a generation token to make its one-shot expiry timer safe against preemption. Passive media,
+timer and job indicators are a separate frozen projection and never replace the primary text.
+
+`CenterFocusStore` owns `daily-focus.md` and `focus-prompts.txt` beneath
+`Quickshell.dataPath("center/")`. It watches both files, checks the explicit file mtime only at
+startup or a file event, and uses one non-repeating midnight timer to invalidate the local-day
+selection. `CenterFocusRules.js` chooses the first same-day non-heading Markdown line or a
+date-stable prompt fallback. Startup is read-only. The service creates the directory/file and
+invokes `xdg-open` only after explicit `openScratchpad()` intent from the view.
+
+`CenterIsland` consumes only the immutable presentation, indicators and focus text. Its primary
+click always requests the scratchpad action, including while a transient event is visible. It owns
+no process, file watcher, timer or system listener. `ActiveWindowPill` remains a separate Start
+island concern and continues to open Center Notch.
+
+The `center` IPC target exposes only `state()` and `focusState()` snapshots. It intentionally has
+no publish, acknowledgement, timer/job mutation or scratchpad-launch endpoint.
 
 ## Audio slice boundaries
 
