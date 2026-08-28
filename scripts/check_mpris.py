@@ -48,11 +48,13 @@ def main() -> int:
             "function onTrackArtistChanged():",
             "function onPlaybackStateChanged():",
             "MprisRules.transition",
+            "MprisRules.indicatorActive(result.next)",
             "CenterAttentionService.publish",
             "CenterAttentionService.setIndicator",
             '"menubar.center.indicator.media"',
             '"menubar.center.media_unknown"',
             "function snapshot(): string",
+            "function activate(): void",
         ):
             if fragment not in source:
                 errors.append(f"MprisService missing contract: {fragment}")
@@ -86,6 +88,7 @@ def main() -> int:
     if app.count("import qs.Titonium.Services.Mpris") != 1:
         errors.append("App must import the MPRIS service module exactly once")
     for fragment in (
+        "Component.onCompleted: MprisService.activate()",
         'target: "mpris"',
         "function state(): string { return MprisService.snapshot(); }",
     ):

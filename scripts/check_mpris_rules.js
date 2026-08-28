@@ -71,6 +71,10 @@ assert.equal(Object.isFrozen(normalized), true);
 assert.equal(rules.normalizePlayer({ identity: "", playbackState: "playing" }), null);
 assert.equal(rules.normalizePlayer({ identity: "x", playbackState: "unknown" }).playbackState,
     "stopped");
+assert.equal(rules.indicatorActive(playing), true);
+assert.equal(rules.indicatorActive(paused), false);
+assert.equal(rules.indicatorActive({ ...playing, playbackState: "stopped" }), false);
+assert.equal(rules.indicatorActive(null), false);
 console.log("PASS native facts normalize into frozen value descriptors");
 
 const baseline = rules.transition(null, playing, 1000);

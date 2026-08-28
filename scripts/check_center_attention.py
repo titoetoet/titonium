@@ -35,6 +35,7 @@ def main() -> int:
             "function snapshot(): string",
             "CenterAttentionRules.publish",
             "CenterAttentionRules.expire",
+            "CenterAttentionRules.expiryRequest",
             "scheduledGeneration",
             "scheduledId",
             "repeat: false",

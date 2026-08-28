@@ -56,6 +56,16 @@ assert.equal(state.current.id, "job:build");
 assert.equal(state.current.priority, 70);
 assert.equal(state.generation, 2);
 
+const expiryRequest = rules.expiryRequest(state, 2000);
+assert.deepEqual(plain(expiryRequest), {
+    id: "job:build",
+    generation: 2,
+    delay: 15000,
+});
+assert.equal(rules.expire(state, expiryRequest.id, expiryRequest.generation,
+    17000).current, null);
+console.log("PASS expiry request carries arbiter generation instead of descriptor data");
+
 const ignoredOldExpiry = rules.expire(state, "media:track", firstGeneration, 7000);
 assert.strictEqual(ignoredOldExpiry, state);
 assert.equal(ignoredOldExpiry.current.id, "job:build");

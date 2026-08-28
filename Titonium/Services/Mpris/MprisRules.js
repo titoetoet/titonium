@@ -66,6 +66,11 @@ function signature(player) {
     return [value.identity, value.playbackState, value.trackArtist, value.trackTitle].join("\u001f");
 }
 
+function indicatorActive(player) {
+    var value = normalizePlayer(player);
+    return value !== null && value.playbackState === "playing";
+}
+
 function trackSignature(player) {
     return [player.identity, player.trackArtist, player.trackTitle].join("\u001f");
 }

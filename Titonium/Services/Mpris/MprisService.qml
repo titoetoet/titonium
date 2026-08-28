@@ -44,7 +44,7 @@ QtObject {
             "media",
             "music_note",
             I18n.tr("menubar.center.indicator.media"),
-            root.playing
+            MprisRules.indicatorActive(result.next)
         );
     }
 
@@ -102,6 +102,10 @@ QtObject {
             title: root.title
         });
     }
+
+    // App calls this to pin the singleton to the shell lifetime. Initialization
+    // remains in Component.onCompleted so any first reference is safe.
+    function activate(): void {}
 
     Component.onCompleted: root.synchronizePlayers()
 

@@ -174,6 +174,17 @@ function expire(state, id, generation, now) {
     return advance(state.pending, state.generation, now);
 }
 
+function expiryRequest(state, now) {
+    if (!state || !state.current || state.current.expiresAt <= 0)
+        return null;
+    var nowValue = timestamp(now, 0);
+    return Object.freeze({
+        id: state.current.id,
+        generation: state.generation,
+        delay: Math.max(0, state.current.expiresAt - nowValue),
+    });
+}
+
 function removeEvent(state, id, now) {
     var normalizedId = text(id);
     if (!normalizedId)

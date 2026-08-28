@@ -28,6 +28,8 @@ import qs.Titonium.Osd.Audio
 Scope {
     id: root
 
+    Component.onCompleted: MprisService.activate()
+
     function openSpotlight(scope: string, query: string, stateMode: string, requestedScreen: var): string {
         CenterNotchCoordinator.close();
         const screen = ScreenRouter.screenForName(requestedScreen?.name

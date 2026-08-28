@@ -67,19 +67,20 @@ QtObject {
         root.scheduledId = "";
         root.scheduledGeneration = -1;
 
-        const current = root.arbiterState.current;
-        if (current === null || current.expiresAt <= 0)
+        const now = Date.now();
+        const request = CenterAttentionRules.expiryRequest(root.arbiterState, now);
+        if (request === null)
             return;
 
-        const now = Date.now();
-        if (current.expiresAt <= now) {
-            root.applyState(CenterAttentionRules.expire(root.arbiterState, current.id, current.generation, now));
+        if (request.delay <= 0) {
+            root.applyState(CenterAttentionRules.expire(
+                root.arbiterState, request.id, request.generation, now));
             return;
         }
 
-        root.scheduledId = current.id;
-        root.scheduledGeneration = current.generation;
-        root.expiryTimer.interval = Math.max(1, current.expiresAt - now);
+        root.scheduledId = request.id;
+        root.scheduledGeneration = request.generation;
+        root.expiryTimer.interval = Math.max(1, request.delay);
         root.expiryTimer.start();
     }
 
