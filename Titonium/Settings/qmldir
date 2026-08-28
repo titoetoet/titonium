@@ -1,0 +1,6 @@
+module qs.Titonium.Settings
+singleton SettingsCoordinator 1.0 SettingsCoordinator.qml
+SettingsHost 1.0 SettingsHost.qml
+SettingsWindow 1.0 SettingsWindow.qml
+SettingsCenter 1.0 SettingsCenter.qml
+SettingsWorkspace 1.0 SettingsWorkspace.qml

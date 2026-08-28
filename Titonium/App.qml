@@ -24,6 +24,7 @@ import qs.Titonium.Overlays.Audio
 import qs.Titonium.Overlays.Bluetooth
 import qs.Titonium.Overlays.Network
 import qs.Titonium.Osd.Audio
+import qs.Titonium.Settings
 
 Scope {
     id: root
@@ -35,6 +36,7 @@ Scope {
     }
 
     function openSpotlight(scope: string, query: string, stateMode: string, requestedScreen: var): string {
+        SettingsCoordinator.forceCancelAndClose();
         CenterNotchCoordinator.close();
         const screen = ScreenRouter.screenForName(requestedScreen?.name
             || HyprlandService.focusedMonitorName);
@@ -54,6 +56,18 @@ Scope {
         return opened ? "open:" + scope + ":" + screen.name : "unavailable:no-screen";
     }
 
+    function openSettings(requestedScreen: var, pageId: string): string {
+        const screen = ScreenRouter.screenForName(requestedScreen?.name
+            || HyprlandService.focusedMonitorName);
+        if (!screen)
+            return "unavailable:no-screen";
+        SurfaceManager.close("");
+        CenterNotchCoordinator.close();
+        const opened = SettingsCoordinator.open(screen.name, pageId);
+        return opened ? "open:" + screen.name + ";page="
+            + SettingsCoordinator.requestedPage : "unavailable:busy";
+    }
+
     BarHost {}
     DockHost {
         onApplicationsRequested: screen => root.openSpotlight("applications", "", "browse", screen)
@@ -61,13 +75,16 @@ Scope {
     OverlayHost {}
     AudioOsdHost {}
     ToastHost {}
+    SettingsHost {}
 
     Connections {
         target: SurfaceManager
 
         function onOpened(ownerId: string, descriptor: var, screen: var): void {
-            if (ownerId.length > 0)
+            if (ownerId.length > 0) {
+                SettingsCoordinator.forceCancelAndClose();
                 CenterNotchCoordinator.close();
+            }
         }
     }
 
@@ -193,6 +210,34 @@ Scope {
 
         function state(): string {
             return DockService.snapshot();
+        }
+    }
+
+    IpcHandler {
+        id: settingsIpc
+        target: "settings"
+
+        function open(page: string): string {
+            return root.openSettings(null, page);
+        }
+
+        function page(page: string): string {
+            if (!SettingsCoordinator.requestPage(page))
+                return "unavailable:closed";
+            return settingsIpc.state();
+        }
+
+        function cancel(): string {
+            return SettingsCoordinator.forceCancelAndClose() ? "closed" : "unavailable:busy";
+        }
+
+        function state(): string {
+            if (!SettingsCoordinator.active)
+                return "closed";
+            return "open:" + SettingsCoordinator.ownerScreenName
+                + ";page=" + SettingsCoordinator.requestedPage
+                + ";dirty=" + Preferences.dirty
+                + ";saving=" + Preferences.savePending;
         }
     }
 
