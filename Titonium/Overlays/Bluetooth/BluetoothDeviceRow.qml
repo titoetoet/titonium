@@ -85,6 +85,20 @@ Item {
             }
         }
 
+        Shared.Button {
+            id: deviceInfoButton
+            visible: root.device?.paired === true && !root.forgetConfirmation
+            opacity: root.hovered || deviceInfoButton.activeFocus ? 1 : 0
+            iconName: "info"
+            variant: "quiet"
+            size: "small"
+            accessibleName: I18n.tr("bluetooth.forget.accessible", {
+                "name": root.device?.name || ""
+            })
+            onTriggered: root.forgetConfirmation = true
+            Behavior on opacity { NumberAnimation { duration: Motion.fast } }
+        }
+
         Shared.Toggle {
             visible: root.device?.connected === true && !root.forgetConfirmation
             checked: root.device?.connected === true
@@ -111,20 +125,6 @@ Item {
                 "name": root.device?.name || ""
             })
             onTriggered: root.triggerPrimary()
-        }
-
-        Shared.Button {
-            id: deviceInfoButton
-            visible: root.device?.paired === true && !root.forgetConfirmation
-            opacity: root.hovered || deviceInfoButton.activeFocus ? 1 : 0.45
-            iconName: "info"
-            variant: "quiet"
-            size: "small"
-            accessibleName: I18n.tr("bluetooth.forget.accessible", {
-                "name": root.device?.name || ""
-            })
-            onTriggered: root.forgetConfirmation = true
-            Behavior on opacity { NumberAnimation { duration: Motion.fast } }
         }
 
         Shared.Button {

@@ -457,7 +457,6 @@ def validate_presentation(errors: list[str]) -> None:
         'iconName: "info"',
         "id: cancelForgetButton",
         "id: confirmForgetButton",
-        "opacity: root.hovered || deviceInfoButton.activeFocus ? 1 : 0.45",
         "Shared.SystemIcon",
         "sourceName: root.device?.icon || \"bluetooth\"",
         "fallbackName: \"bluetooth\"",
@@ -471,6 +470,14 @@ def validate_presentation(errors: list[str]) -> None:
             errors.append(f"forbidden Bluetooth device-row dependency: {forbidden}")
     if 'iconName: "more_horiz"' in row:
         errors.append("Bluetooth device options must not use an ambiguous overflow glyph")
+    if not re.search(
+            r"opacity:\s*root\.hovered\s*\|\|\s*deviceInfoButton\.activeFocus\s*\?\s*1\s*:\s*0\s*(?:\n|$)",
+            row):
+        errors.append("Bluetooth device Info must be fully hidden until row hover or keyboard focus")
+    info_index = row.find("id: deviceInfoButton")
+    toggle_index = row.find("Shared.Toggle {")
+    if not (0 <= info_index < toggle_index):
+        errors.append("Bluetooth device Info must appear before the connection Toggle")
 
     if "module qs.Titonium.Overlays.Bluetooth" not in qmldir:
         errors.append("Bluetooth overlay qmldir module name is missing")
