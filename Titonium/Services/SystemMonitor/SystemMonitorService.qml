@@ -104,7 +104,9 @@ Singleton {
             network: network
         });
         root.hotSampleAtState = now;
-        root.liveState = root.active && now >= root.activationStartedAt;
+        root.liveState = root.active && cpuPercent !== null
+            && memory !== null && network !== null
+            && now >= root.activationStartedAt;
     }
 
     function startProcessSamples(): void {

@@ -55,6 +55,7 @@ def main() -> int:
             "root.psProcess.running = false",
             "root.dfProcess.running = false",
             "root.discoveryProcess.running = false",
+            "root.liveState = root.active && cpuPercent !== null",
         ):
             if fragment not in source:
                 errors.append(f"SystemMonitorService missing contract: {fragment}")
