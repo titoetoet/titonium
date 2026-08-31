@@ -251,5 +251,16 @@ function selectSensorPaths(paths) {
                 selected.gpuPower = path;
         }
     }
+    const cpuNames = candidates.filter(path =>
+        path.indexOf("/sys/class/hwmon/hwmon") === 0 && path.endsWith("/name"));
+    if (cpuNames.length > 0) {
+        const cpuPrefix = cpuNames[0].slice(0, -5);
+        const cpuTemperature = cpuPrefix + "/temp1_input";
+        const cpuPower = cpuPrefix + "/power1_average";
+        if (candidates.indexOf(cpuTemperature) >= 0)
+            selected.cpuTemperature = cpuTemperature;
+        if (candidates.indexOf(cpuPower) >= 0)
+            selected.cpuPower = cpuPower;
+    }
     return Object.freeze(selected);
 }

@@ -84,11 +84,13 @@ Singleton {
         const gpuTemperature = root.optionalScalar(gpuTemperatureFile, 1000);
         const gpuWatts = root.optionalScalar(gpuPowerFile, 1000000);
         const cpuTemperature = root.optionalScalar(cpuTemperatureFile, 1000);
+        const cpuWatts = root.optionalScalar(root.cpuPowerFile, 1000000);
 
         root.snapshotState = Object.freeze({
-            cpu: cpuPercent === null && cpuTemperature === null ? null : Object.freeze({
+            cpu: cpuPercent === null && cpuTemperature === null && cpuWatts === null ? null : Object.freeze({
                 percent: cpuPercent,
                 temperatureC: cpuTemperature,
+                watts: cpuWatts,
                 severity: SystemMonitorRules.severity(cpuPercent, cpuTemperature)
             }),
             gpu: gpuPercent === null && gpuTemperature === null && gpuWatts === null
@@ -207,9 +209,12 @@ Singleton {
 
     property Process discoveryProcess: Process {
         command: ["find", "-L", "/sys/class/drm", "/sys/class/hwmon", "/sys/class/powercap",
-            "-maxdepth", "5", "-type", "f", "(", "-name", "gpu_busy_percent", "-o",
-            "-name", "mem_info_vram_used", "-o", "-name", "mem_info_vram_total", "-o",
-            "-name", "temp1_input", "-o", "-name", "power1_average", ")"]
+            "-maxdepth", "5", "-type", "f", "(",
+            "(", "-name", "name", "-exec", "grep", "-l", "-E",
+            "^(k10temp|zenpower)$", "{}", "+", ")", "-o", "(", "(",
+            "-name", "gpu_busy_percent", "-o", "-name", "mem_info_vram_used", "-o",
+            "-name", "mem_info_vram_total", "-o", "-name", "temp1_input", "-o",
+            "-name", "power1_average", ")", "-print", ")", ")"]
         stdout: StdioCollector { id: discoveryOutput }
         stderr: StdioCollector {}
         onExited: {
@@ -281,5 +286,8 @@ Singleton {
     }
     property FileView cpuTemperatureFile: FileView {
         path: root.sensorPaths.cpuTemperature || ""; preload: false; blockLoading: true; printErrors: false
+    }
+    property FileView cpuPowerFile: FileView {
+        path: root.sensorPaths.cpuPower || ""; preload: false; blockLoading: true; printErrors: false
     }
 }

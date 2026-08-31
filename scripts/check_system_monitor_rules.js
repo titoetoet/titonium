@@ -112,6 +112,10 @@ const selectedPaths = rules.selectSensorPaths([
     "/sys/class/drm/card1/device/hwmon/hwmon8/temp1_input",
     "/sys/class/drm/card1/device/hwmon/hwmon8/power1_average",
     "/sys/class/drm/card2/device/gpu_busy_percent",
+    "/sys/class/hwmon/hwmon0/temp1_input",
+    "/sys/class/hwmon/hwmon3/name",
+    "/sys/class/hwmon/hwmon3/temp1_input",
+    "/sys/class/hwmon/hwmon3/power1_average",
 ]);
 assert.deepEqual(plain(selectedPaths), {
     gpuBusy: "/sys/class/drm/card1/device/gpu_busy_percent",
@@ -119,6 +123,8 @@ assert.deepEqual(plain(selectedPaths), {
     vramTotal: "/sys/class/drm/card1/device/mem_info_vram_total",
     gpuPower: "/sys/class/drm/card1/device/hwmon/hwmon8/power1_average",
     gpuTemperature: "/sys/class/drm/card1/device/hwmon/hwmon8/temp1_input",
+    cpuTemperature: "/sys/class/hwmon/hwmon3/temp1_input",
+    cpuPower: "/sys/class/hwmon/hwmon3/power1_average",
 });
 assert.equal(Object.isFrozen(selectedPaths), true);
 console.log("PASS system monitor sensor paths select one complete DRM group without fixed index");
