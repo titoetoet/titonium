@@ -37,6 +37,7 @@ def main() -> int:
             "readonly property bool hasActivity:",
             "readonly property bool showingFocus:",
             "readonly property int activeCount:",
+            "readonly property var activities: root.activityState.activities",
             "function upsert(descriptor: var): bool",
             "function remove(activityId: string): bool",
             "function snapshot(): string",

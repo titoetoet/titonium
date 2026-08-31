@@ -16,6 +16,7 @@ QtObject {
     readonly property bool hasActivity: root.presentation !== null
     readonly property bool showingFocus: root.activityState.showingFocus
     readonly property int activeCount: root.activityState.activities.length
+    readonly property var activities: root.activityState.activities
 
     property Timer rotationTimer: Timer {
         id: rotationTimer
