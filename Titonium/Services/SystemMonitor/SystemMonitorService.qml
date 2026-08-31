@@ -28,6 +28,7 @@ Singleton {
         disk: null, network: null
     })
     property var processesState: Object.freeze([])
+    property var cpuHistoryState: Object.freeze([])
     property bool processesStaleState: true
     property var previousCpu: null
     property var previousNetwork: null
@@ -40,6 +41,7 @@ Singleton {
     readonly property double hotSampleAt: root.hotSampleAtState
     readonly property var snapshot: root.snapshotState
     readonly property var processes: root.processesState
+    readonly property var cpuHistory: root.cpuHistoryState
     readonly property bool processesStale: root.processesStaleState
 
     function warn(category: string, message: string): void {
@@ -69,6 +71,10 @@ Singleton {
         const currentCpu = SystemMonitorRules.parseCpuStat(root.readView(cpuStatFile));
         const cpuPercent = SystemMonitorRules.cpuPercent(root.previousCpu, currentCpu);
         root.previousCpu = currentCpu;
+        if (cpuPercent !== null) {
+            const nextHistory = root.cpuHistoryState.concat([cpuPercent]).slice(-24);
+            root.cpuHistoryState = Object.freeze(nextHistory);
+        }
 
         const memory = SystemMonitorRules.parseMeminfo(root.readView(meminfoFile));
         const currentNetwork = SystemMonitorRules.parseNetDev(root.readView(netDevFile));
@@ -167,6 +173,7 @@ Singleton {
         root.processSampleAt = 0;
         root.diskSampleAt = 0;
         root.processesState = Object.freeze([]);
+        root.cpuHistoryState = Object.freeze([]);
         root.processesStaleState = true;
         root.sensorPaths = Object.freeze({});
         root.nextHotAt = now;
@@ -202,6 +209,7 @@ Singleton {
             dfRunning: root.dfProcess.running,
             discoveryRunning: root.discoveryProcess.running,
             snapshot: root.snapshot,
+            cpuHistory: root.cpuHistory,
             processCount: root.processes.length,
             processesStale: root.processesStale
         });

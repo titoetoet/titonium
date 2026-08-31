@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls as QtControls
 import QtQuick.Layouts
+import QtQuick.Shapes
 import qs.Titonium.Core.Runtime
 import qs.Titonium.Services.Center
 import qs.Titonium.Services.SystemMonitor
@@ -30,22 +31,83 @@ FocusScope {
         return scaled.toFixed(digits) + " " + units[unit] + (rate ? "/s" : "");
     }
 
+    function percentText(value: var): string {
+        const number = Number(value);
+        return isFinite(number) && number >= 0 ? Math.round(number) + "%" : "—";
+    }
+
     function capacityText(value: var): string {
         if (!value)
-            return "";
+            return "—";
         return root.formatBytes(value.usedBytes, false) + " / "
             + root.formatBytes(value.totalBytes, false);
     }
 
-    function telemetryText(value: var): string {
-        if (!value)
-            return "";
-        const result = [];
-        if (typeof value.temperatureC === "number")
-            result.push(Math.round(value.temperatureC) + "°C");
-        if (typeof value.watts === "number")
-            result.push(value.watts.toFixed(1) + "W");
-        return result.join(" · ");
+    function temperatureText(value: var): string {
+        return typeof value?.temperatureC === "number"
+            ? Math.round(value.temperatureC) + "°C" : "—";
+    }
+
+    function wattsText(value: var): string {
+        return typeof value?.watts === "number"
+            ? value.watts.toFixed(1) + " W" : "—";
+    }
+
+    component MetricBar: Item {
+        id: metricRoot
+        required property string label
+        required property var value
+        required property string detail
+        property color fillColor: Theme.accent
+
+        Layout.fillWidth: true
+        Layout.preferredHeight: 34
+
+        RowLayout {
+            anchors.fill: parent
+            spacing: Metrics.spacingSmall
+
+            Shared.TextLabel {
+                Layout.preferredWidth: 40
+                text: metricRoot.label
+                variant: "caption"
+                strong: true
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 17
+                radius: height / 2
+                color: Theme.surfaceInteractive
+
+                Rectangle {
+                    width: {
+                        const number = Number(metricRoot.value);
+                        return isFinite(number) && number > 0
+                            ? parent.width * Math.min(100, number) / 100 : 0;
+                    }
+                    height: parent.height
+                    radius: parent.radius
+                    color: metricRoot.fillColor
+                }
+
+                Shared.TextLabel {
+                    anchors.centerIn: parent
+                    text: root.percentText(metricRoot.value)
+                    variant: "caption"
+                    strong: true
+                }
+            }
+
+            Shared.TextLabel {
+                Layout.preferredWidth: 86
+                text: metricRoot.detail
+                variant: "caption"
+                tone: "secondary"
+                horizontalAlignment: Text.AlignRight
+                elide: Text.ElideRight
+            }
+        }
     }
 
     ColumnLayout {
@@ -63,7 +125,7 @@ FocusScope {
             }
             Shared.TextLabel {
                 text: SystemMonitorService.live
-                    ? I18n.tr("center_notch.monitoring.live")
+                    ? I18n.tr("center_notch.monitoring.live") + " · 2s"
                     : I18n.tr("center_notch.monitoring.paused")
                 variant: "caption"
                 tone: SystemMonitorService.live ? "success" : "secondary"
@@ -81,102 +143,255 @@ FocusScope {
                 spacing: Metrics.spacingMedium
 
                 GridLayout {
-                    id: dashboardGrid
                     Layout.fillWidth: true
                     columns: 2
                     columnSpacing: Metrics.spacingMedium
                     rowSpacing: Metrics.spacingMedium
 
-                    Shared.Surface {
+                    ColumnLayout {
                         id: hardwarePanel
                         Layout.row: 0
                         Layout.column: 0
                         Layout.fillWidth: true
                         Layout.alignment: Qt.AlignTop
-                        Layout.preferredHeight: 356
-                        tone: "elevated"
-                        radius: Metrics.radiusMedium
-                        padding: Metrics.spacingMedium
+                        spacing: Metrics.spacingSmall
 
-                        ColumnLayout {
-                            anchors.fill: parent
-                            spacing: Metrics.spacingSmall
+                        RowLayout {
+                            Layout.fillWidth: true
 
-                            RowLayout {
+                            Shared.Icon {
+                                name: "memory"
+                                size: 20
+                                tone: "accent"
+                                accessibleName: I18n.tr("center_notch.monitoring.title")
+                            }
+                            Shared.TextLabel {
                                 Layout.fillWidth: true
-                                Shared.Icon {
-                                    name: "memory"
-                                    size: 20
-                                    tone: "accent"
-                                    accessibleName: I18n.tr("center_notch.monitoring.title")
-                                }
-                                Shared.TextLabel {
-                                    Layout.fillWidth: true
-                                    text: I18n.tr("center_notch.monitoring.title").toUpperCase()
-                                    variant: "label"
-                                    strong: true
-                                }
+                                text: I18n.tr("center_notch.monitoring.title").toUpperCase()
+                                variant: "label"
+                                strong: true
                             }
+                        }
 
-                            SystemMetricBlock { metricId: "cpu"
-                                label: I18n.tr("center_notch.monitoring.cpu")
-                                iconName: "memory"
-                                accessibleName: I18n.tr("center_notch.monitoring.cpu")
-                                percent: SystemMonitorService.snapshot.cpu?.percent ?? null
-                                secondaryText: root.telemetryText(SystemMonitorService.snapshot.cpu)
-                                severity: SystemMonitorService.snapshot.cpu?.severity || "neutral"
-                                compact: true
-                            }
-                            SystemMetricBlock { metricId: "ram"
-                                label: I18n.tr("center_notch.monitoring.ram")
-                                iconName: "memory_alt"
-                                accessibleName: I18n.tr("center_notch.monitoring.ram")
-                                percent: SystemMonitorService.snapshot.ram?.percent ?? null
-                                secondaryText: root.capacityText(SystemMonitorService.snapshot.ram)
-                                compact: true
-                            }
-                            SystemMetricBlock { metricId: "gpu"
-                                label: I18n.tr("center_notch.monitoring.gpu")
-                                iconName: "developer_board"
-                                accessibleName: I18n.tr("center_notch.monitoring.gpu")
-                                percent: SystemMonitorService.snapshot.gpu?.percent ?? null
-                                secondaryText: root.telemetryText(SystemMonitorService.snapshot.gpu)
-                                severity: SystemMonitorService.snapshot.gpu?.severity || "neutral"
-                                compact: true
-                            }
-                            SystemMetricBlock { metricId: "vram"
-                                label: I18n.tr("center_notch.monitoring.vram")
-                                iconName: "video_settings"
-                                accessibleName: I18n.tr("center_notch.monitoring.vram")
-                                percent: SystemMonitorService.snapshot.vram?.percent ?? null
-                                secondaryText: root.capacityText(SystemMonitorService.snapshot.vram)
-                                compact: true
-                            }
+                        Shared.Surface {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 132
+                            tone: "elevated"
+                            radius: Metrics.radiusMedium
+                            padding: Metrics.spacingMedium
 
-                            RowLayout {
-                                Layout.fillWidth: true
+                            ColumnLayout {
+                                anchors.fill: parent
                                 spacing: Metrics.spacingSmall
 
-                                SystemMetricBlock { metricId: "disk"
+                                RowLayout {
                                     Layout.fillWidth: true
-                                    label: I18n.tr("center_notch.monitoring.disk")
-                                    iconName: "hard_drive"
-                                    accessibleName: I18n.tr("center_notch.monitoring.disk")
-                                    percent: SystemMonitorService.snapshot.disk?.percent ?? null
-                                    secondaryText: root.capacityText(SystemMonitorService.snapshot.disk)
-                                    compact: true
+                                    Shared.Icon {
+                                        name: "memory"
+                                        size: 16
+                                        tone: "accent"
+                                        accessibleName: I18n.tr("center_notch.monitoring.cpu")
+                                    }
+                                    Shared.TextLabel {
+                                        Layout.fillWidth: true
+                                        text: I18n.tr("center_notch.monitoring.cpu").toUpperCase()
+                                        variant: "label"
+                                        strong: true
+                                    }
+                                    Shared.TextLabel {
+                                        text: root.percentText(SystemMonitorService.snapshot.cpu?.percent)
+                                        variant: "label"
+                                        tone: "accent"
+                                        strong: true
+                                    }
                                 }
-                                SystemMetricBlock { metricId: "network"
+
+                                RowLayout {
                                     Layout.fillWidth: true
-                                    label: I18n.tr("center_notch.monitoring.network")
-                                    iconName: "swap_vert"
-                                    accessibleName: I18n.tr("center_notch.monitoring.network")
-                                    networkMode: true
-                                    downloadText: "↓ " + root.formatBytes(
-                                        SystemMonitorService.snapshot.network?.downBps, true)
-                                    uploadText: "↑ " + root.formatBytes(
-                                        SystemMonitorService.snapshot.network?.upBps, true)
-                                    compact: true
+                                    Layout.fillHeight: true
+                                    spacing: Metrics.spacingMedium
+
+                                    Item {
+                                        Layout.preferredWidth: 72
+                                        Layout.preferredHeight: 72
+
+                                        Shape {
+                                            anchors.fill: parent
+                                            antialiasing: true
+
+                                            ShapePath {
+                                                strokeColor: Theme.surfaceInteractive
+                                                strokeWidth: 7
+                                                fillColor: "transparent"
+                                                capStyle: ShapePath.RoundCap
+                                                PathAngleArc {
+                                                    centerX: 36; centerY: 36
+                                                    radiusX: 30; radiusY: 30
+                                                    startAngle: 140; sweepAngle: 260
+                                                }
+                                            }
+                                            ShapePath {
+                                                strokeColor: Theme.accent
+                                                strokeWidth: 7
+                                                fillColor: "transparent"
+                                                capStyle: ShapePath.RoundCap
+                                                PathAngleArc {
+                                                    centerX: 36; centerY: 36
+                                                    radiusX: 30; radiusY: 30
+                                                    startAngle: 140
+                                                    sweepAngle: 260 * Math.max(0, Math.min(100,
+                                                        Number(SystemMonitorService.snapshot.cpu?.percent) || 0)) / 100
+                                                }
+                                            }
+                                        }
+                                        Shared.TextLabel {
+                                            anchors.centerIn: parent
+                                            text: root.percentText(SystemMonitorService.snapshot.cpu?.percent)
+                                            variant: "label"
+                                            strong: true
+                                        }
+                                    }
+
+                                    ColumnLayout {
+                                        Layout.fillWidth: true
+                                        Layout.fillHeight: true
+                                        spacing: Metrics.spacingXSmall
+
+                                        Shared.TextLabel {
+                                            text: "100%"
+                                            variant: "caption"
+                                            tone: "secondary"
+                                        }
+                                        Item {
+                                            Layout.fillWidth: true
+                                            Layout.fillHeight: true
+
+                                            Row {
+                                                anchors.fill: parent
+                                                spacing: 2
+                                                Repeater {
+                                                    model: SystemMonitorService.cpuHistory
+                                                    Rectangle {
+                                                        required property var modelData
+                                                        width: Math.max(2, (parent.width - 46) / 24)
+                                                        height: Math.max(3, parent.height
+                                                            * Math.max(0.08, Math.min(1,
+                                                                Number(modelData) / 100)))
+                                                        anchors.bottom: parent.bottom
+                                                        radius: 1
+                                                        color: Theme.accent
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        Shared.TextLabel {
+                                            text: "0%"
+                                            variant: "caption"
+                                            tone: "secondary"
+                                        }
+                                    }
+                                }
+
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Shared.TextLabel {
+                                        Layout.fillWidth: true
+                                        text: "Temp: " + root.temperatureText(SystemMonitorService.snapshot.cpu)
+                                        variant: "caption"
+                                        tone: "secondary"
+                                    }
+                                    Shared.TextLabel {
+                                        text: root.wattsText(SystemMonitorService.snapshot.cpu)
+                                        variant: "caption"
+                                        tone: "secondary"
+                                    }
+                                }
+                            }
+                        }
+
+                        Shared.Surface {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 86
+                            tone: "elevated"
+                            radius: Metrics.radiusMedium
+                            padding: Metrics.spacingMedium
+
+                            ColumnLayout {
+                                anchors.fill: parent
+                                spacing: Metrics.spacingXSmall
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Shared.Icon {
+                                        name: "memory_alt"
+                                        size: 16
+                                        tone: "success"
+                                        accessibleName: I18n.tr("center_notch.monitoring.ram")
+                                    }
+                                    Shared.TextLabel {
+                                        Layout.fillWidth: true
+                                        text: I18n.tr("center_notch.monitoring.ram").toUpperCase()
+                                        variant: "label"
+                                        strong: true
+                                    }
+                                    Shared.TextLabel {
+                                        text: root.capacityText(SystemMonitorService.snapshot.ram)
+                                        variant: "caption"
+                                        tone: "secondary"
+                                    }
+                                }
+                                MetricBar {
+                                    label: "RAM"
+                                    value: SystemMonitorService.snapshot.ram?.percent
+                                    detail: root.percentText(SystemMonitorService.snapshot.ram?.percent)
+                                    fillColor: Theme.success
+                                }
+                            }
+                        }
+
+                        Shared.Surface {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 132
+                            tone: "elevated"
+                            radius: Metrics.radiusMedium
+                            padding: Metrics.spacingMedium
+
+                            ColumnLayout {
+                                anchors.fill: parent
+                                spacing: Metrics.spacingXSmall
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Shared.Icon {
+                                        name: "developer_board"
+                                        size: 16
+                                        tone: "accent"
+                                        accessibleName: I18n.tr("center_notch.monitoring.gpu")
+                                    }
+                                    Shared.TextLabel {
+                                        Layout.fillWidth: true
+                                        text: I18n.tr("center_notch.monitoring.gpu").toUpperCase()
+                                        variant: "label"
+                                        strong: true
+                                    }
+                                    Shared.TextLabel {
+                                        text: root.temperatureText(SystemMonitorService.snapshot.gpu)
+                                            + " · " + root.wattsText(SystemMonitorService.snapshot.gpu)
+                                        variant: "caption"
+                                        tone: "secondary"
+                                    }
+                                }
+                                MetricBar {
+                                    id: gpuBar
+                                    label: "GPU"
+                                    value: SystemMonitorService.snapshot.gpu?.percent
+                                    detail: root.percentText(SystemMonitorService.snapshot.gpu?.percent)
+                                    fillColor: Theme.accent
+                                }
+                                MetricBar {
+                                    id: vramBar
+                                    label: "VRAM"
+                                    value: SystemMonitorService.snapshot.vram?.percent
+                                    detail: root.capacityText(SystemMonitorService.snapshot.vram)
+                                    fillColor: Theme.success
                                 }
                             }
                         }
@@ -188,7 +403,7 @@ FocusScope {
                         Layout.column: 1
                         Layout.fillWidth: true
                         Layout.alignment: Qt.AlignTop
-                        Layout.preferredHeight: 356
+                        Layout.preferredHeight: 382
                         tone: "elevated"
                         radius: Metrics.radiusMedium
                         padding: Metrics.spacingMedium
@@ -199,7 +414,6 @@ FocusScope {
 
                             RowLayout {
                                 Layout.fillWidth: true
-
                                 Shared.TextLabel {
                                     Layout.fillWidth: true
                                     text: I18n.tr("center_notch.monitoring.top_processes").toUpperCase()
@@ -217,10 +431,9 @@ FocusScope {
                             RowLayout {
                                 Layout.fillWidth: true
                                 spacing: Metrics.spacingSmall
-
                                 Shared.TextLabel {
                                     Layout.fillWidth: true
-                                    text: "Process"
+                                    text: "PROCESS"
                                     variant: "caption"
                                     tone: "secondary"
                                 }
@@ -234,6 +447,13 @@ FocusScope {
                                 Shared.TextLabel {
                                     Layout.preferredWidth: 72
                                     text: "MEM"
+                                    variant: "caption"
+                                    tone: "secondary"
+                                    horizontalAlignment: Text.AlignRight
+                                }
+                                Shared.TextLabel {
+                                    Layout.preferredWidth: 56
+                                    text: "STATUS"
                                     variant: "caption"
                                     tone: "secondary"
                                     horizontalAlignment: Text.AlignRight
@@ -265,16 +485,45 @@ FocusScope {
                     }
                 }
 
+                GridLayout {
+                    Layout.fillWidth: true
+                    columns: 2
+                    columnSpacing: Metrics.spacingMedium
+
+                    SystemMetricBlock {
+                        metricId: "disk"
+                        Layout.fillWidth: true
+                        label: I18n.tr("center_notch.monitoring.disk")
+                        iconName: "hard_drive"
+                        accessibleName: I18n.tr("center_notch.monitoring.disk")
+                        percent: SystemMonitorService.snapshot.disk?.percent ?? null
+                        secondaryText: root.capacityText(SystemMonitorService.snapshot.disk)
+                        compact: true
+                    }
+                    SystemMetricBlock {
+                        metricId: "network"
+                        Layout.fillWidth: true
+                        label: I18n.tr("center_notch.monitoring.network")
+                        iconName: "swap_vert"
+                        accessibleName: I18n.tr("center_notch.monitoring.network")
+                        networkMode: true
+                        downloadText: "↓ " + root.formatBytes(
+                            SystemMonitorService.snapshot.network?.downBps, true)
+                        uploadText: "↑ " + root.formatBytes(
+                            SystemMonitorService.snapshot.network?.upBps, true)
+                        compact: true
+                    }
+                }
+
                 Shared.Surface {
                     Layout.fillWidth: true
+                    Layout.minimumHeight: 82
+                    Layout.preferredHeight: 82
                     tone: "elevated"
                     radius: Metrics.radiusMedium
                     padding: Metrics.spacingMedium
-                    Layout.minimumHeight: 82
-                    Layout.preferredHeight: 82
 
                     ColumnLayout {
-                        id: activeColumn
                         anchors.fill: parent
                         spacing: Metrics.spacingSmall
 
