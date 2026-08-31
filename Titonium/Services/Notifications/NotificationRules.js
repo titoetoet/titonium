@@ -89,3 +89,19 @@ function markUnread(ids, id) {
 function unreadCount(ids) {
     return Array.isArray(ids) ? ids.length : 0;
 }
+
+function relativeAge(receivedAt, now) {
+    const received = Number(receivedAt);
+    const current = Number(now);
+    if (!Number.isFinite(received) || !Number.isFinite(current)
+            || received < 0 || received > current)
+        return null;
+    const age = current - received;
+    if (age < 60000)
+        return Object.freeze({ unit: "now", count: 0 });
+    if (age < 3600000)
+        return Object.freeze({ unit: "minutes", count: Math.floor(age / 60000) });
+    if (age < 86400000)
+        return Object.freeze({ unit: "hours", count: Math.floor(age / 3600000) });
+    return Object.freeze({ unit: "days", count: Math.floor(age / 86400000) });
+}

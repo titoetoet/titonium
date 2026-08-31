@@ -10,6 +10,7 @@ SERVICE_ROOT = ROOT / "Titonium/Services/Notifications"
 SERVICE = SERVICE_ROOT / "NotificationService.qml"
 QMLDIR = SERVICE_ROOT / "qmldir"
 PRESENTATION_ROOT = ROOT / "Titonium/Notifications"
+CENTER_NOTCH_ROOT = ROOT / "Titonium/Bar/notch"
 APP = ROOT / "Titonium/App.qml"
 BELL = ROOT / "Titonium/Bar/widgets/NotificationBell.qml"
 PRESENTATION_FILES = {
@@ -234,6 +235,56 @@ def validate_presentation(errors: list[str]) -> None:
                 errors.append(f"{locale} catalog missing notification key: {key}")
 
 
+def validate_center_page(errors: list[str]) -> None:
+    files = {
+        "NotificationsPage.qml": (
+            "model: NotificationService.notifications",
+            "NotificationService.markAllRead()",
+            "NotificationService.dismissAll()",
+            "onDismissRequested: id => NotificationService.dismiss(id)",
+            "QtControls.ScrollView",
+            "Component.onCompleted:",
+        ),
+        "NotificationHistoryRow.qml": (
+            "required property var notification",
+            "required property double observedAt",
+            "signal dismissRequested(int notificationId)",
+            "Shared.SystemIcon",
+            "root.dismissRequested(root.notification.id)",
+            "NotificationRules.relativeAge",
+        ),
+    }
+    sources: list[str] = []
+    for filename, fragments in files.items():
+        path = CENTER_NOTCH_ROOT / filename
+        if not path.is_file():
+            errors.append(f"missing Center notification page: {filename}")
+            continue
+        source = path.read_text(encoding="utf-8")
+        sources.append(source)
+        for fragment in fragments:
+            if fragment not in source:
+                errors.append(f"{filename} missing Center notification contract: {fragment}")
+    feature = "\n".join(sources)
+    for forbidden in (
+        "NotificationServer", "Quickshell.Services.Notifications", "Process",
+        "FileView", "DBus", "execDetached", "Timer {",
+    ):
+        if forbidden in feature:
+            errors.append(f"Center notification page owns forbidden dependency: {forbidden}")
+
+    viewport = (CENTER_NOTCH_ROOT / "CenterNotchViewport.qml").read_text(encoding="utf-8")
+    if viewport.count('NotificationsPage { pageId: "notifications" }') != 1:
+        errors.append("Center viewport must own exactly one lazy Notifications page factory")
+    qmldir = (CENTER_NOTCH_ROOT / "qmldir").read_text(encoding="utf-8")
+    for entry in (
+        "NotificationsPage 1.0 NotificationsPage.qml",
+        "NotificationHistoryRow 1.0 NotificationHistoryRow.qml",
+    ):
+        if qmldir.count(entry) != 1:
+            errors.append(f"Center notch qmldir missing unique entry: {entry}")
+
+
 def validate_composition(errors: list[str]) -> None:
     app_source = APP.read_text(encoding="utf-8") if APP.is_file() else ""
     if app_source.count("ToastHost {") != 1:
@@ -287,6 +338,7 @@ def main() -> int:
     validate_service(errors)
     validate_ownership(errors)
     validate_presentation(errors)
+    validate_center_page(errors)
     validate_composition(errors)
     validate_gate_fixtures(errors)
     if errors:

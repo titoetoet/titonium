@@ -73,4 +73,22 @@ assert.deepEqual(plain(rules.removeIds([9, 8, 7], [9, 7])), [8]);
 assert.deepEqual(plain(rules.removeIds([9, 8], [])), [9, 8]);
 assert.equal(Object.isFrozen(rules.removeIds([9], [9])), true);
 console.log("PASS notification bulk removal preserves survivors and immutability");
+
+const relativeNow = 200000000;
+assert.deepEqual(plain(rules.relativeAge(relativeNow - 30000, relativeNow)), {
+    unit: "now", count: 0,
+});
+assert.deepEqual(plain(rules.relativeAge(relativeNow - 300000, relativeNow)), {
+    unit: "minutes", count: 5,
+});
+assert.deepEqual(plain(rules.relativeAge(relativeNow - 7200000, relativeNow)), {
+    unit: "hours", count: 2,
+});
+assert.deepEqual(plain(rules.relativeAge(relativeNow - 172800000, relativeNow)), {
+    unit: "days", count: 2,
+});
+assert.equal(rules.relativeAge(relativeNow + 1, relativeNow), null);
+assert.equal(Object.isFrozen(
+    rules.relativeAge(relativeNow - 30000, relativeNow)), true);
+console.log("PASS notification relative age uses stable minute, hour and day buckets");
 console.log("PASS notification descriptor, history, toast and unread rules fixtures");

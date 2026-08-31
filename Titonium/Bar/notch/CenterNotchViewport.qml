@@ -21,6 +21,8 @@ FocusScope {
             Logger.warn("center-notch", "unknown page " + pageId + "; using overview");
         if (normalized === "overview")
             return overviewComponent;
+        if (normalized === "notifications")
+            return notificationsComponent;
         if (normalized === "tools")
             return toolsPlaceholderComponent;
         if (normalized === "session")
@@ -49,6 +51,10 @@ FocusScope {
     Component {
         id: overviewComponent
         OverviewPage { pageId: "overview" }
+    }
+    Component {
+        id: notificationsComponent
+        NotificationsPage { pageId: "notifications" }
     }
     Component {
         id: toolsPlaceholderComponent
