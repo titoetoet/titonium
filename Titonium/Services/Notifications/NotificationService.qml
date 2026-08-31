@@ -90,6 +90,13 @@ Singleton {
         return dismissed;
     }
 
+    function dismissAll(): int {
+        const ids = root.projectedNotifications.map(item => item.id);
+        for (let index = 0; index < ids.length; index++)
+            root.dismiss(ids[index]);
+        return ids.length;
+    }
+
     NotificationServer {
         id: server
         keepOnReload: true
