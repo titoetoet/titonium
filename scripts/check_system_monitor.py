@@ -152,6 +152,7 @@ def main() -> int:
             "center monitorState", "centerNotch page notifications",
             "before_git", "before_live", "before_dotfiles",
             "Configuration Loaded", "trap cleanup EXIT",
+            "production_was_running", "qs -d -p",
         ):
             if fragment not in acceptance_source:
                 errors.append(f"System Monitor acceptance missing contract: {fragment}")

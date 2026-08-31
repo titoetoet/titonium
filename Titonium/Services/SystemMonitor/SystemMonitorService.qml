@@ -164,6 +164,11 @@ Singleton {
         root.previousCpu = null;
         root.previousNetwork = null;
         root.previousNetworkAt = 0;
+        root.processSampleAt = 0;
+        root.diskSampleAt = 0;
+        root.processesState = Object.freeze([]);
+        root.processesStaleState = true;
+        root.sensorPaths = Object.freeze({});
         root.nextHotAt = now;
         root.nextProcessAt = now;
         root.nextDiskAt = now;
@@ -232,6 +237,11 @@ Singleton {
         onExited: {
             if (!root.active || root.psGeneration !== root.generation)
                 return;
+            if (psOutput.text.trim().length === 0) {
+                root.warn("processes", "could not read process usage");
+                root.processesStaleState = true;
+                return;
+            }
             root.processesState = SystemMonitorRules.parseProcesses(psOutput.text);
             root.processSampleAt = Date.now();
             root.processesStaleState = false;
@@ -246,8 +256,10 @@ Singleton {
             if (!root.active || root.dfGeneration !== root.generation)
                 return;
             const disk = SystemMonitorRules.parseDf(dfOutput.text);
-            if (disk === null)
+            if (disk === null) {
                 root.warn("disk", "could not parse root filesystem usage");
+                return;
+            }
             root.snapshotState = Object.freeze({
                 cpu: root.snapshotState.cpu,
                 gpu: root.snapshotState.gpu,

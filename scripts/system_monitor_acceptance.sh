@@ -7,6 +7,7 @@ dotfiles_hypr="/home/cole/Projects/titonium-hyprland/config/hypr/hyprland.lua"
 test_dir="$(mktemp -d --tmpdir titonium-system-monitor-acceptance.XXXXXX)"
 log_file="$test_dir/shell.log"
 shell_pid=""
+production_was_running=false
 
 before_git="$(git -C "$project_root" status --porcelain=v1)"
 before_live="$(sha256sum -- "$live_hypr")"
@@ -18,6 +19,9 @@ cleanup() {
         wait "$shell_pid" 2>/dev/null || true
     fi
     rm -f -- "$log_file"
+    if [[ "$production_was_running" == true ]]; then
+        qs -d -p "$project_root" >/dev/null 2>&1 || true
+    fi
     rmdir -- "$test_dir"
 }
 trap cleanup EXIT
@@ -76,6 +80,23 @@ valid = (
 raise SystemExit(0 if valid else 1)
 ' "$state"
 }
+
+if qs -p "$project_root" ipc call app status >/dev/null 2>&1; then
+    production_was_running=true
+    qs -p "$project_root" kill >/dev/null 2>&1 || true
+    stopped=false
+    for _ in {1..50}; do
+        if ! qs -p "$project_root" ipc call app status >/dev/null 2>&1; then
+            stopped=true
+            break
+        fi
+        sleep 0.1
+    done
+    if [[ "$stopped" != true ]]; then
+        echo "FAIL production Titonium instance did not stop" >&2
+        exit 1
+    fi
+fi
 
 qs -n -p "$project_root" --no-color >"$log_file" 2>&1 &
 shell_pid=$!
