@@ -1,0 +1,2 @@
+module qs.Titonium.Services.SystemMonitor
+singleton SystemMonitorService 1.0 SystemMonitorService.qml
