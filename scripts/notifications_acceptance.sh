@@ -123,6 +123,23 @@ fi
 [[ "$(call_ipc notifications markRead)" == "0" ]]
 state_matches 1 0 0
 
+notify-send --app-name="Titonium Acceptance" --icon=dialog-information \
+    "Titonium second fixture" "history and unread acceptance"
+
+received_second=false
+for _ in {1..30}; do
+    if state_matches 2 1 1; then
+        received_second=true
+        break
+    fi
+    sleep 0.1
+done
+if [[ "$received_second" != true ]]; then
+    call_ipc notifications state >&2 || true
+    echo "FAIL second notification did not extend history and unread state" >&2
+    exit 1
+fi
+
 if [[ "$(git -C "$project_root" status --porcelain=v1)" != "$before_git" ]]; then
     git -C "$project_root" status --short >&2
     echo "FAIL notification acceptance changed repository files" >&2
@@ -144,4 +161,4 @@ if rg -i "$runtime_rejection_pattern" "$log_file"; then
     exit 1
 fi
 
-echo "PASS native notification toast, unread lifecycle and DP-1-only acceptance"
+echo "PASS native notification history, toast, unread lifecycle and DP-1-only acceptance"

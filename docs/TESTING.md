@@ -345,3 +345,17 @@ normal/important priority bounds, progress silence, exact clear and isolated IPC
 For a manual check, start a long-running job and confirm the jobs icon remains while progress calls
 do not repeatedly replace Daily Focus. Complete, fail and require-action events must use their
 policy priorities, and `clear` must remove only the matching active job or terminal event.
+
+## Center Notifications page checkpoint
+
+Run `./scripts/notifications_acceptance.sh` to verify native history, toast expiry, viewed state,
+DP-1-only layer ownership and unchanged repository/Hyprland configuration hashes. Then perform the
+page interaction check:
+
+1. Send two notifications with `notify-send` while Center is closed; the rail badge shows `2`.
+2. Open Center, then Notifications; the badge clears while both newest-first history rows remain.
+3. Send another notification while Notifications is visible; it appears first without leaving an
+   unread badge.
+4. Dismiss one row and confirm only that row disappears.
+5. Select Clear all and confirm the page enters its empty state.
+6. Switch to Tools and back; the page is recreated lazily without duplicating history rows.
