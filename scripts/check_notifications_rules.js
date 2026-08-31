@@ -65,4 +65,12 @@ assert.equal(rules.unreadCount(null), 0);
 assert.deepEqual(plain(rules.removeId([8, 7, 8], 8)), [7]);
 assert.deepEqual(plain(rules.removeId([8, 7], 0)), [8, 7]);
 assert.deepEqual(plain(rules.removeId([8, 7], 7).slice(0, 0)), []);
+
+const bulkRemoved = rules.removeIds(
+    [{ id: 9 }, { id: 8 }, { id: 7 }], [8, 7, 7, 0]);
+assert.deepEqual(plain(bulkRemoved), [{ id: 9 }]);
+assert.deepEqual(plain(rules.removeIds([9, 8, 7], [9, 7])), [8]);
+assert.deepEqual(plain(rules.removeIds([9, 8], [])), [9, 8]);
+assert.equal(Object.isFrozen(rules.removeIds([9], [9])), true);
+console.log("PASS notification bulk removal preserves survivors and immutability");
 console.log("PASS notification descriptor, history, toast and unread rules fixtures");

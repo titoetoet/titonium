@@ -65,6 +65,23 @@ function removeId(values, id) {
     }));
 }
 
+function removeIds(values, ids) {
+    const source = Array.isArray(values) ? values : [];
+    const candidates = Array.isArray(ids) ? ids : [];
+    const removals = {};
+    for (let index = 0; index < candidates.length; index++) {
+        const value = candidates[index];
+        const candidate = typeof value === "object" ? value?.id : value;
+        const id = positiveId(candidate);
+        if (id)
+            removals[String(id)] = true;
+    }
+    return Object.freeze(source.filter(value => {
+        const candidate = typeof value === "object" ? value?.id : value;
+        return removals[String(positiveId(candidate))] !== true;
+    }));
+}
+
 function markUnread(ids, id) {
     return addToast(ids, id, Number.MAX_SAFE_INTEGER);
 }
