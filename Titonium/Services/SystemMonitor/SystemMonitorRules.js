@@ -109,3 +109,132 @@ function networkRate(previous, current, elapsedMs) {
         upBps: txDelta / seconds,
     });
 }
+
+function scalar(text, divisor) {
+    if (typeof text !== "string")
+        return null;
+    const normalized = text.trim();
+    const scale = Number(divisor);
+    if (!/^(?:\d+\.?\d*|\.\d+)$/.test(normalized)
+            || !Number.isFinite(scale) || scale <= 0)
+        return null;
+    const value = Number(normalized);
+    return Number.isFinite(value) && value >= 0 ? value / scale : null;
+}
+
+function powerFromEnergy(previousUj, currentUj, elapsedMs, maxRangeUj) {
+    const previous = finiteNonNegative(previousUj);
+    const current = finiteNonNegative(currentUj);
+    const elapsed = Number(elapsedMs);
+    const maximum = finiteNonNegative(maxRangeUj);
+    if (previous === null || current === null || !Number.isFinite(elapsed)
+            || elapsed <= 0)
+        return null;
+    let delta = current - previous;
+    if (delta < 0) {
+        if (maximum === null || maximum <= previous)
+            return null;
+        delta = maximum - previous + current;
+    }
+    return delta / 1000000 / (elapsed / 1000);
+}
+
+function capacity(usedBytes, totalBytes) {
+    const used = finiteNonNegative(usedBytes);
+    const total = finiteNonNegative(totalBytes);
+    if (used === null || total === null || total <= 0)
+        return null;
+    const boundedUsed = Math.min(used, total);
+    return Object.freeze({
+        usedBytes: boundedUsed,
+        totalBytes: total,
+        percent: boundedUsed / total * 100,
+    });
+}
+
+function parseDf(text) {
+    if (typeof text !== "string")
+        return null;
+    const lines = text.trim().split(/\r?\n/);
+    for (let index = 0; index < lines.length; index++) {
+        const fields = lines[index].trim().split(/\s+/);
+        if (fields.length < 2 || !/^\d+$/.test(fields[0])
+                || !/^\d+$/.test(fields[1]))
+            continue;
+        return capacity(Number(fields[1]), Number(fields[0]));
+    }
+    return null;
+}
+
+function parseProcesses(text) {
+    if (typeof text !== "string")
+        return Object.freeze([]);
+    const processes = [];
+    const lines = text.split(/\r?\n/);
+    for (let index = 0; index < lines.length; index++) {
+        const fields = lines[index].trim().split(/\s+/);
+        if (fields.length !== 4)
+            continue;
+        const pid = Number(fields[0]);
+        const cpu = finiteNonNegative(fields[2]);
+        const rssKb = finiteNonNegative(fields[3]);
+        if (!Number.isInteger(pid) || pid <= 0 || !fields[1]
+                || cpu === null || rssKb === null)
+            continue;
+        processes.push(Object.freeze({
+            pid: pid,
+            name: fields[1],
+            cpuPercent: cpu,
+            rssBytes: rssKb * 1024,
+        }));
+    }
+    processes.sort((left, right) => {
+        if (left.cpuPercent !== right.cpuPercent)
+            return right.cpuPercent - left.cpuPercent;
+        return left.pid - right.pid;
+    });
+    return Object.freeze(processes.slice(0, 5));
+}
+
+function severity(percent, temperatureC) {
+    const utilization = finiteNonNegative(percent);
+    const temperature = finiteNonNegative(temperatureC);
+    if ((utilization !== null && utilization >= 90)
+            || (temperature !== null && temperature >= 90))
+        return "critical";
+    if ((utilization !== null && utilization >= 70)
+            || (temperature !== null && temperature >= 80))
+        return "warning";
+    return "neutral";
+}
+
+function selectSensorPaths(paths) {
+    const candidates = Array.isArray(paths)
+        ? paths.filter(path => typeof path === "string"
+            && path.indexOf("/sys/") === 0).sort() : [];
+    const groups = {};
+    for (let index = 0; index < candidates.length; index++) {
+        const match = candidates[index].match(
+            /^(\/sys\/class\/drm\/card[^/]+\/device)\/(gpu_busy_percent|mem_info_vram_used|mem_info_vram_total)$/);
+        if (!match)
+            continue;
+        if (!groups[match[1]])
+            groups[match[1]] = {};
+        const key = ({
+            gpu_busy_percent: "gpuBusy",
+            mem_info_vram_used: "vramUsed",
+            mem_info_vram_total: "vramTotal",
+        })[match[2]];
+        groups[match[1]][key] = candidates[index];
+    }
+    const prefixes = Object.keys(groups).sort();
+    let selected = {};
+    for (let index = 0; index < prefixes.length; index++) {
+        const group = groups[prefixes[index]];
+        if (group.gpuBusy && group.vramUsed && group.vramTotal) {
+            selected = group;
+            break;
+        }
+    }
+    return Object.freeze(Object.assign({}, selected));
+}
