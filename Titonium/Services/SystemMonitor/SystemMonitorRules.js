@@ -158,10 +158,12 @@ function parseDf(text) {
     const lines = text.trim().split(/\r?\n/);
     for (let index = 0; index < lines.length; index++) {
         const fields = lines[index].trim().split(/\s+/);
-        if (fields.length < 2 || !/^\d+$/.test(fields[0])
-                || !/^\d+$/.test(fields[1]))
-            continue;
-        return capacity(Number(fields[1]), Number(fields[0]));
+        for (let offset = 0; offset <= 1; offset++) {
+            if (fields.length <= offset + 1 || !/^\d+$/.test(fields[offset])
+                    || !/^\d+$/.test(fields[offset + 1]))
+                continue;
+            return capacity(Number(fields[offset + 1]), Number(fields[offset]));
+        }
     }
     return null;
 }
@@ -229,12 +231,25 @@ function selectSensorPaths(paths) {
     }
     const prefixes = Object.keys(groups).sort();
     let selected = {};
+    let selectedPrefix = "";
     for (let index = 0; index < prefixes.length; index++) {
         const group = groups[prefixes[index]];
         if (group.gpuBusy && group.vramUsed && group.vramTotal) {
-            selected = group;
+            selected = Object.assign({}, group);
+            selectedPrefix = prefixes[index];
             break;
         }
     }
-    return Object.freeze(Object.assign({}, selected));
+    if (selectedPrefix) {
+        for (let index = 0; index < candidates.length; index++) {
+            const path = candidates[index];
+            if (path.indexOf(selectedPrefix + "/hwmon/") !== 0)
+                continue;
+            if (!selected.gpuTemperature && path.endsWith("/temp1_input"))
+                selected.gpuTemperature = path;
+            else if (!selected.gpuPower && path.endsWith("/power1_average"))
+                selected.gpuPower = path;
+        }
+    }
+    return Object.freeze(selected);
 }

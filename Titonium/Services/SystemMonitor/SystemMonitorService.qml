@@ -205,8 +205,9 @@ Singleton {
 
     property Process discoveryProcess: Process {
         command: ["find", "-L", "/sys/class/drm", "/sys/class/hwmon", "/sys/class/powercap",
-            "-type", "f", "(", "-name", "gpu_busy_percent", "-o",
-            "-name", "mem_info_vram_used", "-o", "-name", "mem_info_vram_total", ")"]
+            "-maxdepth", "5", "-type", "f", "(", "-name", "gpu_busy_percent", "-o",
+            "-name", "mem_info_vram_used", "-o", "-name", "mem_info_vram_total", "-o",
+            "-name", "temp1_input", "-o", "-name", "power1_average", ")"]
         stdout: StdioCollector { id: discoveryOutput }
         stderr: StdioCollector {}
         onExited: {
