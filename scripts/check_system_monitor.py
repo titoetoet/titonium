@@ -8,6 +8,11 @@ ROOT = Path(__file__).resolve().parents[1]
 SERVICE_ROOT = ROOT / "Titonium/Services/SystemMonitor"
 SERVICE = SERVICE_ROOT / "SystemMonitorService.qml"
 QMLDIR = SERVICE_ROOT / "qmldir"
+NOTCH_ROOT = ROOT / "Titonium/Bar/notch"
+PRESENTATION_FILES = (
+    "SystemMetricBlock.qml", "SystemProcessRow.qml",
+    "CenterActivityCard.qml", "SystemMonitoringPage.qml",
+)
 
 
 def main() -> int:
@@ -80,6 +85,46 @@ def main() -> int:
                 errors.append(
                     f"Bar presentation owns monitor runtime: {path.relative_to(ROOT)}: {forbidden}"
                 )
+
+    for name in PRESENTATION_FILES:
+        path = NOTCH_ROOT / name
+        if not path.is_file():
+            errors.append(f"missing Center Monitoring presentation: {name}")
+            continue
+        source = path.read_text(encoding="utf-8")
+        for forbidden in ("Process {", "FileView {", "Timer {", "execDetached", "Date.now()", "/proc", "/sys"):
+            if forbidden in source:
+                errors.append(f"{name} owns forbidden monitor runtime: {forbidden}")
+        for fragment in ("import qs.Titonium.Shared as Shared", "import qs.Titonium.Theme"):
+            if fragment not in source:
+                errors.append(f"{name} missing themed presentation contract: {fragment}")
+
+    page = NOTCH_ROOT / "SystemMonitoringPage.qml"
+    if page.is_file():
+        source = page.read_text(encoding="utf-8")
+        for fragment in (
+            "import qs.Titonium.Services.SystemMonitor",
+            "import qs.Titonium.Services.Center", "GridLayout {", "columns: 2",
+            "SystemMonitorService.start()", "SystemMonitorService.stop()",
+            "model: SystemMonitorService.processes",
+            "model: CenterActivityService.activities",
+            "SystemMetricBlock { metricId: \"cpu\"",
+            "SystemMetricBlock { metricId: \"gpu\"",
+            "SystemMetricBlock { metricId: \"ram\"",
+            "SystemMetricBlock { metricId: \"vram\"",
+            "SystemMetricBlock { metricId: \"disk\"",
+            "SystemMetricBlock { metricId: \"network\"",
+        ):
+            if fragment not in source:
+                errors.append(f"SystemMonitoringPage missing contract: {fragment}")
+
+    notch_qmldir = NOTCH_ROOT / "qmldir"
+    if notch_qmldir.is_file():
+        exports = notch_qmldir.read_text(encoding="utf-8")
+        for name in PRESENTATION_FILES:
+            component = name.removesuffix(".qml")
+            if f"{component} 1.0 {name}" not in exports:
+                errors.append(f"Center notch qmldir missing {component}")
 
     if errors:
         print("FAIL System Monitor architecture")
