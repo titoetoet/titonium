@@ -147,9 +147,7 @@ def main() -> int:
         "notch/CenterNotchRail.qml": (
             "width: 48",
             "id: selectionHighlight",
-            '"overview"',
-            '"tools"',
-            '"session"',
+            "CenterNotchState.primaryPages()",
             "settingsRequested()",
         ),
         "notch/CenterNotchViewport.qml": (

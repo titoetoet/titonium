@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Titonium.Core.Runtime
+import qs.Titonium.Services.Notifications
 import qs.Titonium.Theme
 import qs.Titonium.Shared as Shared
 import "CenterNotchState.js" as CenterNotchState
@@ -12,11 +13,7 @@ FocusScope {
     signal pageRequested(string pageId)
     signal settingsRequested()
 
-    readonly property var pages: [
-        { "id": "overview", "icon": "dashboard" },
-        { "id": "tools", "icon": "construction" },
-        { "id": "session", "icon": "power_settings_new" }
-    ]
+    readonly property var pages: CenterNotchState.primaryPages()
     readonly property int currentIndex: Math.max(0,
         root.pages.findIndex(page => page.id === root.currentPage))
 
@@ -52,13 +49,45 @@ FocusScope {
 
             Shared.Button {
                 required property var modelData
+                readonly property bool showsUnread:
+                    modelData.id === "notifications" && NotificationService.hasUnread
                 width: 48
                 height: 48
                 iconName: modelData.icon
                 variant: "quiet"
                 selected: root.currentPage === modelData.id
-                accessibleName: I18n.tr("center_notch.tab." + modelData.id)
+                accessibleName: showsUnread
+                    ? I18n.tr("center_notch.notifications.unread", {
+                        "count": NotificationService.unreadCount
+                    })
+                    : I18n.tr("center_notch.tab." + modelData.id)
                 onTriggered: root.pageRequested(modelData.id)
+
+                Rectangle {
+                    id: unreadBadge
+                    visible: parent.showsUnread
+                    z: 2
+                    anchors.top: parent.top
+                    anchors.right: parent.right
+                    anchors.margins: 2
+                    width: Math.max(14, unreadLabel.implicitWidth + 6)
+                    height: 14
+                    radius: height / 2
+                    color: Theme.accent
+
+                    Text {
+                        id: unreadLabel
+                        anchors.centerIn: parent
+                        text: NotificationService.unreadCount > 99
+                            ? "99+" : String(NotificationService.unreadCount)
+                        color: Theme.accentText
+                        font.family: Typography.family
+                        font.pixelSize: 9
+                        font.weight: Typography.semiboldWeight
+                        renderType: Text.NativeRendering
+                        Accessible.ignored: true
+                    }
+                }
             }
         }
     }

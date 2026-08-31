@@ -16,11 +16,23 @@ const context = vm.createContext({ Math, Number, isFinite });
 vm.runInContext(source, context, { filename: helperPath });
 const plain = value => JSON.parse(JSON.stringify(value));
 
+assert.deepEqual(plain(context.primaryPages()), [
+    { id: "overview", icon: "dashboard" },
+    { id: "notifications", icon: "notifications" },
+    { id: "tools", icon: "construction" },
+    { id: "session", icon: "power_settings_new" },
+], "rail and navigation consume one canonical page order");
 assert.equal(context.normalizePage("unknown"), "overview", "unknown page falls back safely");
+assert.equal(context.normalizePage("notifications"), "notifications",
+    "Notifications is a primary page");
 assert.equal(context.arrowPage("overview", -1), "session", "Up wraps to the final primary page");
 assert.equal(context.arrowPage("session", 1), "overview", "Down wraps to the first primary page");
+assert.equal(context.arrowPage("notifications", 1), "tools",
+    "Down advances from Notifications to Tools");
 assert.equal(context.wheelPage("overview", -1), "overview", "wheel clamps at the first page");
 assert.equal(context.wheelPage("session", 1), "session", "wheel clamps at the final page");
+assert.equal(context.wheelPage("notifications", -1), "overview",
+    "wheel moves from Notifications to Overview");
 assert.deepEqual(
     plain(context.transitionPlan("overview", "tools", true, 160)),
     { duration: 0, offset: 12 },
@@ -32,7 +44,7 @@ assert.equal(
     "transition duration is bounded",
 );
 assert.equal(
-    context.transitionPlan("session", "tools", false, 160).offset,
+    context.transitionPlan("tools", "notifications", false, 160).offset,
     -12,
     "reverse navigation uses an upward offset",
 );
@@ -58,7 +70,7 @@ assert.deepEqual(
     "explicit close always clears pin state",
 );
 
-console.log("PASS Center Notch state fixtures (12)");
+console.log("PASS Center Notch state fixtures (16)");
 
 const barRoot = path.join(__dirname, "..", "Titonium", "Bar");
 const sources = Object.fromEntries([

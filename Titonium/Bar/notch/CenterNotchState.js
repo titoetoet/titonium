@@ -1,6 +1,16 @@
 .pragma library
 
-const pages = ["overview", "tools", "session"];
+const PRIMARY_PAGES = Object.freeze([
+    Object.freeze({ id: "overview", icon: "dashboard" }),
+    Object.freeze({ id: "notifications", icon: "notifications" }),
+    Object.freeze({ id: "tools", icon: "construction" }),
+    Object.freeze({ id: "session", icon: "power_settings_new" }),
+]);
+const pages = PRIMARY_PAGES.map(page => page.id);
+
+function primaryPages() {
+    return Object.freeze(PRIMARY_PAGES.slice());
+}
 
 function normalizePage(pageId) {
     return pages.indexOf(pageId) >= 0 ? pageId : "overview";
