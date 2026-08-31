@@ -3,6 +3,7 @@
 const PRIMARY_PAGES = Object.freeze([
     Object.freeze({ id: "overview", icon: "dashboard" }),
     Object.freeze({ id: "notifications", icon: "notifications" }),
+    Object.freeze({ id: "monitoring", icon: "monitor_heart" }),
     Object.freeze({ id: "tools", icon: "construction" }),
     Object.freeze({ id: "session", icon: "power_settings_new" }),
 ]);

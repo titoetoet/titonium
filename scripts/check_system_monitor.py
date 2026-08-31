@@ -9,6 +9,8 @@ SERVICE_ROOT = ROOT / "Titonium/Services/SystemMonitor"
 SERVICE = SERVICE_ROOT / "SystemMonitorService.qml"
 QMLDIR = SERVICE_ROOT / "qmldir"
 NOTCH_ROOT = ROOT / "Titonium/Bar/notch"
+APP = ROOT / "Titonium/App.qml"
+ACCEPTANCE = ROOT / "scripts/system_monitor_acceptance.sh"
 PRESENTATION_FILES = (
     "SystemMetricBlock.qml", "SystemProcessRow.qml",
     "CenterActivityCard.qml", "SystemMonitoringPage.qml",
@@ -125,6 +127,32 @@ def main() -> int:
             component = name.removesuffix(".qml")
             if f"{component} 1.0 {name}" not in exports:
                 errors.append(f"Center notch qmldir missing {component}")
+
+    app_source = APP.read_text(encoding="utf-8")
+    for fragment in (
+        "import qs.Titonium.Services.SystemMonitor",
+        "function monitorState(): string { return SystemMonitorService.state(); }",
+    ):
+        if fragment not in app_source:
+            errors.append(f"App missing System Monitor diagnostics: {fragment}")
+    for forbidden in ("SystemMonitorService.start()", "SystemMonitorService.stop()"):
+        if forbidden in app_source:
+            errors.append(f"App IPC must not own monitor lifecycle: {forbidden}")
+
+    if not ACCEPTANCE.is_file():
+        errors.append("missing system_monitor_acceptance.sh")
+    else:
+        acceptance_source = ACCEPTANCE.read_text(encoding="utf-8")
+        if ACCEPTANCE.stat().st_mode & 0o111 == 0:
+            errors.append("System Monitor acceptance must be executable")
+        for fragment in (
+            "set -euo pipefail", "centerNotch open monitoring",
+            "center monitorState", "centerNotch page notifications",
+            "before_git", "before_live", "before_dotfiles",
+            "Configuration Loaded", "trap cleanup EXIT",
+        ):
+            if fragment not in acceptance_source:
+                errors.append(f"System Monitor acceptance missing contract: {fragment}")
 
     if errors:
         print("FAIL System Monitor architecture")

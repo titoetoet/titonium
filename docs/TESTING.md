@@ -359,3 +359,14 @@ page interaction check:
 4. Dismiss one row and confirm only that row disappears.
 5. Select Clear all and confirm the page enters its empty state.
 6. Switch to Tools and back; the page is recreated lazily without duplicating history rows.
+
+## Center System Monitoring checkpoint
+
+Run `./scripts/system_monitor_acceptance.sh`, then verify manually:
+
+1. Open Center > System Monitoring; Live activates and values appear without a startup zero flash.
+2. Confirm CPU/RAM/Disk align in the left column and GPU/VRAM/Network align in the right column.
+3. Confirm every icon shares the bar/value line and hover exposes its metric name.
+4. Generate CPU/GPU/network load; bars and rates update in place at the expected cadence.
+5. Confirm Top processes shows at most five rows and Active mirrors Media/Timer/Job without duplicates.
+6. Switch to another Center page; Live stops immediately and no monitoring process remains running.

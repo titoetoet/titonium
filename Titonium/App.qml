@@ -19,6 +19,7 @@ import qs.Titonium.Services.Hyprland
 import qs.Titonium.Services.Mpris
 import qs.Titonium.Services.Network
 import qs.Titonium.Services.Notifications
+import qs.Titonium.Services.SystemMonitor
 import qs.Titonium.Services.WindowSwitcher
 import qs.Titonium.Overlays.Audio
 import qs.Titonium.Overlays.Bluetooth
@@ -141,6 +142,7 @@ Scope {
         function state(): string { return CenterAttentionService.snapshot(); }
         function activityState(): string { return CenterActivityService.snapshot(); }
         function focusState(): string { return CenterFocusStore.snapshot(); }
+        function monitorState(): string { return SystemMonitorService.state(); }
     }
 
     IpcHandler {

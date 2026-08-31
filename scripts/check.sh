@@ -74,6 +74,7 @@ bash -n "$project_root/scripts/wifi_acceptance.sh"
 bash -n "$project_root/scripts/window_switcher_acceptance.sh"
 bash -n "$project_root/scripts/workspace_interactions_acceptance.sh"
 bash -n "$project_root/scripts/notifications_acceptance.sh"
+bash -n "$project_root/scripts/system_monitor_acceptance.sh"
 bash -n "$project_root/scripts/settings_acceptance.sh"
 bash -n "$project_root/scripts/protected_acceptance.sh"
 

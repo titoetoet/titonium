@@ -23,6 +23,8 @@ FocusScope {
             return overviewComponent;
         if (normalized === "notifications")
             return notificationsComponent;
+        if (normalized === "monitoring")
+            return monitoringComponent;
         if (normalized === "tools")
             return toolsPlaceholderComponent;
         if (normalized === "session")
@@ -55,6 +57,10 @@ FocusScope {
     Component {
         id: notificationsComponent
         NotificationsPage { pageId: "notifications" }
+    }
+    Component {
+        id: monitoringComponent
+        SystemMonitoringPage { pageId: "monitoring" }
     }
     Component {
         id: toolsPlaceholderComponent
