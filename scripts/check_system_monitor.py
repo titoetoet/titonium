@@ -118,6 +118,8 @@ def main() -> int:
             "SystemMetricBlock { metricId: \"vram\"",
             "SystemMetricBlock { metricId: \"disk\"",
             "SystemMetricBlock { metricId: \"network\"",
+            "id: hardwarePanel", "id: processesPanel",
+            "center_notch.monitoring.top_processes",
         ):
             if fragment not in source:
                 errors.append(f"SystemMonitoringPage missing contract: {fragment}")

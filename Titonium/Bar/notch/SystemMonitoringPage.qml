@@ -78,144 +78,252 @@ FocusScope {
 
             ColumnLayout {
                 width: parent.width
-                spacing: Metrics.spacingLarge
+                spacing: Metrics.spacingMedium
 
                 GridLayout {
+                    id: dashboardGrid
                     Layout.fillWidth: true
                     columns: 2
                     columnSpacing: Metrics.spacingMedium
                     rowSpacing: Metrics.spacingMedium
 
-                    SystemMetricBlock { metricId: "cpu"
-                        Layout.row: 0; Layout.column: 0
-                        iconName: "memory"
-                        accessibleName: I18n.tr("center_notch.monitoring.cpu")
-                        percent: SystemMonitorService.snapshot.cpu?.percent ?? null
-                        secondaryText: root.telemetryText(SystemMonitorService.snapshot.cpu)
-                        severity: SystemMonitorService.snapshot.cpu?.severity || "neutral"
-                    }
-                    SystemMetricBlock { metricId: "gpu"
-                        Layout.row: 0; Layout.column: 1
-                        iconName: "developer_board"
-                        accessibleName: I18n.tr("center_notch.monitoring.gpu")
-                        percent: SystemMonitorService.snapshot.gpu?.percent ?? null
-                        secondaryText: root.telemetryText(SystemMonitorService.snapshot.gpu)
-                        severity: SystemMonitorService.snapshot.gpu?.severity || "neutral"
-                    }
-                    SystemMetricBlock { metricId: "ram"
-                        Layout.row: 1; Layout.column: 0
-                        iconName: "memory_alt"
-                        accessibleName: I18n.tr("center_notch.monitoring.ram")
-                        percent: SystemMonitorService.snapshot.ram?.percent ?? null
-                        secondaryText: root.capacityText(SystemMonitorService.snapshot.ram)
-                    }
-                    SystemMetricBlock { metricId: "vram"
-                        Layout.row: 1; Layout.column: 1
-                        iconName: "video_settings"
-                        accessibleName: I18n.tr("center_notch.monitoring.vram")
-                        percent: SystemMonitorService.snapshot.vram?.percent ?? null
-                        secondaryText: root.capacityText(SystemMonitorService.snapshot.vram)
-                    }
-                    SystemMetricBlock { metricId: "disk"
-                        Layout.row: 2; Layout.column: 0
-                        iconName: "hard_drive"
-                        accessibleName: I18n.tr("center_notch.monitoring.disk")
-                        percent: SystemMonitorService.snapshot.disk?.percent ?? null
-                        secondaryText: root.capacityText(SystemMonitorService.snapshot.disk)
-                    }
-                    SystemMetricBlock { metricId: "network"
-                        Layout.row: 2; Layout.column: 1
-                        iconName: "swap_vert"
-                        accessibleName: I18n.tr("center_notch.monitoring.network")
-                        networkMode: true
-                        downloadText: "↓ " + root.formatBytes(
-                            SystemMonitorService.snapshot.network?.downBps, true)
-                        uploadText: "↑ " + root.formatBytes(
-                            SystemMonitorService.snapshot.network?.upBps, true)
-                    }
-                }
-
-                RowLayout {
-                    Layout.fillWidth: true
-                    Shared.TextLabel {
+                    Shared.Surface {
+                        id: hardwarePanel
+                        Layout.row: 0
+                        Layout.column: 0
                         Layout.fillWidth: true
-                        text: I18n.tr("center_notch.monitoring.top_processes")
-                        variant: "label"
-                        strong: true
-                    }
-                    Shared.TextLabel {
-                        visible: SystemMonitorService.processesStale
-                        text: I18n.tr("center_notch.monitoring.stale")
-                        variant: "caption"
-                        tone: "warning"
-                    }
-                }
+                        Layout.alignment: Qt.AlignTop
+                        Layout.preferredHeight: 356
+                        tone: "elevated"
+                        radius: Metrics.radiusMedium
+                        padding: Metrics.spacingMedium
 
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: Metrics.spacingXSmall
+                        ColumnLayout {
+                            anchors.fill: parent
+                            spacing: Metrics.spacingSmall
 
-                    Repeater {
-                        model: SystemMonitorService.processes
-                        SystemProcessRow {
-                            required property var modelData
-                            Layout.fillWidth: true
-                            process: modelData
-                            memoryText: root.formatBytes(modelData.rssBytes, false)
-                        }
-                    }
-                    Shared.TextLabel {
-                        Layout.fillWidth: true
-                        visible: SystemMonitorService.processes.length === 0
-                        text: I18n.tr("center_notch.monitoring.no_processes")
-                        tone: "secondary"
-                        horizontalAlignment: Text.AlignHCenter
-                    }
-                }
-
-                Shared.TextLabel {
-                    text: I18n.tr("center_notch.monitoring.active")
-                    variant: "label"
-                    strong: true
-                }
-
-                ListView {
-                    id: activityList
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 58
-                    orientation: ListView.Horizontal
-                    spacing: Metrics.spacingSmall
-                    clip: true
-                    boundsBehavior: Flickable.StopAtBounds
-                    model: CenterActivityService.activities
-
-                    delegate: CenterActivityCard {
-                        required property var modelData
-                        activity: modelData
-                        now: SystemMonitorService.hotSampleAt
-                    }
-
-                    WheelHandler {
-                        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
-                        onWheel: event => {
-                            if (Math.abs(event.angleDelta.x) <= Math.abs(event.angleDelta.y)) {
-                                event.accepted = false;
-                                return;
+                            RowLayout {
+                                Layout.fillWidth: true
+                                Shared.Icon {
+                                    name: "memory"
+                                    size: 20
+                                    tone: "accent"
+                                    accessibleName: I18n.tr("center_notch.monitoring.title")
+                                }
+                                Shared.TextLabel {
+                                    Layout.fillWidth: true
+                                    text: I18n.tr("center_notch.monitoring.title").toUpperCase()
+                                    variant: "label"
+                                    strong: true
+                                }
                             }
-                            activityList.contentX = Math.max(0, Math.min(
-                                activityList.contentWidth - activityList.width,
-                                activityList.contentX - event.angleDelta.x));
-                            event.accepted = true;
+
+                            SystemMetricBlock { metricId: "cpu"
+                                label: I18n.tr("center_notch.monitoring.cpu")
+                                iconName: "memory"
+                                accessibleName: I18n.tr("center_notch.monitoring.cpu")
+                                percent: SystemMonitorService.snapshot.cpu?.percent ?? null
+                                secondaryText: root.telemetryText(SystemMonitorService.snapshot.cpu)
+                                severity: SystemMonitorService.snapshot.cpu?.severity || "neutral"
+                                compact: true
+                            }
+                            SystemMetricBlock { metricId: "ram"
+                                label: I18n.tr("center_notch.monitoring.ram")
+                                iconName: "memory_alt"
+                                accessibleName: I18n.tr("center_notch.monitoring.ram")
+                                percent: SystemMonitorService.snapshot.ram?.percent ?? null
+                                secondaryText: root.capacityText(SystemMonitorService.snapshot.ram)
+                                compact: true
+                            }
+                            SystemMetricBlock { metricId: "gpu"
+                                label: I18n.tr("center_notch.monitoring.gpu")
+                                iconName: "developer_board"
+                                accessibleName: I18n.tr("center_notch.monitoring.gpu")
+                                percent: SystemMonitorService.snapshot.gpu?.percent ?? null
+                                secondaryText: root.telemetryText(SystemMonitorService.snapshot.gpu)
+                                severity: SystemMonitorService.snapshot.gpu?.severity || "neutral"
+                                compact: true
+                            }
+                            SystemMetricBlock { metricId: "vram"
+                                label: I18n.tr("center_notch.monitoring.vram")
+                                iconName: "video_settings"
+                                accessibleName: I18n.tr("center_notch.monitoring.vram")
+                                percent: SystemMonitorService.snapshot.vram?.percent ?? null
+                                secondaryText: root.capacityText(SystemMonitorService.snapshot.vram)
+                                compact: true
+                            }
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: Metrics.spacingSmall
+
+                                SystemMetricBlock { metricId: "disk"
+                                    Layout.fillWidth: true
+                                    label: I18n.tr("center_notch.monitoring.disk")
+                                    iconName: "hard_drive"
+                                    accessibleName: I18n.tr("center_notch.monitoring.disk")
+                                    percent: SystemMonitorService.snapshot.disk?.percent ?? null
+                                    secondaryText: root.capacityText(SystemMonitorService.snapshot.disk)
+                                    compact: true
+                                }
+                                SystemMetricBlock { metricId: "network"
+                                    Layout.fillWidth: true
+                                    label: I18n.tr("center_notch.monitoring.network")
+                                    iconName: "swap_vert"
+                                    accessibleName: I18n.tr("center_notch.monitoring.network")
+                                    networkMode: true
+                                    downloadText: "↓ " + root.formatBytes(
+                                        SystemMonitorService.snapshot.network?.downBps, true)
+                                    uploadText: "↑ " + root.formatBytes(
+                                        SystemMonitorService.snapshot.network?.upBps, true)
+                                    compact: true
+                                }
+                            }
+                        }
+                    }
+
+                    Shared.Surface {
+                        id: processesPanel
+                        Layout.row: 0
+                        Layout.column: 1
+                        Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignTop
+                        Layout.preferredHeight: 356
+                        tone: "elevated"
+                        radius: Metrics.radiusMedium
+                        padding: Metrics.spacingMedium
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            spacing: Metrics.spacingSmall
+
+                            RowLayout {
+                                Layout.fillWidth: true
+
+                                Shared.TextLabel {
+                                    Layout.fillWidth: true
+                                    text: I18n.tr("center_notch.monitoring.top_processes").toUpperCase()
+                                    variant: "label"
+                                    strong: true
+                                }
+                                Shared.TextLabel {
+                                    visible: SystemMonitorService.processesStale
+                                    text: I18n.tr("center_notch.monitoring.stale")
+                                    variant: "caption"
+                                    tone: "warning"
+                                }
+                            }
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: Metrics.spacingSmall
+
+                                Shared.TextLabel {
+                                    Layout.fillWidth: true
+                                    text: "Process"
+                                    variant: "caption"
+                                    tone: "secondary"
+                                }
+                                Shared.TextLabel {
+                                    Layout.preferredWidth: 52
+                                    text: I18n.tr("center_notch.monitoring.process_cpu")
+                                    variant: "caption"
+                                    tone: "secondary"
+                                    horizontalAlignment: Text.AlignRight
+                                }
+                                Shared.TextLabel {
+                                    Layout.preferredWidth: 72
+                                    text: "MEM"
+                                    variant: "caption"
+                                    tone: "secondary"
+                                    horizontalAlignment: Text.AlignRight
+                                }
+                            }
+
+                            Repeater {
+                                model: SystemMonitorService.processes
+                                SystemProcessRow {
+                                    required property var modelData
+                                    required property int index
+                                    Layout.fillWidth: true
+                                    process: modelData
+                                    rank: index + 1
+                                    memoryText: root.formatBytes(modelData.rssBytes, false)
+                                }
+                            }
+
+                            Shared.TextLabel {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                visible: SystemMonitorService.processes.length === 0
+                                text: I18n.tr("center_notch.monitoring.no_processes")
+                                tone: "secondary"
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                            }
                         }
                     }
                 }
 
-                Shared.TextLabel {
+                Shared.Surface {
                     Layout.fillWidth: true
-                    visible: CenterActivityService.activities.length === 0
-                    text: I18n.tr("center_notch.monitoring.no_activities")
-                    tone: "secondary"
-                    horizontalAlignment: Text.AlignHCenter
+                    tone: "elevated"
+                    radius: Metrics.radiusMedium
+                    padding: Metrics.spacingMedium
+                    Layout.minimumHeight: 82
+                    Layout.preferredHeight: 82
+
+                    ColumnLayout {
+                        id: activeColumn
+                        anchors.fill: parent
+                        spacing: Metrics.spacingSmall
+
+                        Shared.TextLabel {
+                            text: I18n.tr("center_notch.monitoring.active").toUpperCase()
+                            variant: "caption"
+                            strong: true
+                        }
+
+                        ListView {
+                            id: activityList
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 48
+                            visible: CenterActivityService.activities.length > 0
+                            orientation: ListView.Horizontal
+                            spacing: Metrics.spacingSmall
+                            clip: true
+                            boundsBehavior: Flickable.StopAtBounds
+                            model: CenterActivityService.activities
+
+                            delegate: CenterActivityCard {
+                                required property var modelData
+                                activity: modelData
+                                now: SystemMonitorService.hotSampleAt
+                                height: 48
+                            }
+
+                            WheelHandler {
+                                acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+                                onWheel: event => {
+                                    if (Math.abs(event.angleDelta.x) <= Math.abs(event.angleDelta.y)) {
+                                        event.accepted = false;
+                                        return;
+                                    }
+                                    activityList.contentX = Math.max(0, Math.min(
+                                        activityList.contentWidth - activityList.width,
+                                        activityList.contentX - event.angleDelta.x));
+                                    event.accepted = true;
+                                }
+                            }
+                        }
+
+                        Shared.TextLabel {
+                            Layout.fillWidth: true
+                            visible: CenterActivityService.activities.length === 0
+                            text: I18n.tr("center_notch.monitoring.no_activities")
+                            tone: "secondary"
+                        }
+                    }
                 }
             }
         }
