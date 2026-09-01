@@ -76,6 +76,25 @@ console.log("PASS Window descriptor identity, fallback, immutability, and raw-ob
 assert.equal(rules.activeWindow([first, fallback]), first);
 assert.equal(rules.activeWindow([{ id: "0x1", active: false }]), null);
 assert.equal(rules.activeWindow(null), null);
+
+const staleChatGpt = rules.descriptor({
+    id: "chatgpt-window", appId: "chatgpt", title: "ChatGPT", active: true,
+}, "chrome-window");
+const authoritativeChrome = rules.descriptor({
+    id: "chrome-window", appId: "google-chrome",
+    title: "Facebook - Google Chrome", active: true,
+}, "chrome-window");
+assert.equal(staleChatGpt.active, false,
+    "a stale native activated flag must not survive authoritative focus projection");
+assert.equal(authoritativeChrome.active, true);
+assert.equal(rules.activeWindow([staleChatGpt, authoritativeChrome],
+    "chrome-window"), authoritativeChrome,
+    "the compositor authoritative ID must win when two native flags report active");
+assert.equal(rules.activeWindow([
+    { id: "chatgpt-window", active: true },
+    { id: "chrome-window", active: true },
+], "chrome-window").id, "chrome-window",
+"active-window selection must resolve the authoritative ID directly");
 console.log("PASS active-window projection fixtures");
 
 assert.deepEqual(plain(rules.focusPlan("0xdef", [first, {
@@ -130,7 +149,10 @@ const dockSource = fs.readFileSync(dockPath, "utf8");
 assert.equal((serviceSource.match(/Hyprland\.toplevels/g) || []).length > 0, true);
 assert.equal(serviceSource.includes("WindowRules.focusPlan"), true);
 assert.equal(serviceSource.includes("readonly property var activeWindow"), true);
-assert.equal(serviceSource.includes("WindowRules.activeWindow(root.projectedWindows)"), true);
+assert.equal(serviceSource.includes("root.nativeWindowId(Hyprland.activeToplevel)"), true,
+    "active-window identity must come from the compositor authoritative toplevel");
+assert.match(serviceSource, /WindowRules\.activeWindow\(\s*root\.projectedWindows, root\.activeToplevelId\)/,
+    "active-window selection must resolve the authoritative ID directly");
 assert.equal(serviceSource.includes("root.activateWorkspace(plan.workspaceId)"), true);
 assert.equal(serviceSource.includes("function workspaceIdFor(toplevel: var): int"), true,
     "window projection must resolve workspace ownership through a dedicated helper");

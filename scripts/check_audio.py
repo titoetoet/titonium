@@ -388,8 +388,13 @@ def main() -> int:
         "required property var device",
         "AudioService.selectOutputDevice(root.device.id)",
         "checked: root.device?.selected === true",
+        'root.checked ? "radio_button_checked" : "radio_button_unchecked"',
         'I18n.tr("audio.output.select.accessible", {',
     ), "Audio output device row")
+    output_device_source = (OVERLAY_ROOT / "AudioOutputDeviceRow.qml").read_text(
+        encoding="utf-8")
+    if 'root.checked ? "check_circle"' in output_device_source:
+        errors.append("Audio output selection must use a radio indicator, not a completion icon")
     require_fragments(errors, OVERLAY_ROOT / "AudioStreamRow.qml", (
         "required property var stream",
         "AudioService.setStreamVolume",

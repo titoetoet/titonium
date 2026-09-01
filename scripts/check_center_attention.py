@@ -12,6 +12,7 @@ QMLDIR = CENTER / "qmldir"
 APP = ROOT / "Titonium/App.qml"
 CENTER_VIEW = ROOT / "Titonium/Bar/islands/CenterIsland.qml"
 CENTER_OVERVIEW = ROOT / "Titonium/Bar/notch/OverviewPage.qml"
+CENTER_FOCUS_CARD = ROOT / "Titonium/Bar/notch/OverviewFocusCard.qml"
 ACCEPTANCE = ROOT / "scripts/center_attention_acceptance.sh"
 
 
@@ -67,6 +68,7 @@ def main() -> int:
             "readonly property string text:",
             "readonly property bool ready:",
             "function openScratchpad(): bool",
+            "function saveToday(value: string): bool",
             "function snapshot(): string",
             "watchChanges: true",
             "blockLoading: true",
@@ -131,7 +133,6 @@ def main() -> int:
         for fragment in (
             "CenterAttentionService.presentation",
             "CenterActivityService.presentation",
-            "CenterAttentionService.indicators",
             "CenterFocusStore.text",
         ):
             if fragment not in source:
@@ -139,8 +140,11 @@ def main() -> int:
         if "CenterFocusStore.openScratchpad()" in source:
             errors.append("TopBar Center must not bypass the Center Notch")
 
-    if CENTER_OVERVIEW.is_file():
-        source = CENTER_OVERVIEW.read_text(encoding="utf-8")
+    if CENTER_OVERVIEW.is_file() and CENTER_FOCUS_CARD.is_file():
+        overview_source = CENTER_OVERVIEW.read_text(encoding="utf-8")
+        source = CENTER_FOCUS_CARD.read_text(encoding="utf-8")
+        if "OverviewFocusCard" not in overview_source:
+            errors.append("Center Overview does not compose its Daily Focus card")
         if source.count("CenterFocusStore.openScratchpad()") != 1:
             errors.append("Center Overview must own exactly one explicit Daily Focus action")
     else:

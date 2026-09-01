@@ -1,0 +1,2 @@
+module qs.Titonium.Services.SystemTray
+singleton SystemTrayService 1.0 SystemTrayService.qml

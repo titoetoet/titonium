@@ -1,0 +1,2 @@
+module qs.Titonium.Services.Keyboard
+singleton KeyboardStateService 1.0 KeyboardStateService.qml

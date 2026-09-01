@@ -4,6 +4,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell.Bluetooth
 import qs.Titonium.Core.Runtime
+import qs.Titonium.Services.Center
 import "BluetoothRules.js" as BluetoothRules
 
 QtObject {
@@ -59,9 +60,21 @@ QtObject {
         for (let index = 0; index < event.connected.length; index += 1) {
             Logger.info("bluetooth", "audio device connected " + event.connected[index]);
             root.audioDeviceConnected(event.connected[index]);
+            CenterAttentionService.publish({
+                id: "bluetooth:audio", source: "bluetooth", kind: "device_connected",
+                title: I18n.tr("bluetooth.center.connected"), icon: "headphones"
+            });
         }
-        for (let index = 0; index < event.disconnected.length; index += 1)
+        for (let index = 0; index < event.disconnected.length; index += 1) {
             Logger.info("bluetooth", "audio device disconnected " + event.disconnected[index]);
+            CenterAttentionService.publish({
+                id: "bluetooth:audio", source: "bluetooth", kind: "device_disconnected",
+                title: I18n.tr("bluetooth.center.disconnected"), icon: "headphones"
+            });
+        }
+        CenterAttentionService.setIndicator(
+            "bluetooth-headphone", "headphones", I18n.tr("bluetooth.center.headphone"),
+            event.current.length > 0);
     }
 
     function warnOperation(category: string, message: string): void {

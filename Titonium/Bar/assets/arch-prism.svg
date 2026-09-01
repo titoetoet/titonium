@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="archPrism" x1="9" y1="11" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#45E0FF"/>
+      <stop offset="0.52" stop-color="#5B9CFF"/>
+      <stop offset="1" stop-color="#A66BFF"/>
+    </linearGradient>
+    <linearGradient id="edgeLight" x1="10" y1="10" x2="38" y2="44" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D6FAFF" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#7CC4FF" stop-opacity="0"/>
+    </linearGradient>
+    <mask id="archCut">
+      <rect width="64" height="64" fill="white"/>
+      <path d="M32 19L42 43L32 37L22 43Z" fill="black"/>
+      <path d="M32 44L38 50L32 48L26 50Z" fill="black"/>
+    </mask>
+  </defs>
+
+  <path d="M32 4L60 57L46 51L38 36L32 29L26 36L18 51L4 57Z"
+        fill="url(#archPrism)" mask="url(#archCut)"/>
+  <path d="M32 7L9 52L19 47L27 33L32 27"
+        fill="none" stroke="url(#edgeLight)" stroke-width="2.4"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M32 4L60 57L50 52L32 16L14 52L4 57Z"
+        fill="none" stroke="#BCEFFF" stroke-opacity="0.22"
+        stroke-width="1.2" stroke-linejoin="round"/>
+</svg>

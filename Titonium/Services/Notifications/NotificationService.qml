@@ -5,6 +5,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Services.Notifications
 import qs.Titonium.Core.Runtime
+import qs.Titonium.Services.Center
 import "NotificationRules.js" as NotificationRules
 
 Singleton {
@@ -14,6 +15,7 @@ Singleton {
     property var toastIds: Object.freeze([])
     property var unreadIds: Object.freeze([])
     property var operationWarningCounts: ({})
+    property bool centerEventsReady: false
 
     readonly property var notifications: root.projectedNotifications
     readonly property var toastNotifications: {
@@ -48,8 +50,21 @@ Singleton {
         Logger.warn("notifications", message);
     }
 
+    function syncUnreadIndicator(): void {
+        const indicator = NotificationRules.unreadIndicator(
+            root.unreadCount, I18n.tr("menubar.center.notification_unread"));
+        CenterAttentionService.setIndicator(
+            indicator.id,
+            indicator.icon,
+            indicator.accessibleName,
+            indicator.active
+        );
+        CenterActivityService.remove("notification:unread");
+    }
+
     function markAllRead(): bool {
         root.unreadIds = Object.freeze([]);
+        root.syncUnreadIndicator();
         return true;
     }
 
@@ -87,6 +102,7 @@ Singleton {
             root.projectedNotifications, id);
         root.toastIds = NotificationRules.removeId(root.toastIds, id);
         root.unreadIds = NotificationRules.removeId(root.unreadIds, id);
+        root.syncUnreadIndicator();
         return dismissed;
     }
 
@@ -96,6 +112,8 @@ Singleton {
             root.dismiss(ids[index]);
         return ids.length;
     }
+
+    Component.onCompleted: Qt.callLater(() => root.centerEventsReady = true)
 
     NotificationServer {
         id: server
@@ -112,6 +130,7 @@ Singleton {
 
         onNotification: notification => {
             notification.tracked = true;
+            const now = Date.now();
             const item = NotificationRules.descriptor({
                 id: notification.id,
                 appName: notification.appName,
@@ -119,7 +138,7 @@ Singleton {
                 summary: notification.summary,
                 body: notification.body,
                 urgency: Number(notification.urgency),
-            }, Date.now());
+            }, now);
             if (!item) {
                 root.warnOperation("projection.invalid", "ignored notification with invalid id");
                 return;
@@ -129,6 +148,12 @@ Singleton {
             if (root.toastsEnabled)
                 root.toastIds = NotificationRules.addToast(root.toastIds, item.id, 3);
             root.unreadIds = NotificationRules.markUnread(root.unreadIds, item.id);
+            if (root.centerEventsReady)
+                CenterAttentionService.publish(NotificationRules.centerEvent(
+                    item, item.summary.toLowerCase() === "screenshot saved"
+                        ? I18n.tr("capture.screenshot_saved")
+                        : I18n.tr("menubar.center.notification_new"), now));
+            root.syncUnreadIndicator();
             notification.closed.connect(() => root.expireToast(item.id));
         }
     }

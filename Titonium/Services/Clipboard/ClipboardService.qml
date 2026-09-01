@@ -5,8 +5,10 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import qs.Titonium.Core.Runtime
+import qs.Titonium.Services.Center
 import "ClipboardAccess.js" as ClipboardAccess
 import "ClipboardHistory.js" as ClipboardHistory
+import "ClipboardCenterRules.js" as ClipboardCenterRules
 
 QtObject {
     id: root
@@ -14,6 +16,7 @@ QtObject {
     property bool available: true
     property string error: ""
     property bool warnedMalformed: false
+    property var centerState: ClipboardCenterRules.initialState()
     readonly property string runtimePath: Quickshell.dataPath("clipboard-history.json")
 
     function initialize(): void {
@@ -62,17 +65,51 @@ QtObject {
         const item = ClipboardHistory.itemForId(root.items, id);
         return item !== null && root.copyText(item.text);
     }
-    function observeCurrent(): bool {
-        const result = ClipboardAccess.observe(() => Quickshell.clipboardText);
-        root.available = result.available;
-        root.error = result.error;
-        if (result.available && result.text.length > 0) root.record(result.text);
-        return result.available;
+    function observeText(text: string): bool {
+        root.available = true;
+        root.error = "";
+        const centerResult = ClipboardCenterRules.observe(
+            root.centerState, text,
+            I18n.tr("menubar.center.clipboard_copied"), Date.now());
+        root.centerState = centerResult.next;
+        if (centerResult.event !== null)
+            CenterAttentionService.publish(centerResult.event);
+        if (text)
+            root.record(text);
+        return true;
     }
 
-    property Connections clipboardConnections: Connections {
-        target: Quickshell
-        function onClipboardTextChanged(): void { root.observeCurrent(); }
+    function observeWatchLine(line: string): bool {
+        const text = ClipboardCenterRules.decodeWatchLine(line);
+        if (text === null) {
+            root.available = false;
+            root.error = "clipboard.error.unavailable";
+            return false;
+        }
+        return root.observeText(text);
+    }
+
+    function activate(): void {}
+
+    property Process clipboardWatcher: Process {
+        command: ["wl-paste", "--type", "text", "--watch", "python3", "-c",
+            "import json, sys; print(json.dumps(sys.stdin.read(), ensure_ascii=False))"]
+        running: false
+        stdout: SplitParser {
+            onRead: data => root.observeWatchLine(data)
+        }
+        stderr: StdioCollector {}
+        onExited: {
+            root.available = false;
+            root.error = "clipboard.error.unavailable";
+            root.watcherRestart.restart();
+        }
+    }
+
+    property Timer watcherRestart: Timer {
+        interval: 2000
+        repeat: false
+        onTriggered: root.clipboardWatcher.running = true
     }
     property FileView historyFile: FileView {
         path: root.runtimePath
@@ -82,5 +119,8 @@ QtObject {
         atomicWrites: true
         onSaveFailed: failure => Logger.error("clipboard", "history save failed: " + failure)
     }
-    Component.onCompleted: { root.initialize(); root.observeCurrent(); }
+    Component.onCompleted: {
+        root.initialize();
+        clipboardWatcher.running = true;
+    }
 }

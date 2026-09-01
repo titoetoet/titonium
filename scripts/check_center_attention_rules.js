@@ -37,7 +37,7 @@ state = rules.publish(state, {
 }, 1000);
 assert.equal(state.current.title, "Tycho · Awake");
 assert.equal(state.current.priority, 20);
-assert.equal(state.current.expiresAt, 7000);
+assert.equal(state.current.expiresAt, 9000);
 assert.equal(state.generation, 1);
 assert.equal(Object.isFrozen(state.current), true);
 assert.equal("command" in state.current, false);
@@ -106,12 +106,12 @@ dedupState = rules.publish(dedupState, {
     createdAt: 2000,
 }, 2000);
 assert.equal(dedupState.current.title, "New track");
-assert.equal(dedupState.current.expiresAt, 8000);
+assert.equal(dedupState.current.expiresAt, 10000);
 assert.equal(dedupState.generation, 2);
 console.log("PASS matching deduplication key replaces and renews presentation");
 
 const expiredState = rules.expire(dedupState, "media:current",
-    dedupState.generation, 8000);
+    dedupState.generation, 10000);
 assert.equal(expiredState.current, null);
 assert.equal(expiredState.generation, 3);
 console.log("PASS matching current event expires into fallback state");
@@ -172,6 +172,18 @@ for (const invalid of [
     assert.strictEqual(rules.publish(invalidBase, invalid, 1000), invalidBase);
 }
 console.log("PASS malformed and non-allowlisted events fail closed");
+
+for (const event of [
+    { id: "clipboard:current", source: "clipboard", kind: "copied",
+        title: "Đã sao chép · hello", icon: "content_copy", createdAt: 1000 },
+    { id: "notification:new", source: "notification", kind: "new",
+        title: "Bạn có một notification", icon: "notifications", createdAt: 2000 },
+]) {
+    const projected = rules.publish(rules.initialState(), event, event.createdAt);
+    assert.equal(projected.current.priority, 25);
+    assert.equal(projected.current.expiresAt, event.createdAt + 7000);
+}
+console.log("PASS Clipboard and new Notification own equal five-second takeover policy");
 
 let indicators = Object.freeze([]);
 indicators = rules.setIndicator(indicators, {

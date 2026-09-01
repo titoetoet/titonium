@@ -1,0 +1,2 @@
+module qs.Titonium.Services.Capture
+singleton ScreenRecordService 1.0 ScreenRecordService.qml

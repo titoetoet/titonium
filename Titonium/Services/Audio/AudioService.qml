@@ -4,6 +4,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell.Services.Pipewire
 import qs.Titonium.Core.Runtime
+import qs.Titonium.Services.Center
 import "AudioRules.js" as AudioRules
 
 QtObject {
@@ -18,6 +19,8 @@ QtObject {
     readonly property int invalidVolumeWarningLimit: 3
 
     property var previousPresentation: ({})
+    property string previousOutputName: ""
+    property string previousInputName: ""
     property string pendingBluetoothAddress: ""
     property var invalidVolumeWarningCounts: ({ "output": 0, "input": 0, "stream": 0 })
     property PwObjectTracker tracker: PwObjectTracker {
@@ -203,6 +206,40 @@ QtObject {
         return true;
     }
 
+    function observeCenterDeviceChanges(): void {
+        const output = root.outputName;
+        const input = root.inputName;
+        if (root.previousOutputName.length > 0 && output !== root.previousOutputName) {
+            CenterAttentionService.publish({
+                id: "audio:output", source: "audio", kind: "output_changed",
+                title: I18n.tr("audio.center.output_changed", { "name": output }),
+                icon: "volume_up"
+            });
+        }
+        if (root.previousInputName.length > 0 && input !== root.previousInputName) {
+            CenterAttentionService.publish({
+                id: "audio:input", source: "audio", kind: "input_changed",
+                title: I18n.tr("audio.center.input_changed", { "name": input }),
+                icon: "mic"
+            });
+        }
+        root.previousOutputName = output;
+        root.previousInputName = input;
+    }
+
+    function syncCenterIndicators(): void {
+        root.observeCenterDeviceChanges();
+        CenterAttentionService.setIndicator(
+            "audio-output", root.outputIcon,
+            I18n.tr("audio.output"), root.outputAvailable && root.outputMuted);
+        CenterAttentionService.setIndicator(
+            "audio-microphone", root.inputMuted ? "mic_off" : "mic",
+            I18n.tr("audio.microphone"), root.inputAvailable && root.inputMuted);
+        CenterAttentionService.setIndicator(
+            "audio-streams", "graphic_eq",
+            I18n.tr("audio.playback_streams"), root.playbackStreams.length > 0);
+    }
+
     function observeOutputPresentation(): void {
         const event = AudioRules.presentationEvent(root.previousPresentation, {
             key: root.outputNode?.id === undefined ? "" : String(root.outputNode.id),
@@ -211,8 +248,17 @@ QtObject {
             muted: root.outputMuted,
         });
         root.previousPresentation = event.next;
-        if (event.emit)
+        if (event.emit) {
             root.outputPresentationChanged(event.next.volume, event.next.muted);
+            CenterAttentionService.publish({
+                id: "audio:volume", source: "audio", kind: "volume_changed",
+                title: I18n.tr("audio.center.volume_changed", {
+                    "value": Math.round(event.next.volume * 100)
+                }),
+                icon: root.outputIcon
+            });
+        }
+        root.syncCenterIndicators();
     }
 
     function resetOutputPresentation(): void {
@@ -238,8 +284,12 @@ QtObject {
 
     property Connections trackerConnections: Connections {
         target: root.tracker
-        function onObjectsChanged(): void { root.trySelectPendingBluetoothOutput(); }
+        // function onObjectsChanged(): void { root.trySelectPendingBluetoothOutput(); }
+        function onObjectsChanged(): void { root.trySelectPendingBluetoothOutput(); root.syncCenterIndicators(); }
     }
 
-    Component.onCompleted: root.resetOutputPresentation()
+    Component.onCompleted: {
+        root.resetOutputPresentation();
+        root.syncCenterIndicators();
+    }
 }

@@ -20,6 +20,8 @@ Item {
     readonly property string primaryActionKey: root.device?.pairing === true
         ? "bluetooth.device.cancel_pair" : (root.device?.paired === true
             ? "bluetooth.device.connect" : "bluetooth.device.pair")
+    readonly property string primaryActionIcon: root.device?.pairing === true
+        ? "close" : (root.device?.paired === true ? "link" : "bluetooth_searching")
 
     implicitHeight: content.implicitHeight
     implicitWidth: content.implicitWidth
@@ -116,7 +118,7 @@ Item {
         Shared.Button {
             Layout.alignment: Qt.AlignVCenter
             visible: root.device?.connected !== true && !root.forgetConfirmation
-            label: I18n.tr(root.primaryActionKey)
+            iconName: root.primaryActionIcon
             variant: "quiet"
             size: "small"
             enabled: root.actionable

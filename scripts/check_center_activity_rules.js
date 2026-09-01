@@ -48,6 +48,19 @@ function timer(id, deadline, updatedAt, label) {
     };
 }
 
+function passive(id, source, updatedAt, label) {
+    return {
+        id: id,
+        source: source,
+        label: label,
+        icon: source === "media" ? "music_note" : "notifications",
+        importance: "normal",
+        progress: -1,
+        deadline: 0,
+        updatedAt: updatedAt,
+    };
+}
+
 let state = rules.initialState();
 assert.deepEqual(plain(state), {
     activities: [], currentId: "", showingFocus: true, generation: 0,
@@ -66,7 +79,9 @@ assert.deepEqual(plain(state.activities[0]), {
 assert.equal(Object.isFrozen(state), true);
 assert.equal(Object.isFrozen(state.activities), true);
 assert.equal(Object.isFrozen(state.activities[0]), true);
-assert.equal(state.generation, 0);
+assert.equal(state.currentId, "job:build");
+assert.equal(state.showingFocus, false);
+assert.equal(state.generation, 1);
 console.log("PASS activity descriptors normalize into frozen value state");
 
 const unchanged = state;
@@ -90,6 +105,20 @@ for (const invalid of [
 }
 console.log("PASS malformed and policy-bearing activity inputs fail closed");
 
+let passiveState = rules.initialState();
+passiveState = rules.upsert(passiveState,
+    passive("media:current", "media", 3000, "Tycho · Awake"), 3000);
+assert.deepEqual(plain(passiveState.activities).map(item => item.id), [
+    "media:current",
+]);
+assert.equal(rules.current(passiveState).id, "media:current");
+assert.strictEqual(rules.upsert(passiveState,
+    passive("notification:unread", "notification", 4000,
+        "Bạn có tin nhắn chưa đọc"), 4000), passiveState);
+assert.strictEqual(rules.upsert(passiveState,
+    passive("clipboard:current", "clipboard", 5000, "Copied"), 5000), passiveState);
+console.log("PASS Media is persistent while Notification stays outside Activity rotation");
+
 let bounded = rules.initialState();
 for (let index = 0; index < 33; index++) {
     bounded = rules.upsert(bounded,
@@ -112,21 +141,16 @@ rotation = rules.upsert(rotation,
 assert.deepEqual(plain(rules.visiblePool(rotation)).map(item => item.id), [
     "timer:tea", "job:important", "job:normal",
 ]);
-assert.equal(rules.current(rotation), null);
-rotation = rules.advance(rotation);
 assert.equal(rules.current(rotation).id, "timer:tea");
 rotation = rules.advance(rotation);
 assert.equal(rules.current(rotation).id, "job:important");
 rotation = rules.advance(rotation);
 assert.equal(rules.current(rotation).id, "job:normal");
 rotation = rules.advance(rotation);
-assert.equal(rules.current(rotation), null);
-assert.equal(rotation.showingFocus, true);
-assert.equal(rotation.generation, 4);
-console.log("PASS rotation presents Focus then the top three ranked activities");
-
-rotation = rules.advance(rotation);
 assert.equal(rules.current(rotation).id, "timer:tea");
+assert.equal(rotation.showingFocus, false);
+console.log("PASS active rotation loops through the top three without Focus");
+
 const timerGeneration = rotation.generation;
 rotation = rules.upsert(rotation,
     timer("timer:tea", 660000, 4000, "Green tea"), 4000);
@@ -140,10 +164,18 @@ rotation = rules.remove(rotation, "job:hidden");
 assert.equal(rotation.currentId, "timer:tea");
 assert.equal(rotation.generation, beforeNonCurrentRemoval.generation);
 rotation = rules.remove(rotation, "timer:tea");
-assert.equal(rotation.currentId, "");
-assert.equal(rotation.showingFocus, true);
+assert.equal(rotation.currentId, "job:important");
+assert.equal(rotation.showingFocus, false);
 assert.equal(rotation.generation, timerGeneration + 2);
-console.log("PASS updates preserve slots and visible removal returns to Focus");
+console.log("PASS updates preserve slots and current removal selects the next activity");
+
+let soleActivity = rules.upsert(rules.initialState(),
+    passive("media:current", "media", 5000, "Tycho · Awake"), 5000);
+soleActivity = rules.remove(soleActivity, "media:current");
+assert.equal(rules.current(soleActivity), null);
+assert.equal(soleActivity.showingFocus, true);
+assert.equal(soleActivity.currentId, "");
+console.log("PASS removing the final activity returns Center to Focus");
 
 const empty = rules.initialState();
 assert.strictEqual(rules.remove(empty, "missing"), empty);

@@ -136,9 +136,9 @@ function project(document, defaults, legacyDock) {
             },
             dock: {
                 visibilityMode: oneOf(dock.visibilityMode,
-                    ["auto-hide", "always-visible", "reserve-space"],
+                    ["auto-hide", "always-visible", "reserve-space", "hidden"],
                     oneOf(fallbackDock.visibilityMode,
-                        ["auto-hide", "always-visible", "reserve-space"], "auto-hide")),
+                        ["auto-hide", "always-visible", "reserve-space", "hidden"], "auto-hide")),
                 pinnedIds: normalizePinnedIds(dock.pinnedIds),
             },
             notifications: {

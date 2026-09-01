@@ -61,7 +61,7 @@ FocusScope {
         }
 
         Shared.Icon {
-            name: root.checked ? "check_circle" : "radio_button_unchecked"
+            name: root.checked ? "radio_button_checked" : "radio_button_unchecked"
             size: 19
             tone: root.checked ? "accent" : "secondary"
             accessibleName: ""

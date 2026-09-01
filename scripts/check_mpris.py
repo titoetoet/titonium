@@ -38,6 +38,10 @@ def main() -> int:
             "readonly property var selectedPlayer:",
             "readonly property bool playing:",
             "readonly property string title:",
+            "function selectedNativePlayer(): var",
+            "function togglePlaying(): bool",
+            "function previous(): bool",
+            "function next(): bool",
             "Mpris.players.values",
             "MprisPlaybackState.toString",
             "Instantiator {",
@@ -67,7 +71,6 @@ def main() -> int:
             "import qs.Titonium.Overlays",
             "priority:",
             "ttl:",
-            "artUrl",
             "position:",
         ):
             if forbidden in source:

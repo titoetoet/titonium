@@ -55,6 +55,10 @@ assert.equal(rules.deterministicFallback(fallbackState.prompts, dayMorning), fir
 assert.equal(rules.select({ markdown: "", modifiedAt: 0, prompts: "" }, dayMorning), "");
 console.log("PASS prompt fallback is deterministic for one local date");
 
+assert.equal(rules.sanitizeInput("  Ship   the\nCenter  "), "Ship the Center");
+assert.equal(rules.sanitizeInput("   \n  "), "");
+console.log("PASS inline focus input normalizes to one compact line");
+
 const observed = new Set();
 for (let day = 1; day <= 31; day += 1)
     observed.add(rules.deterministicFallback("One\nTwo\nThree", new Date(2026, 7, day)));
@@ -65,11 +69,16 @@ const centerIsland = fs.readFileSync(path.join(root, "Titonium", "Bar", "islands
     "CenterIsland.qml"), "utf8");
 const overview = fs.readFileSync(path.join(root, "Titonium", "Bar", "notch",
     "OverviewPage.qml"), "utf8");
+const overviewFocus = fs.readFileSync(path.join(root, "Titonium", "Bar", "notch",
+    "OverviewFocusCard.qml"), "utf8");
 assert.equal(centerIsland.includes("CenterFocusStore.openScratchpad()"), false,
     "TopBar Center must open the Notch instead of Daily Focus directly");
 assert.match(centerIsland, /signal notchRequested\(var screen\)/);
-assert.equal((overview.match(/CenterFocusStore\.openScratchpad\(\)/g) || []).length, 1,
+assert.equal((overviewFocus.match(/CenterFocusStore\.openScratchpad\(\)/g) || []).length, 1,
     "Overview owns one explicit Daily Focus action");
-assert.match(overview, /center_notch\.overview\.daily_focus/);
-assert.match(overview, /center_notch\.overview\.daily_focus\.open/);
+assert.match(overview, /OverviewFocusCard/);
+assert.match(overviewFocus, /center_notch\.overview\.focus\.title/);
+assert.match(overviewFocus, /center_notch\.overview\.daily_focus\.open/);
+assert.match(overviewFocus, /QtControls\.TextField/);
+assert.match(overviewFocus, /CenterFocusStore\.saveToday\(focusInput\.text\)/);
 console.log("PASS Daily Focus moved behind explicit Center Overview action");

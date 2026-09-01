@@ -119,9 +119,16 @@ initial_activity="$(call_ipc center activityState)"
 printf '%s' "$initial_activity" | python3 -c '
 import json, sys
 state = json.load(sys.stdin)
-if state.get("activeCount") != 0 or state.get("showingFocus") is not True:
+activities = state.get("activities", [])
+if any(item.get("source") != "media" for item in activities):
     raise SystemExit(1)
-if state.get("presentation") is not None or state.get("scheduledAt") != 0:
+if activities:
+    if state.get("showingFocus") is not False or state.get("currentId") != "media:current":
+        raise SystemExit(1)
+    if state.get("presentation") is None or state.get("scheduledAt", 0) <= 0:
+        raise SystemExit(1)
+elif state.get("showingFocus") is not True or state.get("presentation") is not None \
+        or state.get("scheduledAt") != 0:
     raise SystemExit(1)
 '
 baseline_bars="$(menubar_count)"
@@ -132,13 +139,19 @@ call_ipc timer start "$timer_id" 120 "Tea timer" >/dev/null
 [[ "$(call_ipc job progress "$normal_id" 31 Linking)" == "ok" ]]
 [[ "$(call_ipc job progress "$normal_id" 62 Compiling)" == "ok" ]]
 
-focus_state="$(wait_for_activity focus 8)"
-printf '%s' "$focus_state" | python3 -c '
+active_state="$(wait_for_activity "timer:$timer_id" 8)"
+printf '%s' "$active_state" | python3 -c '
 import json, sys
 state = json.load(sys.stdin)
 activities = state.get("activities", [])
 normal = [item for item in activities if item.get("id") == "job:acceptance:activity:normal"]
-if state.get("activeCount") != 3 or len(normal) != 1:
+fixture_ids = {
+    "timer:acceptance:activity:timer",
+    "job:acceptance:activity:important",
+    "job:acceptance:activity:normal",
+}
+if {item.get("id") for item in activities if item.get("id") in fixture_ids} != fixture_ids \
+        or len(normal) != 1:
     raise SystemExit(1)
 if normal[0].get("label") != "Compiling" or normal[0].get("progress") != 62:
     raise SystemExit(1)
@@ -147,6 +160,7 @@ if normal[0].get("label") != "Compiling" or normal[0].get("progress") != 62:
 timer_activity_id="timer:$timer_id"
 important_activity_id="job:$important_id"
 normal_activity_id="job:$normal_id"
+wait_for_attention_clear
 timer_state="$(wait_for_activity "$timer_activity_id" 88)"
 printf '%s' "$timer_state" | python3 -c '
 import json, sys, time
@@ -179,7 +193,7 @@ state = json.load(sys.stdin)
 if state.get("currentId") != sys.argv[1] or state.get("suspended") is not False:
     raise SystemExit(1)
 remaining = state.get("scheduledAt", 0) - time.time() * 1000
-if remaining < 5000 or remaining > 6500:
+if remaining < 7000 or remaining > 8500:
     raise SystemExit(1)
 ' "$timer_activity_id"
 sleep 1
@@ -194,7 +208,7 @@ presentation = state.get("presentation") or {}
 if presentation.get("id") != sys.argv[1] or presentation.get("progress") != 62:
     raise SystemExit(1)
 ' "$normal_activity_id"
-wait_for_activity focus 28 >/dev/null
+wait_for_activity "$timer_activity_id" 28 >/dev/null
 
 if [[ "$(menubar_count)" -ne "$baseline_bars" ]]; then
     echo "FAIL Activity rotation created an extra Bar layer" >&2
@@ -206,12 +220,21 @@ call_ipc timer cancel "$timer_id" >/dev/null
 [[ "$(call_ipc job complete "$normal_id" "Normal complete")" == "ok" ]]
 wait_for_attention_clear
 final_activity="$(call_ipc center activityState)"
-printf '%s' "$final_activity" | python3 -c '
+printf '%s\n%s' "$initial_activity" "$final_activity" | python3 -c '
 import json, sys
-state = json.load(sys.stdin)
-if state.get("activeCount") != 0 or state.get("showingFocus") is not True:
+initial = json.loads(sys.stdin.readline())
+state = json.loads(sys.stdin.readline())
+baseline = [(item.get("id"), item.get("source")) for item in initial.get("activities", [])]
+remaining = [(item.get("id"), item.get("source")) for item in state.get("activities", [])]
+if remaining != baseline:
     raise SystemExit(1)
-if state.get("presentation") is not None or state.get("scheduledAt") != 0:
+if baseline:
+    if state.get("showingFocus") is not False or state.get("currentId") != baseline[0][0]:
+        raise SystemExit(1)
+    if state.get("presentation") is None or state.get("scheduledAt", 0) <= 0:
+        raise SystemExit(1)
+elif state.get("showingFocus") is not True or state.get("presentation") is not None \
+        or state.get("scheduledAt") != 0:
     raise SystemExit(1)
 '
 

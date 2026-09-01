@@ -77,9 +77,9 @@ assert.deepEqual(plain(rules.mergeItems(["offline.desktop"], [],
     visibilityEntries, [], []).map(item => ({ id: item.appId, count: item.runningCount }))),
     [{ id: "offline.desktop", count: 0 }]);
 assert.deepEqual(plain(rules.movePinnedId(["a", "b", "c"], 2, 0)), ["c", "a", "b"]);
-assert.deepEqual(plain(rules.visibilityPolicy("auto-hide")), { autoHide: true, pinnedOpen: false });
-assert.deepEqual(plain(rules.visibilityPolicy("always-visible")), { autoHide: false, pinnedOpen: false });
-assert.deepEqual(plain(rules.visibilityPolicy("reserve-space")), { autoHide: false, pinnedOpen: true });
+assert.deepEqual(plain(rules.visibilityPolicy("auto-hide")), { autoHide: true, pinnedOpen: false, hidden: false });
+assert.deepEqual(plain(rules.visibilityPolicy("always-visible")), { autoHide: false, pinnedOpen: false, hidden: false });
+assert.deepEqual(plain(rules.visibilityPolicy("reserve-space")), { autoHide: false, pinnedOpen: true, hidden: false });
 console.log("PASS Dock v7 visibility and hidden-precedence fixtures");
 
 assert.equal(rules.nextCycleIndex(-1, 3), 0);

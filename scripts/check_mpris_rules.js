@@ -26,6 +26,7 @@ const playing = {
     playbackState: "playing",
     trackTitle: "Awake",
     trackArtist: "Tycho",
+    desktopEntry: "spotify",
     changedAt: 20,
 };
 const paused = {
@@ -33,6 +34,7 @@ const paused = {
     playbackState: "paused",
     trackTitle: "Other",
     trackArtist: "Artist",
+    desktopEntry: "player-b",
     changedAt: 40,
 };
 
@@ -56,7 +58,10 @@ const normalized = rules.normalizePlayer({
     playbackState: "Playing",
     trackTitle: "  A Walk  ",
     trackArtist: [" Tycho ", " Saint Sinner "],
+    desktopEntry: " org.music.Player ",
     changedAt: 42,
+    trackLength: 0,
+    trackPosition: 0,
     nativeObject: { dangerous: true },
 });
 assert.deepEqual(plain(normalized), {
@@ -65,6 +70,15 @@ assert.deepEqual(plain(normalized), {
     trackTitle: "A Walk",
     trackArtist: "Tycho, Saint Sinner",
     title: "Tycho, Saint Sinner · A Walk",
+    desktopEntry: "org.music.Player",
+    trackArtUrl: "",
+    trackLength: 0,
+    trackPosition: 0,
+    canTogglePlaying: false,
+    canGoPrevious: false,
+    canGoNext: false,
+    trackLength: 0,
+    trackPosition: 0,
     changedAt: 42,
 });
 assert.equal(Object.isFrozen(normalized), true);
@@ -76,6 +90,22 @@ assert.equal(rules.indicatorActive(paused), false);
 assert.equal(rules.indicatorActive({ ...playing, playbackState: "stopped" }), false);
 assert.equal(rules.indicatorActive(null), false);
 console.log("PASS native facts normalize into frozen value descriptors");
+
+assert.deepEqual(plain(rules.activity(playing, 2000)), {
+    id: "media:current",
+    source: "media",
+    label: "Tycho · Awake",
+    icon: "music_note",
+    importance: "normal",
+    progress: -1,
+    deadline: 0,
+    updatedAt: 2000,
+    trackLength: 0,
+    trackPosition: 0,
+});
+assert.equal(rules.activity(paused, 3000), null);
+assert.equal(rules.activity({ ...playing, trackTitle: "" }, 4000), null);
+console.log("PASS only actively playing Media projects a persistent Center activity");
 
 const baseline = rules.transition(null, playing, 1000);
 assert.equal(baseline.event, null);

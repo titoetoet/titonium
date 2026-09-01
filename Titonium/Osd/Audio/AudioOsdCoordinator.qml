@@ -71,8 +71,11 @@ QtObject {
     property Connections audioServiceConnections: Connections {
         target: AudioService
 
+        // Volume changes are represented by CenterIsland; do not open a floating OSD.
         function onOutputPresentationChanged(volume: real, muted: bool): void {
-            root.show(HyprlandService.focusedMonitorName, volume, muted);
+            void volume;
+            void muted;
+            void HyprlandService.focusedMonitorName;
         }
     }
 }

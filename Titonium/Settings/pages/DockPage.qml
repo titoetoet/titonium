@@ -18,6 +18,8 @@ Item {
             labelKey: "settings.dock.mode.always_visible" }),
         Object.freeze({ value: "reserve-space", icon: "select_window_2",
             labelKey: "settings.dock.mode.reserve_space" }),
+        Object.freeze({ value: "hidden", icon: "visibility_off",
+            labelKey: "settings.dock.mode.hidden" }),
     ])
 
     ColumnLayout {

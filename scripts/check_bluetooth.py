@@ -457,6 +457,11 @@ def validate_presentation(errors: list[str]) -> None:
         'iconName: "info"',
         "id: cancelForgetButton",
         "id: confirmForgetButton",
+        "readonly property string primaryActionIcon:",
+        '"close"',
+        '"link"',
+        '"bluetooth_searching"',
+        "iconName: root.primaryActionIcon",
         "Shared.SystemIcon",
         "sourceName: root.device?.icon || \"bluetooth\"",
         "fallbackName: \"bluetooth\"",
@@ -478,6 +483,8 @@ def validate_presentation(errors: list[str]) -> None:
     toggle_index = row.find("Shared.Toggle {")
     if not (0 <= info_index < toggle_index):
         errors.append("Bluetooth device Info must appear before the connection Toggle")
+    if "label: I18n.tr(root.primaryActionKey)" in row:
+        errors.append("Bluetooth Connect and Pair actions must be icon-only")
 
     if "module qs.Titonium.Overlays.Bluetooth" not in qmldir:
         errors.append("Bluetooth overlay qmldir module name is missing")
@@ -590,7 +597,6 @@ def validate_integration(errors: list[str]) -> None:
         errors.append("Bluetooth connected state must not route through the text-button action key")
     if "Layout.leftMargin: 22 + Metrics.spacingMedium" in row:
         errors.append("Bluetooth Forget controls must not create a second indented row")
-
     popup = POPUP.read_text(encoding="utf-8") if POPUP.is_file() else ""
     errors.extend(section_accessible_errors(popup))
 

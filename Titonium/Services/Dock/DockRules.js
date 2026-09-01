@@ -24,7 +24,7 @@ function uniqueIds(values) {
 }
 
 function normalizeVisibilityMode(value) {
-    return ["auto-hide", "always-visible", "reserve-space"].indexOf(value) >= 0
+    return ["auto-hide", "always-visible", "reserve-space", "hidden"].indexOf(value) >= 0
         ? value : "auto-hide";
 }
 
@@ -33,6 +33,7 @@ function visibilityPolicy(mode) {
     return {
         autoHide: normalized === "auto-hide",
         pinnedOpen: normalized === "reserve-space",
+        hidden: normalized === "hidden",
     };
 }
 

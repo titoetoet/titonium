@@ -65,49 +65,63 @@ function parseMeminfo(text) {
     });
 }
 
-function parseNetDev(text) {
+function parseCpuName(text) {
     if (typeof text !== "string")
         return null;
-    let rxBytes = 0;
-    let txBytes = 0;
-    let found = false;
-    const lines = text.split(/\r?\n/);
-    for (let index = 0; index < lines.length; index++) {
-        const separator = lines[index].indexOf(":");
-        if (separator < 0)
-            continue;
-        const interfaceName = lines[index].slice(0, separator).trim();
-        if (!interfaceName || interfaceName === "lo")
-            continue;
-        const fields = lines[index].slice(separator + 1).trim().split(/\s+/);
-        if (fields.length < 16)
-            continue;
-        const rx = finiteNonNegative(fields[0]);
-        const tx = finiteNonNegative(fields[8]);
-        if (rx === null || tx === null)
-            continue;
-        rxBytes += rx;
-        txBytes += tx;
-        found = true;
-    }
-    return found ? Object.freeze({ rxBytes: rxBytes, txBytes: txBytes }) : null;
+    const match = text.match(/^model name\s*:\s*(.+)$/m);
+    return match && match[1].trim().length > 0 ? match[1].trim() : null;
 }
 
-function networkRate(previous, current, elapsedMs) {
-    if (!previous || !current)
+function parseAverageCpuFrequencyGhz(text) {
+    if (typeof text !== "string")
         return null;
-    const elapsed = Number(elapsedMs);
-    const rxDelta = Number(current.rxBytes) - Number(previous.rxBytes);
-    const txDelta = Number(current.txBytes) - Number(previous.txBytes);
-    if (!Number.isFinite(elapsed) || elapsed <= 0
-            || !Number.isFinite(rxDelta) || !Number.isFinite(txDelta)
-            || rxDelta < 0 || txDelta < 0)
+    const lines = text.split(/\r?\n/);
+    let sumMhz = 0;
+    let count = 0;
+    for (let index = 0; index < lines.length; index++) {
+        const match = lines[index].match(/^cpu MHz\s*:\s*(\d+(?:\.\d+)?)$/);
+        if (!match)
+            continue;
+        const mhz = finiteNonNegative(match[1]);
+        if (mhz === null)
+            continue;
+        sumMhz += mhz;
+        count++;
+    }
+    return count > 0 ? sumMhz / count / 1000 : null;
+}
+
+function parseGpuClock(text) {
+    if (typeof text !== "string")
         return null;
-    const seconds = elapsed / 1000;
-    return Object.freeze({
-        downBps: rxDelta / seconds,
-        upBps: txDelta / seconds,
-    });
+    const lines = text.split(/\r?\n/);
+    for (let index = 0; index < lines.length; index++) {
+        const match = lines[index].match(/^\s*\d+:\s*(\d+(?:\.\d+)?)\s*Mhz\s*\*\s*$/i);
+        if (match)
+            return finiteNonNegative(match[1]);
+    }
+    return null;
+}
+
+function parseGpuName(text) {
+    if (typeof text !== "string")
+        return null;
+    const lines = text.split(/\r?\n/);
+    let line = "";
+    for (let index = 0; index < lines.length; index++) {
+        if (lines[index].trim().length > 0) {
+            line = lines[index];
+            break;
+        }
+    }
+    if (!line)
+        return null;
+    const quoted = line.match(/"[^"\r\n]+"/g) || [];
+    if (quoted.length < 3)
+        return null;
+    const fields = quoted.map(value => value.slice(1, -1).trim());
+    const candidate = fields.length >= 5 ? fields[fields.length - 1] : fields[2];
+    return candidate.length > 0 ? candidate : null;
 }
 
 function scalar(text, divisor) {
@@ -152,18 +166,14 @@ function capacity(usedBytes, totalBytes) {
     });
 }
 
-function parseDf(text) {
+function parseStorageCapacity(text) {
     if (typeof text !== "string")
         return null;
-    const lines = text.trim().split(/\r?\n/);
+    const lines = text.split(/\r?\n/);
     for (let index = 0; index < lines.length; index++) {
-        const fields = lines[index].trim().split(/\s+/);
-        for (let offset = 0; offset <= 1; offset++) {
-            if (fields.length <= offset + 1 || !/^\d+$/.test(fields[offset])
-                    || !/^\d+$/.test(fields[offset + 1]))
-                continue;
-            return capacity(Number(fields[offset + 1]), Number(fields[offset]));
-        }
+        const match = lines[index].match(/^\s*(\d+)\s+(\d+)\s*$/);
+        if (match)
+            return capacity(match[2], match[1]);
     }
     return null;
 }
@@ -171,7 +181,7 @@ function parseDf(text) {
 function parseProcesses(text) {
     if (typeof text !== "string")
         return Object.freeze([]);
-    const processes = [];
+    const grouped = {};
     const lines = text.split(/\r?\n/);
     for (let index = 0; index < lines.length; index++) {
         const fields = lines[index].trim().split(/\s+/);
@@ -183,13 +193,23 @@ function parseProcesses(text) {
         if (!Number.isInteger(pid) || pid <= 0 || !fields[1]
                 || cpu === null || rssKb === null)
             continue;
-        processes.push(Object.freeze({
-            pid: pid,
-            name: fields[1],
-            cpuPercent: cpu,
-            rssBytes: rssKb * 1024,
-        }));
+        const name = fields[1];
+        const key = name.toLowerCase();
+        if (!grouped[key]) {
+            grouped[key] = {
+                pid: pid,
+                name: name,
+                cpuPercent: 0,
+                rssBytes: 0,
+                processCount: 0,
+            };
+        }
+        grouped[key].pid = Math.min(grouped[key].pid, pid);
+        grouped[key].cpuPercent += cpu;
+        grouped[key].rssBytes += rssKb * 1024;
+        grouped[key].processCount++;
     }
+    const processes = Object.keys(grouped).map(key => Object.freeze(grouped[key]));
     processes.sort((left, right) => {
         if (left.cpuPercent !== right.cpuPercent)
             return right.cpuPercent - left.cpuPercent;
@@ -217,7 +237,7 @@ function selectSensorPaths(paths) {
     const groups = {};
     for (let index = 0; index < candidates.length; index++) {
         const match = candidates[index].match(
-            /^(\/sys\/class\/drm\/card[^/]+\/device)\/(gpu_busy_percent|mem_info_vram_used|mem_info_vram_total)$/);
+            /^(\/sys\/class\/drm\/card[^/]+\/device)\/(gpu_busy_percent|mem_info_vram_used|mem_info_vram_total|pp_dpm_sclk)$/);
         if (!match)
             continue;
         if (!groups[match[1]])
@@ -226,6 +246,7 @@ function selectSensorPaths(paths) {
             gpu_busy_percent: "gpuBusy",
             mem_info_vram_used: "vramUsed",
             mem_info_vram_total: "vramTotal",
+            pp_dpm_sclk: "gpuClock",
         })[match[2]];
         groups[match[1]][key] = candidates[index];
     }
@@ -247,8 +268,6 @@ function selectSensorPaths(paths) {
                 continue;
             if (!selected.gpuTemperature && path.endsWith("/temp1_input"))
                 selected.gpuTemperature = path;
-            else if (!selected.gpuPower && path.endsWith("/power1_average"))
-                selected.gpuPower = path;
         }
     }
     const cpuNames = candidates.filter(path =>
@@ -256,11 +275,8 @@ function selectSensorPaths(paths) {
     if (cpuNames.length > 0) {
         const cpuPrefix = cpuNames[0].slice(0, -5);
         const cpuTemperature = cpuPrefix + "/temp1_input";
-        const cpuPower = cpuPrefix + "/power1_average";
         if (candidates.indexOf(cpuTemperature) >= 0)
             selected.cpuTemperature = cpuTemperature;
-        if (candidates.indexOf(cpuPower) >= 0)
-            selected.cpuPower = cpuPower;
     }
     return Object.freeze(selected);
 }

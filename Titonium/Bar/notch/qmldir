@@ -6,10 +6,12 @@ CenterNotch 1.0 CenterNotch.qml
 CenterNotchRail 1.0 CenterNotchRail.qml
 CenterNotchViewport 1.0 CenterNotchViewport.qml
 OverviewPage 1.0 OverviewPage.qml
-NotificationsPage 1.0 NotificationsPage.qml
-SystemMetricBlock 1.0 SystemMetricBlock.qml
-SystemProcessRow 1.0 SystemProcessRow.qml
+OverviewWeatherHero 1.0 OverviewWeatherHero.qml
+OverviewFocusCard 1.0 OverviewFocusCard.qml
+OverviewMediaCard 1.0 OverviewMediaCard.qml
 CenterActivityCard 1.0 CenterActivityCard.qml
+NotificationsPage 1.0 NotificationsPage.qml
+SystemProcessRow 1.0 SystemProcessRow.qml
 SystemMonitoringPage 1.0 SystemMonitoringPage.qml
 NotificationHistoryRow 1.0 NotificationHistoryRow.qml
 CenterActionButton 1.0 CenterActionButton.qml

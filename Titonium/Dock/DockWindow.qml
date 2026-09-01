@@ -48,6 +48,7 @@ PanelWindow {
     }
 
     screen: root.screenModel
+    visible: !DockStore.hidden
     color: "transparent"
     implicitWidth: root.screenModel.width
     implicitHeight: root.reservedHeight

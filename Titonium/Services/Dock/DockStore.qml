@@ -13,6 +13,7 @@ QtObject {
     readonly property var visibilityPolicy: DockRules.visibilityPolicy(root.visibilityMode)
     readonly property bool pinnedOpen: root.visibilityPolicy.pinnedOpen
     readonly property bool autoHide: root.visibilityPolicy.autoHide
+    readonly property bool hidden: root.visibilityPolicy.hidden
     readonly property bool ready: Preferences.ready
 
     function write(path: string, value: var): bool {

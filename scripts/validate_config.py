@@ -87,7 +87,7 @@ def validate_settings(data: Any) -> list[str]:
     if not isinstance(dock, dict) or set(dock) != {"visibilityMode", "pinnedIds"}:
         errors.append("modules.dock has an invalid shape")
     else:
-        if dock.get("visibilityMode") not in {"auto-hide", "always-visible", "reserve-space"}:
+        if dock.get("visibilityMode") not in {"auto-hide", "always-visible", "reserve-space", "hidden"}:
             errors.append("modules.dock.visibilityMode is invalid")
         pinned_ids = dock.get("pinnedIds")
         if not isinstance(pinned_ids, list):

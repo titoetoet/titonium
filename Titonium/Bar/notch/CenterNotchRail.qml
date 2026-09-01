@@ -17,15 +17,15 @@ FocusScope {
     readonly property int currentIndex: Math.max(0,
         root.pages.findIndex(page => page.id === root.currentPage))
 
-    width: 48
-    implicitWidth: 48
-    implicitHeight: 320
+    implicitWidth: 320
+    implicitHeight: 48
     focus: true
 
     Rectangle {
         id: selectionHighlight
-        x: 0
-        y: primaryPages.y + root.currentIndex * (48 + Metrics.spacingSmall)
+        x: primaryPages.x + root.currentIndex * (primaryPages.width / Math.max(1, root.pages.length))
+            + (primaryPages.width / Math.max(1, root.pages.length) - width) / 2
+        y: 0
         width: 48
         height: 48
         radius: Metrics.radiusMedium
@@ -38,10 +38,12 @@ FocusScope {
         }
     }
 
-    Column {
+    Row {
         id: primaryPages
-        anchors.top: parent.top
         anchors.left: parent.left
+        anchors.right: settingsButton.left
+        anchors.rightMargin: Metrics.spacingSmall
+        anchors.verticalCenter: parent.verticalCenter
         spacing: Metrics.spacingSmall
 
         Repeater {
@@ -51,7 +53,8 @@ FocusScope {
                 required property var modelData
                 readonly property bool showsUnread:
                     modelData.id === "notifications" && NotificationService.hasUnread
-                width: 48
+                width: (primaryPages.width - Metrics.spacingSmall * (root.pages.length - 1))
+                    / Math.max(1, root.pages.length)
                 height: 48
                 iconName: modelData.icon
                 variant: "quiet"
@@ -94,8 +97,8 @@ FocusScope {
 
     Shared.Button {
         id: settingsButton
-        anchors.bottom: parent.bottom
-        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.verticalCenter: parent.verticalCenter
         width: 48
         height: 48
         iconName: "settings"
@@ -113,10 +116,10 @@ FocusScope {
     }
 
     Keys.onPressed: event => {
-        if (event.key === Qt.Key_Up) {
+        if (event.key === Qt.Key_Left || event.key === Qt.Key_Up) {
             root.pageRequested(CenterNotchState.arrowPage(root.currentPage, -1));
             event.accepted = true;
-        } else if (event.key === Qt.Key_Down) {
+        } else if (event.key === Qt.Key_Right || event.key === Qt.Key_Down) {
             root.pageRequested(CenterNotchState.arrowPage(root.currentPage, 1));
             event.accepted = true;
         } else if (event.key === Qt.Key_Home) {

@@ -13,6 +13,7 @@ Item {
     readonly property alias pinHitbox: topbarPin
     readonly property alias endHitbox: endIsland
     signal centerRequested(var screen)
+    signal sourceRequested(var screen, string intent)
     readonly property bool hovered: barHover.hovered
     readonly property var optionalPlan: BarLayout.optionalVisibility(
         root.width,
@@ -34,6 +35,7 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         screen: root.screen
         onNotchRequested: screen => root.centerRequested(screen)
+        onSourceRequested: (screen, intent) => root.sourceRequested(screen, intent)
     }
 
     TopbarPin {

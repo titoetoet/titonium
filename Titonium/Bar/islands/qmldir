@@ -1,4 +1,5 @@
 module qs.Titonium.Bar.islands
+ArchLogo 1.0 ArchLogo.qml
 StartIsland 1.0 StartIsland.qml
 ActiveWindowPill 1.0 ActiveWindowPill.qml
 CenterIsland 1.0 CenterIsland.qml

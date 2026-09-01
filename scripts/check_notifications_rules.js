@@ -92,3 +92,28 @@ assert.equal(Object.isFrozen(
     rules.relativeAge(relativeNow - 30000, relativeNow)), true);
 console.log("PASS notification relative age uses stable minute, hour and day buckets");
 console.log("PASS notification descriptor, history, toast and unread rules fixtures");
+
+assert.deepEqual(plain(rules.centerEvent(descriptor, "Bạn có một notification", 2000)), {
+    id: "notification:new",
+    deduplicationKey: "notification:new",
+    source: "notification",
+    kind: "new",
+    title: "Bạn có một notification",
+    icon: "notifications",
+    createdAt: 2000,
+});
+assert.deepEqual(plain(rules.unreadIndicator(2,
+    "Bạn có tin nhắn chưa đọc")), {
+    id: "notification",
+    icon: "mark_email_unread",
+    accessibleName: "Bạn có tin nhắn chưa đọc",
+    active: true,
+});
+assert.deepEqual(plain(rules.unreadIndicator(0,
+    "Bạn có tin nhắn chưa đọc")), {
+    id: "notification",
+    icon: "mark_email_unread",
+    accessibleName: "Bạn có tin nhắn chưa đọc",
+    active: false,
+});
+console.log("PASS new Notification takeover and passive unread indicator");

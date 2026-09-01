@@ -14,9 +14,14 @@ import qs.Titonium.Services.Applications
 import qs.Titonium.Services.Audio
 import qs.Titonium.Services.Bluetooth
 import qs.Titonium.Services.Center
+import qs.Titonium.Services.Capture
+import qs.Titonium.Services.Clipboard
 import qs.Titonium.Services.Dock
 import qs.Titonium.Services.Hyprland
 import qs.Titonium.Services.Mpris
+import qs.Titonium.Services.Keyboard
+import qs.Titonium.Services.InputMethod
+import qs.Titonium.Services.SystemTray
 import qs.Titonium.Services.Network
 import qs.Titonium.Services.Notifications
 import qs.Titonium.Services.SystemMonitor
@@ -31,11 +36,35 @@ import "Settings/SettingsLifecycleRules.js" as SettingsLifecycleRules
 Scope {
     id: root
 
+    property string previousInputMethodLabel: ""
+    property string previousInputMethodToken: ""
+
+    function observeInputMethodCenter(): void {
+        const label = InputMethodService.shortLabel; // qmllint disable unqualified
+        const centerLabel = InputMethodService.vietnamese ? "VI" : "EN";
+        const token = InputMethodService.engineToken; // qmllint disable unqualified
+        if (root.previousInputMethodToken.length > 0 && token !== root.previousInputMethodToken) {
+            CenterAttentionService.publish({
+                id: "input:method", source: "input", kind: "method_changed",
+                title: centerLabel,
+                icon: InputMethodService.vietnamese ? "local_florist"
+                    : (InputMethodService.english ? "keyboard" : "keyboard_off")
+            });
+        }
+        root.previousInputMethodLabel = label;
+        root.previousInputMethodToken = token;
+    }
+
     Component.onCompleted: {
+        root.previousInputMethodLabel = InputMethodService.shortLabel; // qmllint disable unqualified
+        root.previousInputMethodToken = InputMethodService.engineToken; // qmllint disable unqualified
         MprisService.activate();
+        ClipboardService.activate();
         CenterActivityService.activate();
         CenterJobService.activate();
         CenterTimerService.activate();
+        ScreenRecordService.activate();
+        KeyboardStateService.activate();
     }
 
     function openSpotlight(scope: string, query: string, stateMode: string, requestedScreen: var): string {
@@ -73,6 +102,14 @@ Scope {
             + SettingsCoordinator.requestedPage : "unavailable:busy";
     }
 
+    function activateCenterSource(requestedScreen: var, intent: string): string {
+        if (intent === "raise-media" && MprisService.raiseSource())
+            return "raised:media";
+        if (intent === "open-clipboard")
+            return root.openSpotlight("clipboard", "", "clipboard", requestedScreen);
+        return root.openCenterNotch(requestedScreen, "overview");
+    }
+
     function openCenterNotch(requestedScreen: var, pageId: string): string {
         const screen = ScreenRouter.screenForName(requestedScreen?.name
             || HyprlandService.focusedMonitorName);
@@ -89,6 +126,7 @@ Scope {
 
     BarHost {
         onCenterRequested: screen => root.openCenterNotch(screen, "overview")
+        onSourceRequested: (screen, intent) => root.activateCenterSource(screen, intent)
         onSettingsRequested: screen => root.openSettings(screen, "general")
     }
     DockHost {
@@ -121,6 +159,12 @@ Scope {
                     && !SettingsCoordinator.forceCancelAndClose())
                 CenterNotchCoordinator.close();
         }
+    }
+
+    Connections {
+        target: SystemTrayService // qmllint disable unqualified
+        function onInputMethodChanged(): void { root.observeInputMethodCenter(); }
+        function onDescriptorsChanged(): void { root.observeInputMethodCenter(); }
     }
 
     Connections {

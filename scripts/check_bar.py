@@ -3,6 +3,7 @@
 import hashlib
 import json
 import re
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 
@@ -16,6 +17,8 @@ def main() -> int:
     required = (
         "islands/qmldir",
         "islands/StartIsland.qml",
+        "islands/ArchLogo.qml",
+        "assets/arch-prism.svg",
         "islands/ActiveWindowPill.qml",
         "islands/CenterIsland.qml",
         "islands/CenterGroup.qml",
@@ -79,6 +82,7 @@ def main() -> int:
             "backgroundRadius: Metrics.radiusLarge",
         ),
         "islands/qmldir": (
+            "ArchLogo 1.0 ArchLogo.qml",
             "ActiveWindowPill 1.0 ActiveWindowPill.qml",
             "CenterIsland 1.0 CenterIsland.qml",
             "CenterGroup 1.0 CenterGroup.qml",
@@ -145,7 +149,7 @@ def main() -> int:
             "root.height - root.panelTop - Metrics.barPadding",
         ),
         "notch/CenterNotchRail.qml": (
-            "width: 48",
+            "implicitHeight: 48",
             "id: selectionHighlight",
             "CenterNotchState.primaryPages()",
             "settingsRequested()",
@@ -159,7 +163,7 @@ def main() -> int:
         "notch/CenterNotch.qml": (
             "CenterNotchRail {",
             "CenterNotchViewport {",
-            "Layout.preferredWidth: Metrics.borderWidth",
+            "Layout.preferredHeight: Metrics.borderWidth",
             "topLeftRadius: 20",
             "topRightRadius: 20",
             "bottomLeftRadius: 20",
@@ -265,12 +269,31 @@ def main() -> int:
     start_island = BAR / "islands/StartIsland.qml"
     if start_island.is_file():
         source = start_island.read_text(encoding="utf-8")
-        if not (0 <= source.find("Workspaces {") < source.find("ActiveWindowPill {")):
-            errors.append("Active Window must sit immediately after Workspaces in StartIsland")
+        if not (0 <= source.find("ArchLogo {") < source.find("Workspaces {")
+                < source.find("ActiveWindowPill {")):
+            errors.append("Arch logo, Workspaces and Active Window must retain StartIsland order")
         if "CenterIsland {" in source:
             errors.append("StartIsland must not use CenterIsland for Active Window")
         if "count: 5" in source:
             errors.append("StartIsland must not override the effective workspace count")
+
+    arch_logo = BAR / "islands/ArchLogo.qml"
+    arch_asset = BAR / "assets/arch-prism.svg"
+    if arch_logo.is_file():
+        source = arch_logo.read_text(encoding="utf-8")
+        for fragment in ("Image {", "arch-prism.svg", "width: Metrics.widgetHeight"):
+            if fragment not in source:
+                errors.append(f"ArchLogo missing visual contract: {fragment}")
+        for forbidden in ("MouseArea", "TapHandler", "onClicked"):
+            if forbidden in source:
+                errors.append(f"decorative ArchLogo owns interaction: {forbidden}")
+    if arch_asset.is_file():
+        try:
+            svg_root = ET.parse(arch_asset).getroot()
+            if svg_root.attrib.get("viewBox") != "0 0 64 64":
+                errors.append("Arch Prism SVG must use the canonical 64px vector viewBox")
+        except ET.ParseError as error:
+            errors.append(f"Arch Prism SVG is invalid XML: {error}")
 
     center_group = BAR / "islands/CenterGroup.qml"
     if center_group.is_file():
@@ -284,7 +307,6 @@ def main() -> int:
         source = center_island.read_text(encoding="utf-8")
         for fragment in (
             "CenterAttentionService.presentation",
-            "CenterAttentionService.indicators",
             "CenterFocusStore.text",
             "signal notchRequested(var screen)",
             "Text.ElideRight",
@@ -292,7 +314,8 @@ def main() -> int:
             "Layout.maximumWidth: 320",
             "implicitHeight: Metrics.controlHeight",
             "Shared.Surface {",
-            "Repeater {",
+            "CenterPresentationRules.leadingIcon(",
+            "readonly property string leadingIcon:",
             "TapHandler {",
             "menubar.center_notch.accessible",
         ):
@@ -331,7 +354,7 @@ def main() -> int:
         for fragment in (
             "readonly property string keyboardIcon:",
             "InputMethodService.vietnamese",
-            '"keyboard_keys"',
+            '"local_florist"',
             "InputMethodService.english",
             '"keyboard_off"',
             "name: root.keyboardIcon",
@@ -341,7 +364,7 @@ def main() -> int:
         if "Shared.TextLabel" in input_source or "InputMethodService.shortLabel" in input_source:
             errors.append("Input Method must not retain a visible VI/EN text label")
     protected_hashes = {
-        ROOT / "Titonium/Services/InputMethod/InputMethodService.qml": "cb7eb04be9d6898f2b641f0b4e791e48b146b18bcb9ab8aa3c17188c29144126",
+        ROOT / "Titonium/Services/InputMethod/InputMethodService.qml": "40b22ba52162342aa4cbd0e00a17f90879c1c8446149fb15f5f90d417010e8cb",
     }
     for path, expected_hash in protected_hashes.items():
         if path.is_file() and hashlib.sha256(path.read_bytes()).hexdigest() != expected_hash:

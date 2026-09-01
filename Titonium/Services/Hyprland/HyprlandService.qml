@@ -18,7 +18,9 @@ Singleton {
     property int workspaceWindowCount: 0
 
     readonly property var windows: root.projectedWindows
-    readonly property var activeWindow: WindowRules.activeWindow(root.projectedWindows)
+    readonly property string activeToplevelId: root.nativeWindowId(Hyprland.activeToplevel)
+    readonly property var activeWindow: WindowRules.activeWindow(
+        root.projectedWindows, root.activeToplevelId)
     readonly property int activeWorkspaceWindowCount: root.workspaceWindowCount
 
     function monitorFor(screen: var): var { return screen ? Hyprland.monitorFor(screen) : null; }
@@ -107,13 +109,12 @@ Singleton {
                 initialClass: toplevel?.lastIpcObject?.initialClass || "",
                 title: toplevel?.title || toplevel?.wayland?.title || "",
                 icon: ApplicationService.iconForAppId(appId),
-                active: toplevel?.activated === true || toplevel?.wayland?.activated === true,
                 urgent: toplevel?.urgent === true,
                 minimized: toplevel?.wayland?.minimized === true,
                 workspaceId: root.workspaceIdFor(toplevel),
                 monitorName: toplevel?.workspace?.monitor?.name
                     || toplevel?.lastIpcObject?.monitor || "",
-            });
+            }, root.activeToplevelId);
             if (!window)
                 continue;
             descriptors.push(window);

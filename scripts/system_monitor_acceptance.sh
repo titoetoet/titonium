@@ -41,6 +41,7 @@ except Exception:
     raise SystemExit(1)
 cpu = state.get("snapshot", {}).get("cpu")
 ram = state.get("snapshot", {}).get("ram")
+storage = state.get("snapshot", {}).get("storage")
 valid = (
     state.get("active") is True
     and state.get("live") is True
@@ -49,6 +50,8 @@ valid = (
     and isinstance(cpu.get("percent"), (int, float))
     and isinstance(ram, dict)
     and isinstance(ram.get("percent"), (int, float))
+    and isinstance(storage, dict)
+    and isinstance(storage.get("percent"), (int, float))
 )
 raise SystemExit(0 if valid else 1)
 ' "$state"
@@ -74,8 +77,9 @@ valid = (
     state.get("active") is False
     and state.get("live") is False
     and state.get("psRunning") is False
-    and state.get("dfRunning") is False
     and state.get("discoveryRunning") is False
+    and state.get("gpuInfoRunning") is False
+    and state.get("storageRunning") is False
 )
 raise SystemExit(0 if valid else 1)
 ' "$state"
@@ -138,7 +142,7 @@ fi
 
 first_hot="$(hot_sample_at)"
 advanced=false
-for _ in {1..35}; do
+for _ in {1..20}; do
     sleep 0.1
     next_hot="$(hot_sample_at)"
     if python3 -c 'import sys; raise SystemExit(0 if float(sys.argv[2]) > float(sys.argv[1]) else 1)'             "$first_hot" "$next_hot"; then
@@ -167,6 +171,36 @@ done
 if [[ "$stopped" != true ]]; then
     call_ipc center monitorState >&2 || true
     echo "FAIL System Monitor collectors remained active after leaving page" >&2
+    exit 1
+fi
+
+if [[ "$(call_ipc centerNotch open monitoring)" != *";page=monitoring"* ]]; then
+    echo "FAIL could not reopen Monitoring page" >&2
+    exit 1
+fi
+live=false
+for _ in {1..30}; do
+    if state_is_live; then
+        live=true
+        break
+    fi
+    sleep 0.1
+done
+if [[ "$live" != true ]]; then
+    echo "FAIL System Monitor did not reinitialize with popup" >&2
+    exit 1
+fi
+call_ipc centerNotch close >/dev/null
+stopped=false
+for _ in {1..10}; do
+    if state_is_stopped; then
+        stopped=true
+        break
+    fi
+    sleep 0.1
+done
+if [[ "$stopped" != true ]]; then
+    echo "FAIL System Monitor did not release when popup closed" >&2
     exit 1
 fi
 

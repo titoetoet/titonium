@@ -6,6 +6,8 @@ import qs.Titonium.Bar.notch
 import qs.Titonium.Core.Runtime
 import qs.Titonium.Services.Applications
 import qs.Titonium.Services.Hyprland
+import qs.Titonium.Overlays.SystemTray
+import qs.Titonium.Services.SystemTray
 import qs.Titonium.Shared as Shared
 import qs.Titonium.Theme
 import "ActiveWindowRules.js" as ActiveWindowRules
@@ -17,20 +19,39 @@ FocusScope {
     readonly property var activeWindow: HyprlandService.activeWindow
     readonly property string appName: root.activeWindow
         ? ApplicationService.nameForAppId(root.activeWindow.appId) : ""
+    readonly property bool trayMenuAvailable: SystemTrayService.hasMenuForApp(
+        root.activeWindow?.appId || "", root.appName)
+    readonly property string trayContext: SystemTrayService.menuContextForApp(
+        root.activeWindow?.appId || "", root.appName)
     readonly property string activityLabel: ActiveWindowRules.label(
-        root.appName, root.activeWindow?.title || "")
+        root.appName, root.presentation.title)
     readonly property var presentation: ActiveWindowRules.presentation(
         root.appName,
+        root.trayContext,
         root.activeWindow?.title || "",
-        I18n.tr("menubar.center_notch.active"),
-        I18n.tr("menubar.center_notch.desktop"))
+        root.trayMenuAvailable)
     readonly property bool notchOpen: CenterNotchCoordinator.ownerScreenName === root.screen.name
 
     implicitWidth: Math.min(520, activityRow.implicitWidth + Metrics.spacingLarge * 2)
     implicitHeight: Metrics.controlHeight
     activeFocusOnTab: true
+    Component.onCompleted: root.syncTraySelection()
+    onActiveWindowChanged: root.syncTraySelection()
+    onAppNameChanged: root.syncTraySelection()
+
+
+
+    function syncTraySelection(): void {
+        SystemTrayService.selectApp(
+            root.activeWindow?.appId || "", root.appName);
+    }
 
     function activate(): void {
+        if (SystemTrayPopupCoordinator.toggleApp(
+                root.screen, root, root.activeWindow?.appId || "", root.appName)) {
+            CenterNotchCoordinator.close();
+            return;
+        }
         CenterNotchCoordinator.toggle(root.screen.name);
     }
 
@@ -70,6 +91,7 @@ FocusScope {
         Shared.TextLabel {
             id: activityDot
             text: "·"
+            visible: root.presentation.hasContext
             variant: "label"
             tone: "secondary"
         }
@@ -77,6 +99,7 @@ FocusScope {
         Shared.TextLabel {
             id: titleLabel
             Layout.maximumWidth: 320
+            visible: root.presentation.hasContext
             text: root.presentation.title
             variant: "label"
             strong: root.notchOpen

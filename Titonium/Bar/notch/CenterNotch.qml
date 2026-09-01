@@ -23,28 +23,10 @@ FocusScope {
         bottomRightRadius: 20
     }
 
-    RowLayout {
+    ColumnLayout {
         anchors.fill: parent
         anchors.margins: Metrics.spacingLarge
         spacing: Metrics.spacingMedium
-
-        CenterNotchRail {
-            id: rail
-            Layout.preferredWidth: 48
-            Layout.fillHeight: true
-            currentPage: viewport.currentPage
-            onPageRequested: pageId => {
-                root.feedbackKey = "";
-                CenterNotchCoordinator.requestPage(pageId);
-            }
-            onSettingsRequested: root.settingsRequested()
-        }
-
-        Rectangle {
-            Layout.fillHeight: true
-            Layout.preferredWidth: Metrics.borderWidth
-            color: Theme.border
-        }
 
         ColumnLayout {
             Layout.fillWidth: true
@@ -67,6 +49,24 @@ FocusScope {
                 tone: "secondary"
                 horizontalAlignment: Text.AlignHCenter
             }
+        }
+
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: Metrics.borderWidth
+            color: Theme.border
+        }
+
+        CenterNotchRail {
+            id: rail
+            Layout.fillWidth: true
+            Layout.preferredHeight: 48
+            currentPage: viewport.currentPage
+            onPageRequested: pageId => {
+                root.feedbackKey = "";
+                CenterNotchCoordinator.requestPage(pageId);
+            }
+            onSettingsRequested: root.settingsRequested()
         }
     }
 }

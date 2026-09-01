@@ -11,6 +11,7 @@ PanelWindow {
     id: root
     required property ShellScreen screenModel
     signal centerRequested(var screen)
+    signal sourceRequested(var screen, string intent)
     readonly property int barHeight: Metrics.barHeight
     readonly property int edgeRevealHeight: 2
     readonly property bool revealRequested: BarVisibilityRules.shouldReveal(
@@ -40,6 +41,7 @@ PanelWindow {
         y: root.barRevealed ? 0 : -root.barHeight + root.edgeRevealHeight
         screen: root.screenModel
         onCenterRequested: screen => root.centerRequested(screen)
+        onSourceRequested: (screen, intent) => root.sourceRequested(screen, intent)
 
         Behavior on y {
             NumberAnimation { duration: Motion.fast; easing.type: Easing.OutCubic }

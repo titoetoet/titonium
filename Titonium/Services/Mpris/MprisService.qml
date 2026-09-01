@@ -29,17 +29,83 @@ QtObject {
         const key = root.playerKey(player);
         return {
             identity: key,
+            desktopEntry: player.desktopEntry || "",
             playbackState: MprisPlaybackState.toString(player.playbackState).toLowerCase(),
             trackTitle: player.trackTitle || "",
             trackArtist: player.trackArtist || "",
+            trackArtUrl: player.trackArtUrl || "",
+            trackLength: Number(player.length) > 0 ? Number(player.length) : 0,
+            trackPosition: Number(player.trackPosition) >= 0 ? Number(player.trackPosition) : 0,
+            canTogglePlaying: player.canTogglePlaying === true,
+            canGoPrevious: player.canGoPrevious === true,
+            canGoNext: player.canGoNext === true,
             changedAt: root.changeTimes[key] || 0
         };
+    }
+
+    function selectedNativePlayer(): var {
+        if (root.projection === null)
+            return null;
+        const players = Mpris.players.values || [];
+        for (let index = 0; index < players.length; index++) {
+            if (root.playerKey(players[index]) === root.projection.identity)
+                return players[index];
+        }
+        return null;
+    }
+
+    function selectNextPlayer(): bool {
+        const players = root.playerFacts || [];
+        if (players.length < 2 || root.projection === null)
+            return false;
+        let index = players.findIndex(player => player.identity === root.projection.identity);
+        index = index < 0 ? 0 : (index + 1) % players.length;
+        const next = players[index];
+        root.projection = next;
+        const liveActivity = MprisRules.activity(next, Date.now());
+        if (liveActivity !== null)
+            CenterActivityService.upsert(liveActivity);
+        else
+            CenterActivityService.remove("media:current");
+        CenterAttentionService.setIndicator(
+            "media", "music_note", I18n.tr("menubar.center.indicator.media"),
+            MprisRules.indicatorActive(next));
+        return true;
+    }
+
+    function togglePlaying(): bool {
+        const player = root.selectedNativePlayer();
+        if (player === null || player.canTogglePlaying !== true)
+            return false;
+        player.togglePlaying();
+        return true;
+    }
+
+    function previous(): bool {
+        const player = root.selectedNativePlayer();
+        if (player === null || player.canGoPrevious !== true)
+            return false;
+        player.previous();
+        return true;
+    }
+
+    function next(): bool {
+        const player = root.selectedNativePlayer();
+        if (player === null || player.canGoNext !== true)
+            return false;
+        player.next();
+        return true;
     }
 
     function publishProjection(result: var): void {
         root.projection = result.next;
         if (result.event !== null)
             CenterAttentionService.publish(result.event);
+        const liveActivity = MprisRules.activity(result.next, Date.now());
+        if (liveActivity !== null)
+            CenterActivityService.upsert(liveActivity);
+        else
+            CenterActivityService.remove("media:current");
         CenterAttentionService.setIndicator(
             "media",
             "music_note",
@@ -94,6 +160,21 @@ QtObject {
         root.recompute(!selectedStillPresent);
     }
 
+    function raiseSource(): bool {
+        if (root.projection === null)
+            return false;
+        const players = Mpris.players.values || [];
+        for (let index = 0; index < players.length; index++) {
+            const player = players[index];
+            if (root.playerKey(player) !== root.projection.identity
+                    || player.canRaise !== true)
+                continue;
+            player.raise();
+            return true;
+        }
+        return false;
+    }
+
     function snapshot(): string {
         return JSON.stringify({
             playerCount: root.playerFacts.length,
@@ -118,7 +199,11 @@ QtObject {
             target: modelData
             function onTrackTitleChanged(): void { root.markChanged(modelData); }
             function onTrackArtistChanged(): void { root.markChanged(modelData); }
+            function onTrackArtUrlChanged(): void { root.markChanged(modelData); }
+            function onDesktopEntryChanged(): void { root.markChanged(modelData); }
             function onPlaybackStateChanged(): void { root.markChanged(modelData); }
+            function onPositionChanged(): void { root.markChanged(modelData); }
+            function onLengthChanged(): void { root.markChanged(modelData); }
         }
     }
 

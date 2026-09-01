@@ -86,6 +86,30 @@ function markUnread(ids, id) {
     return addToast(ids, id, Number.MAX_SAFE_INTEGER);
 }
 
+function centerEvent(item, title, now) {
+    if (!item || !positiveId(item.id) || !text(title))
+        return null;
+    const screenshot = text(item.summary).toLowerCase() === "screenshot saved";
+    return Object.freeze({
+        id: screenshot ? "capture:screenshot" : "notification:new",
+        deduplicationKey: screenshot ? "capture:screenshot" : "notification:new",
+        source: screenshot ? "capture" : "notification",
+        kind: screenshot ? "screenshot_saved" : "new",
+        title: screenshot ? title : text(title),
+        icon: screenshot ? "screenshot" : "notifications",
+        createdAt: Number.isFinite(now) ? now : 0,
+    });
+}
+
+function unreadIndicator(count, label) {
+    return Object.freeze({
+        id: "notification",
+        icon: "mark_email_unread",
+        accessibleName: text(label) || "Unread notifications",
+        active: Number.isInteger(count) && count > 0,
+    });
+}
+
 function unreadCount(ids) {
     return Array.isArray(ids) ? ids.length : 0;
 }

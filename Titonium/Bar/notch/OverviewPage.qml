@@ -4,86 +4,27 @@ import QtQuick
 import QtQuick.Layouts
 import qs.Titonium.Core.Runtime
 import qs.Titonium.Services.Center
-import qs.Titonium.Theme
 import qs.Titonium.Shared as Shared
+import qs.Titonium.Theme
 
 FocusScope {
     id: root
     property string pageId: "overview"
     signal feedbackRequested(string key)
-
     ColumnLayout {
         anchors.fill: parent
-        spacing: Metrics.spacingLarge
-
-        Shared.TextLabel {
-            text: root.pageId === "overview" ? I18n.tr("center_notch.title")
-                : I18n.tr("center_notch.tab." + root.pageId)
-            variant: "title"
-            strong: true
-        }
-        Shared.TextLabel {
+        spacing: 10
+        OverviewWeatherHero {
             Layout.fillWidth: true
-            text: I18n.tr("center_notch.overview.description")
-            tone: "secondary"
-            wrapMode: Text.WordWrap
+            Layout.preferredHeight: 82
         }
-
-        Shared.Button {
-            Layout.fillWidth: true
-            label: I18n.tr("center_notch.overview.daily_focus")
-            iconName: "edit_note"
-            variant: "secondary"
-            contentAlignment: Qt.AlignLeft
-            accessibleName: I18n.tr("center_notch.overview.daily_focus.open")
-            onTriggered: CenterFocusStore.openScratchpad()
-        }
-
-        GridLayout {
-            id: cardGrid
+        RowLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            columns: cardGrid.width >= 600 ? 2 : 1
-            columnSpacing: Metrics.spacingMedium
-            rowSpacing: Metrics.spacingMedium
-
-            Repeater {
-                model: [
-                    { "icon": "view_quilt", "key": "center_notch.overview.layout" },
-                    { "icon": "keyboard", "key": "center_notch.overview.keyboard" },
-                    { "icon": "deployed_code_update", "key": "center_notch.overview.lazy" },
-                    { "icon": "layers", "key": "center_notch.overview.solid" }
-                ]
-
-                Shared.Surface {
-                    id: card
-                    required property var modelData
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    Layout.minimumHeight: 96
-                    tone: "elevated"
-                    radius: Metrics.radiusMedium
-                    padding: Metrics.spacingLarge
-
-                    Column {
-                        anchors.centerIn: parent
-                        spacing: Metrics.spacingSmall
-
-                        Shared.Icon {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            name: card.modelData.icon
-                            size: 28
-                            tone: "accent"
-                        }
-                        Shared.TextLabel {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            text: I18n.tr(card.modelData.key)
-                            variant: "label"
-                            strong: true
-                        }
-                    }
-                }
-            }
+            Layout.minimumHeight: 180
+            spacing: 10
+            OverviewFocusCard { Layout.fillWidth: true; Layout.fillHeight: true }
+            OverviewMediaCard { Layout.fillWidth: true; Layout.fillHeight: true }
         }
     }
 }

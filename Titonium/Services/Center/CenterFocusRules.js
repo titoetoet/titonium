@@ -20,6 +20,12 @@ function lines(value) {
     });
 }
 
+function sanitizeInput(value) {
+    if (typeof value !== "string")
+        return "";
+    return value.replace(/\s+/g, " ").trim();
+}
+
 function explicitFocus(markdown, modifiedAt, now) {
     if (!Number.isFinite(modifiedAt) || modifiedAt <= 0 || dateKey(new Date(modifiedAt)) !== dateKey(now))
         return "";

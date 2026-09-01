@@ -4,9 +4,10 @@ function text(value) {
     return typeof value === "string" ? value.trim() : "";
 }
 
-function descriptor(raw) {
+function descriptor(raw, activeId) {
     const source = raw && typeof raw === "object" ? raw : {};
     const id = text(source.id);
+    const hasAuthoritativeActive = arguments.length > 1;
     if (!id)
         return null;
     const appId = text(source.appId) || text(source.ipcClass)
@@ -19,7 +20,8 @@ function descriptor(raw) {
         appId: appId,
         title: title,
         icon: text(source.icon),
-        active: Boolean(source.active),
+        active: hasAuthoritativeActive
+            ? id === text(activeId) : Boolean(source.active),
         urgent: Boolean(source.urgent),
         minimized: Boolean(source.minimized),
         workspaceId: workspaceId,
@@ -40,8 +42,16 @@ function focusPlan(id, windows) {
     return null;
 }
 
-function activeWindow(windows) {
+function activeWindow(windows, activeId) {
     const source = Array.isArray(windows) ? windows : [];
+    if (arguments.length > 1) {
+        const targetId = text(activeId);
+        for (let index = 0; index < source.length; index++) {
+            if (text(source[index]?.id) === targetId)
+                return source[index];
+        }
+        return null;
+    }
     for (let index = 0; index < source.length; index++) {
         if (source[index]?.active === true)
             return source[index];

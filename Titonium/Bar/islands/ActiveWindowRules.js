@@ -4,28 +4,28 @@ function text(value) {
     return typeof value === "string" ? value.trim() : "";
 }
 
-function label(appName, title) {
-    const app = text(appName);
-    const task = text(title);
-    if (!app && !task)
-        return "Titonium";
-    if (!app)
-        return task;
-    if (!task || task.toLocaleLowerCase() === app.toLocaleLowerCase())
-        return app;
-    return app + " · " + task;
+function contextText(app, context) {
+    const value = text(context);
+    if (!value || value.toLocaleLowerCase() === app.toLocaleLowerCase())
+        return "";
+    return value;
 }
 
-function presentation(appName, title, activeLabel, desktopLabel) {
-    const app = text(appName);
-    const task = text(title);
-    const active = text(activeLabel) || "Active";
-    const desktop = text(desktopLabel) || "Desktop";
-    if (!app && !task)
-        return { appName: "Titonium", title: desktop };
+function label(appName, context) {
+    const app = text(appName) || "Titonium";
+    const detail = contextText(app, context);
+    if (!detail)
+        return app;
+    return app + " · " + detail;
+}
+
+function presentation(appName, trayContext, windowTitle, hasTrayMenu) {
+    const app = text(appName) || "Titonium";
+    const source = hasTrayMenu === true ? trayContext : windowTitle;
+    const detail = contextText(app, source);
     return {
-        appName: app || "Titonium",
-        title: !task || task.toLocaleLowerCase() === app.toLocaleLowerCase()
-            ? active : task
+        appName: app,
+        title: detail,
+        hasContext: detail.length > 0,
     };
 }

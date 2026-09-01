@@ -22,30 +22,35 @@ const source = fs.readFileSync(rulesPath, "utf8").replace(/^\.pragma library\s*\
 const rules = vm.createContext({});
 vm.runInContext(source, rules, { filename: rulesPath });
 
-assert.equal(rules.label("Codex", "Phân tích Titonium"), "Codex · Phân tích Titonium");
+assert.equal(rules.label("Codex", "Reviewing changes"), "Codex · Reviewing changes");
 assert.equal(rules.label("Firefox", "Firefox"), "Firefox");
 assert.equal(rules.label("", ""), "Titonium");
 assert.equal(rules.label("Kitty", "   "), "Kitty");
-assert.equal(rules.label("", "  Clipboard  "), "Clipboard");
-console.log("PASS Center activity label normalization fixtures");
+assert.equal(rules.label("", "  Syncing  "), "Titonium · Syncing");
+console.log("PASS StartIsland app-context label normalization fixtures");
 
 assert.equal(typeof rules.presentation, "function",
-    "Center activity rules must project separate app and title fields");
+    "StartIsland rules must project separate app and context fields");
 assert.deepEqual(JSON.parse(JSON.stringify(rules.presentation(
-    "Chrome", "Titonium — Settings", "Active", "Desktop"))),
-    { appName: "Chrome", title: "Titonium — Settings" });
+    "Telegram", "3 unread messages", "Telegram system title", true))),
+    { appName: "Telegram", title: "3 unread messages", hasContext: true });
 assert.deepEqual(JSON.parse(JSON.stringify(rules.presentation(
-    "Firefox", "Firefox", "Active", "Desktop"))),
-    { appName: "Firefox", title: "Active" });
+    "Firefox", "", "MDN — Firefox", false))),
+    { appName: "Firefox", title: "MDN — Firefox", hasContext: true });
 assert.deepEqual(JSON.parse(JSON.stringify(rules.presentation(
-    "", "", "Active", "Desktop"))),
-    { appName: "Titonium", title: "Desktop" });
-console.log("PASS Center activity two-field presentation fixtures");
+    "", "", "", false))),
+    { appName: "Titonium", title: "", hasContext: false });
+assert.deepEqual(JSON.parse(JSON.stringify(rules.presentation(
+    "ChatGPT", "", "Private system title", true))),
+    { appName: "ChatGPT", title: "", hasContext: false },
+    "a tray app must never fall through to the compositor title while its menu context loads");
+console.log("PASS StartIsland tray-context and non-tray title fallback fixtures");
 
 const pill = fs.readFileSync(pillPath, "utf8");
 for (const fragment of [
     "HyprlandService.activeWindow",
     "ApplicationService.nameForAppId",
+    "SystemTrayService.menuContextForApp",
     "ActiveWindowRules.label",
     "implicitWidth: Math.min(520",
     "activityRow.implicitWidth",
@@ -54,6 +59,7 @@ for (const fragment of [
     "Layout.maximumWidth: 120",
     "id: activityDot",
     "text: \"·\"",
+    "visible: root.presentation.hasContext",
     "id: titleLabel",
     "outlined: false",
     "Text.ElideRight",
@@ -61,6 +67,8 @@ for (const fragment of [
 ]) {
     assert.equal(pill.includes(fragment), true, `ActiveWindowPill missing ${fragment}`);
 }
+assert.equal(pill.includes("activeWindow?.title"), true,
+    "StartIsland must retain compositor-title fallback for apps without a tray menu");
 assert.equal(pill.includes("implicitWidth: 420"), false,
     "Active Window must not retain the old fixed width");
 assert.equal(pill.includes("id: activitySeparator"), false,

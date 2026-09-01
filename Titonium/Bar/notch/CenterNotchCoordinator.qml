@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Titonium.Core.Surfaces
+import qs.Titonium.Services.SystemMonitor
 import "CenterNotchState.js" as CenterNotchState
 
 QtObject {
@@ -12,6 +13,16 @@ QtObject {
     property string requestedPage: "overview"
     property bool pinned: false
     readonly property bool active: root.ownerScreenName.length > 0
+
+    function syncMonitoringLifecycle(): void {
+        if (root.active && root.requestedPage === "monitoring")
+            SystemMonitorService.start();
+        else
+            SystemMonitorService.stop();
+    }
+
+    onActiveChanged: root.syncMonitoringLifecycle()
+    onRequestedPageChanged: root.syncMonitoringLifecycle()
 
     function open(screenName: string, pageId: string): bool {
         if (!screenName)

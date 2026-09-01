@@ -11,6 +11,8 @@ var ALLOWED_FIELDS = Object.freeze({
     progress: true,
     deadline: true,
     updatedAt: true,
+    trackLength: true,
+    trackPosition: true,
 });
 
 function text(value) {
@@ -37,7 +39,9 @@ function initialState() {
 function activityRank(activity) {
     if (activity.source === "timer")
         return 30;
-    return activity.importance === "important" ? 25 : 20;
+    if (activity.source === "job")
+        return activity.importance === "important" ? 25 : 20;
+    return activity.source === "media" ? 15 : 10;
 }
 
 function ordered(activities) {
@@ -74,7 +78,7 @@ function normalize(raw, now) {
     var updatedAt = Number.isFinite(raw.updatedAt) ? raw.updatedAt : now;
     if (!id || !label || !icon || !Number.isFinite(updatedAt))
         return null;
-    if (source !== "timer" && source !== "job")
+    if (["timer", "job", "media"].indexOf(source) < 0)
         return null;
     if (id.indexOf(source + ":") !== 0)
         return null;
@@ -83,17 +87,26 @@ function normalize(raw, now) {
 
     var progress = Number(raw.progress);
     var deadline = Number(raw.deadline);
+    var trackLength = Number.isFinite(Number(raw.trackLength)) ? Number(raw.trackLength) : 0;
+    var trackPosition = Number.isFinite(Number(raw.trackPosition)) ? Number(raw.trackPosition) : 0;
     if (source === "job") {
         if (!Number.isFinite(progress) || progress < 0 || progress > 100
                 || deadline !== 0)
             return null;
-    } else {
+    } else if (source === "timer") {
         if (importance !== "normal" || progress !== -1
                 || !Number.isFinite(deadline) || deadline <= now)
             return null;
+    } else if (source === "media") {
+        if (importance !== "normal" || (progress !== -1 && (progress < 0 || progress > 100)) || deadline !== 0
+                || !Number.isFinite(trackLength) || trackLength < 0
+                || !Number.isFinite(trackPosition) || trackPosition < 0 || trackPosition > trackLength)
+            return null;
+    } else if (importance !== "normal" || progress !== -1 || deadline !== 0) {
+        return null;
     }
 
-    return Object.freeze({
+    var descriptor = {
         id: id,
         source: source,
         label: label,
@@ -102,7 +115,12 @@ function normalize(raw, now) {
         progress: progress,
         deadline: deadline,
         updatedAt: updatedAt,
-    });
+    };
+    if (source === "media") {
+        descriptor.trackLength = trackLength;
+        descriptor.trackPosition = trackPosition;
+    }
+    return Object.freeze(descriptor);
 }
 
 function indexOf(activities, id) {
@@ -128,8 +146,8 @@ function sameActivity(left, right) {
 function current(state) {
     if (!state || state.showingFocus || !state.currentId)
         return null;
-    var position = indexOf(state.activities, state.currentId);
-    return position >= 0 ? state.activities[position] : null;
+    var trackPosition = indexOf(state.activities, state.currentId);
+    return trackPosition >= 0 ? state.activities[trackPosition] : null;
 }
 
 function visiblePool(state) {
@@ -160,15 +178,18 @@ function upsert(state, raw, now) {
     var currentId = currentState.currentId;
     var showingFocus = currentState.showingFocus;
     var generation = currentState.generation;
-    if (!showingFocus) {
-        var nextCurrentIndex = indexOf(nextActivities, currentId);
-        if (nextCurrentIndex < 0) {
-            currentId = "";
-            showingFocus = true;
-            generation++;
-        } else if (activity.id === currentId) {
-            generation++;
-        }
+    var currentIndex = indexOf(nextActivities, currentId);
+    var currentActivity = currentIndex >= 0 ? nextActivities[currentIndex] : null;
+    var visibleIndex = indexOf(nextActivities.slice(0, MAX_VISIBLE), currentId);
+    if (showingFocus || !currentActivity || visibleIndex < 0) {
+        currentId = nextActivities[0].id;
+        showingFocus = false;
+        generation++;
+    } else if (activity.id === currentId) {
+        generation++;
+    } else if (activityRank(activity) > activityRank(currentActivity)) {
+        currentId = nextActivities[0].id;
+        generation++;
     }
     return stateValue(nextActivities, currentId, showingFocus, generation);
 }
@@ -177,14 +198,18 @@ function remove(state, id) {
     var currentState = state && Array.isArray(state.activities)
         ? state : initialState();
     var normalizedId = text(id);
-    var position = indexOf(currentState.activities, normalizedId);
-    if (!normalizedId || position < 0)
+    var trackPosition = indexOf(currentState.activities, normalizedId);
+    if (!normalizedId || trackPosition < 0)
         return currentState;
 
     var nextActivities = currentState.activities.slice();
-    nextActivities.splice(position, 1);
-    if (!currentState.showingFocus && currentState.currentId === normalizedId)
+    nextActivities.splice(trackPosition, 1);
+    if (nextActivities.length === 0)
         return stateValue(nextActivities, "", true, currentState.generation + 1);
+    if (currentState.showingFocus || currentState.currentId === normalizedId)
+        return stateValue(
+            nextActivities, nextActivities[0].id, false,
+            currentState.generation + 1);
     return stateValue(
         nextActivities,
         currentState.currentId,
@@ -210,13 +235,13 @@ function advance(state) {
             currentState.generation + 1);
     }
 
-    var position = indexOf(pool, currentState.currentId);
-    if (position < 0 || position === pool.length - 1) {
+    var trackPosition = indexOf(pool, currentState.currentId);
+    if (trackPosition < 0 || trackPosition === pool.length - 1)
         return stateValue(
-            currentState.activities, "", true, currentState.generation + 1);
-    }
+            currentState.activities, pool[0].id, false,
+            currentState.generation + 1);
     return stateValue(
-        currentState.activities, pool[position + 1].id, false,
+        currentState.activities, pool[trackPosition + 1].id, false,
         currentState.generation + 1);
 }
 

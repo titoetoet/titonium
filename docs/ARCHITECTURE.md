@@ -47,12 +47,14 @@ cannot overlap. An outside click, Escape, or focused-monitor change releases the
 The true-center `CenterGroup` remains positioned from the full screen width and contains the
 attention `CenterIsland` followed by the independently targetable TopBar pin. The Active Window
 pill sits directly after the five-slot Workspace group, sizes naturally up to
-520 logical pixels, and projects the active descriptor as app icon plus
-`Application · window title`. It falls back to Titonium and continues to open the centered
-four-corner popup 52 logical pixels below the screen edge. The full Bar input mask is composed
-from the three island hitboxes, preserving click-through elsewhere. The End island orders native Wi-Fi,
-Bluetooth, Audio and Notification Bell controls before the protected Input Method. Clock remains
-temporarily disabled.
+520 logical pixels, and projects the active descriptor as app icon plus an optional
+`Application · app-provided tray context`. For a conservatively matched tray item, a `Running`
+DBusMenu entry takes precedence over tooltip metadata and activating the pill opens that item's
+platform menu; without a menu it retains the centered four-corner popup fallback. It never uses
+compositor window titles, omits the separator when no matching context exists and falls back to
+Titonium. The full Bar input mask is composed from the three island hitboxes, preserving
+click-through elsewhere. The End island orders native Wi-Fi, Bluetooth, Audio and Notification
+Bell controls before the protected Input Method. Clock remains temporarily disabled.
 
 ## State and presentation
 
@@ -61,7 +63,18 @@ Singleton services expose reactive state once for all consumers:
 - `ApplicationService`: DesktopEntries catalog, visibility and launch boundary.
 - `ClipboardService`: Quickshell clipboard events and atomic history persistence.
 - `HyprlandService`: focused monitor and workspace state/actions.
-- `InputMethodService`: event-driven Fcitx SystemTray state.
+- `SystemTrayService`: the exported value/intent facade for tray consumers. Its private
+  `internal/SystemTrayBackend` is the sole native SystemTray owner; the facade projects immutable
+  metadata, conservatively matches app-owned context for StartIsland, exposes narrow app-selection
+  and native-menu display intents, and routes Fcitx descriptors away from app context.
+- `InputMethodService`: event-driven Fcitx state derived from `SystemTrayService`; its dedicated
+  Bar icon and language semantics remain unchanged.
+
+The SystemTray menu pattern was adapted from Caelestia Shell revision
+`1b7052d108677a7ca0d3d3365511bfe8281a6868` (GPL-3.0), specifically
+`modules/bar/popouts/TrayMenu.qml` and `modules/bar/popouts/Content.qml`. Titonium retains only the
+`QsMenuOpener`/DBusMenu idea behind its own service contract and uses Quickshell's platform menu
+display instead of copying Caelestia's view or theme system.
 - `AudioService`: the sole PipeWire owner. Its `PwObjectTracker` observes audio-capable nodes and
   exposes normalized output, input, selectable output-device and playback-stream view data; Bar
   and overlay code never imports PipeWire or writes raw node audio fields. Output selection
@@ -70,6 +83,19 @@ Singleton services expose reactive state once for all consumers:
 - `NotificationService`: the sole `NotificationServer` owner. It turns native objects into frozen,
   newest-first value descriptors and exposes bounded history, toast IDs and session-only unread
   state. Native objects never escape the service.
+- `SystemMonitorService`: an on-demand singleton activated immediately when the open Center Notch
+  requests Monitoring and released when the popup closes or navigation leaves that page. Hot
+  CPU/RAM/GPU metrics sample once per second while the process ranking refreshes every two seconds.
+  `CenterNotchCoordinator` owns this lifecycle so overlapping StackView transition items cannot
+  stop a newly initialized monitor. The CPU utilization chart uses a software-rendered Shape path,
+  a fixed zero-to-100-percent scale and a bounded 60-second history. CPU clock is the current
+  average across all logical CPUs reported by `/proc/cpuinfo`, rather than one volatile cpufreq
+  policy. No continuous metric animation runs between samples, allowing the scene graph to sleep.
+  It reads CPU model and counters from `/proc`, memory capacity from `/proc/meminfo`, and AMD GPU
+  utilization, VRAM, temperature and active clock from discovered sysfs files. A bounded one-shot
+  `lspci -mm` process supplies the human GPU model because the selected DRM sysfs group exposes no
+  stable human-readable product name; failure leaves the name unavailable. Process rows aggregate
+  matching executable names before CPU/RSS ranking and expose no action or status mutation.
 
 QML views draw, animate and emit intent. They do not spawn commands, store files or duplicate
 system listeners. Pure JavaScript helpers contain searchable/testable domain rules.
@@ -79,17 +105,27 @@ system listeners. Pure JavaScript helpers contain searchable/testable domain rul
 `CenterAttentionService` is the sole priority-arbitration owner. Publishers submit semantic
 `source`/`kind` events; `CenterAttentionRules.js` assigns the allowlisted priority and lifetime,
 drops stale lower-priority ephemeral events, retains only bounded actionable pending events and
-uses a generation token to make its one-shot expiry timer safe against preemption. Passive media,
-timer and job indicators are a separate frozen projection and never replace the primary text.
+uses a generation token to make its one-shot expiry timer safe against preemption. Passive status
+indicators remain a separate frozen service projection and never replace the primary text or its
+matching icon.
+
+`CenterActivityService` owns ongoing Timer, Job and playing-Media presentations. The first active
+descriptor replaces Daily Focus immediately. Up to three activities rotate every eight seconds in
+derived rank order (`Timer → Important Job → Normal Job → Media`) without inserting a Focus slot;
+Daily Focus returns only when the activity registry is empty. Attention pauses the current slot and
+restores its full dwell time. `CenterIsland` renders exactly one icon from the presentation that
+currently owns its text, with `center_focus_strong` as the Daily Focus fallback.
 
 `CenterFocusStore` owns `daily-focus.md` and `focus-prompts.txt` beneath
 `Quickshell.dataPath("center/")`. It watches both files, checks the explicit file mtime only at
 startup or a file event, and uses one non-repeating midnight timer to invalidate the local-day
 selection. `CenterFocusRules.js` chooses the first same-day non-heading Markdown line or a
 date-stable prompt fallback. Startup is read-only. The service creates the directory/file and
-invokes `xdg-open` only after explicit `openScratchpad()` intent from the view.
+invokes `xdg-open` only after explicit `openScratchpad()` intent from the view. Overview may also
+submit an explicit `saveToday(text)` intent; the service normalizes it to one line and performs the
+atomic file write, while the card owns only the transient inline-editing state.
 
-`CenterIsland` consumes only the immutable presentation, indicators and focus text. Its primary
+`CenterIsland` consumes only immutable Attention/Activity presentations and focus text. Its primary
 click always requests the scratchpad action, including while a transient event is visible. It owns
 no process, file watcher, timer or system listener. `ActiveWindowPill` remains a separate Start
 island concern and continues to open Center Notch.
@@ -99,13 +135,30 @@ no publish, acknowledgement, timer/job mutation or scratchpad-launch endpoint.
 
 `MprisService` is the only Titonium file allowed to import `Quickshell.Services.Mpris`. It projects
 native players into frozen value facts, ranks playing before paused players and resolves ties by
-meaningful-change time then stable D-Bus identity. `MprisRules.js` establishes discovery as a silent
-baseline, suppresses unchanged normalized signatures and derives only `track_changed`, `paused` and
-`resumed` semantic events. Center owns their priorities and TTLs. Playback disappearance or stop
-removes the passive media indicator without publishing a takeover. The Bar never imports MPRIS.
+meaningful-change time then stable D-Bus identity. The Overview consumes title, artist, artwork and
+capability facts; narrow play/pause, previous, next and raise intents re-resolve the selected native
+player inside the service. `MprisRules.js` establishes discovery as a silent baseline, suppresses
+unchanged normalized signatures and derives only `track_changed`, `paused` and `resumed` semantic
+events. Center owns their priorities and TTLs. Active playback also contributes an ongoing Media
+activity; playback disappearance, pause or stop removes it without publishing a new stop takeover.
+The Bar never imports native MPRIS state.
 
-The `mpris` IPC target exposes only `state()`. It provides no play, pause, seek, next, previous or
-player-selection method; controls remain deliberately outside this slice.
+The `mpris` IPC target remains read-only and exposes only `state()`. Playback controls are local
+Overview intents and are not available to remote IPC callers.
+
+## Today Overview weather
+
+`WeatherService` is an on-demand singleton acquired only by the lazy Overview page. It requests a
+compact current-condition response from wttr.in, keeps the last successful immutable snapshot and
+refreshes at a quiet thirty-minute cadence only while a consumer is visible. `WeatherRules.js`
+normalizes provider codes into Titonium-owned `clear`, `clouds`, `rain`, `fog`, `snow` and
+`thunderstorm` semantics. The view owns no process, network request or polling timer.
+
+The condition-driven weather scene and MPRIS capability routing were studied from Ambxst revision
+`65b7940cc325a425ddc443281b709db9bb7f3c6b` (AGPL-3.0), specifically
+`modules/services/WeatherService.qml`, `modules/widgets/dashboard/widgets/WeatherWidget.qml` and
+`modules/services/MprisController.qml`. Titonium retains only those interaction ideas behind its
+own service contracts and does not copy Ambxst's backend, configuration, theme or animation tree.
 
 `CenterTimerService` owns session-only named countdowns as absolute deadlines.
 `CenterTimerRules.js` selects the five-minute, one-minute and completion milestones, while one

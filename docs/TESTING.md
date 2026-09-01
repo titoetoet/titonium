@@ -195,10 +195,11 @@ directly with:
 ./scripts/center_attention_acceptance.sh
 
 Center Activity acceptance starts an isolated foreground shell and drives only fixture-prefixed
-Job and Timer entries. It verifies the ranked `Focus → Timer → Important Job → Normal Job → Focus`
-round, progress replacement, Attention pause/resume with a fresh dwell interval, exact cleanup and
-the unchanged Center Notch lifecycle. It creates no process scanner or user runtime activity and
-restores all fixture state in its exit trap. Run it directly with:
+Job and Timer entries. It verifies immediate Activity-first presentation, the ranked
+`Timer → Important Job → Normal Job → Timer` loop, progress replacement, Attention pause/resume
+with a fresh dwell interval, exact cleanup back to Daily Focus and the unchanged Center Notch
+lifecycle. It creates no process scanner or user runtime activity and restores all fixture state
+in its exit trap. Run it directly with:
 
 ```bash
 ./scripts/center_activity_acceptance.sh
@@ -365,8 +366,12 @@ page interaction check:
 Run `./scripts/system_monitor_acceptance.sh`, then verify manually:
 
 1. Open Center > System Monitoring; Live activates and values appear without a startup zero flash.
-2. Confirm CPU/RAM/Disk align in the left column and GPU/VRAM/Network align in the right column.
-3. Confirm every icon shares the bar/value line and hover exposes its metric name.
-4. Generate CPU/GPU/network load; bars and rates update in place at the expected cadence.
-5. Confirm Top processes shows at most five rows and Active mirrors Media/Timer/Job without duplicates.
-6. Switch to another Center page; Live stops immediately and no monitoring process remains running.
+2. Confirm the CPU model and GPU model are sourced from the host, while the RAM header shows actual capacity.
+3. Confirm GPU clock updates from the active sysfs clock state and unavailable metadata renders an em dash.
+
+4. Confirm every icon shares the bar/value line and hover exposes its metric name.
+5. Generate CPU/GPU load; bars update in place at the expected cadence.
+
+6. Confirm Top processes groups matching executables, shows correct CPU/memory totals and has no redundant status column.
+
+7. Switch to another Center page; Live stops immediately and no monitoring process remains running.

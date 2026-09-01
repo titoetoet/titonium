@@ -33,8 +33,8 @@ FocusScope {
 
     CenterNotch {
         id: notch
-        width: Math.min(900, root.width - 32)
-        height: Math.min(430, root.height - root.panelTop - Metrics.barPadding)
+        width: Math.min(760, root.width - 32)
+        height: Math.min(440, root.height - root.panelTop - Metrics.barPadding)
         anchors.top: parent.top
         anchors.topMargin: root.panelTop
         anchors.horizontalCenter: parent.horizontalCenter

@@ -61,7 +61,7 @@ def main() -> int:
         'Preferences.patch("modules.bar.autoHide"', "settings.bar.workspace_count",
     ), errors)
     require(dock, "DockPage", (
-        '"auto-hide"', '"always-visible"', '"reserve-space"',
+        '"auto-hide"', '"always-visible"', '"reserve-space"', '"hidden"',
         "DockStore.setVisibilityMode", "DockApplicationEditor {",
     ), errors)
     require(dock_editor, "DockApplicationEditor", (

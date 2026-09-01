@@ -8,6 +8,9 @@ import "CenterActivityRules.js" as CenterActivityRules
 QtObject {
     id: root
 
+    // Keep transient activity readable without making the Center feel sluggish.
+    readonly property int rotationIntervalMs: 8000
+
     property var activityState: CenterActivityRules.initialState()
     property var projectedPresentation: null
     property double scheduledAt: 0
@@ -35,10 +38,13 @@ QtObject {
                 "minutes": minutes
             });
         }
-        return I18n.tr("menubar.center.activity.job_progress", {
-            "label": activity.label,
-            "percent": Math.round(activity.progress)
-        });
+        if (activity.source === "job") {
+            return I18n.tr("menubar.center.activity.job_progress", {
+                "label": activity.label,
+                "percent": Math.round(activity.progress)
+            });
+        }
+        return activity.label;
     }
 
     function refreshPresentation(now: double): void {
@@ -52,7 +58,9 @@ QtObject {
             "source": activity.source,
             "icon": activity.icon,
             "title": root.titleFor(activity, now),
-            "progress": activity.progress
+            "progress": activity.progress,
+            "trackLength": activity.trackLength || 0,
+            "trackPosition": activity.trackPosition || 0
         });
     }
 
@@ -62,9 +70,8 @@ QtObject {
         if (root.activeCount === 0 || CenterAttentionService.hasTransient)
             return;
 
-        const delay = root.showingFocus ? 10000 : 6000;
-        root.rotationTimer.interval = delay;
-        root.scheduledAt = Date.now() + delay;
+        root.rotationTimer.interval = root.rotationIntervalMs;
+        root.scheduledAt = Date.now() + root.rotationIntervalMs;
         root.rotationTimer.start();
     }
 

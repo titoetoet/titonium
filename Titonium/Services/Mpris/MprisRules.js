@@ -33,6 +33,13 @@ function normalizePlayer(raw) {
         playbackState: playbackState(raw.playbackState),
         trackTitle: title,
         trackArtist: artist,
+        desktopEntry: text(raw.desktopEntry),
+        trackArtUrl: text(raw.trackArtUrl),
+        trackLength: Number.isFinite(raw.trackLength) && raw.trackLength > 0 ? raw.trackLength : 0,
+        trackPosition: Number.isFinite(raw.trackPosition) && raw.trackPosition >= 0 ? raw.trackPosition : 0,
+        canTogglePlaying: raw.canTogglePlaying === true,
+        canGoPrevious: raw.canGoPrevious === true,
+        canGoNext: raw.canGoNext === true,
         title: artist && title ? artist + " · " + title : title,
         changedAt: Number.isFinite(raw.changedAt) && raw.changedAt >= 0 ? raw.changedAt : 0,
     });
@@ -63,7 +70,29 @@ function signature(player) {
     var value = normalizePlayer(player);
     if (!value)
         return "";
-    return [value.identity, value.playbackState, value.trackArtist, value.trackTitle].join("\u001f");
+    return [value.identity, value.playbackState, value.trackArtist, value.trackTitle,
+        value.desktopEntry, value.trackArtUrl, value.canTogglePlaying,
+        value.canGoPrevious, value.canGoNext, value.trackLength, value.trackPosition].join("\u001f");
+}
+
+function activity(player, now) {
+    var value = normalizePlayer(player);
+    if (!value || value.playbackState !== "playing" || !value.trackTitle)
+        return null;
+    return Object.freeze({
+        id: "media:current",
+        source: "media",
+        label: value.title,
+        icon: "music_note",
+        importance: "normal",
+        progress: value.trackLength > 0
+            ? Math.max(0, Math.min(100, value.trackPosition / value.trackLength * 100))
+            : -1,
+        deadline: 0,
+        updatedAt: Number.isFinite(now) ? now : 0,
+        trackLength: value.trackLength,
+        trackPosition: value.trackPosition,
+    });
 }
 
 function indicatorActive(player) {

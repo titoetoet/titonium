@@ -17,6 +17,8 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         spacing: Metrics.spacingSmall
 
+        ArchLogo {}
+
         Item {
             width: workspaces.implicitWidth + Metrics.spacingXSmall * 2
             height: Metrics.widgetHeight
