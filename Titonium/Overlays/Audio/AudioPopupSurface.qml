@@ -39,9 +39,18 @@ FocusScope {
     anchors.fill: parent
     focus: true
 
+    property bool closing: false
+
     function close(): void {
-        if (root.ownerId)
-            SurfaceManager.close(root.ownerId);
+        if (Motion.reduced) {
+            if (root.ownerId)
+                SurfaceManager.close(root.ownerId);
+            return;
+        }
+        if (root.closing)
+            return;
+        root.closing = true;
+        panelExit.restart();
     }
 
     function pointInside(item: Item, point: point): bool {
@@ -72,6 +81,13 @@ FocusScope {
         anchors.rightMargin: Metrics.barPadding
         customColor: Theme.surface
         clipContent: true
+        transformOrigin: Item.TopRight
+        opacity: Motion.reduced ? 1 : 0
+        scale: Motion.reduced ? 1 : 0.94
+        transform: Translate {
+            id: panelEntranceOffset
+            y: Motion.reduced ? 0 : -12
+        }
 
         ColumnLayout {
             anchors.fill: parent
@@ -160,6 +176,69 @@ FocusScope {
                 }
 
             }
+        }
+    }
+
+    ParallelAnimation {
+        id: panelEntrance
+        running: !Motion.reduced
+
+        NumberAnimation {
+            target: panel
+            property: "opacity"
+            from: 0
+            to: 1
+            duration: 150
+            easing.type: Easing.OutCubic
+        }
+        NumberAnimation {
+            target: panel
+            property: "scale"
+            from: 0.94
+            to: 1
+            duration: 220
+            easing.bezierCurve: [0.38, 1.21, 0.22, 1, 1, 1]
+        }
+        NumberAnimation {
+            target: panelEntranceOffset
+            property: "y"
+            from: -12
+            to: 0
+            duration: 220
+            easing.bezierCurve: [0.2, 0.8, 0.2, 1, 1, 1]
+        }
+    }
+
+    ParallelAnimation {
+        id: panelExit
+
+        NumberAnimation {
+            target: panel
+            property: "opacity"
+            from: 1
+            to: 0
+            duration: 120
+            easing.type: Easing.InCubic
+        }
+        NumberAnimation {
+            target: panel
+            property: "scale"
+            from: 1
+            to: 0.96
+            duration: 130
+            easing.type: Easing.InCubic
+        }
+        NumberAnimation {
+            target: panelEntranceOffset
+            property: "y"
+            from: 0
+            to: -8
+            duration: 130
+            easing.type: Easing.InCubic
+        }
+        onFinished: {
+            if (root.ownerId)
+                SurfaceManager.close(root.ownerId);
         }
     }
 

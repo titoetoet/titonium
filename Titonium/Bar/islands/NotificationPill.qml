@@ -2,13 +2,16 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Titonium.Bar.widgets
+import qs.Titonium.Services.Notifications
 import qs.Titonium.Shared as Shared
 import qs.Titonium.Theme
 
 Item {
     id: root
 
-    implicitWidth: notificationBell.width + Metrics.spacingXSmall * 2
+    signal notificationsRequested()
+    visible: NotificationService.hasUnread
+    implicitWidth: root.visible ? notificationBell.width + Metrics.spacingXSmall * 2 : 0
     implicitHeight: Metrics.widgetHeight
 
     Shared.Surface {
@@ -20,5 +23,6 @@ Item {
     NotificationBell {
         id: notificationBell
         anchors.centerIn: parent
+        onNotificationsRequested: root.notificationsRequested()
     }
 }

@@ -98,7 +98,8 @@ def main() -> int:
     ):
         errors.append("Center qmldir missing CenterTimerService singleton")
 
-    app = APP.read_text(encoding="utf-8")
+    app = (ROOT / "Titonium/Orchestration/ServiceBootstrap.qml").read_text(encoding="utf-8")
+    app += (ROOT / "Titonium/Ipc/CenterIpc.qml").read_text(encoding="utf-8")
     for fragment in (
         "CenterTimerService.activate()",
         'target: "timer"',
@@ -111,7 +112,7 @@ def main() -> int:
         if fragment not in app:
             errors.append(f"App missing Timer lifecycle/IPC contract: {fragment}")
     timer_ipc = re.search(
-        r'IpcHandler\s*\{\s*target:\s*"timer"(?P<body>.*?)(?=\n\s*IpcHandler\s*\{|\Z)',
+        r'IpcHandler\s*\{\s*target:\s*"timer"(?P<body>.*?)(?=\n\s*(?:property\s+IpcHandler\s+\w+\s*:\s*)?IpcHandler\s*\{|\Z)',
         app,
         re.DOTALL,
     )

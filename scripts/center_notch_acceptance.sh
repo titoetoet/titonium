@@ -6,6 +6,7 @@ live_hypr="/home/cole/.config/hypr/hyprland.lua"
 dotfiles_hypr="/home/cole/Projects/titonium-hyprland/config/hypr/hyprland.lua"
 test_dir="$(mktemp -d --tmpdir titonium-center-notch-acceptance.XXXXXX)"
 log_file="$test_dir/shell.log"
+export TITONIUM_AGENT_APPROVAL_SOCKET="$test_dir/approval.sock"
 shell_pid=""
 
 before_git="$(git -C "$project_root" status --porcelain=v1)"
@@ -23,7 +24,7 @@ cleanup() {
         kill "$shell_pid" 2>/dev/null || true
         wait "$shell_pid" 2>/dev/null || true
     fi
-    rm -f -- "$log_file"
+    rm -f -- "$log_file" "$test_dir/approval.sock"
     rmdir -- "$test_dir"
 }
 trap cleanup EXIT
@@ -62,8 +63,8 @@ fi
 overview_state="$(call_ipc centerNotch open overview)"
 require_contains "$overview_state" "open:" "Center Notch open"
 require_contains "$overview_state" ";page=overview" "Center Notch Overview"
-require_contains "$(call_ipc centerNotch page tools)" ";page=tools" "Center Notch Tools"
-require_contains "$(call_ipc centerNotch page session)" ";page=session" "Center Notch Session"
+require_contains "$(call_ipc centerNotch page tools)" ";page=overview" "Center ignores Tools"
+require_contains "$(call_ipc centerNotch page monitoring)" ";page=overview" "Monitoring detached"
 
 require_contains "$(call_ipc spotlight toggle)" "open:applications:" "Spotlight mutual exclusion"
 require_contains "$(call_ipc centerNotch state)" "closed" "Center Notch closed by Spotlight"
@@ -95,4 +96,4 @@ if rg -i "$runtime_rejection_pattern" "$log_file"; then
     exit 1
 fi
 
-echo "PASS Center Notch Overview/Tools/Session, Spotlight exclusion and isolation acceptance"
+echo "PASS Dashboard-only Center Notch, Spotlight exclusion and isolation acceptance"

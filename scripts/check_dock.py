@@ -112,13 +112,17 @@ def validate_integration(errors: list[str]) -> None:
     if len(re.findall(r"\bDockHost\s*\{", source)) != 1:
         errors.append("App must compose exactly one DockHost")
     dock_host = qml_block(source, source.find("DockHost")) if "DockHost" in source else ""
-    if "onApplicationsRequested" not in dock_host or "root.openSpotlight(\"applications\", \"\", \"browse\", screen)" not in dock_host:
+    if "onApplicationsRequested" not in dock_host or "router.openSpotlight(\"applications\", \"\", \"browse\", screen)" not in dock_host:
         errors.append("Dock Applications must route Spotlight Applications on the passed policy screen")
-    spotlight = function_block(source, "openSpotlight")
+    router_path = ROOT / "Titonium/Orchestration/SurfaceRouter.qml"
+    router_source = router_path.read_text(encoding="utf-8") if router_path.is_file() else ""
+    spotlight = function_block(router_source, "openSpotlight")
     if "requestedScreen" not in spotlight or "ScreenRouter.screenForName(requestedScreen?.name" not in spotlight:
         errors.append("Spotlight must resolve a passed Dock screen through ScreenRouter")
 
-    dock_ipc = ipc_handler_source(source, "dock")
+    device_path = ROOT / "Titonium/Ipc/DeviceIpc.qml"
+    device_source = device_path.read_text(encoding="utf-8") if device_path.is_file() else ""
+    dock_ipc = ipc_handler_source(device_source, "dock")
     if not dock_ipc:
         errors.append("missing Dock IPC handler")
     elif ipc_function_names(dock_ipc) != {"state"} or "DockService.snapshot()" not in dock_ipc:

@@ -12,7 +12,8 @@
     },
     "bar": {
       "workspaceCount": 5,
-      "autoHide": false
+      "autoHide": false,
+      "mascotEnabled": true
     },
     "dock": {
       "visibilityMode": "auto-hide",

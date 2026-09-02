@@ -145,7 +145,8 @@ def main() -> int:
             if fragment not in qmldir:
                 errors.append(f"Window Switcher overlay qmldir missing: {fragment}")
 
-    app = APP.read_text(encoding="utf-8") if APP.is_file() else ""
+    ipc_path = ROOT / "Titonium/Ipc/DeviceIpc.qml"
+    app = ipc_path.read_text(encoding="utf-8") if ipc_path.is_file() else ""
     for fragment in (
         "import qs.Titonium.Services.WindowSwitcher",
         'target: "window-switcher"',
@@ -156,7 +157,7 @@ def main() -> int:
         "WindowSwitcherService.snapshot()",
     ):
         if fragment not in app:
-            errors.append(f"App missing Window Switcher integration: {fragment}")
+            errors.append(f"DeviceIpc missing Window Switcher integration: {fragment}")
 
     check_sh = CHECK_SH.read_text(encoding="utf-8") if CHECK_SH.is_file() else ""
     for fragment in (

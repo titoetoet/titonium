@@ -65,13 +65,14 @@ def main() -> int:
     if "singleton CenterActivityService 1.0 CenterActivityService.qml" not in qmldir:
         errors.append("Center qmldir missing CenterActivityService singleton")
 
-    app = APP.read_text(encoding="utf-8")
+    app = (ROOT / "Titonium/Orchestration/ServiceBootstrap.qml").read_text(encoding="utf-8")
+    app += (ROOT / "Titonium/Ipc/CenterIpc.qml").read_text(encoding="utf-8")
     for fragment in (
         "CenterActivityService.activate()",
         "function activityState(): string { return CenterActivityService.snapshot(); }",
     ):
         if fragment not in app:
-            errors.append(f"App missing Center Activity contract: {fragment}")
+            errors.append(f"Center adapters missing Activity contract: {fragment}")
 
     check = CHECK.read_text(encoding="utf-8")
     for fragment in (
@@ -103,8 +104,8 @@ def main() -> int:
             "readonly property var primaryPresentation: root.eventPresentation || root.activityPresentation",
             "root.primaryPresentation.title",
             "CenterFocusStore.text",
-            'root.activityPresentation ? "primary" : "secondary"',
-            "strong: root.primaryPresentation !== null",
+            'I18n.tr("menubar.center.focus_fallback")',
+            "strong: true",
         ):
             if fragment not in source:
                 errors.append(f"CenterIsland missing Activity projection: {fragment}")

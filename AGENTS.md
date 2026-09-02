@@ -11,9 +11,9 @@ behind Titonium-owned contracts. Do not rebuild a generic framework in anticipat
 - Dynamic screen lifecycle in `Titonium/Bar/BarHost.qml` and the lazy overlay lifecycle.
 - Runtime data outside Git. Never edit either `hyprland.lua` from a feature or theme.
 
-Workspaces and Clock are temporary visible widgets and may be replaced after an explicit
-reference-repo review. Protected features may be refactored only with equivalent acceptance
-coverage and user approval.
+Workspaces remain a replaceable visible widget. The retired Bar Clock must not be restored without
+an explicit reference-repo review. Protected features may be refactored only with equivalent
+acceptance coverage and user approval.
 
 ## Dependency rules
 

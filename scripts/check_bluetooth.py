@@ -51,16 +51,18 @@ REQUIRED_FRAGMENTS = (
     "BluetoothRules.projectAdapter",
     "signal audioDeviceConnected(string address)",
     "function observeAudioConnections(): void",
+    "property Process agentProcess: Process",
+    "function ensureAgent(): void",
+    "function observePairProgress(): void",
+    "device.pair()",
+    "pairingAgentRunning: root.agentProcess.running",
     'Logger.info("bluetooth", "audio device connected " + event.connected[index])',
     'Logger.info("bluetooth", "audio device disconnected " + event.disconnected[index])',
     "adapter.discovering = false",
 )
 FORBIDDEN_FRAGMENTS = (
-    "Process",
     "FileView",
-    "Timer {",
     "DBus",
-    "bluetoothctl",
     "rfkill",
     "systemctl",
     "execDetached",
@@ -75,7 +77,7 @@ MUTATION_METHODS = (
 MUTATION_CALLS = {
     "connectDevice": ".connect()",
     "disconnectDevice": ".disconnect()",
-    "pairDevice": ".pair()",
+    "pairDevice": "device.pair()",
     "cancelPair": ".cancelPair()",
     "forgetDevice": ".forget()",
 }
@@ -90,11 +92,14 @@ RAW_BLUETOOTH_REFERENCE = re.compile(
 PUBLIC_PROPERTIES = {
     "projection", "available", "powered", "discovering", "adapterName", "connectedCount",
     "devices", "stateKey", "operationWarningLimit", "operationWarningCounts",
-    "previousConnectedAudioAddresses",
+    "previousConnectedAudioAddresses", "pendingPairAddress", "pairingWasActive", "connectAttempted",
+    "agentProcess", "pairWatchdog", "connectWatchdog",
 }
 PUBLIC_FUNCTIONS = {
     "warnOperation", "setPowered", "setDiscovering", "connectDevice", "disconnectDevice",
     "pairDevice", "cancelPair", "forgetDevice", "snapshot", "observeAudioConnections",
+    "completeAudioConnection", "observePairProgress", "ensureAgent", "failPair",
+    "resetPairing", "nativeDeviceForAddress",
 }
 
 
@@ -163,11 +168,7 @@ def bluetooth_locale_errors() -> list[str]:
         "bluetooth.device.pair": set(),
         "bluetooth.device.cancel_pair": set(),
         "bluetooth.device.action.accessible": {"action", "name"},
-        "bluetooth.forget": set(),
         "bluetooth.forget.accessible": {"name"},
-        "bluetooth.forget.confirm": set(),
-        "bluetooth.forget.cancel": set(),
-        "bluetooth.forget.confirm_action": set(),
         "menubar.connectivity.bluetooth.accessible": {"state", "count"},
     }
     errors = []
@@ -352,12 +353,9 @@ def validate_service(errors: list[str]) -> None:
         if not block:
             errors.append(f"missing Bluetooth mutation method: {name}")
             continue
-        if ("const nativeDeviceForAddress = function" not in block
-                or "nativeDeviceForAddress(address)" not in block
-                or "adapter.devices.values" not in block):
-            errors.append(f"Bluetooth mutation must relookup its device: {name}")
-        if "return false" not in block:
-            errors.append(f"Bluetooth mutation must fail safely when stale: {name}")
+        if ("root.nativeDeviceForAddress(address)" not in block
+                or "return false" not in block):
+            errors.append(f"Bluetooth mutation must relookup and fail safely: {name}")
         if MUTATION_CALLS[name] not in block:
             errors.append(f"Bluetooth mutation must use its native method: {name}")
 
@@ -451,12 +449,11 @@ def validate_presentation(errors: list[str]) -> None:
         "checked: root.device?.connected === true",
         "visible: root.device?.connected === true",
         "onToggled: checked =>",
-        "forgetConfirmation",
-        "I18n.tr(\"bluetooth.forget.cancel\")",
+        "visible: root.device?.paired === true || root.device?.bonded === true",
         "id: deviceInfoButton",
-        'iconName: "info"',
-        "id: cancelForgetButton",
-        "id: confirmForgetButton",
+        'iconName: "delete"',
+        "iconColor: Theme.danger",
+        "onTriggered: BluetoothService.forgetDevice(root.device.address)",
         "readonly property string primaryActionIcon:",
         '"close"',
         '"link"',
@@ -475,10 +472,8 @@ def validate_presentation(errors: list[str]) -> None:
             errors.append(f"forbidden Bluetooth device-row dependency: {forbidden}")
     if 'iconName: "more_horiz"' in row:
         errors.append("Bluetooth device options must not use an ambiguous overflow glyph")
-    if not re.search(
-            r"opacity:\s*root\.hovered\s*\|\|\s*deviceInfoButton\.activeFocus\s*\?\s*1\s*:\s*0\s*(?:\n|$)",
-            row):
-        errors.append("Bluetooth device Info must be fully hidden until row hover or keyboard focus")
+    if "opacity:" in row:
+        errors.append("Bluetooth device remove control must be visible, not hover-revealed")
     info_index = row.find("id: deviceInfoButton")
     toggle_index = row.find("Shared.Toggle {")
     if not (0 <= info_index < toggle_index):
@@ -583,12 +578,12 @@ def validate_integration(errors: list[str]) -> None:
     errors.extend(ipc_open_path_errors(coordinator))
 
     row = DEVICE_ROW.read_text(encoding="utf-8") if DEVICE_ROW.is_file() else ""
-    if ('id: confirmForgetButton' not in row
+    if ('id: deviceInfoButton' not in row
             or 'iconName: "delete"' not in row
             or 'I18n.tr("bluetooth.forget.accessible", {' not in row
             or '"name": root.device?.name || ""' not in row):
         errors.append("Bluetooth Forget must use an accessible inline icon-only remove control")
-    forget_start = row.find("id: confirmForgetButton")
+    forget_start = row.find("id: deviceInfoButton")
     forget_block = qml_block(row, row.rfind("Shared.Button", 0, forget_start)) \
         if forget_start >= 0 else ""
     if "label:" in forget_block:
@@ -607,14 +602,15 @@ def validate_integration(errors: list[str]) -> None:
     if not connected_state:
         errors.append("Bluetooth Bar accessibility state must pass connected count to translation")
 
-    if not APP.is_file():
-        errors.append("missing App.qml for Bluetooth integration")
+    device_ipc_path = ROOT / "Titonium/Ipc/DeviceIpc.qml"
+    if not device_ipc_path.is_file():
+        errors.append("missing DeviceIpc.qml for Bluetooth integration")
     else:
-        app = APP.read_text(encoding="utf-8")
+        app = device_ipc_path.read_text(encoding="utf-8")
         if "import qs.Titonium.Services.Bluetooth" not in app:
-            errors.append("App must import BluetoothService for read-only state IPC")
+            errors.append("DeviceIpc must import BluetoothService for read-only state IPC")
         if "import qs.Titonium.Overlays.Bluetooth" not in app:
-            errors.append("App must import Bluetooth popup coordinator")
+            errors.append("DeviceIpc must import Bluetooth popup coordinator")
         bluetooth_ipc = ipc_handler_source(app, "bluetooth")
         if not bluetooth_ipc:
             errors.append("missing Bluetooth IPC handler")

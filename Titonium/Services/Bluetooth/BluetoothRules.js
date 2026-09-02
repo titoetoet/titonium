@@ -3,7 +3,6 @@
 function normalizedAddress(address) {
     return typeof address === "string" ? address.trim() : "";
 }
-
 function caseFold(value) {
     return value.toLowerCase();
 }
@@ -46,7 +45,9 @@ function normalizedDevice(device) {
 
     const connected = device?.connected === true;
     const paired = device?.paired === true;
+    const bonded = device?.bonded === true;
     const pairing = device?.pairing === true;
+    const trusted = device?.trusted === true;
     const batteryAvailable = device?.batteryAvailable === true;
     const result = {
         address: address,
@@ -56,7 +57,9 @@ function normalizedDevice(device) {
         stateKey: "",
         connected: connected,
         paired: paired,
+        bonded: bonded,
         pairing: pairing,
+        trusted: trusted,
         batteryAvailable: batteryAvailable,
         battery: batteryAvailable ? clampedBattery(device?.battery) : 0,
         blocked: device?.blocked === true,
@@ -148,6 +151,24 @@ function projectAdapter(adapter) {
     };
 }
 
+function isAudioDevice(device) {
+    if (!device)
+        return false;
+    const icon = text(device.icon, "").toLowerCase();
+    if (icon.indexOf("audio-") === 0 || icon.indexOf("sound") >= 0
+            || icon.indexOf("speaker") >= 0 || icon.indexOf("headphone") >= 0
+            || icon.indexOf("headset") >= 0)
+        return true;
+    const name = text(device.name, "").toLowerCase();
+    if (/\b(acton|marshall|speaker|speakers|headphones|headset|earbuds|airpods|soundbar|audio)\b/i.test(name))
+        return true;
+    if (!icon || icon === "bluetooth") {
+        if (!/\b(keyboard|mouse|trackpad|controller|gamepad|dongle)\b/i.test(name))
+            return true;
+    }
+    return false;
+}
+
 function audioConnectionEvent(previousAddresses, devices) {
     const previous = Array.isArray(previousAddresses) ? previousAddresses : [];
     const previousSet = Object.create(null);
@@ -160,8 +181,9 @@ function audioConnectionEvent(previousAddresses, devices) {
     source.forEach(device => {
         const address = normalizedAddress(device?.address);
         const key = caseFold(address);
-        const icon = text(device?.icon, "");
-        if (!address || seen[key] || device?.connected !== true || icon.indexOf("audio-") !== 0)
+        if (!address || seen[key] || device?.connected !== true
+                || device?.paired !== true || device?.trusted !== true
+                || !isAudioDevice(device))
             return;
         seen[key] = true;
         current.push(key);

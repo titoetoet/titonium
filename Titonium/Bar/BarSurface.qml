@@ -11,6 +11,7 @@ PanelWindow {
     id: root
     required property ShellScreen screenModel
     signal centerRequested(var screen)
+    signal notificationsRequested(var screen)
     signal sourceRequested(var screen, string intent)
     readonly property int barHeight: Metrics.barHeight
     readonly property int edgeRevealHeight: 2
@@ -29,7 +30,7 @@ PanelWindow {
     mask: Region {
         Region { item: bar.startHitbox }
         Region { item: bar.centerHitbox }
-        Region { item: bar.pinHitbox }
+        Region { item: bar.notificationHitbox }
         Region { item: bar.endHitbox }
         Region { item: edgeReveal }
     }
@@ -41,6 +42,7 @@ PanelWindow {
         y: root.barRevealed ? 0 : -root.barHeight + root.edgeRevealHeight
         screen: root.screenModel
         onCenterRequested: screen => root.centerRequested(screen)
+        onNotificationsRequested: screen => root.notificationsRequested(screen)
         onSourceRequested: (screen, intent) => root.sourceRequested(screen, intent)
 
         Behavior on y {

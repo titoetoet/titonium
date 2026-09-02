@@ -1,0 +1,5 @@
+module qs.Titonium.Ipc
+CoreIpc 1.0 CoreIpc.qml
+CenterIpc 1.0 CenterIpc.qml
+DeviceIpc 1.0 DeviceIpc.qml
+AgentApprovalIpc 1.0 AgentApprovalIpc.qml

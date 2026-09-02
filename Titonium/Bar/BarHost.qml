@@ -7,8 +7,8 @@ import qs.Titonium.Core.Screens
 Scope {
     id: root
     signal centerRequested(var screen)
+    signal notificationsRequested(var screen)
     signal sourceRequested(var screen, string intent)
-    signal settingsRequested(var screen)
 
     Variants {
         model: ScreenPolicy.screens
@@ -18,11 +18,11 @@ Scope {
             BarSurface {
                 screenModel: screenScope.modelData
                 onCenterRequested: screen => root.centerRequested(screen)
+                onNotificationsRequested: screen => root.notificationsRequested(screen)
                 onSourceRequested: (screen, intent) => root.sourceRequested(screen, intent)
             }
             CenterNotchWindow {
                 screenModel: screenScope.modelData
-                onSettingsRequested: screen => root.settingsRequested(screen)
             }
         }
     }

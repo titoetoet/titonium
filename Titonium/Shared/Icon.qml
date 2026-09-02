@@ -21,13 +21,14 @@ Item {
 
     Text {
         anchors.fill: parent
+        visible: Typography.iconFontReady
         text: root.name
         color: root.color
         font.family: Typography.iconFamily
         font.pixelSize: root.size
         font.weight: Font.Medium
         font.variableAxes: ({ "FILL": root.fill, "GRAD": -25, "opsz": root.size, "wght": 500 })
-        renderType: Text.NativeRendering
+        renderType: Text.QtRendering
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
     }

@@ -95,7 +95,7 @@ function centerEvent(item, title, now) {
         deduplicationKey: screenshot ? "capture:screenshot" : "notification:new",
         source: screenshot ? "capture" : "notification",
         kind: screenshot ? "screenshot_saved" : "new",
-        title: screenshot ? title : text(title),
+        title: screenshot ? title : (text(item.summary) || text(item.body) || text(title)),
         icon: screenshot ? "screenshot" : "notifications",
         createdAt: Number.isFinite(now) ? now : 0,
     });

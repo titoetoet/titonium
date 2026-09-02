@@ -107,9 +107,9 @@ def main() -> int:
             if fragment not in qmldir:
                 errors.append(f"Center qmldir missing contract: {fragment}")
 
-    app = APP.read_text(encoding="utf-8")
+    app = (ROOT / "Titonium/Ipc/CenterIpc.qml").read_text(encoding="utf-8")
     if app.count("import qs.Titonium.Services.Center") != 1:
-        errors.append("App must import the Center service module exactly once")
+        errors.append("CenterIpc must import the Center service module exactly once")
     for fragment in (
         'target: "center"',
         "function state(): string { return CenterAttentionService.snapshot(); }",
@@ -118,7 +118,7 @@ def main() -> int:
         if fragment not in app:
             errors.append(f"App missing read-only Center IPC contract: {fragment}")
     center_ipc_match = re.search(
-        r'IpcHandler\s*\{\s*target:\s*"center"(?P<body>.*?)(?=\n\s*IpcHandler\s*\{|\Z)',
+        r'IpcHandler\s*\{\s*target:\s*"center"(?P<body>.*?)(?=\n\s*(?:property\s+IpcHandler\s+\w+\s*:\s*)?IpcHandler\s*\{|\Z)',
         app,
         re.DOTALL,
     )

@@ -3,7 +3,9 @@ set -euo pipefail
 
 project_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 log_file="$(mktemp --tmpdir titonium-smoke.XXXXXX.log)"
-trap 'rm -f -- "$log_file"' EXIT
+test_approval_sock="$(mktemp -u --tmpdir titonium-smoke-approval.XXXXXX.sock)"
+export TITONIUM_AGENT_APPROVAL_SOCKET="${TITONIUM_AGENT_APPROVAL_SOCKET:-$test_approval_sock}"
+trap 'rm -f -- "$log_file" "$test_approval_sock"' EXIT
 
 set +e
 timeout --signal=TERM 8s qs -n -p "$project_root" >"$log_file" 2>&1

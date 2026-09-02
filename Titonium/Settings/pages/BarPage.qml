@@ -62,6 +62,20 @@ Item {
             }
         }
 
+        SettingRow {
+            Layout.fillWidth: true
+            title: I18n.tr("settings.bar.mascot")
+            description: I18n.tr("settings.bar.mascot.description")
+
+            Shared.Toggle {
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                checked: Preferences.bar.mascotEnabled !== false
+                accessibleName: I18n.tr("settings.bar.mascot")
+                onToggled: checked => Preferences.patch("modules.bar.mascotEnabled", checked)
+            }
+        }
+
         Item { Layout.fillHeight: true }
     }
 }

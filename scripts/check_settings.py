@@ -101,20 +101,25 @@ def main() -> int:
             errors.append(f"Settings presentation has forbidden dependency: {forbidden}")
 
     app = APP.read_text(encoding="utf-8") if APP.is_file() else ""
+    router_path = ROOT / "Titonium/Orchestration/SurfaceRouter.qml"
+    router = router_path.read_text(encoding="utf-8") if router_path.is_file() else ""
+    core_ipc_path = ROOT / "Titonium/Ipc/CoreIpc.qml"
+    core_ipc = core_ipc_path.read_text(encoding="utf-8") if core_ipc_path.is_file() else ""
+    composition = app + router
     for fragment in (
         "import qs.Titonium.Settings", "function openSettings(requestedScreen: var, pageId: string): string",
-        'import "Settings/SettingsLifecycleRules.js" as SettingsLifecycleRules',
+        'import "../Settings/SettingsLifecycleRules.js" as SettingsLifecycleRules',
         "SettingsHost {}", "SettingsCoordinator.forceCancelAndClose()",
         "SettingsLifecycleRules.canYield(SettingsCoordinator.active, Preferences.savePending)",
         'return "unavailable:busy";', "SurfaceManager.close(ownerId)",
     ):
-        if fragment not in app:
-            errors.append(f"App missing Settings composition contract: {fragment}")
+        if fragment not in composition:
+            errors.append(f"Settings composition missing contract: {fragment}")
     if app.count("SettingsHost {}") != 1:
         errors.append("App must compose exactly one SettingsHost")
-    ipc = ipc_block(app, "settings")
+    ipc = ipc_block(core_ipc, "settings")
     if not ipc:
-        errors.append("App must expose Settings lifecycle IPC")
+        errors.append("CoreIpc must expose Settings lifecycle IPC")
     else:
         methods = set(re.findall(r"^\s*function\s+(\w+)\s*\(", ipc, re.MULTILINE))
         if methods != {"open", "page", "cancel", "state"}:

@@ -133,6 +133,8 @@ function project(document, defaults, legacyDock) {
                 workspaceCount: integer(bar.workspaceCount,
                     integer(fallbackBar.workspaceCount, 5, 1, 8), 1, 8),
                 autoHide: boolean(bar.autoHide, boolean(fallbackBar.autoHide, false)),
+                mascotEnabled: boolean(bar.mascotEnabled,
+                    boolean(fallbackBar.mascotEnabled, true)),
             },
             dock: {
                 visibilityMode: oneOf(dock.visibilityMode,

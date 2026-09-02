@@ -145,8 +145,6 @@ Singleton {
             }
             root.projectedNotifications = NotificationRules.upsert(
                 root.projectedNotifications, item, 100);
-            if (root.toastsEnabled)
-                root.toastIds = NotificationRules.addToast(root.toastIds, item.id, 3);
             root.unreadIds = NotificationRules.markUnread(root.unreadIds, item.id);
             if (root.centerEventsReady)
                 CenterAttentionService.publish(NotificationRules.centerEvent(

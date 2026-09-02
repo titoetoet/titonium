@@ -17,7 +17,7 @@ Text {
     font.family: root.variant === "mono" ? Typography.monoFamily : Typography.family
     font.pixelSize: Typography.sizeFor(root.variant)
     font.weight: root.strong ? Typography.semiboldWeight : Typography.weightFor(root.variant)
-    renderType: Text.NativeRendering
+    renderType: Text.QtRendering
     textFormat: Text.PlainText
     verticalAlignment: Text.AlignVCenter
     Accessible.name: root.text

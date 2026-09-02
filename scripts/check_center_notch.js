@@ -18,39 +18,28 @@ const plain = value => JSON.parse(JSON.stringify(value));
 
 assert.deepEqual(plain(context.primaryPages()), [
     { id: "overview", icon: "dashboard" },
-    { id: "notifications", icon: "notifications" },
-    { id: "monitoring", icon: "monitor_heart" },
-    { id: "tools", icon: "construction" },
-    { id: "session", icon: "power_settings_new" },
-], "rail and navigation consume one canonical page order");
+], "Center exposes Dashboard as its only page");
 assert.equal(context.normalizePage("unknown"), "overview", "unknown page falls back safely");
+assert.equal(context.normalizePage("monitoring"), "overview",
+    "System Monitoring is detached from Center");
 assert.equal(context.normalizePage("notifications"), "notifications",
-    "Notifications is a primary page");
-assert.equal(context.arrowPage("overview", -1), "session", "Up wraps to the final primary page");
-assert.equal(context.arrowPage("session", 1), "overview", "Down wraps to the first primary page");
-assert.equal(context.arrowPage("notifications", 1), "monitoring",
-    "Down advances from Notifications to Monitoring");
-assert.equal(context.wheelPage("monitoring", 1), "tools",
-    "wheel advances from Monitoring to Tools");
+    "notifications remain available as a direct hidden route");
+assert.equal(context.arrowPage("overview", -1), "overview", "Dashboard navigation is stable");
+assert.equal(context.arrowPage("overview", 1), "overview", "Dashboard navigation stays put");
 assert.equal(context.wheelPage("overview", -1), "overview", "wheel clamps at the first page");
-assert.equal(context.wheelPage("session", 1), "session", "wheel clamps at the final page");
-assert.equal(context.wheelPage("notifications", -1), "overview",
-    "wheel moves from Notifications to Overview");
+assert.equal(context.wheelPage("overview", 1), "overview", "wheel stays on Dashboard");
 assert.deepEqual(
-    plain(context.transitionPlan("overview", "tools", true, 160)),
+    plain(context.transitionPlan("overview", "overview", true, 160)),
     { duration: 0, offset: 12 },
     "reduced motion removes duration while preserving direction",
 );
 assert.equal(
-    context.transitionPlan("overview", "session", false, 900).duration,
+    context.transitionPlan("overview", "overview", false, 900).duration,
     220,
     "transition duration is bounded",
 );
-assert.equal(
-    context.transitionPlan("tools", "monitoring", false, 160).offset,
-    -12,
-    "reverse navigation uses an upward offset",
-);
+assert.equal(context.transitionPlan("overview", "overview", false, 160).offset, 12,
+    "single-page transition remains deterministic");
 
 assert.deepEqual(
     plain(context.pinTransition("", "DP-1", false, "toggle")),
@@ -73,7 +62,7 @@ assert.deepEqual(
     "explicit close always clears pin state",
 );
 
-console.log("PASS Center Notch state fixtures (17)");
+console.log("PASS Dashboard Center Notch with direct notification route fixtures");
 
 const barRoot = path.join(__dirname, "..", "Titonium", "Bar");
 const sources = Object.fromEntries([
@@ -82,9 +71,7 @@ const sources = Object.fromEntries([
     const file = path.join(barRoot, "notch", relative);
     return [relative, fs.existsSync(file) ? fs.readFileSync(file, "utf8") : ""];
 }));
-assert.match(sources["CenterNotch.qml"], /signal settingsRequested\(\)/);
-assert.match(sources["CenterNotch.qml"], /onSettingsRequested: root\.settingsRequested\(\)/);
-assert.match(sources["CenterNotchSurface.qml"], /signal settingsRequested\(var screen\)/);
-assert.match(sources["CenterNotchWindow.qml"], /signal settingsRequested\(var screen\)/);
-assert.match(sources["../BarHost.qml"], /signal settingsRequested\(var screen\)/);
-console.log("PASS Center Notch Settings intent propagation");
+assert.doesNotMatch(sources["CenterNotch.qml"], /CenterNotchRail/);
+assert.doesNotMatch(sources["CenterNotch.qml"], /settingsRequested/);
+assert.doesNotMatch(sources["CenterNotchSurface.qml"], /settingsRequested/);
+console.log("PASS Center Notch owns Dashboard and direct notification history");

@@ -6,11 +6,17 @@ A module is a vertical capability slice, not a widget file copied into the bar.
 Titonium/Services/<Capability>/   system adapter + shared reactive model
 Titonium/Bar/widgets/             compact bar view, when needed
 Titonium/Overlays/<Capability>/   lazy heavy surface, when needed
+Titonium/Ipc/                     stateless public IPC adapters grouped by domain
+Titonium/Orchestration/           shell-level routing, bootstrap and cross-service bridges
 scripts/check_<capability>.*      pure and architecture checks
 config/i18n/{vi,en}.json          reachable user strings
 ```
 
 Create only the directories the capability actually needs.
+
+`App.qml` is the final composition root only. It wires hosts to `SurfaceRouter`, instantiates IPC
+adapters and triggers `ServiceBootstrap` after construction. It must not accumulate capability IPC
+bodies, native service logic or mutual-exclusion policy.
 
 ## Service interface
 

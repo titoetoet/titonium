@@ -33,10 +33,11 @@ Item {
         width: parent.width
         spacing: Metrics.spacingMedium
 
-        Shared.Icon {
+        Shared.SystemIcon {
             Layout.preferredWidth: 24
             Layout.preferredHeight: 24
-            name: root.stream?.icon || "audio-x-generic"
+            sourceName: root.stream?.icon || "audio-x-generic"
+            fallbackName: "audio-x-generic"
             size: 22
             tone: root.available ? "secondary" : "disabled"
             accessibleName: ""
@@ -60,6 +61,7 @@ Item {
                 enabled: root.available
                 serviceValue: root.volume
                 maximumValue: 1
+                liveUpdate: false
                 accessibleName: I18n.tr("audio.volume.accessible", {
                     "percentage": Math.round(root.volume * 100)
                 })

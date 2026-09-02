@@ -64,7 +64,7 @@ QtObject {
             root.outputNode?.id, I18n.tr("audio.output")) : []
 
     signal outputPresentationChanged(real volume, bool muted)
-
+    signal bluetoothOutputSelected(string address)
     function nodeUsable(node: var): bool {
         return root.ready === true && node !== null && node !== undefined && node.ready === true
             && node.audio !== null && node.audio !== undefined;
@@ -202,6 +202,7 @@ QtObject {
         if (sink === null)
             return false;
         Pipewire.preferredDefaultAudioSink = sink;
+        root.bluetoothOutputSelected(root.pendingBluetoothAddress);
         root.pendingBluetoothAddress = "";
         return true;
     }
@@ -284,8 +285,7 @@ QtObject {
 
     property Connections trackerConnections: Connections {
         target: root.tracker
-        // function onObjectsChanged(): void { root.trySelectPendingBluetoothOutput(); }
-        function onObjectsChanged(): void { root.trySelectPendingBluetoothOutput(); root.syncCenterIndicators(); }
+        function onObjectsChanged(): void { root.trySelectPendingBluetoothOutput(); }
     }
 
     Component.onCompleted: {

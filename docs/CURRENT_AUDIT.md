@@ -1,27 +1,64 @@
-# Current audit — skeleton baseline
+# Current source audit — 2026-09-03
 
-The August 2026 contraction removed 121 superseded QML/JavaScript files plus obsolete layout,
-theme, settings, migration and acceptance infrastructure. Git commit `62f8ba1` is the last complete
-pre-contraction runtime reference; the later history remains available for selective archaeology.
+This document records the repository-wide cleanup after the Bluetooth, Active Window and animation
+batches were produced by several AI assistants. It describes the current working tree, not a
+historical release tag.
 
-## Kept because it is distinctive or foundational
+## Result
 
-- Spotlight Applications/Clipboard/System-mock flow and its keybindings.
-- Fcitx input indicator backed by native SystemTray events.
-- Dynamic multi-monitor `Variants` lifecycle for bar and overlay host.
-- One lazy transient-surface coordinator.
-- Application, Clipboard and Hyprland service boundaries.
-- Small Neutral Utility token and shared-control layer.
-- Namespaced Vietnamese/English i18n fallback.
+- `./scripts/check.sh` passes, including JSON/i18n validation, pure rule fixtures, architecture
+  boundaries and `qmllint` with the repository allowlist.
+- Every shipped QML component has a runtime reference after removing the retired Bar `Clock`,
+  Center rail/activity card and unreachable Monitoring/Tools/Session presentation trees.
+- The obsolete `Services/Keyboard` singleton remains deleted; no source reference points to it.
+  Keyboard observation is owned by the protected Input Method path and focused feature handlers.
+- Four unused imports were removed from `Bar/notch/OverviewPage.qml`.
+- An unrelated Antigravity Electron `package.json` and a one-off interactive ten-popup script were
+  removed from the project root. The supported approval tests remain
+  `check_agent_approval.js` and `check_agent_approval_bridge.py`.
+- Whitespace validation is clean (`git diff --check`).
 
-## Temporary baseline
+## Current runtime ownership
 
-Workspaces and Clock remain visible so the bar is useful while reference repositories are reviewed.
-They are intentionally small and replaceable.
+- `App.qml` is a thin composition root for Bar, Dock, transient overlays, Audio OSD, notification
+  toasts, Settings and Agent Approval. Activation, cross-surface routing, the Bluetooth–Audio
+  bridge and IPC adapters live in dedicated `Orchestration` and `Ipc` modules without changing
+  public IPC targets or result strings.
+- `Bar` owns Start, Center, Notification and End hitboxes. Clock is not rendered; time remains part
+  of the Overview weather card and the `use24Hour` preference is still meaningful there.
+- Center Notch owns Overview plus a direct Notification history route in one lazy screen-owned
+  surface. System Monitor remains a detached service/diagnostic IPC without an unreachable Center
+  view; the old rail, activity card and Tools/Session mock trees are gone.
+- Bluetooth uses the native Quickshell service and a narrow service/view boundary. Audio handoff is
+  coordinated through semantic signals; views do not own native Bluetooth objects.
+- Clipboard formatting and preview extraction live behind the Clipboard service plus pure helper
+  rules. Notification history has a direct Center route.
+- The Center pig is a user-configurable idle animation. Its drawing implementation is currently
+  shared with the `demos/dancing_pig` visual fixture; this intentional dependency should be moved
+  into a production-owned component if the demo is retired later.
 
-## Removed from runtime
+## Remaining review risks
 
-Settings Center, Arch Menu/session confirmation, Active Window, Calendar/Lunar, Frame, Design
-Gallery, recursive JSON layout, widget registry, theme catalog/hybrid glass and their god-object
-configuration path. None may be restored wholesale. A future capability returns only through a
-new contract, explicit research decision and focused acceptance test.
+- `qmllint` still reports the documented Quickshell `PanelWindow` metadata warnings and known
+  native-type/signal metadata warnings listed in `scripts/qmllint_allowlist.txt`. They are accepted
+  compatibility warnings, not newly introduced unused-variable findings.
+- The working tree contains a large, mixed, uncommitted batch. Keep future commits capability-sized
+  so Bluetooth, Center/Active Window, animation, Clipboard and Agent Approval can be reverted and
+  reviewed independently.
+- Foreground/live acceptance can affect the currently running shell. Run the focused scripts in
+  `docs/TESTING.md` and complete visual checks on `DP-1` before treating the batch as released.
+
+## Required regression commands
+
+```bash
+./scripts/check.sh
+git diff --check
+./scripts/smoke.sh
+./scripts/protected_acceptance.sh
+./scripts/center_notch_acceptance.sh
+./scripts/bluetooth_acceptance.sh
+hyprctl configerrors
+```
+
+The acceptance scripts must not mutate real Bluetooth pairing/power state, launch real
+applications, or overwrite clipboard contents.

@@ -2,7 +2,7 @@
 
 var MAX_ITEMS = 60;
 var PREVIEW_LENGTH = 80;
-var VALID_KINDS = ["url", "color", "code", "plain"];
+var VALID_KINDS = ["url", "color", "code", "plain", "image"];
 
 function preview(text) {
     if (typeof text !== "string") return "";
@@ -43,7 +43,14 @@ function normalizeDocument(document) {
         seen[key] = true;
         normalized.push({ id: item.id, text: item.text, preview: item.preview, kind: item.kind,
             colorHex: item.colorHex, timestamp: item.timestamp, lines: item.lines,
-            words: item.words, chars: item.chars });
+            words: item.words, chars: item.chars,
+            imagePath: typeof item.imagePath === "string" ? item.imagePath : "",
+            imageWidth: typeof item.imageWidth === "number" ? item.imageWidth : 0,
+            imageHeight: typeof item.imageHeight === "number" ? item.imageHeight : 0,
+            bytes: typeof item.bytes === "number" ? item.bytes : 0,
+            md5: typeof item.md5 === "string" ? item.md5 : "",
+            sourceApp: typeof item.sourceApp === "string" ? item.sourceApp : "",
+            sourceTitle: typeof item.sourceTitle === "string" ? item.sourceTitle : "" });
     }
     return normalized;
 }
@@ -55,14 +62,48 @@ function stableHash(text) {
     }
     return (hash >>> 0).toString(36);
 }
-function createRecord(text, timestamp) {
+function createRecord(text, timestamp, sourceApp, sourceTitle) {
     var type = classify(text), trimmed = text.trim();
     return { id: "clipboard-" + timestamp + "-" + stableHash(text), text: text,
         preview: preview(text), kind: type.kind, colorHex: type.colorHex, timestamp: timestamp,
         lines: text.split(/\r\n|\r|\n/).length,
-        words: trimmed.length === 0 ? 0 : trimmed.split(/\s+/).length, chars: text.length };
+        words: trimmed.length === 0 ? 0 : trimmed.split(/\s+/).length, chars: text.length,
+        imagePath: "", imageWidth: 0, imageHeight: 0, bytes: text.length, md5: "",
+        sourceApp: typeof sourceApp === "string" ? sourceApp : "",
+        sourceTitle: typeof sourceTitle === "string" ? sourceTitle : "" };
 }
-function record(items, text, timestamp) {
+function createImageRecord(imagePath, width, height, bytes, md5, timestamp, sourceApp, sourceTitle) {
+    var desc = "Image (" + width + "x" + height + ")";
+    var recordId = "clipboard-" + timestamp + "-" + (md5 || stableHash(imagePath || desc));
+    return { id: recordId, text: desc, preview: desc, kind: "image", colorHex: "",
+        timestamp: timestamp, lines: 1, words: 1, chars: desc.length,
+        imagePath: imagePath || "", imageWidth: width || 0, imageHeight: height || 0,
+        bytes: bytes || 0, md5: md5 || "",
+        sourceApp: typeof sourceApp === "string" ? sourceApp : "",
+        sourceTitle: typeof sourceTitle === "string" ? sourceTitle : "" };
+}
+function recordImage(items, imagePath, width, height, bytes, md5, timestamp, sourceApp, sourceTitle) {
+    var source = Array.isArray(items) ? items : [];
+    if (typeof imagePath !== "string" || imagePath.length === 0) return source.slice(0, MAX_ITEMS);
+    var observedAt = isFiniteNumber(timestamp) ? timestamp : Date.now(), next = [], existing = null;
+    for (var index = 0; index < source.length; index++) {
+        if (source[index].kind === "image" && (source[index].md5 === md5 || source[index].imagePath === imagePath))
+            existing = source[index];
+        else
+            next.push(source[index]);
+    }
+    var newest = existing === null ? createImageRecord(imagePath, width, height, bytes, md5, observedAt, sourceApp, sourceTitle) : {
+        id: existing.id, text: existing.text, preview: existing.preview, kind: "image",
+        colorHex: "", timestamp: observedAt, lines: existing.lines, words: existing.words,
+        chars: existing.chars, imagePath: imagePath, imageWidth: width, imageHeight: height,
+        bytes: bytes, md5: md5,
+        sourceApp: typeof sourceApp === "string" ? sourceApp : (existing.sourceApp || ""),
+        sourceTitle: typeof sourceTitle === "string" ? sourceTitle : (existing.sourceTitle || "")
+    };
+    next.unshift(newest);
+    return next.slice(0, MAX_ITEMS);
+}
+function record(items, text, timestamp, sourceApp, sourceTitle) {
     var source = Array.isArray(items) ? items : [];
     if (typeof text !== "string" || text.length === 0) return source.slice(0, MAX_ITEMS);
     var observedAt = isFiniteNumber(timestamp) ? timestamp : Date.now(), next = [], existing = null;
@@ -70,10 +111,15 @@ function record(items, text, timestamp) {
         if (source[index].text === text && existing === null) existing = source[index];
         else next.push(source[index]);
     }
-    var newest = existing === null ? createRecord(text, observedAt) : {
+    var newest = existing === null ? createRecord(text, observedAt, sourceApp, sourceTitle) : {
         id: existing.id, text: existing.text, preview: existing.preview, kind: existing.kind,
         colorHex: existing.colorHex, timestamp: observedAt, lines: existing.lines,
-        words: existing.words, chars: existing.chars };
+        words: existing.words, chars: existing.chars,
+        imagePath: existing.imagePath || "", imageWidth: existing.imageWidth || 0,
+        imageHeight: existing.imageHeight || 0, bytes: existing.bytes || existing.text.length,
+        md5: existing.md5 || "",
+        sourceApp: typeof sourceApp === "string" ? sourceApp : (existing.sourceApp || ""),
+        sourceTitle: typeof sourceTitle === "string" ? sourceTitle : (existing.sourceTitle || "") };
     next.unshift(newest);
     return next.slice(0, MAX_ITEMS);
 }

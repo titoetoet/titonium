@@ -12,9 +12,7 @@ NOTCH_ROOT = ROOT / "Titonium/Bar/notch"
 NOTCH_COORDINATOR = NOTCH_ROOT / "CenterNotchCoordinator.qml"
 APP = ROOT / "Titonium/App.qml"
 ACCEPTANCE = ROOT / "scripts/system_monitor_acceptance.sh"
-PRESENTATION_FILES = (
-    "SystemProcessRow.qml", "SystemMonitoringPage.qml",
-)
+PRESENTATION_FILES = ("SystemProcessRow.qml", "SystemMonitoringPage.qml")
 
 
 def main() -> int:
@@ -108,86 +106,32 @@ def main() -> int:
                 )
 
     for name in PRESENTATION_FILES:
-        path = NOTCH_ROOT / name
-        if not path.is_file():
-            errors.append(f"missing Center Monitoring presentation: {name}")
-            continue
-        source = path.read_text(encoding="utf-8")
-        for forbidden in ("Process {", "FileView {", "Timer {", "execDetached", "Date.now()", "/proc", "/sys"):
-            if forbidden in source:
-                errors.append(f"{name} owns forbidden monitor runtime: {forbidden}")
-        for fragment in ("import qs.Titonium.Shared as Shared", "import qs.Titonium.Theme"):
-            if fragment not in source:
-                errors.append(f"{name} missing themed presentation contract: {fragment}")
-
-    page = NOTCH_ROOT / "SystemMonitoringPage.qml"
-    if page.is_file():
-        source = page.read_text(encoding="utf-8")
-        for forbidden in ("SystemMetricBlock", "CenterActivityService", "snapshot.disk", "snapshot.network",
-                "center_notch.monitoring.process_running", "center_notch.monitoring.process_status"):
-            if forbidden in source:
-                errors.append(f"SystemMonitoringPage retains removed presentation: {forbidden}")
-        for fragment in (
-            "import qs.Titonium.Services.SystemMonitor",
-            "GridLayout {", "columns: 2",
-            "model: SystemMonitorService.processes",
-            "id: hardwarePanel", "id: processesPanel",
-            "SystemMonitorService.cpuHistory",
-            "SystemMonitorService.cpuTemperatureHistory",
-            "preferredRendererType: Shape.SoftwareRenderer",
-            "PathPolyline",
-            "center_notch.monitoring.utilization",
-            "Layout.minimumWidth: 0",
-            "SystemMonitorService.snapshot.cpu",
-            "SystemMonitorService.snapshot.ram",
-            "SystemMonitorService.snapshot.gpu",
-            "SystemMonitorService.snapshot.vram",
-            "SystemMonitorService.snapshot.storage",
-            "id: gpuBar",
-            'name: "format_list_numbered"', 'name: "developer_board"',
-            'name: "memory_alt"',
-            'name: "storage"',
-            "center_notch.monitoring.gpu_clock",
-            "SystemMonitorService.snapshot.cpu?.name",
-            "SystemMonitorService.snapshot.gpu?.name",
-            "center_notch.monitoring.top_processes",
-        ):
-            if fragment not in source:
-                errors.append(f"SystemMonitoringPage missing contract: {fragment}")
-        for forbidden in (
-            "SystemMonitorService.start()", "SystemMonitorService.stop()",
-            "Canvas {", "animatedCpuVal", "animatedRamVal", "animatedGpuVal",
-        ):
-            if forbidden in source:
-                errors.append(f"SystemMonitoringPage must not own monitor lifecycle: {forbidden}")
+        if (NOTCH_ROOT / name).exists():
+            errors.append(f"detached System Monitor retains unreachable Center view: {name}")
 
     coordinator_source = NOTCH_COORDINATOR.read_text(encoding="utf-8")
-    for fragment in (
-        "import qs.Titonium.Services.SystemMonitor",
-        "function syncMonitoringLifecycle(): void",
-        "onActiveChanged: root.syncMonitoringLifecycle()",
-        "onRequestedPageChanged: root.syncMonitoringLifecycle()",
-        "SystemMonitorService.start()",
-        "SystemMonitorService.stop()",
+    for forbidden in (
+        "qs.Titonium.Services.SystemMonitor",
+        "SystemMonitorService.start()", "SystemMonitorService.stop()",
     ):
-        if fragment not in coordinator_source:
-            errors.append(f"CenterNotchCoordinator missing monitor lifecycle: {fragment}")
+        if forbidden in coordinator_source:
+            errors.append(f"System Monitor is still coupled to Center: {forbidden}")
 
     notch_qmldir = NOTCH_ROOT / "qmldir"
     if notch_qmldir.is_file():
         exports = notch_qmldir.read_text(encoding="utf-8")
         for name in PRESENTATION_FILES:
             component = name.removesuffix(".qml")
-            if f"{component} 1.0 {name}" not in exports:
-                errors.append(f"Center notch qmldir missing {component}")
+            if f"{component} 1.0 {name}" in exports:
+                errors.append(f"Center notch qmldir retains detached {component}")
 
-    app_source = APP.read_text(encoding="utf-8")
+    app_source = (ROOT / "Titonium/Ipc/CenterIpc.qml").read_text(encoding="utf-8")
     for fragment in (
         "import qs.Titonium.Services.SystemMonitor",
         "function monitorState(): string { return SystemMonitorService.state(); }",
     ):
         if fragment not in app_source:
-            errors.append(f"App missing System Monitor diagnostics: {fragment}")
+            errors.append(f"CenterIpc missing System Monitor diagnostics: {fragment}")
     for forbidden in ("SystemMonitorService.start()", "SystemMonitorService.stop()"):
         if forbidden in app_source:
             errors.append(f"App IPC must not own monitor lifecycle: {forbidden}")
@@ -200,7 +144,7 @@ def main() -> int:
             errors.append("System Monitor acceptance must be executable")
         for fragment in (
             "set -euo pipefail", "centerNotch open monitoring",
-            "center monitorState", "centerNotch page notifications",
+            "center monitorState", ";page=overview",
             "before_git", "before_live", "before_dotfiles",
             "Configuration Loaded", "trap cleanup EXIT",
             "production_was_running", "qs -d -p",
@@ -212,7 +156,7 @@ def main() -> int:
         print("FAIL System Monitor architecture")
         print("\n".join(errors))
         return 1
-    print("PASS on-demand System Monitor service ownership and lifecycle")
+    print("PASS detached System Monitor service ownership")
     return 0
 
 

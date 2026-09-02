@@ -98,7 +98,7 @@ assert.deepEqual(plain(rules.centerEvent(descriptor, "Bạn có một notificati
     deduplicationKey: "notification:new",
     source: "notification",
     kind: "new",
-    title: "Bạn có một notification",
+    title: "Hello",
     icon: "notifications",
     createdAt: 2000,
 });

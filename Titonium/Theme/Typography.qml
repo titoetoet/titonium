@@ -6,11 +6,17 @@ import "TypographyScale.js" as TypographyScale
 
 QtObject {
     id: root
+
+    property FontLoader materialSymbolsLoader: FontLoader {
+        source: Qt.resolvedUrl("assets/MaterialSymbolsRounded.ttf")
+    }
+
     readonly property string fontFamily: "SF Pro Display"
     readonly property string family: root.fontFamily
     readonly property string fallbackFamily: "Noto Sans"
     readonly property string monoFamily: "JetBrains Mono"
-    readonly property string iconFamily: "Material Symbols Rounded"
+    readonly property bool iconFontReady: root.materialSymbolsLoader.status === FontLoader.Ready
+    readonly property string iconFamily: root.materialSymbolsLoader.name
     readonly property int microSize: TypographyScale.sizeFor("micro")
     readonly property int bodySize: TypographyScale.sizeFor("body")
     readonly property int bodySmallSize: TypographyScale.sizeFor("bodySmall")

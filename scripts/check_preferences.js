@@ -33,6 +33,7 @@ assert.equal(projectedDefaults.locale, "vi");
 assert.equal(projectedDefaults.appearance.mode, "dark");
 assert.equal(projectedDefaults.modules.bar.workspaceCount, 5);
 assert.equal(projectedDefaults.modules.bar.autoHide, false);
+assert.equal(projectedDefaults.modules.bar.mascotEnabled, true);
 assert.equal(projectedDefaults.modules.dock.visibilityMode, "auto-hide");
 assert.deepEqual(projectedDefaults.modules.dock.pinnedIds, []);
 assert.equal(projectedDefaults.modules.notifications.toastsEnabled, true);
@@ -50,6 +51,7 @@ assert.equal(migrated.modules.spotlight.transitionDuration, 480);
 assert.equal(migrated.modules.clock.use24Hour, false);
 assert.equal(migrated.modules.audio.allowAmplification, true);
 assert.equal(migrated.modules.bar.workspaceCount, 5);
+assert.equal(migrated.modules.bar.mascotEnabled, true);
 assert.equal(migrated.modules.dock.visibilityMode, "reserve-space");
 assert.deepEqual(migrated.modules.dock.pinnedIds,
     ["firefox.desktop", "org.kde.dolphin.desktop"]);
@@ -57,6 +59,7 @@ assert.deepEqual(migrated.modules.dock.pinnedIds,
 const currentProjection = plain(context.project(current, defaults, legacyDock));
 assert.equal(currentProjection.modules.bar.workspaceCount, 8);
 assert.equal(currentProjection.modules.bar.autoHide, true);
+assert.equal(currentProjection.modules.bar.mascotEnabled, true);
 assert.equal(currentProjection.modules.dock.visibilityMode, "always-visible");
 assert.deepEqual(currentProjection.modules.dock.pinnedIds,
     ["org.mozilla.firefox.desktop"]);
@@ -95,6 +98,7 @@ assert.equal(invalid.modules.spotlight.pageTransition, "slide-fade");
 assert.equal(invalid.modules.spotlight.transitionDuration, 500);
 assert.equal(invalid.modules.bar.workspaceCount, 8);
 assert.equal(invalid.modules.bar.autoHide, false);
+assert.equal(invalid.modules.bar.mascotEnabled, true);
 assert.equal(invalid.modules.dock.visibilityMode, "auto-hide");
 assert.deepEqual(invalid.modules.dock.pinnedIds, ["A", "B"]);
 assert.equal(invalid.modules.notifications.toastsEnabled, true);

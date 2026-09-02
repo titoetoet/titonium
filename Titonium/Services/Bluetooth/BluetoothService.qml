@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell.Bluetooth
+import Quickshell.Io
 import qs.Titonium.Core.Runtime
 import qs.Titonium.Services.Center
 import "BluetoothRules.js" as BluetoothRules
@@ -27,7 +28,12 @@ QtObject {
                 icon: device?.icon,
                 connected: device?.connected === true,
                 paired: device?.paired === true,
-                pairing: device?.pairing === true,
+                bonded: device?.bonded === true,
+                pairing: device?.pairing === true
+                    || (BluetoothRules.normalizedAddress(device?.address).toLowerCase()
+                            === root.pendingPairAddress.toLowerCase()
+                        && device?.paired !== true && device?.connected !== true),
+                trusted: device?.trusted === true,
                 blocked: device?.blocked === true,
                 batteryAvailable: device?.batteryAvailable === true,
                 battery: device?.battery,
@@ -47,8 +53,131 @@ QtObject {
 
     property var operationWarningCounts: ({})
     property var previousConnectedAudioAddresses: null
+    property string pendingPairAddress: ""
+    property bool pairingWasActive: false
+    property bool connectAttempted: false
 
     signal audioDeviceConnected(string address)
+
+    // Persistent BlueZ pairing agent. Native device.pair() only initiates the
+    // pairing request; a registered agent is what completes it on this
+    // agent-less (bare Hyprland) system. The process stays alive while its
+    // stdin pipe is open and is restarted if it exits.
+    property Process agentProcess: Process {
+        command: ["bluetoothctl", "--agent", "NoInputNoOutput"]
+        stdinEnabled: true
+        stdout: StdioCollector { waitForEnd: false }
+        stderr: StdioCollector { waitForEnd: false }
+        onExited: exitCode => {
+            Logger.warn("bluetooth", "agent process exited: " + exitCode);
+            if (root.available)
+                Qt.callLater(root.ensureAgent);
+        }
+    }
+
+    property Timer pairWatchdog: Timer {
+        interval: 30000
+        repeat: false
+        onTriggered: {
+            if (!root.pendingPairAddress)
+                return;
+            const device = root.nativeDeviceForAddress(root.pendingPairAddress);
+            if (device !== null && device.pairing === true)
+                device.cancelPair();
+            root.failPair("pair.timeout", "pairing timed out");
+        }
+    }
+
+    property Timer connectWatchdog: Timer {
+        interval: 15000
+        repeat: false
+        onTriggered: {
+            if (!root.pendingPairAddress)
+                return;
+            root.failPair("connect.timeout", "connection timed out");
+        }
+    }
+
+    function ensureAgent(): void {
+        if (!root.available || root.agentProcess.running)
+            return;
+        Logger.info("bluetooth", "starting pairing agent");
+        root.agentProcess.running = true;
+    }
+
+    function nativeDeviceForAddress(requestedAddress: string): var {
+        const bluetooth = Bluetooth;
+        const adapter = bluetooth.defaultAdapter;
+        const normalizedAddress = BluetoothRules.normalizedAddress(requestedAddress).toLowerCase();
+        if (adapter === null || adapter === undefined || normalizedAddress.length === 0)
+            return null;
+        const source = adapter.devices.values || [];
+        for (let index = 0; index < source.length; index += 1) {
+            const candidate = source[index];
+            if (BluetoothRules.normalizedAddress(candidate?.address).toLowerCase()
+                    === normalizedAddress)
+                return candidate;
+        }
+        return null;
+    }
+
+    function resetPairing(): void {
+        root.pendingPairAddress = "";
+        root.pairingWasActive = false;
+        root.connectAttempted = false;
+        root.pairWatchdog.stop();
+        root.connectWatchdog.stop();
+    }
+
+    function failPair(reason: string, message: string): void {
+        root.resetPairing();
+        root.warnOperation(reason, message);
+        CenterAttentionService.publish({
+            id: "bluetooth:pair", source: "bluetooth", kind: "pair_failed",
+            title: I18n.tr("bluetooth.center.pair_failed"), icon: "bluetooth_disabled"
+        });
+    }
+
+    // Drives the pair -> auto-connect chain purely from native reactive state.
+    // Runs on every projection change; each branch is idempotent so repeated
+    // invocations never issue duplicate native calls.
+    function observePairProgress(): void {
+        const address = root.pendingPairAddress;
+        if (!address)
+            return;
+        const device = root.nativeDeviceForAddress(address);
+        if (device === null) {
+            // Device disappeared (forgotten) — reset without surfacing an error.
+            root.resetPairing();
+            return;
+        }
+        if (device.connected === true) {
+            root.resetPairing();
+            return;
+        }
+        if (device.pairing === true) {
+            root.pairingWasActive = true;
+            return;
+        }
+        if (device.paired === true) {
+            if (!root.connectAttempted && device.state !== BluetoothDeviceState.Connecting) {
+                Logger.info("bluetooth", "paired, auto-connecting " + address);
+                root.connectAttempted = true;
+                if (device.trusted !== true)
+                    device.trusted = true;
+                device.connect();
+                root.connectWatchdog.restart();
+            }
+            return;
+        }
+        if (device.state === BluetoothDeviceState.Connecting)
+            return;
+        // Pairing finished (native pairing flag went active then inactive) without
+        // the device becoming paired. If pair() was just issued, native pairing
+        // has not propagated yet and we wait for the watchdog instead.
+        if (root.pairingWasActive)
+            root.failPair("pair.failed", "pairing failed for " + address);
+    }
 
     function observeAudioConnections(): void {
         const event = BluetoothRules.audioConnectionEvent(
@@ -115,8 +244,7 @@ QtObject {
             return false;
         }
 
-        const bluetooth = Bluetooth;
-        const adapter = bluetooth.defaultAdapter;
+        const adapter = Bluetooth.defaultAdapter;
         if (adapter === null || adapter === undefined || adapter.enabled !== true) {
             root.warnOperation("discovery.adapter", "ignored discovery request without powered adapter");
             return false;
@@ -132,28 +260,18 @@ QtObject {
     }
 
     function connectDevice(address: string): bool {
-        const nativeDeviceForAddress = function(requestedAddress) {
-            const bluetooth = Bluetooth;
-            const adapter = bluetooth.defaultAdapter;
-            const normalizedAddress = BluetoothRules.normalizedAddress(requestedAddress).toLowerCase();
-            if (adapter === null || adapter === undefined || normalizedAddress.length === 0)
-                return null;
-            const source = adapter.devices.values || [];
-            for (let index = 0; index < source.length; index += 1) {
-                const candidate = source[index];
-                if (BluetoothRules.normalizedAddress(candidate?.address).toLowerCase()
-                        === normalizedAddress)
-                    return candidate;
-            }
-            return null;
-        };
-        const device = nativeDeviceForAddress(address);
+        const device = root.nativeDeviceForAddress(address);
         if (device === null) {
             root.warnOperation("connect.stale", "ignored connect request for stale device");
             return false;
         }
 
         try {
+            Logger.info("bluetooth", "connectDevice requesting connection for " + address);
+            if (Bluetooth.defaultAdapter?.discovering === true)
+                Bluetooth.defaultAdapter.discovering = false;
+            if (device.paired === true && device.trusted !== true)
+                device.trusted = true;
             device.connect();
             return true;
         } catch (error) {
@@ -163,22 +281,7 @@ QtObject {
     }
 
     function disconnectDevice(address: string): bool {
-        const nativeDeviceForAddress = function(requestedAddress) {
-            const bluetooth = Bluetooth;
-            const adapter = bluetooth.defaultAdapter;
-            const normalizedAddress = BluetoothRules.normalizedAddress(requestedAddress).toLowerCase();
-            if (adapter === null || adapter === undefined || normalizedAddress.length === 0)
-                return null;
-            const source = adapter.devices.values || [];
-            for (let index = 0; index < source.length; index += 1) {
-                const candidate = source[index];
-                if (BluetoothRules.normalizedAddress(candidate?.address).toLowerCase()
-                        === normalizedAddress)
-                    return candidate;
-            }
-            return null;
-        };
-        const device = nativeDeviceForAddress(address);
+        const device = root.nativeDeviceForAddress(address);
         if (device === null) {
             root.warnOperation("disconnect.stale", "ignored disconnect request for stale device");
             return false;
@@ -194,28 +297,19 @@ QtObject {
     }
 
     function pairDevice(address: string): bool {
-        const nativeDeviceForAddress = function(requestedAddress) {
-            const bluetooth = Bluetooth;
-            const adapter = bluetooth.defaultAdapter;
-            const normalizedAddress = BluetoothRules.normalizedAddress(requestedAddress).toLowerCase();
-            if (adapter === null || adapter === undefined || normalizedAddress.length === 0)
-                return null;
-            const source = adapter.devices.values || [];
-            for (let index = 0; index < source.length; index += 1) {
-                const candidate = source[index];
-                if (BluetoothRules.normalizedAddress(candidate?.address).toLowerCase()
-                        === normalizedAddress)
-                    return candidate;
-            }
-            return null;
-        };
-        const device = nativeDeviceForAddress(address);
+        const device = root.nativeDeviceForAddress(address);
         if (device === null) {
             root.warnOperation("pair.stale", "ignored pair request for stale device");
             return false;
         }
 
         try {
+            if (root.pendingPairAddress)
+                return false;
+            root.ensureAgent();
+            root.pendingPairAddress = BluetoothRules.normalizedAddress(address);
+            root.pairWatchdog.restart();
+            Logger.info("bluetooth", "pairDevice requesting pair for " + root.pendingPairAddress);
             device.pair();
             return true;
         } catch (error) {
@@ -225,29 +319,16 @@ QtObject {
     }
 
     function cancelPair(address: string): bool {
-        const nativeDeviceForAddress = function(requestedAddress) {
-            const bluetooth = Bluetooth;
-            const adapter = bluetooth.defaultAdapter;
-            const normalizedAddress = BluetoothRules.normalizedAddress(requestedAddress).toLowerCase();
-            if (adapter === null || adapter === undefined || normalizedAddress.length === 0)
-                return null;
-            const source = adapter.devices.values || [];
-            for (let index = 0; index < source.length; index += 1) {
-                const candidate = source[index];
-                if (BluetoothRules.normalizedAddress(candidate?.address).toLowerCase()
-                        === normalizedAddress)
-                    return candidate;
-            }
-            return null;
-        };
-        const device = nativeDeviceForAddress(address);
+        const device = root.nativeDeviceForAddress(address);
         if (device === null) {
             root.warnOperation("cancelPair.stale", "ignored pair cancellation for stale device");
             return false;
         }
 
         try {
-            device.cancelPair();
+            root.resetPairing();
+            if (device.pairing === true)
+                device.cancelPair();
             return true;
         } catch (error) {
             root.warnOperation("cancelPair.failure", "pair cancellation failed");
@@ -256,22 +337,7 @@ QtObject {
     }
 
     function forgetDevice(address: string): bool {
-        const nativeDeviceForAddress = function(requestedAddress) {
-            const bluetooth = Bluetooth;
-            const adapter = bluetooth.defaultAdapter;
-            const normalizedAddress = BluetoothRules.normalizedAddress(requestedAddress).toLowerCase();
-            if (adapter === null || adapter === undefined || normalizedAddress.length === 0)
-                return null;
-            const source = adapter.devices.values || [];
-            for (let index = 0; index < source.length; index += 1) {
-                const candidate = source[index];
-                if (BluetoothRules.normalizedAddress(candidate?.address).toLowerCase()
-                        === normalizedAddress)
-                    return candidate;
-            }
-            return null;
-        };
-        const device = nativeDeviceForAddress(address);
+        const device = root.nativeDeviceForAddress(address);
         if (device === null) {
             root.warnOperation("forget.stale", "ignored forget request for stale device");
             return false;
@@ -279,11 +345,29 @@ QtObject {
 
         try {
             device.forget();
+            // Bring the forgotten device back into the discovery section below
+            // by resuming discovery, so it reappears as an available device.
+            const bluetooth = Bluetooth;
+            const adapter = bluetooth.defaultAdapter;
+            if (adapter !== null && adapter !== undefined && adapter.enabled === true)
+                adapter.discovering = true;
+            if (BluetoothRules.normalizedAddress(address).toLowerCase()
+                    === root.pendingPairAddress.toLowerCase())
+                root.resetPairing();
             return true;
         } catch (error) {
             root.warnOperation("forget.failure", "forget request failed");
             return false;
         }
+    }
+
+    function completeAudioConnection(address: string): void {
+        if (BluetoothRules.normalizedAddress(address).toLowerCase()
+                !== root.pendingPairAddress.toLowerCase())
+            return;
+        root.pendingPairAddress = "";
+        root.pairWatchdog.stop();
+        root.connectWatchdog.stop();
     }
 
     function snapshot(): string {
@@ -295,10 +379,21 @@ QtObject {
             connectedCount: root.connectedCount,
             devices: root.devices,
             stateKey: root.stateKey,
+            pendingPairAddress: root.pendingPairAddress,
+            pairingAgentRunning: root.agentProcess.running,
         });
     }
 
-
-    onProjectionChanged: root.observeAudioConnections()
-    Component.onCompleted: root.observeAudioConnections()
+    onAvailableChanged: {
+        if (root.available)
+            root.ensureAgent();
+    }
+    onProjectionChanged: {
+        root.observeAudioConnections();
+        root.observePairProgress();
+    }
+    Component.onCompleted: {
+        root.observeAudioConnections();
+        root.ensureAgent();
+    }
 }

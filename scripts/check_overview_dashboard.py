@@ -19,7 +19,6 @@ def main() -> int:
         ROOT / "Titonium/Bar/notch/OverviewWeatherHero.qml",
         ROOT / "Titonium/Bar/notch/OverviewFocusCard.qml",
         ROOT / "Titonium/Bar/notch/OverviewMediaCard.qml",
-        ROOT / "Titonium/Bar/notch/CenterActivityCard.qml",
         WEATHER_SERVICE,
         ROOT / "Titonium/Services/Weather/WeatherRules.js",
         WEATHER_QMLDIR,

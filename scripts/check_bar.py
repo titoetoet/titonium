@@ -35,12 +35,8 @@ def main() -> int:
         "notch/CenterNotchWindow.qml",
         "notch/CenterNotchSurface.qml",
         "notch/CenterNotch.qml",
-        "notch/CenterNotchRail.qml",
         "notch/CenterNotchViewport.qml",
         "notch/OverviewPage.qml",
-        "notch/CenterActionButton.qml",
-        "notch/ToolsPage.qml",
-        "notch/SessionPage.qml",
     )
     for relative in required:
         if not (BAR / relative).is_file():
@@ -59,14 +55,14 @@ def main() -> int:
             "id: edgeReveal",
             "hideDelay.restart()",
             "mask: Region {",
-            "Region { item: bar.pinHitbox }",
+            "Region { item: bar.notificationHitbox }",
         ),
         "Bar.qml": ("StartIsland {", "CenterGroup {", "EndIsland {",
-                    "TopbarPin {", "id: topbarPin",
+                    "NotificationPill {", "id: notificationPill",
                     "x: centerGroup.x + centerGroup.width + Metrics.spacingSmall",
                     "BarLayout.centerX(root.width, centerGroup.width)",
                     "readonly property alias centerHitbox: centerGroup",
-                    "readonly property alias pinHitbox: topbarPin",
+                    "readonly property alias notificationHitbox: notificationPill",
                     "signal centerRequested(var screen)",
                     "readonly property bool hovered:"),
         "islands/CenterGroup.qml": (
@@ -74,6 +70,20 @@ def main() -> int:
             "id: centerIsland",
             "signal notchRequested(var screen)",
             "onNotchRequested: screen => root.notchRequested(screen)",
+        ),
+        "islands/CenterIsland.qml": (
+            "CenterFocusStore.text",
+            'I18n.tr("menubar.center.focus_fallback")',
+            "strong: true",
+            "Behavior on implicitWidth",
+            "Behavior on implicitHeight",
+            "easing.bezierCurve: [0.34, 1.22, 0.64, 1, 1, 1]",
+            "readonly property string presentationKey:",
+            "const fullTransition = root.displayedPresentationKey !== root.presentationKey",
+            "root.sizeMorphEnabled = fullTransition && !Motion.reduced",
+            "id: presentationFade",
+            "duration: 160",
+            "scale: root.notchOpen ? 0.97 : 1",
         ),
         "islands/TopbarPin.qml": (
             "BarVisibilityState.togglePinned()",
@@ -120,9 +130,11 @@ def main() -> int:
             "Shared.Surface {",
             "radius: Metrics.radiusLarge",
             "implicitHeight: Metrics.widgetHeight",
+            "visible: NotificationService.hasUnread",
+            "signal notificationsRequested()",
         ),
         "islands/EndIsland.qml": (
-            "NotificationPill {",
+            "TopbarPin {",
             "ConnectivityPill {",
             "StatusPill {",
             "connectivity.fullImplicitWidth",
@@ -134,9 +146,16 @@ def main() -> int:
             "active: window.ownsNotch",
             "WlrLayershell.exclusionMode: ExclusionMode.Ignore",
             "WlrLayershell.keyboardFocus:",
+            "readonly property bool dismissing:",
+            "active: window.ownsNotch || window.dismissing",
+            "closeRequested: window.dismissing",
+            "Region { item: activeInputRegion }",
+            "width: window.ownsNotch ? window.width : 0",
         ),
         "notch/CenterNotchCoordinator.qml": (
             "property bool pinned: false",
+            "property string exitingScreenName:",
+            "function finishClose(screenName: string): void",
             "function togglePinned(screenName: string): bool",
             "root.pinned = false",
         ),
@@ -147,27 +166,23 @@ def main() -> int:
             "readonly property real panelTop: Metrics.barHeight + Metrics.barSpacing",
             "anchors.topMargin: root.panelTop",
             "root.height - root.panelTop - Metrics.barPadding",
-        ),
-        "notch/CenterNotchRail.qml": (
-            "implicitHeight: 48",
-            "id: selectionHighlight",
-            "CenterNotchState.primaryPages()",
-            "settingsRequested()",
-        ),
-        "notch/CenterNotchViewport.qml": (
-            "StackView {",
-            "stack.replace(",
-            "stack.busy",
-            "property string pendingPage",
+            "id: notchEntrance",
+            "Approved cubic baseline (2026-09-03)",
+            "from: 0.93",
+            "from: -14",
+            "PauseAnimation { duration: 30 }",
+            "id: notchExit",
+            "onFinished: root.closeAnimationFinished()",
         ),
         "notch/CenterNotch.qml": (
-            "CenterNotchRail {",
             "CenterNotchViewport {",
-            "Layout.preferredHeight: Metrics.borderWidth",
+            "requestedPage: CenterNotchCoordinator.requestedPage",
             "topLeftRadius: 20",
             "topRightRadius: 20",
             "bottomLeftRadius: 20",
             "bottomRightRadius: 20",
+            "property bool entranceRequested:",
+            "id: contentEntranceOffset",
         ),
     }
     for filename, fragments in contracts.items():
@@ -212,11 +227,11 @@ def main() -> int:
     end_island = BAR / "islands/EndIsland.qml"
     if end_island.is_file():
         source = end_island.read_text(encoding="utf-8")
-        notification_index = source.find("NotificationPill {")
+        pin_index = source.find("TopbarPin {")
         connectivity_index = source.find("ConnectivityPill {")
         status_index = source.find("StatusPill {")
-        if not (0 <= notification_index < connectivity_index < status_index):
-            errors.append("EndIsland order must be Notification, Connectivity, then Input")
+        if not (0 <= pin_index < connectivity_index < status_index):
+            errors.append("EndIsland order must be Pin, Connectivity, then Input")
 
     status_pill = BAR / "islands/StatusPill.qml"
     if status_pill.is_file() and "Clock {" in status_pill.read_text(encoding="utf-8"):
@@ -308,6 +323,7 @@ def main() -> int:
         for fragment in (
             "CenterAttentionService.presentation",
             "CenterFocusStore.text",
+            'I18n.tr("menubar.center.focus_fallback")',
             "signal notchRequested(var screen)",
             "Text.ElideRight",
             "maximumLineCount: 1",
@@ -456,10 +472,6 @@ def main() -> int:
         "notification.bell.unread",
         "center_notch.title",
         "center_notch.tab.overview",
-        "center_notch.tab.tools",
-        "center_notch.tab.session",
-        "center_notch.tab.settings",
-        "center_notch.settings.unavailable",
         "center_notch.overview.description",
         "center_notch.overview.daily_focus",
         "center_notch.overview.daily_focus.open",
@@ -467,53 +479,35 @@ def main() -> int:
         "center_notch.overview.keyboard",
         "center_notch.overview.lazy",
         "center_notch.overview.solid",
-        "center_notch.action.unavailable",
-        "center_notch.tools.title",
-        "center_notch.session.title",
     }
-    required_i18n.update({
-        "center_notch.action." + action_id for action_id in (
-            "screenshot", "screen-recording", "color-picker", "ocr", "qr-scan",
-            "camera-mirror", "night-mode", "more-tools", "lock", "logout",
-            "sleep", "hibernate", "restart", "shutdown",
-        )
-    })
     for locale in ("en", "vi"):
         catalog = json.loads((ROOT / f"config/i18n/{locale}.json").read_text(encoding="utf-8"))
         missing = sorted(required_i18n - set(catalog.get("strings", {})))
         for key in missing:
             errors.append(f"{locale} catalog missing Bar key: {key}")
 
-    for relative in ("notch/ToolsPage.qml", "notch/SessionPage.qml"):
-        path = BAR / relative
-        if not path.is_file():
-            continue
-        source = path.read_text(encoding="utf-8")
-        for forbidden in ("Process", "execDetached", "FileView", "callback", "executable"):
-            if forbidden in source:
-                errors.append(f"{relative} contains executable mock boundary: {forbidden}")
-        if re.search(r"\b(command|process|script)\s*:", source, re.IGNORECASE):
-            errors.append(f"{relative} contains command-like property")
-        if re.search(r"^\s*import\s+qs\.Titonium\.Services", source, re.MULTILINE):
-            errors.append(f"{relative} imports a service from a mock page")
-
-    app_path = ROOT / "Titonium/App.qml"
-    if app_path.is_file():
-        app_source = app_path.read_text(encoding="utf-8")
-        for fragment in (
+    notch_contracts = (
+        (ROOT / "Titonium/Orchestration/SurfaceRouter.qml", (
             "function openCenterNotch(requestedScreen: var, pageId: string): string",
             "SettingsCoordinator.forceCancelAndClose()",
-            "onCenterRequested: screen => root.openCenterNotch(screen, \"overview\")",
-            "onSettingsRequested: screen => root.openSettings(screen, \"general\")",
-            'target: "centerNotch"',
             "CenterNotchCoordinator.close()",
+        )),
+        (ROOT / "Titonium/App.qml", (
+            "onCenterRequested: screen => router.openCenterNotch(screen, \"overview\")",
+        )),
+        (ROOT / "Titonium/Ipc/CoreIpc.qml", (
+            'target: "centerNotch"',
             "function open(page: string): string",
             "function page(page: string): string",
             "function close(): string",
             "function state(): string",
-        ):
-            if fragment not in app_source:
-                errors.append(f"App missing Center Notch lifecycle contract: {fragment}")
+        )),
+    )
+    for path, fragments in notch_contracts:
+        source = path.read_text(encoding="utf-8") if path.is_file() else ""
+        for fragment in fragments:
+            if fragment not in source:
+                errors.append(f"Center Notch owner missing contract: {path.relative_to(ROOT)}: {fragment}")
 
     check_sh = (ROOT / "scripts/check.sh").read_text(encoding="utf-8")
     protected_source = (ROOT / "scripts/protected_acceptance.sh").read_text(encoding="utf-8")

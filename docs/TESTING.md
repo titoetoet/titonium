@@ -173,10 +173,10 @@ acceptance uses IPC to exercise Spotlight scope/query/close transitions, confirm
 isolation and verifies both Hyprland configuration hashes. It does not launch an application or
 write clipboard content.
 
-Center Notch acceptance opens Overview, Tools and Session through IPC, proves that Spotlight closes
-the notch, and closes both surfaces again. It rejects runtime type/load errors, repository writes
-and changes to either Hyprland configuration hash. Mock tiles are deliberately not executable and
-there is no action IPC endpoint.
+Center Notch acceptance opens Overview and verifies legacy page requests normalize back to it,
+proves that Spotlight closes the notch, and closes both surfaces again. It rejects runtime
+type/load errors, repository writes and changes to either Hyprland configuration hash. Notification
+history remains a direct internal route rather than a general navigation rail.
 
 Audio acceptance launches one foreground shell and calls only `audio.state`, `audio.popup`,
 `audio.closePopup`, `audio.popupState`, `audio.osdState`, Center Notch and Spotlight lifecycle IPC.
@@ -235,8 +235,8 @@ Titonium output:
 - confirm five Workspace slots and the naturally sized Active Window pill immediately after them;
 - open the Active Window pill on DP-1 scale 1.5;
 - confirm the popup remains centered, top-attached, keeps 48px rail proportions and closes on outside-click/Escape;
-- switch pages rapidly and confirm only the latest page remains, without vertically stretched tiles;
-- activate a Tools/Session tile and confirm translated feedback with no system action.
+- open Notification history from its Bar control, then return to Overview without a stale page;
+- request a retired page over IPC and confirm it normalizes safely to Overview.
 
 Audio remains awaiting visual approval. On DP-1 (scale 1.5), verify the Audio
 icon remains visible when diagnostic glyphs collapse; click/outside-click/Escape popup lifecycle;
@@ -353,25 +353,16 @@ Run `./scripts/notifications_acceptance.sh` to verify native history, toast expi
 DP-1-only layer ownership and unchanged repository/Hyprland configuration hashes. Then perform the
 page interaction check:
 
-1. Send two notifications with `notify-send` while Center is closed; the rail badge shows `2`.
-2. Open Center, then Notifications; the badge clears while both newest-first history rows remain.
+1. Send two notifications with `notify-send` while Center is closed; the Notification pill shows `2`.
+2. Open Notification history from the pill; the badge clears while both newest-first rows remain.
 3. Send another notification while Notifications is visible; it appears first without leaving an
    unread badge.
 4. Dismiss one row and confirm only that row disappears.
 5. Select Clear all and confirm the page enters its empty state.
-6. Switch to Tools and back; the page is recreated lazily without duplicating history rows.
+6. Close and reopen the surface; history is recreated lazily without duplicate rows.
 
 ## Center System Monitoring checkpoint
 
-Run `./scripts/system_monitor_acceptance.sh`, then verify manually:
-
-1. Open Center > System Monitoring; Live activates and values appear without a startup zero flash.
-2. Confirm the CPU model and GPU model are sourced from the host, while the RAM header shows actual capacity.
-3. Confirm GPU clock updates from the active sysfs clock state and unavailable metadata renders an em dash.
-
-4. Confirm every icon shares the bar/value line and hover exposes its metric name.
-5. Generate CPU/GPU load; bars update in place at the expected cadence.
-
-6. Confirm Top processes groups matching executables, shows correct CPU/memory totals and has no redundant status column.
-
-7. Switch to another Center page; Live stops immediately and no monitoring process remains running.
+Run `./scripts/system_monitor_acceptance.sh`. It verifies a legacy Monitoring request normalizes to
+Overview and that the detached service remains inactive: no sampling, discovery, GPU-info, storage
+or process command may start. There is currently no System Monitoring view to review manually.

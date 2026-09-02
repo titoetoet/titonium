@@ -13,7 +13,6 @@ FocusScope {
 
     property string pageId: "notifications"
     property double observedAt: Date.now()
-    signal feedbackRequested(string key)
 
     function markVisibleNotificationsRead(): void {
         root.observedAt = Date.now();

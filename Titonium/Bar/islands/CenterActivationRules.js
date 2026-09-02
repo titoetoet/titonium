@@ -8,5 +8,7 @@ function intent(source) {
     var normalized = text(source);
     if (normalized === "media")
         return "raise-media";
-    return normalized === "clipboard" ? "open-clipboard" : "open-center";
+    if (normalized === "clipboard")
+        return "open-clipboard";
+    return normalized === "notification" ? "open-notifications" : "open-center";
 }

@@ -18,7 +18,7 @@ vm.runInContext(source, rules, { filename: rulesPath });
 
 assert.equal(rules.intent("media"), "raise-media");
 assert.equal(rules.intent("clipboard"), "open-clipboard");
-assert.equal(rules.intent("notification"), "open-center");
+assert.equal(rules.intent("notification"), "open-notifications");
 assert.equal(rules.intent("timer"), "open-center");
 assert.equal(rules.intent(""), "open-center");
 console.log("PASS Center activation routes source actions and preserves popup fallback");

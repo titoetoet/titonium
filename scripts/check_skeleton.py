@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from pathlib import Path
+import re
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -8,6 +9,15 @@ ROOT = Path(__file__).resolve().parents[1]
 REQUIRED = (
     "Titonium/App.qml",
     "Titonium/qmldir",
+    "Titonium/Orchestration/ServiceBootstrap.qml",
+    "Titonium/Orchestration/BluetoothAudioBridge.qml",
+    "Titonium/Orchestration/SurfaceRouter.qml",
+    "Titonium/Orchestration/qmldir",
+    "Titonium/Ipc/CoreIpc.qml",
+    "Titonium/Ipc/CenterIpc.qml",
+    "Titonium/Ipc/DeviceIpc.qml",
+    "Titonium/Ipc/AgentApprovalIpc.qml",
+    "Titonium/Ipc/qmldir",
     "Titonium/Core/Screens/ScreenRouter.qml",
     "Titonium/Core/Screens/qmldir",
     "Titonium/Core/Surfaces/SurfaceManager.qml",
@@ -33,6 +43,7 @@ REQUIRED = (
     "Titonium/Overlays/Spotlight/ApplicationTile.qml",
     "Titonium/Overlays/Spotlight/Calculator.js",
     "Titonium/Overlays/Spotlight/CategoryCatalog.js",
+    "Titonium/Overlays/Spotlight/ClipboardFormat.js",
     "Titonium/Overlays/Spotlight/ClipboardView.qml",
     "Titonium/Overlays/Spotlight/PageIndicator.qml",
     "Titonium/Overlays/Spotlight/SearchEngine.js",
@@ -90,11 +101,16 @@ def main() -> int:
     shell_path = ROOT / "shell.qml"
     if app_path.is_file():
         app_source = app_path.read_text(encoding="utf-8")
-        for contract in ("BarHost {", "OverlayHost {}", 'target: "app"', 'target: "spotlight"'):
+        for contract in ("BarHost {", "OverlayHost {}", "SurfaceRouter {",
+                "CoreIpc { router: router }", "CenterIpc {}", "DeviceIpc {}"):
             if contract not in app_source:
                 errors.append(f"minimal App is missing contract: {contract}")
         if app_source.count("BarHost {") != 1:
             errors.append("minimal App must compose exactly one BarHost")
+        if "IpcHandler" in app_source:
+            errors.append("minimal App must not own IPC handler bodies")
+        if len(app_source.splitlines()) > 80:
+            errors.append("minimal App exceeds the 80-line composition-root budget")
         for retired in (
             "FrameHost",
             "SettingsCenter",
@@ -108,6 +124,19 @@ def main() -> int:
         ):
             if retired in app_source:
                 errors.append(f"minimal App retains retired runtime owner: {retired}")
+
+    ipc_root = ROOT / "Titonium/Ipc"
+    ipc_source = "\n".join(
+        path.read_text(encoding="utf-8") for path in ipc_root.glob("*.qml")
+    ) if ipc_root.is_dir() else ""
+    expected_targets = {
+        "agentApproval", "app", "audio", "bluetooth", "center", "centerNotch", "dock",
+        "job", "mpris", "network", "notifications", "settings", "spotlight", "timer",
+        "window-switcher",
+    }
+    actual_targets = re.findall(r'\btarget\s*:\s*"([^"]+)"', ipc_source)
+    if set(actual_targets) != expected_targets or len(actual_targets) != len(expected_targets):
+        errors.append("IPC adapters must expose each existing public target exactly once")
     if shell_path.is_file():
         shell_source = shell_path.read_text(encoding="utf-8")
         if "import qs.Titonium\n" not in shell_source or "App {}" not in shell_source:

@@ -13,8 +13,8 @@ REQUIRED_SETTINGS_KEYS = {
     "$schema", "schemaVersion", "locale", "appearance", "accessibility", "applications", "modules"
 }
 REQUIRED_TRANSLATION_PREFIXES = (
-    "application.error.", "clipboard.error.", "menubar.clock.",
-    "menubar.input_method.", "menubar.workspace.", "spotlight.",
+    "application.error.", "clipboard.error.", "menubar.input_method.",
+    "menubar.workspace.", "spotlight.",
 )
 
 
@@ -75,7 +75,7 @@ def validate_settings(data: Any) -> list[str]:
         if not isinstance(duration, int) or isinstance(duration, bool) or not 0 <= duration <= 500:
             errors.append("modules.spotlight.transitionDuration must be an integer from 0 to 500")
     bar = modules.get("bar")
-    if not isinstance(bar, dict) or set(bar) != {"workspaceCount", "autoHide"}:
+    if not isinstance(bar, dict) or set(bar) != {"workspaceCount", "autoHide", "mascotEnabled"}:
         errors.append("modules.bar has an invalid shape")
     else:
         count = bar.get("workspaceCount")
@@ -83,6 +83,8 @@ def validate_settings(data: Any) -> list[str]:
             errors.append("modules.bar.workspaceCount must be an integer from 1 to 8")
         if not isinstance(bar.get("autoHide"), bool):
             errors.append("modules.bar.autoHide must be a boolean")
+        if not isinstance(bar.get("mascotEnabled"), bool):
+            errors.append("modules.bar.mascotEnabled must be a boolean")
     dock = modules.get("dock")
     if not isinstance(dock, dict) or set(dock) != {"visibilityMode", "pinnedIds"}:
         errors.append("modules.dock has an invalid shape")

@@ -18,6 +18,7 @@ FocusScope {
     property int backgroundRadius: Metrics.radiusSmall
     property int contentAlignment: Qt.AlignHCenter
     property color iconColor: root.foregroundColor
+    property bool iconSpinning: false
     property string accessibleName: root.label.length > 0 ? root.label : root.iconName
     signal triggered()
 
@@ -64,7 +65,23 @@ FocusScope {
         anchors.verticalCenter: parent.verticalCenter
         x: root.contentAlignment === Qt.AlignLeft ? Metrics.spacingMedium : (parent.width - width) / 2
         spacing: root.label.length > 0 && root.iconName.length > 0 ? Metrics.spacingSmall : 0
-        Icon { visible: root.iconName.length > 0; name: root.iconName; size: root.iconSize; color: root.iconColor }
+        Icon {
+            id: actionIcon
+            visible: root.iconName.length > 0
+            name: root.iconName
+            size: root.iconSize
+            color: root.iconColor
+
+            RotationAnimator {
+                target: actionIcon
+                running: root.iconSpinning && actionIcon.visible
+                from: 0
+                to: 360
+                duration: 900
+                loops: Animation.Infinite
+                onStopped: actionIcon.rotation = 0
+            }
+        }
         TextLabel {
             visible: root.label.length > 0
             text: root.label

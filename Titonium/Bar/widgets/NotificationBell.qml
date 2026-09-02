@@ -9,6 +9,7 @@ import qs.Titonium.Theme
 Item {
     id: root
 
+    signal notificationsRequested()
     width: 24
     height: 24
     readonly property string accessibleName: NotificationService.hasUnread
@@ -24,7 +25,7 @@ Item {
         showFocusRing: false
         backgroundRadius: Metrics.radiusLarge
         accessibleName: root.accessibleName
-        onTriggered: NotificationService.markAllRead()
+        onTriggered: root.notificationsRequested()
     }
 
     Rectangle {

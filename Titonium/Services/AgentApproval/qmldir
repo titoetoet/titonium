@@ -1,0 +1,2 @@
+module qs.Titonium.Services.AgentApproval
+singleton AgentApprovalService 1.0 AgentApprovalService.qml

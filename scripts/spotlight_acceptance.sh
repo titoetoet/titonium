@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+export QT_LOGGING_RULES="${QT_LOGGING_RULES:-qt.qpa.services=false}"
 
 project_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 user_home="$(getent passwd "$(id -u)" | cut -d: -f6)"
@@ -8,6 +9,7 @@ runtime_dir="$data_root/titonium"
 runtime_history="$runtime_dir/clipboard-history.json"
 backup_dir="$(mktemp -d --tmpdir titonium-spotlight-acceptance.XXXXXX)"
 log_file="$backup_dir/shell.log"
+export TITONIUM_AGENT_APPROVAL_SOCKET="$backup_dir/approval.sock"
 had_history=false
 shell_pid=""
 
@@ -29,7 +31,7 @@ cleanup() {
     else
         rm -f -- "$runtime_history"
     fi
-    rm -f -- "$backup_dir/clipboard-history.json" "$log_file"
+    rm -f -- "$backup_dir/clipboard-history.json" "$log_file" "$backup_dir/approval.sock"
     rmdir -- "$backup_dir"
 }
 trap cleanup EXIT

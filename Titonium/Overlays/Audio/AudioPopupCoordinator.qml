@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Titonium.Core.Surfaces
-
 QtObject {
     id: root
 

@@ -5,3 +5,7 @@ Type PanelWindow is not creatable
 # Quickshell's Process signal exposes QProcess::ExitStatus at runtime, but the
 # foreign enum is absent from its generated qmllint metadata.
 Type QProcess::ExitStatus of parameter exitStatus
+# Quickshell's Bluetooth plugin exposes BluetoothAdapter in its generated
+# qmltypes but not declaratively, so qmllint cannot resolve the return type of
+# Bluetooth.defaultAdapter. The runtime resolves it correctly.
+Type "BluetoothAdapter" of property "defaultAdapter" not found

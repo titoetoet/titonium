@@ -4,6 +4,7 @@ set -euo pipefail
 project_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 test_dir="$(mktemp -d --tmpdir titonium-workspace-interactions.XXXXXX)"
 log_file="$test_dir/shell.log"
+export TITONIUM_AGENT_APPROVAL_SOCKET="$test_dir/approval.sock"
 shell_pid=""
 before_git="$(git -C "$project_root" status --porcelain=v1)"
 live_hypr="/home/cole/.config/hypr/hyprland.lua"
@@ -16,7 +17,7 @@ cleanup() {
         kill "$shell_pid" 2>/dev/null || true
         wait "$shell_pid" 2>/dev/null || true
     fi
-    rm -f -- "$log_file"
+    rm -f -- "$log_file" "$test_dir/approval.sock"
     rmdir -- "$test_dir"
 }
 trap cleanup EXIT

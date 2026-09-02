@@ -7,6 +7,7 @@ dotfiles_hypr="/home/cole/Projects/titonium-hyprland/config/hypr/hyprland.lua"
 test_dir="$(mktemp -d --tmpdir titonium-settings-acceptance.XXXXXX)"
 runtime_dir="$test_dir/data/titonium"
 log_file="$test_dir/shell.log"
+export TITONIUM_AGENT_APPROVAL_SOCKET="$test_dir/approval.sock"
 shell_pid=""
 
 before_git="$(git -C "$project_root" status --porcelain=v1)"

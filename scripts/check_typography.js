@@ -6,6 +6,11 @@ const vm = require("vm");
 
 const projectRoot = path.join(__dirname, "..");
 const scalePath = path.join(projectRoot, "Titonium", "Theme", "TypographyScale.js");
+const typographyPath = path.join(projectRoot, "Titonium", "Theme", "Typography.qml");
+const iconFontPath = path.join(projectRoot, "Titonium", "Theme", "assets",
+    "MaterialSymbolsRounded.ttf");
+const iconLicensePath = path.join(projectRoot, "Titonium", "Theme", "assets",
+    "LICENSE.MaterialSymbols.txt");
 
 if (!fs.existsSync(scalePath)) {
     console.error("FAIL typography contract: TypographyScale.js is missing");
@@ -43,4 +48,22 @@ for (const [variant, expected] of Object.entries(expectedSizes))
 
 assertEqual(context.sizeFor("unknown"), 14, "unknown typography variants fall back to body");
 
-console.log("PASS typography scale");
+if (!fs.existsSync(iconFontPath) || fs.statSync(iconFontPath).size < 1_000_000) {
+    console.error("FAIL typography contract: bundled Material Symbols Rounded font is missing");
+    process.exit(1);
+}
+
+if (!fs.existsSync(iconLicensePath)) {
+    console.error("FAIL typography contract: Material Symbols license is missing");
+    process.exit(1);
+}
+
+const typography = fs.readFileSync(typographyPath, "utf8");
+if (!typography.includes("FontLoader")
+        || !typography.includes('Qt.resolvedUrl("assets/MaterialSymbolsRounded.ttf")')
+        || !typography.includes("materialSymbolsLoader.name")) {
+    console.error("FAIL typography contract: Typography must load its bundled icon font");
+    process.exit(1);
+}
+
+console.log("PASS typography scale and bundled icon font");

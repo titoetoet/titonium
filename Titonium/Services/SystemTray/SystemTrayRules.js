@@ -197,6 +197,25 @@ function projectMenuEntries(rawEntries) {
     return Object.freeze(result);
 }
 
+function statusContext(entries) {
+    var source = Array.isArray(entries) ? entries : [];
+    for (var index = 0; index < source.length; index++) {
+        var entry = source[index];
+        if (!entry || entry.separator === true)
+            continue;
+        var content = text(entry.text);
+        if (!content)
+            continue;
+        if (/^[1-9]\d*\s+agents?\s+running\b/i.test(content)
+                || /^[1-9]\d*\s+(?:tasks?|jobs?)\s+(?:running|active|in progress)\b/i.test(content)
+                || /^[1-9]\d*\s+(?:downloads?|uploads?|transfers?)\s+(?:running|in progress|active)\b/i.test(content)
+                || /\b[1-9]\d*\s+active\s+(?:tasks?|jobs?|agents?|conversations?)\b/i.test(content)) {
+            return content;
+        }
+    }
+    return "";
+}
+
 function runningContext(entries) {
     var source = Array.isArray(entries) ? entries : [];
     var section = "";
@@ -222,7 +241,9 @@ function runningContext(entries) {
         if (section === "recent" && !recentContext)
             recentContext = text(entry.text);
     }
-    return recentContext;
+    if (recentContext)
+        return recentContext;
+    return statusContext(source);
 }
 
 function sameApplication(appId, appName, item) {

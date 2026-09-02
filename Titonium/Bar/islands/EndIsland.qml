@@ -7,7 +7,7 @@ Item {
     id: root
     required property var screen
     property bool showConnectivityDiagnostics: true
-    readonly property int preferredWidth: notification.implicitWidth + Metrics.barSpacing
+    readonly property int preferredWidth: topbarPin.implicitWidth + Metrics.barSpacing
         + connectivity.fullImplicitWidth + Metrics.barSpacing + status.implicitWidth
 
     implicitWidth: endRow.implicitWidth
@@ -18,8 +18,8 @@ Item {
         anchors.fill: parent
         spacing: Metrics.barSpacing
 
-        NotificationPill {
-            id: notification
+        TopbarPin {
+            id: topbarPin
         }
 
         ConnectivityPill {

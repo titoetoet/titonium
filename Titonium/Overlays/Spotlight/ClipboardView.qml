@@ -9,6 +9,7 @@ import qs.Titonium.Shared as Controls
 import qs.Titonium.Core.Runtime
 import qs.Titonium.Services.Clipboard
 import "ClipboardSelection.js" as ClipboardSelection
+import "ClipboardFormat.js" as ClipboardFormat
 
 FocusScope {
     id: root
@@ -82,7 +83,7 @@ FocusScope {
         spacing: Metrics.spacingMedium
 
         ColumnLayout {
-            Layout.preferredWidth: 330
+            Layout.preferredWidth: 320
             Layout.fillHeight: true
             spacing: Metrics.spacingSmall
 
@@ -131,7 +132,7 @@ FocusScope {
                     required property int index
                     required property var modelData
                     width: historyList.width
-                    height: 60
+                    height: 56
                     activeFocusOnTab: true
                     readonly property bool actionsVisible:
                         historyRow.index === root.selectedIndex
@@ -162,17 +163,26 @@ FocusScope {
                             border.width: Metrics.borderWidth
                             border.color: Theme.borderStrong
                         }
-                        Controls.Icon {
+                        Item {
                             visible: historyRow.modelData.kind !== "color"
-                            name: historyRow.modelData.kind === "url" ? "link"
-                                : (historyRow.modelData.kind === "code" ? "code" : "content_paste")
-                            size: 24
-                            tone: "secondary"
-                            accessibleName: ""
+                            implicitWidth: 24
+                            implicitHeight: 24
+                            Controls.SystemIcon {
+                                anchors.centerIn: parent
+                                sourceName: ClipboardFormat.appIconSource(historyRow.modelData)
+                                fallbackName: ClipboardFormat.itemIcon(historyRow.modelData)
+                                size: 22
+                                tone: "secondary"
+                                accessibleName: ClipboardFormat.sourceName(historyRow.modelData)
+                            }
+                            HoverHandler { id: iconHover }
+                            QtControls.ToolTip.visible: iconHover.hovered
+                            QtControls.ToolTip.text: ClipboardFormat.sourceName(historyRow.modelData)
+                            QtControls.ToolTip.delay: 400
                         }
                         ColumnLayout {
                             Layout.fillWidth: true
-                            spacing: 0
+                            spacing: 2
                             Controls.TextLabel {
                                 Layout.fillWidth: true
                                 text: historyRow.modelData.preview
@@ -182,7 +192,7 @@ FocusScope {
                                 elide: Text.ElideRight
                             }
                             Controls.TextLabel {
-                                text: I18n.tr("spotlight.clipboard.kind." + historyRow.modelData.kind)
+                                text: ClipboardFormat.relativeTime(historyRow.modelData.timestamp)
                                 variant: "caption"
                                 tone: "secondary"
                             }
@@ -279,50 +289,132 @@ FocusScope {
             Layout.fillHeight: true
             tone: "elevated"
             radius: Metrics.radiusMedium
-            padding: Metrics.spacingLarge
+            padding: 0
             outlined: true
             clipContent: true
 
             ColumnLayout {
                 anchors.fill: parent
-                spacing: Metrics.spacingMedium
+                spacing: 0
 
-                RowLayout {
-                    Layout.fillWidth: true
-                    Controls.TextLabel {
-                        Layout.fillWidth: true
-                        text: root.selectedItem === null ? I18n.tr("spotlight.clipboard.preview")
-                            : I18n.tr("spotlight.clipboard.kind." + root.selectedItem.kind)
-                        variant: "title"
-                        strong: true
-                    }
-                }
-
-                QtControls.ScrollView {
+                Item {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     clip: true
 
-                    Controls.TextLabel {
-                        width: parent.width
-                        text: root.selectedItem?.text || I18n.tr("spotlight.clipboard.preview_empty")
-                        variant: root.selectedItem?.kind === "code" ? "mono" : "body"
-                        tone: root.selectedItem === null ? "secondary" : "primary"
-                        wrapMode: Text.WrapAnywhere
-                        verticalAlignment: Text.AlignTop
+                    Image {
+                        visible: root.selectedItem?.kind === "image"
+                            && (root.selectedItem?.imagePath || "").length > 0
+                        anchors.fill: parent
+                        anchors.margins: Metrics.spacingLarge
+                        source: visible ? ("file://" + root.selectedItem.imagePath) : ""
+                        fillMode: Image.PreserveAspectFit
+                        smooth: true
+                        asynchronous: true
+                    }
+
+                    QtControls.ScrollView {
+                        visible: root.selectedItem?.kind !== "image"
+                        anchors.fill: parent
+                        anchors.margins: Metrics.spacingLarge
+                        clip: true
+
+                        Controls.TextLabel {
+                            width: parent.width
+                            text: root.selectedItem?.text || I18n.tr("spotlight.clipboard.preview_empty")
+                            variant: root.selectedItem?.kind === "code" || root.selectedItem !== null ? "mono" : "body"
+                            tone: root.selectedItem === null ? "secondary" : "primary"
+                            wrapMode: Text.WrapAnywhere
+                            verticalAlignment: Text.AlignTop
+                        }
                     }
                 }
 
-                Controls.TextLabel {
+                Rectangle {
                     Layout.fillWidth: true
+                    implicitHeight: Metrics.borderWidth
+                    color: Theme.border
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                    implicitHeight: metadataCol.implicitHeight + (Metrics.spacingMedium * 2)
                     visible: root.selectedItem !== null
-                    text: root.selectedItem === null ? "" : I18n.tr("spotlight.clipboard.stats", {
-                        "lines": root.selectedItem.lines,
-                        "words": root.selectedItem.words,
-                        "chars": root.selectedItem.chars
-                    })
-                    variant: "caption"
-                    tone: "secondary"
+
+                    ColumnLayout {
+                        id: metadataCol
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.leftMargin: Metrics.spacingLarge
+                        anchors.rightMargin: Metrics.spacingLarge
+                        anchors.topMargin: Metrics.spacingMedium
+                        spacing: Metrics.spacingSmall
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Controls.TextLabel {
+                                text: ClipboardFormat.label("type")
+                                variant: "mono"
+                                tone: "secondary"
+                            }
+                            Item { Layout.fillWidth: true }
+                            Controls.TextLabel {
+                                text: ClipboardFormat.typeLabel(root.selectedItem)
+                                variant: "mono"
+                                tone: "primary"
+                                horizontalAlignment: Text.AlignRight
+                            }
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Controls.TextLabel {
+                                text: ClipboardFormat.label("size")
+                                variant: "mono"
+                                tone: "secondary"
+                            }
+                            Item { Layout.fillWidth: true }
+                            Controls.TextLabel {
+                                text: ClipboardFormat.sizeLabel(root.selectedItem)
+                                variant: "mono"
+                                tone: "primary"
+                                horizontalAlignment: Text.AlignRight
+                            }
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Controls.TextLabel {
+                                text: ClipboardFormat.label("copied_at")
+                                variant: "mono"
+                                tone: "secondary"
+                            }
+                            Item { Layout.fillWidth: true }
+                            Controls.TextLabel {
+                                text: ClipboardFormat.copiedAt(root.selectedItem?.timestamp)
+                                variant: "mono"
+                                tone: "primary"
+                                horizontalAlignment: Text.AlignRight
+                            }
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Controls.TextLabel {
+                                text: ClipboardFormat.label("md5")
+                                variant: "mono"
+                                tone: "secondary"
+                            }
+                            Item { Layout.fillWidth: true }
+                            Controls.TextLabel {
+                                text: root.selectedItem?.md5 || (root.selectedItem ? ClipboardFormat.md5(root.selectedItem.text) : "")
+                                variant: "mono"
+                                tone: "primary"
+                                horizontalAlignment: Text.AlignRight
+                            }
+                        }
+                    }
                 }
             }
         }

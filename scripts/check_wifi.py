@@ -176,7 +176,7 @@ def presentation_errors() -> list[str]:
 
 def integration_errors() -> list[str]:
     errors = []
-    app = source(APP)
+    app = source(ROOT / "Titonium/Ipc/DeviceIpc.qml")
     check_sh = source(CHECK_SH)
     locales = [source(ROOT / "config/i18n/en.json"), source(ROOT / "config/i18n/vi.json")]
     for fragment in (
@@ -188,7 +188,7 @@ def integration_errors() -> list[str]:
         "NetworkPopupCoordinator.close()",
     ):
         if fragment not in app:
-            errors.append(f"missing Wi-Fi App integration: {fragment}")
+            errors.append(f"missing Wi-Fi DeviceIpc integration: {fragment}")
     for fragment in (
         "node \"$project_root/scripts/check_wifi_rules.js\"",
         "python3 \"$project_root/scripts/check_wifi.py\"",

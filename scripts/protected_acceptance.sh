@@ -4,6 +4,9 @@ set -euo pipefail
 project_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 live_hypr="/home/cole/.config/hypr/hyprland.lua"
 dotfiles_hypr="/home/cole/Projects/titonium-hyprland/config/hypr/hyprland.lua"
+test_approval_sock="$(mktemp -u --tmpdir titonium-protected-test-approval.XXXXXX.sock)"
+export TITONIUM_AGENT_APPROVAL_SOCKET="$test_approval_sock"
+trap 'rm -f -- "$test_approval_sock"' EXIT
 
 before_live="$(sha256sum -- "$live_hypr")"
 before_dotfiles="$(sha256sum -- "$dotfiles_hypr")"

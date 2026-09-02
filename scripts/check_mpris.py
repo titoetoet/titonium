@@ -87,9 +87,10 @@ def main() -> int:
             if fragment not in source:
                 errors.append(f"MPRIS qmldir missing contract: {fragment}")
 
-    app = APP.read_text(encoding="utf-8")
-    if app.count("import qs.Titonium.Services.Mpris") != 1:
-        errors.append("App must import the MPRIS service module exactly once")
+    app = (TITONIUM / "Orchestration/ServiceBootstrap.qml").read_text(encoding="utf-8")
+    app += (TITONIUM / "Ipc/CenterIpc.qml").read_text(encoding="utf-8")
+    if app.count("import qs.Titonium.Services.Mpris") != 2:
+        errors.append("Bootstrap and CenterIpc must each import the MPRIS service module")
     for fragment in (
         "MprisService.activate()",
         'target: "mpris"',
@@ -98,7 +99,7 @@ def main() -> int:
         if fragment not in app:
             errors.append(f"App missing read-only MPRIS IPC contract: {fragment}")
     mpris_ipc = re.search(
-        r'IpcHandler\s*\{\s*target:\s*"mpris"(?P<body>.*?)(?=\n\s*IpcHandler\s*\{|\Z)',
+        r'IpcHandler\s*\{\s*target:\s*"mpris"(?P<body>.*?)(?=\n\s*(?:property\s+IpcHandler\s+\w+\s*:\s*)?IpcHandler\s*\{|\Z)',
         app,
         re.DOTALL,
     )

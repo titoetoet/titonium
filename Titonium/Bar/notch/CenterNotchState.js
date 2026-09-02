@@ -2,10 +2,6 @@
 
 const PRIMARY_PAGES = Object.freeze([
     Object.freeze({ id: "overview", icon: "dashboard" }),
-    Object.freeze({ id: "notifications", icon: "notifications" }),
-    Object.freeze({ id: "monitoring", icon: "monitor_heart" }),
-    Object.freeze({ id: "tools", icon: "construction" }),
-    Object.freeze({ id: "session", icon: "power_settings_new" }),
 ]);
 const pages = PRIMARY_PAGES.map(page => page.id);
 
@@ -14,7 +10,7 @@ function primaryPages() {
 }
 
 function normalizePage(pageId) {
-    return pages.indexOf(pageId) >= 0 ? pageId : "overview";
+    return pageId === "notifications" ? "notifications" : "overview";
 }
 
 function arrowPage(pageId, delta) {
@@ -28,8 +24,8 @@ function wheelPage(pageId, delta) {
 }
 
 function transitionPlan(previousPage, nextPage, reducedMotion, configuredDuration) {
-    const previous = pages.indexOf(normalizePage(previousPage));
-    const next = pages.indexOf(normalizePage(nextPage));
+    const previous = normalizePage(previousPage) === "notifications" ? 1 : 0;
+    const next = normalizePage(nextPage) === "notifications" ? 1 : 0;
     const numericDuration = Number(configuredDuration);
     const duration = reducedMotion ? 0
         : Math.max(80, Math.min(220, Math.round(isFinite(numericDuration) ? numericDuration : 160)));

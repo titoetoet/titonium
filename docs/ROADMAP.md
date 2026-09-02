@@ -7,11 +7,11 @@ The previous feature roadmap is retired. Work now advances by researched capabil
 - Dynamic multi-monitor bar and overlay lifecycle.
 - Protected Spotlight Applications/Clipboard/System mock.
 - Protected event-driven Input Method.
-- Temporary Workspaces and Clock.
+- Five-slot Workspaces and Active Window context in the Start island.
 - Application, Clipboard and Hyprland service boundaries.
 - Static Neutral Utility tokens, i18n and focused gates.
 - Three independently positioned Bar islands with composed click-through regions.
-- Lazy, screen-owned Center Notch with Overview and safe Tools/Session mock pages.
+- Lazy, screen-owned Center Notch with Overview and a direct Notification history route.
 
 ## Current — native capability slices
 

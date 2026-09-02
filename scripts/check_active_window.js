@@ -44,6 +44,18 @@ assert.deepEqual(JSON.parse(JSON.stringify(rules.presentation(
     "ChatGPT", "", "Private system title", true))),
     { appName: "ChatGPT", title: "", hasContext: false },
     "a tray app must never fall through to the compositor title while its menu context loads");
+assert.deepEqual(JSON.parse(JSON.stringify(rules.presentation(
+    "Antigravity IDE", "", "titonium - Antigravity IDE - BluetoothDeviceRow.qml", false))),
+    { appName: "Antigravity IDE", title: "titonium - BluetoothDeviceRow.qml", hasContext: true },
+    "middle app name segment in IDE titles must be stripped for a clean pill");
+assert.deepEqual(JSON.parse(JSON.stringify(rules.presentation(
+    "Antigravity", "", "Mijia Evaporative Fan Res...", true))),
+    { appName: "Antigravity", title: "Mijia Evaporative Fan Res...", hasContext: true },
+    "a tray app without menu context must fall back to its window title");
+assert.deepEqual(JSON.parse(JSON.stringify(rules.presentation(
+    "Antigravity", "1 agent running", "Mijia Evaporative Fan Res...", true))),
+    { appName: "Antigravity", title: "1 agent running", hasContext: true },
+    "active tray context must take precedence over window title");
 console.log("PASS StartIsland tray-context and non-tray title fallback fixtures");
 
 const pill = fs.readFileSync(pillPath, "utf8");

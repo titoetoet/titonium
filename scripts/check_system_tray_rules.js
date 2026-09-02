@@ -247,6 +247,38 @@ assert.equal(
     ])), "Nghiên cứu Event và độ ưu tiên",
     "the first Recent entry becomes context while ChatGPT is idle");
 
+const antigravityActiveEntries = rules.projectMenuEntries([
+    { text: "1 agent running", icon: "", enabled: false, isSeparator: false, hasChildren: false },
+    { text: "", icon: "", enabled: false, isSeparator: true, hasChildren: false },
+    { text: "Open Antigravity", icon: "", enabled: true, isSeparator: false, hasChildren: false },
+    { text: "Quit", icon: "", enabled: true, isSeparator: false, hasChildren: false },
+]);
+assert.equal(
+    rules.runningContext(antigravityActiveEntries),
+    "1 agent running",
+    "active agent count in Electron tray badge must become StartIsland context");
+
+const antigravityIdleEntries = rules.projectMenuEntries([
+    { text: "No agents running", icon: "", enabled: false, isSeparator: false, hasChildren: false },
+    { text: "", icon: "", enabled: false, isSeparator: true, hasChildren: false },
+    { text: "Open Antigravity", icon: "", enabled: true, isSeparator: false, hasChildren: false },
+    { text: "Quit", icon: "", enabled: true, isSeparator: false, hasChildren: false },
+]);
+assert.equal(
+    rules.runningContext(antigravityIdleEntries),
+    "",
+    "idle agent count does not clutter StartIsland context");
+
+const taskRunningEntries = rules.projectMenuEntries([
+    { text: "3 tasks in progress", icon: "", enabled: false, isSeparator: false, hasChildren: false },
+    { text: "", icon: "", enabled: false, isSeparator: true, hasChildren: false },
+    { text: "Preferences", icon: "", enabled: true, isSeparator: false, hasChildren: false },
+]);
+assert.equal(
+    rules.runningContext(taskRunningEntries),
+    "3 tasks in progress",
+    "generic in-progress task count in tray menu becomes context");
+
 const selectedMenuRecord = rules.selectRecord("chatgpt", "ChatGPT", selectionRecords);
 assert.equal(selectedMenuRecord.nativeIndex, 2,
     "selection preserves native index and prefers a matching menu-bearing record");

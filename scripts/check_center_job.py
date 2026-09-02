@@ -97,7 +97,8 @@ def main() -> int:
     ):
         errors.append("Center qmldir missing CenterJobService singleton")
 
-    app = APP.read_text(encoding="utf-8")
+    app = (ROOT / "Titonium/Orchestration/ServiceBootstrap.qml").read_text(encoding="utf-8")
+    app += (ROOT / "Titonium/Ipc/CenterIpc.qml").read_text(encoding="utf-8")
     for fragment in (
         "CenterJobService.activate()",
         'target: "job"',
@@ -113,7 +114,7 @@ def main() -> int:
         if fragment not in app:
             errors.append(f"App missing Job lifecycle/IPC contract: {fragment}")
     job_ipc = re.search(
-        r'IpcHandler\s*\{\s*target:\s*"job"(?P<body>.*?)(?=\n\s*IpcHandler\s*\{|\Z)',
+        r'IpcHandler\s*\{\s*target:\s*"job"(?P<body>.*?)(?=\n\s*(?:property\s+IpcHandler\s+\w+\s*:\s*)?IpcHandler\s*\{|\Z)',
         app,
         re.DOTALL,
     )

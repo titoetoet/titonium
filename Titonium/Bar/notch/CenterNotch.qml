@@ -2,15 +2,13 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
-import qs.Titonium.Core.Runtime
 import qs.Titonium.Theme
-import qs.Titonium.Shared as Shared
 
 FocusScope {
     id: root
     focus: true
-    property string feedbackKey: ""
-    signal settingsRequested()
+    clip: true
+    property bool entranceRequested: Motion.reduced
 
     Rectangle {
         anchors.fill: parent
@@ -23,50 +21,47 @@ FocusScope {
         bottomRightRadius: 20
     }
 
-    ColumnLayout {
+    Item {
+        id: contentLayer
         anchors.fill: parent
-        anchors.margins: Metrics.spacingLarge
-        spacing: Metrics.spacingMedium
+        opacity: Motion.reduced ? 1 : 0
+        transform: Translate {
+            id: contentEntranceOffset
+            y: Motion.reduced ? 0 : -4
+        }
 
         ColumnLayout {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            spacing: Metrics.spacingSmall
+            anchors.fill: parent
+            anchors.margins: Metrics.spacingLarge
+            spacing: Metrics.spacingMedium
 
             CenterNotchViewport {
-                id: viewport
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 requestedPage: CenterNotchCoordinator.requestedPage
-                onFeedbackRequested: key => root.feedbackKey = key
-            }
-
-            Shared.TextLabel {
-                Layout.fillWidth: true
-                visible: root.feedbackKey.length > 0
-                Layout.preferredHeight: visible ? 24 : 0
-                text: visible ? I18n.tr(root.feedbackKey) : ""
-                tone: "secondary"
-                horizontalAlignment: Text.AlignHCenter
             }
         }
+    }
 
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: Metrics.borderWidth
-            color: Theme.border
-        }
-
-        CenterNotchRail {
-            id: rail
-            Layout.fillWidth: true
-            Layout.preferredHeight: 48
-            currentPage: viewport.currentPage
-            onPageRequested: pageId => {
-                root.feedbackKey = "";
-                CenterNotchCoordinator.requestPage(pageId);
+    SequentialAnimation {
+        running: root.entranceRequested && !Motion.reduced
+        ParallelAnimation {
+            NumberAnimation {
+                target: contentLayer
+                property: "opacity"
+                from: 0
+                to: 1
+                duration: 150
+                easing.type: Easing.OutCubic
             }
-            onSettingsRequested: root.settingsRequested()
+            NumberAnimation {
+                target: contentEntranceOffset
+                property: "y"
+                from: -4
+                to: 0
+                duration: 170
+                easing.type: Easing.OutCubic
+            }
         }
     }
 }

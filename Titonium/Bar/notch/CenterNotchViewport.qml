@@ -13,8 +13,6 @@ FocusScope {
     property int transitionDuration: 0
     property int transitionOffset: 0
     property string currentPage: "overview"
-    signal feedbackRequested(string key)
-
     function componentFor(pageId: string): Component {
         const normalized = CenterNotchState.normalizePage(pageId);
         if (normalized !== pageId)
@@ -23,12 +21,6 @@ FocusScope {
             return overviewComponent;
         if (normalized === "notifications")
             return notificationsComponent;
-        if (normalized === "monitoring")
-            return monitoringComponent;
-        if (normalized === "tools")
-            return toolsPlaceholderComponent;
-        if (normalized === "session")
-            return sessionPlaceholderComponent;
         return overviewComponent;
     }
 
@@ -58,19 +50,6 @@ FocusScope {
         id: notificationsComponent
         NotificationsPage { pageId: "notifications" }
     }
-    Component {
-        id: monitoringComponent
-        SystemMonitoringPage { pageId: "monitoring" }
-    }
-    Component {
-        id: toolsPlaceholderComponent
-        ToolsPage { pageId: "tools" }
-    }
-    Component {
-        id: sessionPlaceholderComponent
-        SessionPage { pageId: "session" }
-    }
-
     StackView {
         id: stack
         anchors.fill: parent
@@ -121,10 +100,5 @@ FocusScope {
             root.pendingPage = "";
             Qt.callLater(() => root.requestPage(nextPage));
         }
-    }
-
-    Connections {
-        target: stack.currentItem || null
-        function onFeedbackRequested(key: string): void { root.feedbackRequested(key); }
     }
 }

@@ -9,6 +9,7 @@ FocusScope {
 
     property real serviceValue: 0
     property real maximumValue: 1
+    property bool liveUpdate: true
     property string accessibleName: ""
     signal userValueChanged(real value)
 
@@ -29,6 +30,7 @@ FocusScope {
         from: 0
         to: Math.max(0, root.maximumValue)
         stepSize: 0.01
+        live: root.liveUpdate
         activeFocusOnTab: true
 
         onMoved: root.userValueChanged(value)

@@ -181,9 +181,10 @@ for (const event of [
 ]) {
     const projected = rules.publish(rules.initialState(), event, event.createdAt);
     assert.equal(projected.current.priority, 25);
-    assert.equal(projected.current.expiresAt, event.createdAt + 7000);
+    assert.equal(projected.current.expiresAt,
+        event.createdAt + (event.source === "notification" ? 12000 : 7000));
 }
-console.log("PASS Clipboard and new Notification own equal five-second takeover policy");
+console.log("PASS Clipboard and new Notification own bounded source-specific takeover policy");
 
 let indicators = Object.freeze([]);
 indicators = rules.setIndicator(indicators, {

@@ -18,7 +18,7 @@ vm.runInContext(source, context, { filename: helperPath });
 const rules = context;
 const plain = value => JSON.parse(JSON.stringify(value));
 const expectedDeviceFields = [
-    "address", "battery", "batteryAvailable", "blocked", "connected", "icon", "name", "paired", "pairing", "section", "stateKey",
+    "address", "battery", "batteryAvailable", "blocked", "bonded", "connected", "icon", "name", "paired", "pairing", "section", "stateKey", "trusted",
 ];
 const assertDeviceDescriptor = device => assert.deepEqual(Object.keys(device).sort(), expectedDeviceFields);
 
@@ -92,7 +92,7 @@ const poweredOn = plain(rules.projectAdapter({ enabled: true, discovering: false
 assert.equal(poweredOn.stateKey, "bluetooth.on");
 
 assert.deepEqual(plain(rules.audioConnectionEvent([], [
-    { address: "54:B7:E5:89:6F:14", icon: "audio-card", connected: true },
+    { address: "54:B7:E5:89:6F:14", icon: "audio-card", connected: true, paired: true, trusted: true },
     { address: "11:22:33:44:55:66", icon: "input-keyboard", connected: true },
 ])), {
     current: ["54:b7:e5:89:6f:14"],
@@ -100,7 +100,7 @@ assert.deepEqual(plain(rules.audioConnectionEvent([], [
     disconnected: [],
 });
 assert.deepEqual(plain(rules.audioConnectionEvent(["54:b7:e5:89:6f:14"], [
-    { address: "54:B7:E5:89:6F:14", icon: "audio-card", connected: true },
+    { address: "54:B7:E5:89:6F:14", icon: "audio-card", connected: true, paired: true, trusted: true },
 ])), {
     current: ["54:b7:e5:89:6f:14"],
     connected: [],
@@ -111,5 +111,17 @@ assert.deepEqual(plain(rules.audioConnectionEvent(["54:b7:e5:89:6f:14"], [])), {
     connected: [],
     disconnected: ["54:b7:e5:89:6f:14"],
 });
+
+assert.deepEqual(plain(rules.audioConnectionEvent([], [
+    { address: "47:11:F1:70:B4:52", name: "ACTON", icon: "speaker", connected: true, paired: true, trusted: true },
+])), {
+    current: ["47:11:f1:70:b4:52"],
+    connected: ["47:11:F1:70:B4:52"],
+    disconnected: [],
+});
+
+assert.deepEqual(plain(rules.audioConnectionEvent([], [
+    { address: "54:B7:E5:89:6F:14", icon: "audio-card", connected: true, paired: true, trusted: false },
+])), { current: [], connected: [], disconnected: [] });
 
 console.log("PASS Bluetooth rules fixtures");

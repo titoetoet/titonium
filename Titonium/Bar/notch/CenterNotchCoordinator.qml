@@ -3,31 +3,22 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Titonium.Core.Surfaces
-import qs.Titonium.Services.SystemMonitor
 import "CenterNotchState.js" as CenterNotchState
 
 QtObject {
     id: root
 
     property string ownerScreenName: ""
+    property string exitingScreenName: ""
     property string requestedPage: "overview"
     property bool pinned: false
     readonly property bool active: root.ownerScreenName.length > 0
-
-    function syncMonitoringLifecycle(): void {
-        if (root.active && root.requestedPage === "monitoring")
-            SystemMonitorService.start();
-        else
-            SystemMonitorService.stop();
-    }
-
-    onActiveChanged: root.syncMonitoringLifecycle()
-    onRequestedPageChanged: root.syncMonitoringLifecycle()
 
     function open(screenName: string, pageId: string): bool {
         if (!screenName)
             return false;
         SurfaceManager.close("");
+        root.exitingScreenName = "";
         root.ownerScreenName = screenName;
         root.requestedPage = CenterNotchState.normalizePage(pageId);
         root.pinned = false;
@@ -63,9 +54,15 @@ QtObject {
     }
 
     function close(): bool {
+        root.exitingScreenName = root.ownerScreenName;
         root.ownerScreenName = "";
         root.requestedPage = "overview";
         root.pinned = false;
         return true;
+    }
+
+    function finishClose(screenName: string): void {
+        if (root.exitingScreenName === screenName)
+            root.exitingScreenName = "";
     }
 }

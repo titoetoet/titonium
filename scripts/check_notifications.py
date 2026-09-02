@@ -71,7 +71,6 @@ REQUIRED = (
     "notification.tracked = true",
     "NotificationRules.descriptor",
     "NotificationRules.upsert",
-    "NotificationRules.addToast",
     "NotificationRules.markUnread",
     "NotificationRules.removeId",
     "NotificationServer {",
@@ -93,7 +92,6 @@ REQUIRED = (
     "readonly property int operationWarningLimit: 3",
     "readonly property bool toastsEnabled:",
     "onToastsEnabledChanged:",
-    "if (root.toastsEnabled)",
     "operationWarningCounts[category]",
     'Logger.warn("notifications"',
 )
@@ -291,9 +289,11 @@ def validate_composition(errors: list[str]) -> None:
         errors.append("App must compose exactly one ToastHost")
     if "import qs.Titonium.Notifications" not in app_source:
         errors.append("App must import the notification presentation module")
-    ipc = notification_ipc(app_source)
+    device_path = ROOT / "Titonium/Ipc/DeviceIpc.qml"
+    device_source = device_path.read_text(encoding="utf-8") if device_path.is_file() else ""
+    ipc = notification_ipc(device_source)
     if not ipc:
-        errors.append("App must expose the narrow notifications IPC target")
+        errors.append("DeviceIpc must expose the narrow notifications IPC target")
     else:
         methods = set(re.findall(r"^\s*function\s+(\w+)\s*\(", ipc, re.MULTILINE))
         if methods != {"state", "markRead"}:
@@ -318,12 +318,12 @@ def validate_composition(errors: list[str]) -> None:
     for fragment in (
         "width: 24", "height: 24", 'iconName: "notifications"',
         "visible: NotificationService.hasUnread", "width: 6", "height: 6",
-        "NotificationService.markAllRead()", "NotificationService.unreadCount",
+        "root.notificationsRequested()", "NotificationService.unreadCount",
     ):
         if fragment not in bell_source:
             errors.append(f"NotificationBell missing contract: {fragment}")
-    if bell_source.count("NotificationService.markAllRead()") != 1:
-        errors.append("Notification Bell must own exactly one read-state mutation")
+    if "NotificationService.markAllRead()" in bell_source:
+        errors.append("Notification Bell must open history before read state is mutated")
 
 
 def main() -> int:

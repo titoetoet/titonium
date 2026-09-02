@@ -1,0 +1,4 @@
+module qs.Titonium.Orchestration
+ServiceBootstrap 1.0 ServiceBootstrap.qml
+BluetoothAudioBridge 1.0 BluetoothAudioBridge.qml
+SurfaceRouter 1.0 SurfaceRouter.qml

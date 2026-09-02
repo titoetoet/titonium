@@ -5,6 +5,8 @@ Titonium is deliberately a composition of vertical slices around a small stable 
 ```text
 shell.qml
 └── Titonium/App.qml
+    ├── Orchestration/ServiceBootstrap + SurfaceRouter + BluetoothAudioBridge
+    ├── Ipc/CoreIpc + CenterIpc + DeviceIpc + AgentApprovalIpc
     ├── Bar/BarHost.qml ── Variants(Quickshell.screens)
     │   ├── BarSurface → Start / Center / End islands
     │   │   ├── Start → Workspaces + ActiveWindowPill
@@ -24,6 +26,25 @@ Views ──read──> Services ──adapt──> Quickshell / Hyprland / DBus
   │                  │
   └── Theme/Shared   └── Core Runtime (preferences, i18n, logging)
 ```
+
+`App.qml` is intentionally a thin composition root. `ServiceBootstrap` preserves root-level
+activation order, `SurfaceRouter` owns cross-surface mutual exclusion and screen resolution, and
+`BluetoothAudioBridge` is the explicit semantic bridge between otherwise independent services.
+IPC adapters retain public target names and response formats but own no persistent or native state.
+
+## Agent approval bridge
+
+`AgentApprovalService` owns one local Unix socket and a bounded, sequential approval queue.
+Antigravity reaches that contract through its documented `PreToolUse` command hook. ChatGPT
+Desktop reaches the same contract through a local Codex JSON-RPC proxy selected by
+`CODEX_CLI_PATH`; the proxy forwards all non-approval traffic byte-for-byte and translates only
+Codex command, file-change and permission approval requests. The view receives normalized value
+descriptors and emits only `allow once`, `allow for session` or `deny` intents.
+
+The two adapters retain different failure policies. Antigravity falls back to its native review
+with an `ask` decision when Titonium is unavailable. An intercepted ChatGPT request fails closed
+with `decline`, because the Desktop client never receives that held JSON-RPC request. Neither
+adapter calls the OpenAI API or persists approval payloads.
 
 ## Screen and window lifecycle
 
@@ -83,11 +104,10 @@ display instead of copying Caelestia's view or theme system.
 - `NotificationService`: the sole `NotificationServer` owner. It turns native objects into frozen,
   newest-first value descriptors and exposes bounded history, toast IDs and session-only unread
   state. Native objects never escape the service.
-- `SystemMonitorService`: an on-demand singleton activated immediately when the open Center Notch
-  requests Monitoring and released when the popup closes or navigation leaves that page. Hot
-  CPU/RAM/GPU metrics sample once per second while the process ranking refreshes every two seconds.
-  `CenterNotchCoordinator` owns this lifecycle so overlapping StackView transition items cannot
-  stop a newly initialized monitor. The CPU utilization chart uses a software-rendered Shape path,
+- `SystemMonitorService`: an on-demand singleton retained for a standalone System Monitoring
+  window. It is intentionally detached from Center and remains inactive until that window owns
+  its lifecycle. When active, hot CPU/RAM/GPU metrics sample once per second while the process
+  ranking refreshes every two seconds. The CPU utilization chart uses a software-rendered Shape path,
   a fixed zero-to-100-percent scale and a bounded 60-second history. CPU clock is the current
   average across all logical CPUs reported by `/proc/cpuinfo`, rather than one volatile cpufreq
   policy. No continuous metric animation runs between samples, allowing the scene graph to sleep.
@@ -194,11 +214,10 @@ the tester restores the original audio level, mute state and runtime preference 
 The state snapshot reports the number of ready output descriptors so acceptance catches delayed
 PipeWire-node binding without selecting a device.
 
-Inside the expanded notch, the 48-pixel rail requests a page from the coordinator. A `StackView`
-creates the incoming page for a bounded transition and destroys the replaced page afterward; rapid
-requests retain only the latest pending page. Overview is informational. Tools and Session consume
-immutable descriptors and emit translated “not available yet” feedback only. They expose no
-process, callback, command or IPC execution boundary, and Settings is also a feedback-only button.
+The expanded Center Notch owns the Dashboard plus a direct hidden Notification-history route. It
+has no rail, general page navigation, Settings action or System Monitoring lifecycle. Other legacy
+page requests normalize to Dashboard for a stable IPC boundary; System Monitor remains a detached
+service/diagnostic seam until it receives a standalone host.
 
 ## Protected feature flow
 
@@ -222,9 +241,11 @@ surfaces, and `apply()` promotes the preview only after the atomic `FileView` sa
 Settings IPC is deliberately lifecycle-only: `open`, `page`, `cancel` and `state`; it cannot patch,
 restore or apply preferences remotely.
 
-Center's primary click opens Center Notch. Its rail Settings intent routes through `App.qml` to the
-standalone Settings surface. Daily Focus remains an explicit Overview action, and the Topbar Pin
-is an independent Bar control rather than a Center action.
+Center's primary click opens the Dashboard; the Notification controls may request the hidden
+history route directly. Titonium Settings is exposed as a
+desktop entry in the application launcher and opens the standalone Settings surface through its
+lifecycle-only IPC. Daily Focus remains an explicit Dashboard action, and the Topbar Pin is an
+independent Bar control rather than a Center action.
 
 ## Native notification boundary
 
@@ -244,6 +265,6 @@ notification daemon can own it at a time; Titonium acceptance starts Titonium be
 ## Center Notch acceptance seam
 
 The `centerNotch` IPC target exists for deterministic lifecycle tests: `open(page)`, `page(page)`,
-`close()` and `state()`. It cannot invoke a mock tile. `scripts/center_notch_acceptance.sh` verifies
-Overview/Tools/Session navigation, mutual exclusion with Spotlight, clean runtime logs, repository
-isolation and unchanged Hyprland configuration hashes.
+`close()` and `state()`. Every page argument normalizes to Dashboard. The acceptance test verifies
+that invariant, mutual exclusion with Spotlight, clean runtime logs, repository isolation and
+unchanged Hyprland configuration hashes.

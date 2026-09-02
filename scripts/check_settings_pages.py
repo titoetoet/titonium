@@ -59,6 +59,7 @@ def main() -> int:
         "from: 1", "to: 8", "stepSize: 1", "Shared.Slider", "Shared.Toggle",
         'Preferences.patch("modules.bar.workspaceCount"',
         'Preferences.patch("modules.bar.autoHide"', "settings.bar.workspace_count",
+        'Preferences.patch("modules.bar.mascotEnabled"', "settings.bar.mascot",
     ), errors)
     require(dock, "DockPage", (
         '"auto-hide"', '"always-visible"', '"reserve-space"', '"hidden"',
@@ -141,7 +142,8 @@ def main() -> int:
         "settings.spotlight.applications.visible", "settings.spotlight.applications.hidden",
         "settings.nav.bar", "settings.bar.title", "settings.bar.description",
         "settings.bar.workspace_count", "settings.bar.auto_hide",
-        "settings.bar.auto_hide.description",
+        "settings.bar.auto_hide.description", "settings.bar.mascot",
+        "settings.bar.mascot.description",
         "settings.nav.dock", "settings.dock.title", "settings.dock.description",
         "settings.dock.mode", "settings.dock.mode.auto_hide",
         "settings.dock.mode.always_visible", "settings.dock.mode.reserve_space",

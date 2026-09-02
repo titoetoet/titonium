@@ -10,9 +10,11 @@ Item {
     required property var screen
     readonly property alias startHitbox: startIsland
     readonly property alias centerHitbox: centerGroup
-    readonly property alias pinHitbox: topbarPin
+    readonly property alias notificationHitbox: notificationPill
+    readonly property alias pinHitbox: notificationPill
     readonly property alias endHitbox: endIsland
     signal centerRequested(var screen)
+    signal notificationsRequested(var screen)
     signal sourceRequested(var screen, string intent)
     readonly property bool hovered: barHover.hovered
     readonly property var optionalPlan: BarLayout.optionalVisibility(
@@ -38,10 +40,11 @@ Item {
         onSourceRequested: (screen, intent) => root.sourceRequested(screen, intent)
     }
 
-    TopbarPin {
-        id: topbarPin
+    NotificationPill {
+        id: notificationPill
         x: centerGroup.x + centerGroup.width + Metrics.spacingSmall
         anchors.verticalCenter: parent.verticalCenter
+        onNotificationsRequested: root.notificationsRequested(root.screen)
     }
 
     EndIsland {

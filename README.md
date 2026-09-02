@@ -1,20 +1,21 @@
 # Titonium
 
-Titonium is a small Quickshell skeleton for Hyprland, built to accept independently sourced
-modules without turning the shell into a coupled framework. The current baseline intentionally
-keeps only the distinctive Spotlight flow, the smooth Fcitx input indicator, a direct dynamic
-multi-monitor bar, shared tokens and narrow platform services.
+Titonium is a modular Quickshell shell for Hyprland. The runtime is organized as narrow vertical
+slices: views render immutable service state, services own native integrations, and heavy surfaces
+are created lazily on the assigned output (`DP-1`). Spotlight and Input Method remain protected
+baseline features.
 
 ## Current UI
 
-- A 44 logical-pixel bar is created reactively for every enabled screen entry.
-- The temporary bar contains Workspaces, Input Method and Clock.
-- `Super + Space` opens Spotlight Applications; `Super + V` opens Clipboard.
-- Spotlight supports its 5×4 app grid, categories, calculator results, density indicators,
-  Clipboard scope and the System Search mock.
+- A 44 logical-pixel Bar with five Workspaces, Active Window context, Center attention/activity,
+  Notification history access, Topbar pin, Wi-Fi, Bluetooth, Audio and Input Method.
+- A lazy Center Notch with an Overview and a direct Notification history route.
+- Spotlight Applications and Clipboard flows on `Super + Space` and `Super + V`.
+- A native Dock, audio popup/OSD, notification toasts, window switcher and transactional Settings.
+- A local Agent Approval surface for supported Antigravity and Codex approval requests.
 
-Settings Center, Arch Menu, Active Window, Calendar, Theme Gallery, Frame and Audio were removed
-from the runtime baseline. They are historical reference in Git, not dependencies of the shell.
+Titonium creates surfaces only on the configured eligible output and leaves other outputs to their
+own shell. Runtime preferences and user data live outside Git.
 
 ## Run and verify
 
@@ -23,16 +24,20 @@ cd /home/cole/Projects/titonium
 ./scripts/check.sh
 ./scripts/smoke.sh
 ./scripts/protected_acceptance.sh
+hyprctl configerrors
 qs -d -p /home/cole/Projects/titonium
 ```
 
-Useful IPC calls:
+Useful read-only or lifecycle IPC calls:
 
 ```bash
 qs -p /home/cole/Projects/titonium ipc call app status
 qs -p /home/cole/Projects/titonium ipc call spotlight toggle
 qs -p /home/cole/Projects/titonium ipc call spotlight clipboard
-qs -p /home/cole/Projects/titonium ipc call spotlight close
+qs -p /home/cole/Projects/titonium ipc call centerNotch open overview
+qs -p /home/cole/Projects/titonium ipc call audio state
+qs -p /home/cole/Projects/titonium ipc call bluetooth state
 ```
 
-Read [AGENTS.md](AGENTS.md) before adding or adapting a module.
+Read [AGENTS.md](AGENTS.md), [the architecture](docs/ARCHITECTURE.md), and
+[the testing guide](docs/TESTING.md) before changing a capability.

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+echo "[$(date)] chatgpt-with-titonium invoked: args=$*, pwd=$PWD" >> /tmp/chatgpt-launcher.log
+project_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+export CODEX_CLI_PATH="$project_root/scripts/titonium-codex"
+exec /usr/bin/chatgpt "$@"
+

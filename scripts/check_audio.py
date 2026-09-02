@@ -62,6 +62,7 @@ REQUIRED_FRAGMENTS = (
     "function warnInvalidVolume(target: string): void",
     "function requestBluetoothOutput(address: string): bool",
     "function trySelectPendingBluetoothOutput(): bool",
+    "signal bluetoothOutputSelected(string address)",
     "AudioRules.bluetoothSinkFor(Pipewire.nodes.values || [],",
     "AudioRules.normalizedOutputDevices(root.audioNodeFacts",
     "Pipewire.preferredDefaultAudioSink = sink",
@@ -268,17 +269,18 @@ def validate_audio_hardening(errors: list[str]) -> None:
         if loader_count != 1 or any(fragment not in source for fragment in osd_lifecycle):
             errors.append("Audio OSD Loader must follow AudioOsdCoordinator active owner-screen lifecycle")
 
-    app = ROOT / "Titonium/App.qml"
-    if app.is_file():
-        audio_ipc = ipc_handler_source(app.read_text(encoding="utf-8"), "audio")
+    device_ipc = ROOT / "Titonium/Ipc/DeviceIpc.qml"
+    bridge = ROOT / "Titonium/Orchestration/BluetoothAudioBridge.qml"
+    if device_ipc.is_file():
+        audio_ipc = ipc_handler_source(device_ipc.read_text(encoding="utf-8"), "audio")
         if not audio_ipc:
             errors.append("missing audio IPC handler")
         elif audio_ipc_exposes_mutation(audio_ipc):
             errors.append("Audio IPC exposes a mutating method")
-        source = app.read_text(encoding="utf-8")
+        source = bridge.read_text(encoding="utf-8") if bridge.is_file() else ""
         if ("function onAudioDeviceConnected(address: string): void"
                 not in source or "AudioService.requestBluetoothOutput(address)" not in source):
-            errors.append("App must bridge Bluetooth audio connection intent into AudioService")
+            errors.append("BluetoothAudioBridge must route connection intent into AudioService")
 
 
 def main() -> int:
@@ -351,8 +353,10 @@ def main() -> int:
     require_fragments(errors, OVERLAY_ROOT / "AudioSlider.qml", (
         "property real serviceValue: 0",
         "property real maximumValue: 1",
+        "property bool liveUpdate: true",
         "signal userValueChanged(real value)",
         "QtControls.Slider",
+        "live: root.liveUpdate",
         "onMoved:",
     ), "Audio slider")
     slider_path = OVERLAY_ROOT / "AudioSlider.qml"
@@ -397,6 +401,10 @@ def main() -> int:
         errors.append("Audio output selection must use a radio indicator, not a completion icon")
     require_fragments(errors, OVERLAY_ROOT / "AudioStreamRow.qml", (
         "required property var stream",
+        "Shared.SystemIcon {",
+        'sourceName: root.stream?.icon || "audio-x-generic"',
+        'fallbackName: "audio-x-generic"',
+        "liveUpdate: false",
         "AudioService.setStreamVolume",
         "AudioService.toggleStreamMute",
         'I18n.tr(root.muted ? "audio.unmute.accessible" : "audio.mute.accessible", {',
@@ -545,22 +553,26 @@ def main() -> int:
         "AudioService.adjustOutputVolume",
         "WheelHandler {",
     ), "Connectivity pill")
-    require_fragments(errors, ROOT / "Titonium/App.qml", (
+    require_fragments(errors, ROOT / "Titonium/Ipc/DeviceIpc.qml", (
         "import qs.Titonium.Overlays.Audio",
         '";outputs=" + AudioService.outputDevices.length',
         "function popup(): string",
         "function closePopup(): string",
         "function popupState(): string",
         "import qs.Titonium.Osd.Audio",
-        "AudioOsdHost {}",
         "function osdState(): string",
         "AudioOsdCoordinator.active",
         "AudioOsdCoordinator.ownerScreenName",
         "AudioPopupCoordinator.open(screen)",
         "AudioPopupCoordinator.close()",
+    ), "Audio IPC adapter")
+    require_fragments(errors, ROOT / "Titonium/App.qml", (
+        "AudioOsdHost {}", "DeviceIpc {}",
+    ), "App audio composition")
+    require_fragments(errors, ROOT / "Titonium/Orchestration/SurfaceRouter.qml", (
         "function onOpened(ownerId: string, descriptor: var, screen: var): void",
         "CenterNotchCoordinator.close()",
-    ), "App audio popup IPC")
+    ), "surface routing")
 
     if errors:
         print("FAIL audio contract")

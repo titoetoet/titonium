@@ -2,15 +2,10 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
-import qs.Titonium.Core.Runtime
-import qs.Titonium.Services.Center
-import qs.Titonium.Shared as Shared
-import qs.Titonium.Theme
 
 FocusScope {
     id: root
     property string pageId: "overview"
-    signal feedbackRequested(string key)
     ColumnLayout {
         anchors.fill: parent
         spacing: 10
