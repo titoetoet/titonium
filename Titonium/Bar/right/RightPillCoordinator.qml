@@ -142,17 +142,30 @@ QtObject {
         if (requested === root.connectedState)
             return false;
         root.connectedState = requested;
-        root.returnConnectedFocus(ownerId, generation);
+        root.returnConnectedFocus(ownerId, generation, false);
         if (Motion.reduced)
             root.finishConnectedClose(ownerId, generation);
         return true;
     }
 
-    function returnConnectedFocus(ownerId: string, generation: int): bool {
-        if (!root.connectedClosing || root.connectedOwnerId !== ownerId
-                || root.connectedState.closingGeneration !== generation
-                || root.connectedState.focusReturned
-                || SurfaceManager.ownerId !== ownerId)
+    function toggleConnectedSurface(ownerId: string): bool {
+        if (!ownerId || SurfaceManager.ownerId !== ownerId
+                || SurfaceManager.descriptor?.barConnected !== true
+                || root.connectedOwnerId !== ownerId)
+            return false;
+        if (root.connectedClosing) {
+            root.adoptConnectedSurface(ownerId, SurfaceManager.descriptor,
+                SurfaceManager.screen);
+            return root.connectedSurfaceActive && root.connectedOwnerId === ownerId;
+        }
+        return root.closeConnectedSurface();
+    }
+
+    function returnConnectedFocus(ownerId: string, generation: int,
+            managerReleased: bool): bool {
+        if (!RightPillState.canReturnConnectedFocus(root.connectedState,
+                ownerId, generation, SurfaceManager.ownerId,
+                SurfaceManager.active, managerReleased))
             return false;
         const invoker = root.connectedDescriptor?.invoker || null;
         if (!invoker || !invoker.forceActiveFocus)
@@ -160,6 +173,22 @@ QtObject {
         invoker.forceActiveFocus(Qt.PopupFocusReason);
         root.connectedState = RightPillState.connectedMarkFocusReturned(
             root.connectedState, ownerId, generation);
+        return true;
+    }
+
+    function forceCloseConnectedSurface(): bool {
+        if (!root.connectedSurfacePresented)
+            return false;
+        const ownerId = root.connectedOwnerId;
+        const generation = root.connectedGeneration;
+        const previousState = root.connectedState;
+        root.connectedState = RightPillState.connectedClear(previousState,
+            ownerId, generation);
+        if (root.connectedState === previousState)
+            return false;
+        if (SurfaceManager.ownerId === ownerId
+                && SurfaceManager.descriptor?.barConnected === true)
+            SurfaceManager.close(ownerId);
         return true;
     }
 
@@ -215,6 +244,10 @@ QtObject {
         target: SurfaceManager
 
         function onOpened(ownerId: string, descriptor: var, screen: var): void {
+            if (!RightPillState.matchesSurfaceOpen(SurfaceManager.ownerId,
+                    SurfaceManager.descriptor, SurfaceManager.screen,
+                    ownerId, descriptor, screen))
+                return;
             if (descriptor?.barConnected === true)
                 root.adoptConnectedSurface(ownerId, descriptor, screen);
             else
@@ -222,12 +255,15 @@ QtObject {
         }
 
         function onClosed(ownerId: string): void {
+            if (SurfaceManager.active)
+                return;
             if (!root.connectedSurfacePresented || root.connectedOwnerId !== ownerId
                     || root.connectedClosing)
                 return;
             const generation = root.connectedGeneration;
             root.connectedState = RightPillState.connectedRequestClose(
                 root.connectedState, ownerId, generation);
+            root.returnConnectedFocus(ownerId, generation, true);
             if (Motion.reduced)
                 root.finishConnectedClose(ownerId, generation);
         }

@@ -67,6 +67,16 @@ function connectedDescriptorSnapshot(descriptor) {
     });
 }
 
+function matchesSurfaceOpen(managerOwnerId, managerDescriptor, managerScreen,
+        ownerId, descriptor, screen) {
+    return String(ownerId || "").length > 0
+        && managerOwnerId === ownerId
+        && managerDescriptor === descriptor
+        && managerScreen === screen
+        && descriptor !== null
+        && screen !== null;
+}
+
 function connectedOpen(current, ownerId, descriptor, screen) {
     const owner = String(ownerId || "");
     const snapshot = connectedDescriptorSnapshot(descriptor);
@@ -114,6 +124,17 @@ function connectedMarkFocusReturned(current, ownerId, generation) {
         closingGeneration: current.closingGeneration,
         focusReturned: true,
     });
+}
+
+function canReturnConnectedFocus(current, ownerId, generation,
+        managerOwnerId, managerActive, managerReleased) {
+    if (!current || current.closing !== true || current.focusReturned === true
+            || current.ownerId !== String(ownerId || "")
+            || current.closingGeneration !== Number(generation))
+        return false;
+    if (managerReleased === true)
+        return managerActive !== true;
+    return managerActive === true && managerOwnerId === ownerId;
 }
 
 function connectedFinishClose(current, ownerId, generation) {

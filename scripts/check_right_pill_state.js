@@ -69,6 +69,25 @@ assert.equal(state.shouldFinalizeMenuForConnected(true, ""), true,
 assert.equal(state.shouldFinalizeMenuForConnected(false, "DP-3"), true,
     "a connected open finalizes a displaced System Tray exit on another screen");
 
+const openedDescriptor = {
+    barConnected: true,
+    anchor: "network",
+    source: "ConnectedNetworkPopupContent.qml",
+};
+const openedScreen = { name: "DP-1" };
+assert.equal(state.matchesSurfaceOpen("network:DP-1", openedDescriptor,
+    openedScreen, "network:DP-1", openedDescriptor, openedScreen), true,
+    "the exact live SurfaceManager presentation may be adopted");
+assert.equal(state.matchesSurfaceOpen("", null, null,
+    "network:DP-1", openedDescriptor, openedScreen), false,
+    "a synchronously rejected open must not be adopted");
+assert.equal(state.matchesSurfaceOpen("network:DP-1", { ...openedDescriptor },
+    openedScreen, "network:DP-1", openedDescriptor, openedScreen), false,
+    "a replacement descriptor with the same owner must reject the stale opened signal");
+assert.equal(state.matchesSurfaceOpen("network:DP-1", openedDescriptor,
+    { name: "DP-1" }, "network:DP-1", openedDescriptor, openedScreen), false,
+    "a replacement screen object must reject the stale opened signal");
+
 const firstClosing = state.connectedRequestClose(firstConnected,
     "network:DP-1", firstConnected.generation);
 assert.equal(firstClosing.closing, true);
@@ -96,9 +115,24 @@ assert.strictEqual(state.connectedFinishClose(reopenedConnected,
 
 const reopenedClosing = state.connectedRequestClose(reopenedConnected,
     "network:DP-1", reopenedConnected.generation);
+assert.equal(state.canReturnConnectedFocus(reopenedClosing, "network:DP-1",
+    reopenedConnected.generation, "network:DP-1", true, false), true,
+    "an ordinary close may focus while SurfaceManager retains the exact owner");
+assert.equal(state.canReturnConnectedFocus(reopenedClosing, "network:DP-1",
+    reopenedConnected.generation, "", false, true), true,
+    "an external close may focus the frozen invoker after SurfaceManager releases ownership");
+assert.equal(state.canReturnConnectedFocus(reopenedClosing, "network:DP-1",
+    reopenedConnected.generation, "audio:DP-1", true, true), false,
+    "an external close cannot steal focus from a synchronously opened newer owner");
+assert.equal(state.canReturnConnectedFocus(reopenedClosing, "network:DP-1",
+    firstConnected.generation, "", false, true), false,
+    "a stale close generation cannot focus the frozen invoker");
 const focusReturned = state.connectedMarkFocusReturned(reopenedClosing,
     "network:DP-1", reopenedConnected.generation);
 assert.equal(focusReturned.focusReturned, true);
+assert.equal(state.canReturnConnectedFocus(focusReturned, "network:DP-1",
+    reopenedConnected.generation, "", false, true), false,
+    "the external close path returns focus at most once per generation");
 assert.strictEqual(state.connectedMarkFocusReturned(focusReturned,
     "network:DP-1", reopenedConnected.generation), focusReturned,
     "focus return is recorded exactly once for one owner generation");

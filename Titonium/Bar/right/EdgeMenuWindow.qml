@@ -62,7 +62,7 @@ PanelWindow {
         if (RightPillCoordinator.ownerScreenName === window.screenModel.name)
             RightPillCoordinator.close();
         if (window.connectedSurfaceForScreen)
-            RightPillCoordinator.closeConnectedSurface();
+            RightPillCoordinator.forceCloseConnectedSurface();
         if (RightPillCoordinator.exitingScreenName === window.screenModel.name)
             RightPillCoordinator.finishClose(window.screenModel.name);
     }

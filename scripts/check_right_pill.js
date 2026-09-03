@@ -40,8 +40,10 @@ for (const fragment of [
     "function adoptConnectedSurface(ownerId: string, descriptor: var, screen: var): void",
     "function finalizeDisplacedMenu(): void",
     "function closeConnectedSurface(): bool",
+    "function toggleConnectedSurface(ownerId: string): bool",
+    "function forceCloseConnectedSurface(): bool",
     "function finishConnectedClose(ownerId: string, generation: int): bool",
-    "function returnConnectedFocus(ownerId: string, generation: int): bool",
+    "function returnConnectedFocus(ownerId: string, generation: int,",
     "RightPillState.connectedOpen",
     "RightPillState.connectedRequestClose",
     "RightPillState.connectedFinishClose",
@@ -67,8 +69,17 @@ assert.match(source,
     /function returnConnectedFocus[\s\S]*?connectedDescriptor\?\.invoker[\s\S]*?forceActiveFocus\(Qt\.PopupFocusReason\)[\s\S]*?connectedMarkFocusReturned/,
     "connected close must return invoker focus once before guarded teardown");
 assert.match(source,
-    /onOpened\(ownerId: string, descriptor: var, screen: var\)[\s\S]*?descriptor\?\.barConnected === true[\s\S]*?adoptConnectedSurface/,
-    "SurfaceManager connected opens must adopt a frozen presentation snapshot");
+    /function toggleConnectedSurface[\s\S]*?SurfaceManager\.ownerId !== ownerId[\s\S]*?root\.connectedClosing[\s\S]*?adoptConnectedSurface\(ownerId, SurfaceManager\.descriptor,\s*SurfaceManager\.screen\)[\s\S]*?closeConnectedSurface\(\)/,
+    "the toggle-facing boundary must reverse a same-owner close instead of requesting close twice");
+assert.match(source,
+    /onOpened\(ownerId: string, descriptor: var, screen: var\)[\s\S]*?RightPillState\.matchesSurfaceOpen\([\s\S]*?SurfaceManager\.descriptor[\s\S]*?descriptor, screen\)[\s\S]*?return;[\s\S]*?descriptor\?\.barConnected === true[\s\S]*?adoptConnectedSurface/,
+    "SurfaceManager connected opens must still own the exact descriptor and screen before adoption");
+assert.match(source,
+    /onClosed\(ownerId: string\)[\s\S]*?if \(SurfaceManager\.active\)[\s\S]*?return;[\s\S]*?connectedRequestClose[\s\S]*?returnConnectedFocus\(ownerId, generation, true\)/,
+    "external close must focus the frozen invoker only when no newer SurfaceManager owner exists");
+assert.match(source,
+    /function forceCloseConnectedSurface[\s\S]*?RightPillState\.connectedClear[\s\S]*?SurfaceManager\.close\(ownerId\)/,
+    "style shutdown must synchronously clear the frozen snapshot and matching SurfaceManager owner");
 
 for (const forbidden of ["Loader {", "QsMenuOpener", "Quickshell.Services.SystemTray", "repeat: true", "ChatGPT"])
     assert.equal(source.includes(forbidden), false, `RightPillCoordinator owns forbidden ${forbidden}`);
@@ -88,6 +99,9 @@ const windowSource = fs.readFileSync(windowPath, "utf8");
 const surfaceSource = fs.readFileSync(surfacePath, "utf8");
 assert.match(windowSource, /property bool styleActive:\s*true/);
 assert.match(windowSource, /visible:\s*window\.styleActive/);
+assert.match(windowSource,
+    /onStyleActiveChanged:[\s\S]*?RightPillCoordinator\.forceCloseConnectedSurface\(\)/,
+    "style deactivation must synchronously tear down connected ownership");
 assert.doesNotMatch(windowSource, /Loader\s*\{/);
 assert.match(windowSource, /Region \{ item: activeInputRegion \}/);
 assert.match(windowSource,
