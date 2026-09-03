@@ -95,9 +95,10 @@ only non-Connected descriptors. Consequently an OverlayHost never loads a Connec
 the two style trees cannot expose overlapping Bar hitboxes.
 
 Connected keeps the continuous left/right pill layout and makes `EdgeMenuWindow` the sole owner
-of connected Wi-Fi, Bluetooth, Audio, Active Window, and Input Method popups. The frozen
-descriptor selects the correct control anchor for the expanding right-pill branch until its exit
-animation completes. Classic restores detached `Shared.Surface` trees: launcher, Workspaces and
+of connected Wi-Fi, Bluetooth, Audio, and app-provided SystemTray menus. An Active Window without
+a prepared menu opens Center Notch instead. The frozen descriptor selects the correct control
+anchor for the expanding right-pill branch until its exit animation completes. Classic restores
+detached `Shared.Surface` trees: launcher, Workspaces and
 Active Window on the left; a centered Dynamic Island and notification bell; and separate pin,
 connectivity, and status surfaces on the right. Classic Network, Bluetooth, Audio, and System Tray
 popups use their existing OverlayHost surfaces rather than the Connected Edge window.

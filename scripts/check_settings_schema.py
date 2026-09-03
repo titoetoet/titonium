@@ -1,0 +1,105 @@
+#!/usr/bin/env python3
+"""Run the Draft 2020-12 keywords used by Titonium's shipped settings schema."""
+
+from __future__ import annotations
+
+import copy
+import json
+import sys
+from pathlib import Path
+from typing import Any
+
+
+ROOT = Path(__file__).resolve().parents[1]
+SCHEMA_PATH = ROOT / "config/schemas/settings.schema.json"
+DEFAULTS_PATH = ROOT / "config/defaults/settings.json"
+V7_FIXTURE_PATH = ROOT / "tests/fixtures/settings-v7-runtime.json"
+
+
+def load(path: Path) -> Any:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def type_matches(value: Any, expected: str) -> bool:
+    if expected == "object":
+        return isinstance(value, dict)
+    if expected == "array":
+        return isinstance(value, list)
+    if expected == "string":
+        return isinstance(value, str)
+    if expected == "boolean":
+        return isinstance(value, bool)
+    if expected == "integer":
+        return isinstance(value, int) and not isinstance(value, bool)
+    raise ValueError(f"unsupported JSON Schema type: {expected}")
+
+
+def validate(value: Any, schema: dict[str, Any], path: str = "$") -> list[str]:
+    """Evaluate the standard JSON Schema keywords used by settings.schema.json."""
+    errors: list[str] = []
+    expected_type = schema.get("type")
+    if expected_type is not None and not type_matches(value, expected_type):
+        return [f"{path}: expected {expected_type}"]
+    if "const" in schema and value != schema["const"]:
+        errors.append(f"{path}: must equal {schema['const']!r}")
+    if "enum" in schema and value not in schema["enum"]:
+        errors.append(f"{path}: must be one of {schema['enum']!r}")
+    if isinstance(value, str) and "minLength" in schema and len(value) < schema["minLength"]:
+        errors.append(f"{path}: must have at least {schema['minLength']} characters")
+    if isinstance(value, int) and not isinstance(value, bool):
+        if "minimum" in schema and value < schema["minimum"]:
+            errors.append(f"{path}: must be at least {schema['minimum']}")
+        if "maximum" in schema and value > schema["maximum"]:
+            errors.append(f"{path}: must be at most {schema['maximum']}")
+    if isinstance(value, dict):
+        properties = schema.get("properties", {})
+        for key in schema.get("required", []):
+            if key not in value:
+                errors.append(f"{path}: missing required property {key!r}")
+        if schema.get("additionalProperties") is False:
+            for key in value:
+                if key not in properties:
+                    errors.append(f"{path}: additional property {key!r}")
+        for key, child_schema in properties.items():
+            if key in value:
+                errors.extend(validate(value[key], child_schema, f"{path}.{key}"))
+    if isinstance(value, list):
+        if schema.get("uniqueItems") is True:
+            serialized = [json.dumps(item, sort_keys=True, separators=(",", ":")) for item in value]
+            if len(serialized) != len(set(serialized)):
+                errors.append(f"{path}: items must be unique")
+        item_schema = schema.get("items")
+        if item_schema is not None:
+            for index, item in enumerate(value):
+                errors.extend(validate(item, item_schema, f"{path}[{index}]"))
+    return errors
+
+
+def require_valid(name: str, value: Any, schema: dict[str, Any]) -> None:
+    errors = validate(value, schema)
+    if errors:
+        raise AssertionError(f"{name} failed JSON Schema validation: {'; '.join(errors)}")
+
+
+def main() -> int:
+    schema = load(SCHEMA_PATH)
+    defaults = load(DEFAULTS_PATH)
+    fixture = load(V7_FIXTURE_PATH)
+    require_valid("shipped defaults", defaults, schema)
+    require_valid("v7 runtime fixture", fixture, schema)
+
+    invalid_style = copy.deepcopy(defaults)
+    invalid_style["modules"]["bar"]["style"] = "detached-ish"
+    errors = validate(invalid_style, schema)
+    if not any(error.startswith("$.modules.bar.style:") for error in errors):
+        raise AssertionError("invalid bar style was accepted by the JSON Schema")
+    print("PASS settings v7 JSON Schema defaults, fixture, and invalid-style rejection")
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except (AssertionError, OSError, ValueError, json.JSONDecodeError) as error:
+        print(f"FAIL {error}", file=sys.stderr)
+        raise SystemExit(1) from error

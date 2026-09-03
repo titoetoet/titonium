@@ -48,11 +48,13 @@
         },
         "bar": {
           "type": "object",
-          "required": ["workspaceCount", "autoHide"],
+          "required": ["workspaceCount", "autoHide", "mascotEnabled", "style"],
           "additionalProperties": false,
           "properties": {
             "workspaceCount": { "type": "integer", "minimum": 1, "maximum": 8 },
-            "autoHide": { "type": "boolean" }
+            "autoHide": { "type": "boolean" },
+            "mascotEnabled": { "type": "boolean" },
+            "style": { "enum": ["connected", "classic"] }
           }
         },
         "dock": {
