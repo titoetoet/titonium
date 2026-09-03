@@ -143,8 +143,19 @@ for (const fragment of [
     "readonly property real panelTop: Metrics.barHeight + Metrics.barSpacing",
     "anchors.rightMargin: Metrics.barPadding", "width: 380", "SystemTrayMenuView {",
     "SystemTrayService.popupEntries", "SystemTrayService.resetPopupNavigation()",
+    "property bool closing: false", "property bool navigationReset: false",
+    "function resetNavigation(): void", "function finishClose(): void", "if (root.closing)",
+    "if (Motion.reduced)", "panelExit.restart()", "transformOrigin: Item.Top",
+    "opacity: Motion.reduced ? 1 : 0", "scale: Motion.reduced ? 1 : 0.94",
+    "transform: Translate {", "id: panelEntranceOffset", "id: panelEntrance",
+    "running: !Motion.reduced", "id: panelExit", "onFinished: root.finishClose()",
+    "Component.onDestruction: root.resetNavigation()",
 ]) assert.equal(classicPopupSource.includes(fragment), true,
     `Classic System Tray popup missing ${fragment}`);
+assert.equal((classicPopupSource.match(/SurfaceManager\.close\(root\.ownerId\)/g) || []).length, 1,
+    "Classic System Tray popup must close SurfaceManager exactly once through teardown");
+assert.equal((classicPopupSource.match(/SystemTrayService\.resetPopupNavigation\(\)/g) || []).length, 1,
+    "Classic System Tray navigation must reset exactly once through guarded teardown");
 for (const forbidden of ["QsMenuOpener", "Quickshell.Services.SystemTray", "Process", "FileView"])
     assert.equal(classicPopupSource.includes(forbidden), false,
         `Classic System Tray popup owns forbidden ${forbidden}`);

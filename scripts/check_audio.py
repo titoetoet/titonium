@@ -358,7 +358,16 @@ def main() -> int:
         "width: 380", "readonly property real panelTop: Metrics.barHeight + Metrics.barSpacing",
         "anchors.rightMargin: Metrics.barPadding", "AudioControlRow {", "AudioOutputDeviceRow {",
         "AudioStreamRow {",
+        "property bool closing: false", "function finishClose(): void", "if (root.closing)",
+        "if (Motion.reduced)", "panelExit.restart()", "transformOrigin: Item.TopRight",
+        "opacity: Motion.reduced ? 1 : 0", "scale: Motion.reduced ? 1 : 0.94",
+        "transform: Translate {", "id: panelEntranceOffset", "id: panelEntrance",
+        "running: !Motion.reduced", "id: panelExit", "onFinished: root.finishClose()",
     ), "Classic Audio popup surface")
+    classic_audio_path = OVERLAY_ROOT / "ClassicAudioPopupSurface.qml"
+    if classic_audio_path.is_file() and classic_audio_path.read_text(encoding="utf-8").count(
+            "SurfaceManager.close(root.ownerId)") != 1:
+        errors.append("Classic Audio popup must close SurfaceManager exactly once through teardown")
     require_fragments(errors, OVERLAY_ROOT / "AudioSlider.qml", (
         "property real serviceValue: 0",
         "property real maximumValue: 1",

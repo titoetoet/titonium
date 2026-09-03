@@ -439,9 +439,19 @@ def validate_presentation(errors: list[str]) -> None:
         "Keys.onEscapePressed", "TapHandler {", "anchors.fill: parent",
         "readonly property real panelTop: Metrics.barHeight + Metrics.barSpacing",
         "anchors.rightMargin: Metrics.barPadding", "width: 380", "BluetoothDeviceRow",
+        "property bool closing: false", "function finishClose(): void", "if (root.closing)",
+        "if (Motion.reduced)", "panelExit.restart()", "transformOrigin: Item.TopRight",
+        "opacity: Motion.reduced ? 1 : 0", "scale: Motion.reduced ? 1 : 0.94",
+        "transform: Translate {", "id: panelEntranceOffset", "id: panelEntrance",
+        "running: !Motion.reduced", "id: panelExit", "onFinished: root.finishClose()",
+        "Accessible.role: Accessible.Heading", "Accessible.name: section.sectionTitle",
+        'name: section.modelData === "connected" ? "link"',
+        '"devices" : "radar"', "Layout.preferredWidth: Metrics.spacingLarge",
     ):
         if fragment not in classic_popup:
             errors.append(f"missing Classic Bluetooth popup contract: {fragment}")
+    if classic_popup.count("SurfaceManager.close(root.ownerId)") != 1:
+        errors.append("Classic Bluetooth popup must close SurfaceManager exactly once through teardown")
     for forbidden in ("Quickshell.Bluetooth", "Bluetooth.defaultAdapter", "Process", "FileView"):
         if forbidden in classic_popup:
             errors.append(f"forbidden Classic Bluetooth popup dependency: {forbidden}")
