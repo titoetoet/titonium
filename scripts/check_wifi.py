@@ -20,6 +20,7 @@ REQUIRED = (
     "Titonium/Services/Network/qmldir",
     "Titonium/Overlays/Network/NetworkPopupCoordinator.qml",
     "Titonium/Overlays/Network/NetworkPopupSurface.qml",
+    "Titonium/Overlays/Network/ClassicNetworkPopupSurface.qml",
     "Titonium/Overlays/Network/WifiNetworkRow.qml",
     "Titonium/Overlays/Network/qmldir",
 )
@@ -115,6 +116,7 @@ def presentation_errors() -> list[str]:
     errors = []
     coordinator = source(OVERLAY_ROOT / "NetworkPopupCoordinator.qml")
     popup = source(OVERLAY_ROOT / "NetworkPopupSurface.qml")
+    classic_popup = source(OVERLAY_ROOT / "ClassicNetworkPopupSurface.qml")
     row = source(OVERLAY_ROOT / "WifiNetworkRow.qml")
     qmldir = source(OVERLAY_ROOT / "qmldir")
     pill = source(PILL)
@@ -137,6 +139,17 @@ def presentation_errors() -> list[str]:
     for forbidden in ("Quickshell.Networking", "Networking.", "Timer", "Process", "FileView", "MultiEffect", "ShaderEffect"):
         if forbidden in popup:
             errors.append(f"forbidden Wi-Fi popup dependency: {forbidden}")
+    for fragment in (
+        "property var descriptor:", "property var screen:", "Shared.Panel", "SurfaceManager.close",
+        "Keys.onEscapePressed", "TapHandler {", "anchors.fill: parent",
+        "readonly property real panelTop: Metrics.barHeight + Metrics.barSpacing",
+        "anchors.rightMargin: Metrics.barPadding", "width: 380", "WifiNetworkRow",
+    ):
+        if fragment not in classic_popup:
+            errors.append(f"missing Classic Wi-Fi popup contract: {fragment}")
+    for forbidden in ("Quickshell.Networking", "Networking.", "Process", "FileView"):
+        if forbidden in classic_popup:
+            errors.append(f"forbidden Classic Wi-Fi popup dependency: {forbidden}")
     for fragment in (
         "property var network:", "property string password:", "onNetworkChanged:",
         "NetworkService.connect", "NetworkService.connectWithPassword", "NetworkService.disconnect",
@@ -161,6 +174,7 @@ def presentation_errors() -> list[str]:
         errors.append("Wi-Fi overlay qmldir module name is missing")
     for export in ("singleton NetworkPopupCoordinator 1.0 NetworkPopupCoordinator.qml",
                    "NetworkPopupSurface 1.0 NetworkPopupSurface.qml",
+                   "ClassicNetworkPopupSurface 1.0 ClassicNetworkPopupSurface.qml",
                    "WifiNetworkRow 1.0 WifiNetworkRow.qml"):
         if export not in qmldir:
             errors.append(f"Wi-Fi overlay qmldir export is missing: {export}")

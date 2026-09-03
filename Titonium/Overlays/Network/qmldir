@@ -1,4 +1,5 @@
 module qs.Titonium.Overlays.Network
 singleton NetworkPopupCoordinator 1.0 NetworkPopupCoordinator.qml
 NetworkPopupSurface 1.0 NetworkPopupSurface.qml
+ClassicNetworkPopupSurface 1.0 ClassicNetworkPopupSurface.qml
 WifiNetworkRow 1.0 WifiNetworkRow.qml

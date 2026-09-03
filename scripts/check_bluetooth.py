@@ -19,6 +19,7 @@ REQUIRED_FILES = (
 PRESENTATION_ROOT = ROOT / "Titonium/Overlays/Bluetooth"
 COORDINATOR = PRESENTATION_ROOT / "BluetoothPopupCoordinator.qml"
 POPUP = PRESENTATION_ROOT / "BluetoothPopupSurface.qml"
+CLASSIC_POPUP = PRESENTATION_ROOT / "ClassicBluetoothPopupSurface.qml"
 DEVICE_ROW = PRESENTATION_ROOT / "BluetoothDeviceRow.qml"
 CONNECTIVITY_PILL = ROOT / "Titonium/Bar/islands/ConnectivityPill.qml"
 APP = ROOT / "Titonium/App.qml"
@@ -26,6 +27,7 @@ BLUETOOTH_ACCEPTANCE = ROOT / "scripts/bluetooth_acceptance.sh"
 PRESENTATION_FILES = (
     "Titonium/Overlays/Bluetooth/BluetoothPopupCoordinator.qml",
     "Titonium/Overlays/Bluetooth/BluetoothPopupSurface.qml",
+    "Titonium/Overlays/Bluetooth/ClassicBluetoothPopupSurface.qml",
     "Titonium/Overlays/Bluetooth/BluetoothDeviceRow.qml",
     "Titonium/Overlays/Bluetooth/qmldir",
 )
@@ -373,6 +375,7 @@ def validate_presentation(errors: list[str]) -> None:
 
     coordinator = COORDINATOR.read_text(encoding="utf-8")
     popup = POPUP.read_text(encoding="utf-8")
+    classic_popup = CLASSIC_POPUP.read_text(encoding="utf-8") if CLASSIC_POPUP.is_file() else ""
     row = DEVICE_ROW.read_text(encoding="utf-8")
     pill = CONNECTIVITY_PILL.read_text(encoding="utf-8") if CONNECTIVITY_PILL.is_file() else ""
     qmldir = (PRESENTATION_ROOT / "qmldir").read_text(encoding="utf-8") \
@@ -431,6 +434,17 @@ def validate_presentation(errors: list[str]) -> None:
     for forbidden in ("sectionCollapsed", "toggleSection", "expand_more", "expand_less"):
         if forbidden in popup:
             errors.append(f"Bluetooth device sections must be static, not dropdown controls: {forbidden}")
+    for fragment in (
+        "property var descriptor:", "property var screen:", "Shared.Panel", "SurfaceManager.close",
+        "Keys.onEscapePressed", "TapHandler {", "anchors.fill: parent",
+        "readonly property real panelTop: Metrics.barHeight + Metrics.barSpacing",
+        "anchors.rightMargin: Metrics.barPadding", "width: 380", "BluetoothDeviceRow",
+    ):
+        if fragment not in classic_popup:
+            errors.append(f"missing Classic Bluetooth popup contract: {fragment}")
+    for forbidden in ("Quickshell.Bluetooth", "Bluetooth.defaultAdapter", "Process", "FileView"):
+        if forbidden in classic_popup:
+            errors.append(f"forbidden Classic Bluetooth popup dependency: {forbidden}")
 
     row_fragments = (
         "import qs.Titonium.Services.Bluetooth",
@@ -485,6 +499,7 @@ def validate_presentation(errors: list[str]) -> None:
         errors.append("Bluetooth overlay qmldir module name is missing")
     for export in ("singleton BluetoothPopupCoordinator 1.0 BluetoothPopupCoordinator.qml",
                    "BluetoothPopupSurface 1.0 BluetoothPopupSurface.qml",
+                   "ClassicBluetoothPopupSurface 1.0 ClassicBluetoothPopupSurface.qml",
                    "BluetoothDeviceRow 1.0 BluetoothDeviceRow.qml"):
         if export not in qmldir:
             errors.append(f"Bluetooth overlay qmldir export is missing: {export}")

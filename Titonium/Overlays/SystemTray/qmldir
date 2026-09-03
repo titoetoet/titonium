@@ -1,3 +1,3 @@
 module qs.Titonium.Overlays.SystemTray
-singleton SystemTrayPopupCoordinator 1.0 SystemTrayPopupCoordinator.qml
-SystemTrayPopupSurface 1.0 SystemTrayPopupSurface.qml
+SystemTrayMenuView 1.0 SystemTrayMenuView.qml
+ClassicSystemTrayPopupSurface 1.0 ClassicSystemTrayPopupSurface.qml

@@ -25,6 +25,7 @@ REQUIRED_OVERLAY_FILES = (
     "Titonium/Overlays/Audio/qmldir",
     "Titonium/Overlays/Audio/AudioPopupCoordinator.qml",
     "Titonium/Overlays/Audio/AudioPopupSurface.qml",
+    "Titonium/Overlays/Audio/ClassicAudioPopupSurface.qml",
     "Titonium/Overlays/Audio/AudioControlRow.qml",
     "Titonium/Overlays/Audio/AudioOutputDeviceRow.qml",
     "Titonium/Overlays/Audio/AudioStreamRow.qml",
@@ -319,6 +320,7 @@ def main() -> int:
     require_fragments(errors, OVERLAY_ROOT / "qmldir", (
         "module qs.Titonium.Overlays.Audio",
         "singleton AudioPopupCoordinator 1.0 AudioPopupCoordinator.qml",
+        "ClassicAudioPopupSurface 1.0 ClassicAudioPopupSurface.qml",
         "AudioOutputDeviceRow 1.0 AudioOutputDeviceRow.qml",
     ), "Audio overlay module")
     require_fragments(errors, OVERLAY_ROOT / "AudioPopupCoordinator.qml", (
@@ -350,6 +352,13 @@ def main() -> int:
         "property bool streamsExpanded: false",
         "AudioStreamRow {",
     ), "Audio popup surface")
+    require_fragments(errors, OVERLAY_ROOT / "ClassicAudioPopupSurface.qml", (
+        "property var descriptor:", "property var screen:", "Shared.Panel", "SurfaceManager.close",
+        "Keys.onEscapePressed", "TapHandler {", "anchors.fill: parent",
+        "width: 380", "readonly property real panelTop: Metrics.barHeight + Metrics.barSpacing",
+        "anchors.rightMargin: Metrics.barPadding", "AudioControlRow {", "AudioOutputDeviceRow {",
+        "AudioStreamRow {",
+    ), "Classic Audio popup surface")
     require_fragments(errors, OVERLAY_ROOT / "AudioSlider.qml", (
         "property real serviceValue: 0",
         "property real maximumValue: 1",

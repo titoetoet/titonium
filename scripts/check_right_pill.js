@@ -133,4 +133,23 @@ assert.match(surfaceSource, /StartIsland\s*\{[\s\S]*?z:\s*2/,
 assert.match(surfaceSource, /EndIsland\s*\{[\s\S]*?z:\s*2/,
     "right-side controls must stay above the overlapping menu clip");
 
+const classicPopupPath = path.join(root, "Titonium", "Overlays", "SystemTray",
+    "ClassicSystemTrayPopupSurface.qml");
+assert.equal(fs.existsSync(classicPopupPath), true, "Classic System Tray popup must exist");
+const classicPopupSource = fs.readFileSync(classicPopupPath, "utf8");
+for (const fragment of [
+    "property var descriptor:", "property var screen:", "Shared.Panel", "SurfaceManager.close",
+    "Keys.onEscapePressed", "TapHandler {", "anchors.fill: parent",
+    "readonly property real panelTop: Metrics.barHeight + Metrics.barSpacing",
+    "anchors.rightMargin: Metrics.barPadding", "width: 380", "SystemTrayMenuView {",
+    "SystemTrayService.popupEntries", "SystemTrayService.resetPopupNavigation()",
+]) assert.equal(classicPopupSource.includes(fragment), true,
+    `Classic System Tray popup missing ${fragment}`);
+for (const forbidden of ["QsMenuOpener", "Quickshell.Services.SystemTray", "Process", "FileView"])
+    assert.equal(classicPopupSource.includes(forbidden), false,
+        `Classic System Tray popup owns forbidden ${forbidden}`);
+
+const trayQmldir = fs.readFileSync(path.join(root, "Titonium", "Overlays", "SystemTray", "qmldir"), "utf8");
+assert.match(trayQmldir, /ClassicSystemTrayPopupSurface 1\.0 ClassicSystemTrayPopupSurface\.qml/);
+
 console.log("PASS Right Pill coordinator lifecycle and menu preparation contract");
