@@ -51,7 +51,11 @@ PanelWindow {
     }
 
     onStyleActiveChanged: {
-        if (!window.styleActive && RightPillCoordinator.active)
+        if (window.styleActive)
+            return;
+        if (RightPillCoordinator.ownerScreenName === window.screenModel.name)
             RightPillCoordinator.close();
+        if (RightPillCoordinator.exitingScreenName === window.screenModel.name)
+            RightPillCoordinator.finishClose(window.screenModel.name);
     }
 }

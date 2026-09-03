@@ -56,11 +56,11 @@ PanelWindow {
 
     Item {
         id: compactInputRegion
-        visible: !window.ownsIsland && !window.dismissing
+        visible: window.styleActive && !window.ownsIsland && !window.dismissing
         x: surface.compactInputX
         y: window.compactY
-        width: window.ownsIsland ? 0 : surface.compactInputWidth
-        height: window.ownsIsland ? 0 : surface.compactInputHeight
+        width: window.styleActive && !window.ownsIsland ? surface.compactInputWidth : 0
+        height: window.styleActive && !window.ownsIsland ? surface.compactInputHeight : 0
     }
 
 
@@ -88,7 +88,11 @@ PanelWindow {
     }
 
     onStyleActiveChanged: {
-        if (!window.styleActive && CenterNotchCoordinator.active)
+        if (window.styleActive)
+            return;
+        if (CenterNotchCoordinator.ownerScreenName === window.screenModel.name)
             CenterNotchCoordinator.collapse();
+        if (CenterNotchCoordinator.exitingScreenName === window.screenModel.name)
+            CenterNotchCoordinator.finishClose(window.screenModel.name);
     }
 }

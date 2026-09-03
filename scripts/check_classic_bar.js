@@ -90,4 +90,31 @@ for (const relative of [
     ]);
 }
 
+requireFragments("Titonium/Bar/notch/CenterPillWindow.qml", [
+    "WlrLayershell.keyboardFocus: window.ownsIsland",
+    "? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None",
+    "visible: window.styleActive && !window.ownsIsland && !window.dismissing",
+    "width: window.styleActive && !window.ownsIsland ? surface.compactInputWidth : 0",
+    "height: window.styleActive && !window.ownsIsland ? surface.compactInputHeight : 0",
+    "CenterNotchCoordinator.ownerScreenName === window.screenModel.name",
+    "CenterNotchCoordinator.collapse();",
+    "CenterNotchCoordinator.exitingScreenName === window.screenModel.name",
+    "CenterNotchCoordinator.finishClose(window.screenModel.name);",
+]);
+requireFragments("Titonium/Bar/right/EdgeMenuWindow.qml", [
+    "WlrLayershell.keyboardFocus: window.ownsMenu",
+    "? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None",
+    "width: window.ownsMenu ? window.width : 0",
+    "RightPillCoordinator.ownerScreenName === window.screenModel.name",
+    "RightPillCoordinator.close();",
+    "RightPillCoordinator.exitingScreenName === window.screenModel.name",
+    "RightPillCoordinator.finishClose(window.screenModel.name);",
+]);
+assert.match(read("Titonium/Bar/notch/CenterPillWindow.qml"),
+    /onStyleActiveChanged:\s*\{[\s\S]*?if \(window\.styleActive\)[\s\S]*?CenterNotchCoordinator\.ownerScreenName === window\.screenModel\.name[\s\S]*?CenterNotchCoordinator\.collapse\(\);[\s\S]*?CenterNotchCoordinator\.exitingScreenName === window\.screenModel\.name[\s\S]*?CenterNotchCoordinator\.finishClose\(window\.screenModel\.name\);/,
+    "Classic mode must synchronously clear the matching Center owner and exit state");
+assert.match(read("Titonium/Bar/right/EdgeMenuWindow.qml"),
+    /onStyleActiveChanged:\s*\{[\s\S]*?if \(window\.styleActive\)[\s\S]*?RightPillCoordinator\.ownerScreenName === window\.screenModel\.name[\s\S]*?RightPillCoordinator\.close\(\);[\s\S]*?RightPillCoordinator\.exitingScreenName === window\.screenModel\.name[\s\S]*?RightPillCoordinator\.finishClose\(window\.screenModel\.name\);/,
+    "Classic mode must synchronously clear the matching edge-menu owner and exit state");
+
 console.log("PASS classic bar composition");
