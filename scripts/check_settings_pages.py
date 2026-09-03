@@ -60,6 +60,9 @@ def main() -> int:
         'Preferences.patch("modules.bar.workspaceCount"',
         'Preferences.patch("modules.bar.autoHide"', "settings.bar.workspace_count",
         'Preferences.patch("modules.bar.mascotEnabled"', "settings.bar.mascot",
+        'Preferences.patch("modules.bar.style"', "settings.bar.style",
+        "settings.bar.style.description",
+        "settings.bar.style.connected", "settings.bar.style.classic",
     ), errors)
     require(dock, "DockPage", (
         '"auto-hide"', '"always-visible"', '"reserve-space"', '"hidden"',
@@ -144,6 +147,8 @@ def main() -> int:
         "settings.bar.workspace_count", "settings.bar.auto_hide",
         "settings.bar.auto_hide.description", "settings.bar.mascot",
         "settings.bar.mascot.description",
+        "settings.bar.style", "settings.bar.style.description", "settings.bar.style.connected",
+        "settings.bar.style.classic",
         "settings.nav.dock", "settings.dock.title", "settings.dock.description",
         "settings.dock.mode", "settings.dock.mode.auto_hide",
         "settings.dock.mode.always_visible", "settings.dock.mode.reserve_space",

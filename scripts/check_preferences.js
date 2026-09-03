@@ -34,6 +34,7 @@ assert.equal(projectedDefaults.appearance.mode, "dark");
 assert.equal(projectedDefaults.modules.bar.workspaceCount, 5);
 assert.equal(projectedDefaults.modules.bar.autoHide, false);
 assert.equal(projectedDefaults.modules.bar.mascotEnabled, true);
+assert.equal(projectedDefaults.modules.bar.style, "connected");
 assert.equal(projectedDefaults.modules.dock.visibilityMode, "auto-hide");
 assert.deepEqual(projectedDefaults.modules.dock.pinnedIds, []);
 assert.equal(projectedDefaults.modules.notifications.toastsEnabled, true);
@@ -104,6 +105,13 @@ assert.deepEqual(invalid.modules.dock.pinnedIds, ["A", "B"]);
 assert.equal(invalid.modules.notifications.toastsEnabled, true);
 assert.equal(invalid.modules.notifications.toastDuration, 2000);
 
+assert.equal(context.project({ modules: { bar: { style: "classic" } } }, defaults, null)
+    .modules.bar.style, "classic");
+assert.equal(context.project({ modules: { bar: { style: "detached-ish" } } }, defaults, null)
+    .modules.bar.style, "connected");
+assert.equal(context.project({ modules: { bar: { style: 12 } } }, defaults, null)
+    .modules.bar.style, "connected");
+
 assert.deepEqual(plain(context.normalizePinnedIds(
     [" b.desktop ", "B.DESKTOP", "a.desktop", "", 2])),
     ["b.desktop", "a.desktop"]);
@@ -125,4 +133,4 @@ assert.throws(() => context.setPath(migrated, "modules..bar", 4));
 assert.throws(() => context.setPath(migrated, "__proto__.polluted", true));
 assert.throws(() => context.setPath(migrated, "modules.constructor.value", true));
 
-console.log("PASS settings v7 projection, migration and path fixtures (39)");
+console.log("PASS settings v7 projection, migration and path fixtures (43)");

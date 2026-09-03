@@ -11,6 +11,14 @@ Item {
     id: root
 
     readonly property int workspaceCount: Preferences.bar.workspaceCount
+    readonly property var styleOptions: Object.freeze([
+        Object.freeze({ label: I18n.tr("settings.bar.style.connected"), value: "connected" }),
+        Object.freeze({ label: I18n.tr("settings.bar.style.classic"), value: "classic" }),
+    ])
+
+    function styleIndex(): int {
+        return root.styleOptions.findIndex(option => option.value === Preferences.barStyle);
+    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -27,6 +35,21 @@ Item {
             text: I18n.tr("settings.bar.description")
             tone: "secondary"
             wrapMode: Text.WordWrap
+        }
+
+        SettingRow {
+            Layout.fillWidth: true
+            title: I18n.tr("settings.bar.style")
+            description: I18n.tr("settings.bar.style.description")
+
+            Shared.Select {
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                model: root.styleOptions
+                currentIndex: Math.max(0, root.styleIndex())
+                accessibleName: I18n.tr("settings.bar.style")
+                onSelected: (index, value) => Preferences.patch("modules.bar.style", value)
+            }
         }
 
         SettingRow {

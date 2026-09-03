@@ -7,7 +7,7 @@
   "applications": { "hiddenIds": [] },
   "modules": {
     "spotlight": { "pageTransition": "slide-fade", "transitionDuration": 220 },
-    "bar": { "workspaceCount": 8, "autoHide": true },
+    "bar": { "workspaceCount": 8, "autoHide": true, "style": "connected" },
     "dock": {
       "visibilityMode": "always-visible",
       "pinnedIds": ["org.mozilla.firefox.desktop"]

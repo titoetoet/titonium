@@ -75,7 +75,7 @@ def validate_settings(data: Any) -> list[str]:
         if not isinstance(duration, int) or isinstance(duration, bool) or not 0 <= duration <= 500:
             errors.append("modules.spotlight.transitionDuration must be an integer from 0 to 500")
     bar = modules.get("bar")
-    if not isinstance(bar, dict) or set(bar) != {"workspaceCount", "autoHide", "mascotEnabled"}:
+    if not isinstance(bar, dict) or set(bar) != {"workspaceCount", "autoHide", "mascotEnabled", "style"}:
         errors.append("modules.bar has an invalid shape")
     else:
         count = bar.get("workspaceCount")
@@ -85,6 +85,8 @@ def validate_settings(data: Any) -> list[str]:
             errors.append("modules.bar.autoHide must be a boolean")
         if not isinstance(bar.get("mascotEnabled"), bool):
             errors.append("modules.bar.mascotEnabled must be a boolean")
+        if bar.get("style") not in {"connected", "classic"}:
+            errors.append("modules.bar.style is invalid")
     dock = modules.get("dock")
     if not isinstance(dock, dict) or set(dock) != {"visibilityMode", "pinnedIds"}:
         errors.append("modules.dock has an invalid shape")

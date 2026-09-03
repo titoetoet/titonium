@@ -135,6 +135,8 @@ function project(document, defaults, legacyDock) {
                 autoHide: boolean(bar.autoHide, boolean(fallbackBar.autoHide, false)),
                 mascotEnabled: boolean(bar.mascotEnabled,
                     boolean(fallbackBar.mascotEnabled, true)),
+                style: oneOf(bar.style, ["connected", "classic"],
+                    oneOf(fallbackBar.style, ["connected", "classic"], "connected")),
             },
             dock: {
                 visibilityMode: oneOf(dock.visibilityMode,

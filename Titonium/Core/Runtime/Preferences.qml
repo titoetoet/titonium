@@ -34,6 +34,7 @@ QtObject {
         root.effectiveState.applications?.hiddenIds || []
     readonly property var spotlight: root.effectiveState.modules?.spotlight || ({})
     readonly property var bar: root.effectiveState.modules?.bar || ({})
+    readonly property string barStyle: root.bar.style === "classic" ? "classic" : "connected"
     readonly property var dock: root.effectiveState.modules?.dock || ({})
     readonly property var notifications:
         root.effectiveState.modules?.notifications || ({})

@@ -13,7 +13,8 @@
     "bar": {
       "workspaceCount": 5,
       "autoHide": false,
-      "mascotEnabled": true
+      "mascotEnabled": true,
+      "style": "connected"
     },
     "dock": {
       "visibilityMode": "auto-hide",
