@@ -77,6 +77,31 @@ Titonium. The full Bar input mask is composed from the three island hitboxes, pr
 click-through elsewhere. The End island orders native Wi-Fi, Bluetooth, Audio and Notification
 Bell controls before the protected Input Method. Clock remains temporarily disabled.
 
+### Selectable Top Bar styles
+
+`modules.bar.style` is a transactional preference with two values: `connected` and `classic`.
+The shipped default is `connected`; the v7 preference projection also supplies `connected` for
+missing, malformed, or unknown values, so existing runtime settings migrate without a separate
+write. The Bar page patches this path inside the normal Settings preview: Cancel immediately
+restores the committed effective style, while Apply persists the selected style only after the
+atomic settings write succeeds.
+
+`BarSurface` is the exclusive composition boundary. It activates exactly one style Loader at a
+time, keyed by `RightPillCoordinator.presentedStyle`. Before publishing a different style, the
+coordinator closes the old style's transient owner and finalizes its exit state; stale close
+callbacks are guarded by the retained owner/generation snapshot and cannot clear a newer owner.
+`CenterPillWindow` and `EdgeMenuWindow` are active only for Connected, while `OverlayHost` loads
+only non-Connected descriptors. Consequently an OverlayHost never loads a Connected popup and
+the two style trees cannot expose overlapping Bar hitboxes.
+
+Connected keeps the continuous left/right pill layout and makes `EdgeMenuWindow` the sole owner
+of connected Wi-Fi, Bluetooth, Audio, Active Window, and Input Method popups. The frozen
+descriptor selects the correct control anchor for the expanding right-pill branch until its exit
+animation completes. Classic restores detached `Shared.Surface` trees: launcher, Workspaces and
+Active Window on the left; a centered Dynamic Island and notification bell; and separate pin,
+connectivity, and status surfaces on the right. Classic Network, Bluetooth, Audio, and System Tray
+popups use their existing OverlayHost surfaces rather than the Connected Edge window.
+
 ## State and presentation
 
 Singleton services expose reactive state once for all consumers:

@@ -42,6 +42,39 @@ General/Dock navigation, mutual exclusion with Spotlight and Center Notch, Cance
 Settings layer on DP-1, no Titonium layer on DP-3, clean logs, a clean repository and unchanged
 live/dotfiles Hyprland hashes. It exposes no Apply or patch IPC and cannot alter the user's runtime.
 
+### Selectable Top Bar styles
+
+The Top Bar focused checks cover the `modules.bar.style` default and normalization, Settings
+projection, Connected-versus-Classic popup routing, Classic composition, right-pill ownership,
+control-anchor geometry, and style-switch cleanup. They reject a Classic default, an unknown value
+that does not normalize to Connected, Connected descriptors loaded by `OverlayHost`, simultaneous
+style hitboxes, swapped Network/Bluetooth anchors, and a stale close that clears a newer owner.
+
+Run the focused static set before a visual review:
+
+```bash
+node scripts/check_preferences.js
+python3 scripts/check_settings_pages.py
+node scripts/check_bar_popup_routing.js
+node scripts/check_classic_bar.js
+node scripts/check_connected_popup_content.js
+node scripts/check_edge_menu_geometry.js
+node scripts/check_right_pill.js
+node scripts/check_top_bar_style_lifecycle.js
+python3 scripts/check_wifi.py
+python3 scripts/check_bluetooth.py
+python3 scripts/check_audio.py
+python3 scripts/check_surface_passthrough.py
+```
+
+The two manual modes are intentionally separate and do not mutate real Wi-Fi, Bluetooth, or Audio
+state. In Settings preview, switch Connected → Classic and Cancel, then repeat Connected → Classic
+and Apply. In Classic, verify the detached pill gaps and detached Network, Bluetooth, Audio, and
+System Tray popups. Return to Connected and verify Wi-Fi, Bluetooth, and Audio grow from their own
+right-pill anchors. In both modes check Escape, outside-click, control switching, a style switch
+while a popup is open, and scales 1.0 and 1.5. This is a visual checkpoint; do not record it as
+passed until someone has performed the review.
+
 ## Native Dock + Bluetooth handoff (Task 8)
 
 The implementation has static contracts and read-only acceptance seams. The controller completed
