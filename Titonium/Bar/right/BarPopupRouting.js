@@ -4,6 +4,33 @@ function normalizeStyle(value) {
     return value === "classic" ? "classic" : "connected";
 }
 
+function canToggle(ownerId, invoker, requiresInvoker) {
+    if (!ownerId)
+        return false;
+    return requiresInvoker !== true || (invoker !== null && invoker !== undefined);
+}
+
+function existingOpenAction(requestOwnerId, managerOwnerId, barConnected,
+        connectedOwnerId, connectedClosing) {
+    if (!requestOwnerId || requestOwnerId !== managerOwnerId)
+        return "open";
+    if (barConnected === true && connectedOwnerId === requestOwnerId
+            && connectedClosing === true)
+        return "reverse";
+    return "preserve";
+}
+
+function styleAfterCleanup(currentStyle, requestedStyle, cleanup) {
+    const current = normalizeStyle(currentStyle);
+    const next = normalizeStyle(requestedStyle);
+    if (current === next)
+        return current;
+    if (typeof cleanup !== "function")
+        return current;
+    cleanup();
+    return next;
+}
+
 function presentation(style, feature) {
     const routes = normalizeStyle(style) === "classic" ? {
         network: ["overlay", "ClassicNetworkPopupSurface.qml", ""],

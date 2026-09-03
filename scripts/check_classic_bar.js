@@ -64,9 +64,9 @@ requireFragments("Titonium/Bar/classic/ClassicBar.qml", [
 requireSurfaceCount("Titonium/Bar/classic/ClassicBar.qml", 1);
 
 const surface = read("Titonium/Bar/BarSurface.qml");
-assert.match(surface, /active:\s*Preferences\.barStyle\s*===\s*"connected"/,
+assert.match(surface, /active:\s*RightPillCoordinator\.presentedStyle\s*===\s*"connected"/,
     "Connected Bar Loader must be active only in connected mode");
-assert.match(surface, /active:\s*Preferences\.barStyle\s*===\s*"classic"/,
+assert.match(surface, /active:\s*RightPillCoordinator\.presentedStyle\s*===\s*"classic"/,
     "Classic Bar Loader must be active only in classic mode");
 requireFragments("Titonium/Bar/BarSurface.qml", [
     "readonly property var activeBar:",
@@ -77,7 +77,7 @@ requireFragments("Titonium/Bar/BarSurface.qml", [
     "root.activeBar ? root.activeBar.rightHitbox : null",
 ]);
 requireFragments("Titonium/Bar/BarHost.qml", [
-    "styleActive: Preferences.barStyle === \"connected\"",
+    "styleActive: RightPillCoordinator.presentedStyle === \"connected\"",
 ]);
 
 for (const relative of [

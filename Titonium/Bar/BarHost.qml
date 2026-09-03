@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 import Quickshell
 import qs.Titonium.Bar.notch
 import qs.Titonium.Bar.right
-import qs.Titonium.Core.Runtime
 import qs.Titonium.Core.Screens
 
 Scope {
@@ -25,14 +24,14 @@ Scope {
             }
             CenterPillWindow {
                 screenModel: screenScope.modelData
-                styleActive: Preferences.barStyle === "connected"
+                styleActive: RightPillCoordinator.presentedStyle === "connected"
                 onBannerRequested: (screen, context, autoDismiss) =>
                     root.bannerRequested(screen, context, autoDismiss)
                 onSettingsRequested: screen => root.settingsRequested(screen)
             }
             EdgeMenuWindow {
                 screenModel: screenScope.modelData
-                styleActive: Preferences.barStyle === "connected"
+                styleActive: RightPillCoordinator.presentedStyle === "connected"
             }
         }
     }

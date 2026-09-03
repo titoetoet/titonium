@@ -20,6 +20,33 @@ function loadLibrary(relative) {
 const routing = loadLibrary("Titonium/Bar/right/BarPopupRouting.js");
 const connectedState = loadLibrary("Titonium/Bar/right/RightPillState.js");
 
+assert.equal(routing.canToggle("audio:DP-1", null, false), true,
+    "legacy Audio toggle(screen) must remain a valid request without an invoker");
+assert.equal(routing.canToggle("network:DP-1", null, true), false,
+    "pointer-only feature toggles may still require their concrete invoker");
+
+assert.equal(routing.existingOpenAction("audio:DP-1", "", false, "", false), "open");
+assert.equal(routing.existingOpenAction("audio:DP-1", "audio:DP-1",
+    true, "audio:DP-1", false), "preserve",
+"an idempotent same-owner IPC open must retain its exact descriptor and invoker");
+assert.equal(routing.existingOpenAction("audio:DP-1", "audio:DP-1",
+    true, "audio:DP-1", true), "reverse",
+"a same-owner IPC open during Connected close must reverse the retained generation");
+
+const styleEvents = [];
+let presentedStyle = "connected";
+presentedStyle = routing.styleAfterCleanup(presentedStyle, "classic", () => {
+    styleEvents.push(`close:${presentedStyle}`);
+});
+styleEvents.push(`activate:${presentedStyle}`);
+assert.deepEqual(styleEvents, ["close:connected", "activate:classic"],
+    "style cleanup must finish before the alternate style is published for activation");
+presentedStyle = routing.styleAfterCleanup(presentedStyle, "connected", () => {
+    styleEvents.push(`close:${presentedStyle}`);
+});
+assert.equal(presentedStyle, "connected",
+    "a Settings preview cancellation must publish the restored effective style");
+
 for (const fixture of [
     ["network", "ConnectedNetworkPopupContent.qml", "ClassicNetworkPopupSurface.qml", "network"],
     ["bluetooth", "ConnectedBluetoothPopupContent.qml", "ClassicBluetoothPopupSurface.qml", "bluetooth"],
@@ -60,12 +87,10 @@ const coordinatorFiles = {
 
 for (const [feature, relative] of Object.entries(coordinatorFiles)) {
     const source = read(relative);
-    assert.match(source, /import qs\.Titonium\.Core\.Runtime/,
-        `${feature} coordinator must read Preferences.barStyle`);
     assert.match(source, /import qs\.Titonium\.Bar\.right/,
         `${feature} coordinator must use the connected visual-owner API`);
-    assert.match(source, /BarPopupRouting\.presentation\(Preferences\.barStyle, feature\)/,
-        `${feature} descriptor must use the centralized style route`);
+    assert.match(source, /BarPopupRouting\.presentation\(RightPillCoordinator\.presentedStyle, feature\)/,
+        `${feature} descriptor must use the coordinator-published style`);
     for (const fact of [
         '"source": Qt.resolvedUrl(route.source)',
         '"keyboardFocus": "exclusive"',
@@ -83,11 +108,18 @@ for (const [feature, relative] of Object.entries(coordinatorFiles)) {
     assert.match(source,
         /readonly property bool active:[\s\S]*?RightPillCoordinator\.connectedSurfaceActive/,
         `${feature} must report a reversing Connected surface as closed`);
+    assert.match(source, /BarPopupRouting\.existingOpenAction\(/,
+        `${feature} open must preserve or reverse an exact same-owner presentation`);
 }
+
+const audioCoordinator = read(coordinatorFiles.audio);
+assert.match(audioCoordinator,
+    /function toggle\(screen: var, invoker = null\): bool[\s\S]*?BarPopupRouting\.canToggle\(owner, invoker, false\)/,
+    "Audio toggle(screen) must remain valid while accepting an optional concrete invoker");
 
 const bluetoothCoordinator = read(coordinatorFiles.bluetooth);
 assert.match(bluetoothCoordinator,
-    /function openForIpc[\s\S]*?SurfaceManager\.ownerId === owner[\s\S]*?RightPillCoordinator\.connectedClosing[\s\S]*?RightPillCoordinator\.toggleConnectedSurface\(owner\)/,
+    /function openForIpc[\s\S]*?BarPopupRouting\.existingOpenAction\([\s\S]*?action === "reverse"[\s\S]*?RightPillCoordinator\.toggleConnectedSurface\(owner\)/,
     "Bluetooth IPC reopen must reverse a retained same-owner Connected close");
 
 const connectivity = read("Titonium/Bar/islands/ConnectivityPill.qml");
@@ -106,17 +138,39 @@ assert.match(inputMethod,
 
 const coordinator = read("Titonium/Bar/right/RightPillCoordinator.qml");
 assert.match(coordinator,
-    /BarPopupRouting\.presentation\(Preferences\.barStyle, feature\)/,
+    /BarPopupRouting\.presentation\(root\.presentedStyle, feature\)/,
     "System Tray routes must use the centralized style selection");
 assert.match(coordinator,
     /Qt\.resolvedUrl\("\.\.\/\.\.\/Overlays\/SystemTray\/" \+ route\.source\)/,
     "Classic routes must resolve the centralized detached System Tray source");
 assert.match(coordinator,
-    /function onBarStyleChanged\(\): void\s*\{[\s\S]*?closeForStyleChange\(\)/,
-    "one preference connection must synchronously request style cleanup");
+    /property string presentedStyle:\s*""/,
+    "the coordinator must begin with no alternate tree published");
 assert.match(coordinator,
-    /function closeForStyleChange\(\): void\s*\{[\s\S]*?SurfaceManager\.ownerId[\s\S]*?forceCloseConnectedSurface\(\)[\s\S]*?SurfaceManager\.close\([\s\S]*?CenterNotchCoordinator\.close\(\)[\s\S]*?CenterNotchCoordinator\.finishClose\([\s\S]*?root\.close\(\)[\s\S]*?root\.finishClose\(/,
+    /Component\.onCompleted:\s*root\.presentedStyle =\s*BarPopupRouting\.normalizeStyle\(Preferences\.barStyle\)/,
+    "the coordinator must publish its initial effective style as a one-shot value");
+assert.doesNotMatch(coordinator,
+    /property string presentedStyle:[^\n]*Preferences\.barStyle/,
+    "presented style must not be a raw preference binding that can activate before cleanup");
+assert.match(coordinator,
+    /function onBarStyleChanged\(\): void\s*\{[\s\S]*?root\.presentedStyle = BarPopupRouting\.styleAfterCleanup\([\s\S]*?root\.closeForStyleChange\(\)/,
+    "one preference connection must clean up before publishing the alternate style");
+assert.match(coordinator,
+    /function closeForStyleChange\(\): void\s*\{[\s\S]*?SurfaceManager\.descriptor[\s\S]*?SurfaceManager\.screen[\s\S]*?forceCloseConnectedSurface\(\)[\s\S]*?RightPillState\.matchesSurfaceOpen\([\s\S]*?SurfaceManager\.close\([\s\S]*?CenterNotchCoordinator\.close\(\)[\s\S]*?CenterNotchCoordinator\.finishClose\([\s\S]*?root\.close\(\)[\s\S]*?root\.finishClose\(/,
     "style cleanup must synchronously release the current owner and both visual coordinators");
+
+const barSurface = read("Titonium/Bar/BarSurface.qml");
+const barHost = read("Titonium/Bar/BarHost.qml");
+assert.doesNotMatch(barSurface, /active:\s*Preferences\.barStyle/,
+    "Bar Loaders must not activate directly from an uncleaned preference change");
+assert.match(barSurface,
+    /active:\s*RightPillCoordinator\.presentedStyle === "connected"/);
+assert.match(barSurface,
+    /active:\s*RightPillCoordinator\.presentedStyle === "classic"/);
+assert.doesNotMatch(barHost, /styleActive:\s*Preferences\.barStyle/,
+    "connected visual windows must not activate directly from Preferences");
+assert.equal((barHost.match(
+    /styleActive:\s*RightPillCoordinator\.presentedStyle === "connected"/g) || []).length, 2);
 
 const initial = connectedState.connectedInitialState();
 const first = connectedState.connectedOpen(initial, "network:DP-1", {
@@ -143,6 +197,13 @@ assert.strictEqual(connectedState.connectedFinishClose(newer,
 assert.strictEqual(connectedState.connectedClear(newer,
     first.ownerId, first.generation), newer,
 "a stale style-shutdown generation must not clear a newer style owner");
+
+const capturedDescriptor = { source: "ConnectedAudioPopupContent.qml" };
+const replacementDescriptor = { source: "ConnectedAudioPopupContent.qml" };
+const capturedScreen = { name: "DP-1" };
+assert.equal(connectedState.matchesSurfaceOpen("audio:DP-1", replacementDescriptor,
+    capturedScreen, "audio:DP-1", capturedDescriptor, capturedScreen), false,
+"a synchronous same-owner reopen must fail the stale descriptor identity guard");
 
 const check = read("scripts/check.sh");
 assert.match(check, /node "\$project_root\/scripts\/check_top_bar_style_lifecycle\.js"/,

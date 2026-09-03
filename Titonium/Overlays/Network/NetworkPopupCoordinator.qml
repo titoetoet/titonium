@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Titonium.Bar.right
-import qs.Titonium.Core.Runtime
 import qs.Titonium.Core.Screens
 import qs.Titonium.Core.Surfaces
 import "../../Bar/right/BarPopupRouting.js" as BarPopupRouting
@@ -21,7 +20,7 @@ QtObject {
     }
 
     function descriptorFor(owner: string, feature: string, invoker: var): var {
-        const route = BarPopupRouting.presentation(Preferences.barStyle, feature);
+        const route = BarPopupRouting.presentation(RightPillCoordinator.presentedStyle, feature);
         if (!route)
             return null;
         return {
@@ -39,6 +38,15 @@ QtObject {
     function open(screen: var, invoker: var): bool {
         const routedScreen = ScreenRouter.screenForName(screen?.name || "");
         const owner = root.ownerFor(routedScreen);
+        const action = BarPopupRouting.existingOpenAction(owner,
+            SurfaceManager.ownerId,
+            SurfaceManager.descriptor?.barConnected === true,
+            RightPillCoordinator.connectedOwnerId,
+            RightPillCoordinator.connectedClosing);
+        if (action === "reverse")
+            return RightPillCoordinator.toggleConnectedSurface(owner);
+        if (action === "preserve")
+            return true;
         const descriptor = root.descriptorFor(owner, "network", invoker);
         if (!owner || !descriptor)
             return false;

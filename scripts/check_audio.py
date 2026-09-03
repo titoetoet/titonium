@@ -328,7 +328,7 @@ def main() -> int:
         "function open(screen: var, invoker = null): bool",
         "function toggle(screen: var, invoker = null): bool",
         "function close(): bool",
-        "BarPopupRouting.presentation(Preferences.barStyle, feature)",
+        "BarPopupRouting.presentation(RightPillCoordinator.presentedStyle, feature)",
         '"source": Qt.resolvedUrl(route.source)',
         '"keyboardFocus": "exclusive"',
         '"closeOnMonitorChange": true',
@@ -337,6 +337,8 @@ def main() -> int:
         '"barConnected": route.owner === "edge"',
         '"anchor": route.anchor',
         '"invoker": invoker',
+        "BarPopupRouting.canToggle(owner, invoker, false)",
+        "BarPopupRouting.existingOpenAction(owner,",
         "RightPillCoordinator.toggleConnectedSurface(owner)",
     ), "Audio popup coordinator")
     require_fragments(errors, OVERLAY_ROOT / "AudioPopupSurface.qml", (

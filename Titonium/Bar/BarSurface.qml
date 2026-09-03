@@ -74,7 +74,7 @@ PanelWindow {
 
     Loader {
         id: connectedBarLoader
-        active: Preferences.barStyle === "connected"
+        active: RightPillCoordinator.presentedStyle === "connected"
         width: parent.width
         height: root.barHeight
         y: root.barRevealed ? 0 : -root.barHeight + root.edgeRevealHeight
@@ -87,7 +87,7 @@ PanelWindow {
 
     Loader {
         id: classicBarLoader
-        active: Preferences.barStyle === "classic"
+        active: RightPillCoordinator.presentedStyle === "classic"
         width: parent.width
         height: root.barHeight
         y: root.barRevealed ? 0 : -root.barHeight + root.edgeRevealHeight

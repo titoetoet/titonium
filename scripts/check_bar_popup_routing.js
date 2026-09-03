@@ -26,5 +26,15 @@ assert.deepEqual(JSON.parse(JSON.stringify(routing.presentation("connected", "au
 });
 assert.equal(routing.presentation("classic", "input").owner, "overlay");
 assert.equal(routing.presentation("connected", "unknown"), null);
+assert.equal(routing.canToggle("audio:DP-1", null, false), true);
+assert.equal(routing.canToggle("network:DP-1", null, true), false);
+assert.equal(routing.existingOpenAction("network:DP-1", "network:DP-1",
+    true, "network:DP-1", false), "preserve");
+assert.equal(routing.existingOpenAction("network:DP-1", "network:DP-1",
+    true, "network:DP-1", true), "reverse");
+const order = [];
+const nextStyle = routing.styleAfterCleanup("connected", "classic", () => order.push("close"));
+order.push(nextStyle);
+assert.deepEqual(order, ["close", "classic"]);
 
 console.log("PASS Bar popup style routing");

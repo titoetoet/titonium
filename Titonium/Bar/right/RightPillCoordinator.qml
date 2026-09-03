@@ -26,6 +26,7 @@ QtObject {
     property bool rightHovered: false
     property var invocationScreen: null
     property var invocationInvoker: null
+    property string presentedStyle: ""
     readonly property bool hovered: root.leftHovered || root.rightHovered
     property var connectedState: RightPillState.connectedInitialState()
     readonly property bool connectedSurfacePresented:
@@ -42,6 +43,9 @@ QtObject {
     property real transitionProgress: root.presentationActive ? 1 : 0
     readonly property bool active: root.menuActive
     readonly property string state: RightPillState.normalizeState(root.presentationActive)
+
+    Component.onCompleted: root.presentedStyle =
+        BarPopupRouting.normalizeStyle(Preferences.barStyle)
 
     function setCompactWidth(edge: string, width: real): void {
         const value = Number(width) || 0;
@@ -77,7 +81,7 @@ QtObject {
             source: string, screen: var, invoker: var): bool {
         const routedScreen = ScreenRouter.screenForName(screen?.name || screenName);
         const owner = root.systemTrayOwnerFor(routedScreen, feature);
-        const route = BarPopupRouting.presentation(Preferences.barStyle, feature);
+        const route = BarPopupRouting.presentation(root.presentedStyle, feature);
         if (!owner || !route)
             return false;
         if (route.owner === "edge")
@@ -163,7 +167,7 @@ QtObject {
             return root.close();
         if (owner && SurfaceManager.ownerId === owner)
             return SurfaceManager.close(owner);
-        if (Preferences.barStyle === "classic" && !invoker)
+        if (root.presentedStyle === "classic" && !invoker)
             return false;
         if (!SystemTrayService.prepareAppMenu(appId, appName))
             return false;
@@ -181,7 +185,7 @@ QtObject {
             return root.close();
         if (owner && SurfaceManager.ownerId === owner)
             return SurfaceManager.close(owner);
-        if (Preferences.barStyle === "classic" && !invoker)
+        if (root.presentedStyle === "classic" && !invoker)
             return false;
         if (!SystemTrayService.prepareInputMenu())
             return false;
@@ -286,13 +290,17 @@ QtObject {
 
     function closeForStyleChange(): void {
         const ownerId = SurfaceManager.ownerId;
+        const descriptor = SurfaceManager.descriptor;
+        const screen = SurfaceManager.screen;
         const centerScreenName = CenterNotchCoordinator.ownerScreenName
             || CenterNotchCoordinator.exitingScreenName;
         const menuScreenName = root.ownerScreenName || root.exitingScreenName;
         root.invocationScreen = null;
         root.invocationInvoker = null;
         root.forceCloseConnectedSurface();
-        if (ownerId && SurfaceManager.ownerId === ownerId)
+        if (ownerId && RightPillState.matchesSurfaceOpen(
+                SurfaceManager.ownerId, SurfaceManager.descriptor,
+                SurfaceManager.screen, ownerId, descriptor, screen))
             SurfaceManager.close(ownerId);
         if (CenterNotchCoordinator.active)
             CenterNotchCoordinator.close();
@@ -331,7 +339,9 @@ QtObject {
         target: Preferences
 
         function onBarStyleChanged(): void {
-            root.closeForStyleChange();
+            root.presentedStyle = BarPopupRouting.styleAfterCleanup(
+                root.presentedStyle, Preferences.barStyle,
+                () => root.closeForStyleChange());
         }
     }
 

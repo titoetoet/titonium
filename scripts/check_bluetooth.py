@@ -205,7 +205,8 @@ def ipc_open_path_errors(coordinator: str) -> list[str]:
             or "SurfaceManager.open" not in block):
         return ["Bluetooth coordinator must provide explicit nullable-invoker IPC open path"]
     same_owner = re.search(
-        r"if\s*\(\s*SurfaceManager\.ownerId\s*===\s*owner\s*\)\s*return\s+true\s*;", block)
+        r"BarPopupRouting\.existingOpenAction\([\s\S]*?"
+        r"if\s*\(\s*action\s*===\s*\"preserve\"\s*\)\s*return\s+true\s*;", block)
     if not same_owner or same_owner.start() > block.find("SurfaceManager.open"):
         return ["Bluetooth IPC open must preserve an already-open owner descriptor and invoker"]
     return []
@@ -393,12 +394,13 @@ def validate_presentation(errors: list[str]) -> None:
         "function close(): bool",
         "ScreenRouter",
         '"bluetooth:"',
-        "BarPopupRouting.presentation(Preferences.barStyle, feature)",
+        "BarPopupRouting.presentation(RightPillCoordinator.presentedStyle, feature)",
         '"source": Qt.resolvedUrl(route.source)',
         '"feature": feature',
         '"barConnected": route.owner === "edge"',
         '"anchor": route.anchor',
         "RightPillCoordinator.toggleConnectedSurface(owner)",
+        "BarPopupRouting.existingOpenAction(owner,",
         '"keyboardFocus": "exclusive"',
         "SurfaceManager.open",
         "SurfaceManager.close",
