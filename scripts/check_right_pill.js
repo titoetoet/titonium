@@ -29,6 +29,47 @@ for (const fragment of [
     'SystemTrayService.popupPrepared',
 ]) assert.equal(source.includes(fragment), true, `RightPillCoordinator missing ${fragment}`);
 
+for (const fragment of [
+    "property var connectedState: RightPillState.connectedInitialState()",
+    "readonly property bool connectedSurfacePresented:",
+    "readonly property string connectedOwnerId:",
+    "readonly property int connectedGeneration:",
+    "readonly property var connectedDescriptor:",
+    "readonly property var connectedScreen:",
+    "readonly property bool connectedClosing:",
+    "function adoptConnectedSurface(ownerId: string, descriptor: var, screen: var): void",
+    "function finalizeDisplacedMenu(): void",
+    "function closeConnectedSurface(): bool",
+    "function finishConnectedClose(ownerId: string, generation: int): bool",
+    "function returnConnectedFocus(ownerId: string, generation: int): bool",
+    "RightPillState.connectedOpen",
+    "RightPillState.connectedRequestClose",
+    "RightPillState.connectedFinishClose",
+    "RightPillState.connectedMarkFocusReturned",
+]) assert.equal(source.includes(fragment), true,
+    `RightPillCoordinator missing connected exit contract: ${fragment}`);
+assert.match(source,
+    /function adoptConnectedSurface[\s\S]*?root\.finalizeDisplacedMenu\(\)[\s\S]*?RightPillState\.connectedOpen/,
+    "connected open must finalize displaced active or exiting System Tray state first");
+assert.match(source,
+    /function finalizeDisplacedMenu[\s\S]*?root\.ownerScreenName = ""[\s\S]*?root\.exitingScreenName = ""[\s\S]*?SystemTrayService\.resetPopupNavigation\(\)/,
+    "displaced System Tray generations must be cleared and reset once");
+assert.doesNotMatch(source,
+    /function closeConnectedSurface\([^)]*\)(?:(?!function returnConnectedFocus)[\s\S])*?SurfaceManager\.close/,
+    "connected close request must not clear SurfaceManager before reverse animation");
+assert.match(source,
+    /function finishConnectedClose[\s\S]*?SurfaceManager\.ownerId === ownerId[\s\S]*?SurfaceManager\.close\(ownerId\)[\s\S]*?RightPillState\.connectedFinishClose/,
+    "only the matching owner/generation completion may tear down SurfaceManager and its snapshot");
+assert.match(source,
+    /SurfaceManager\.close\(ownerId\);[\s\S]*?if \(root\.connectedState !== closingState\)[\s\S]*?return false;[\s\S]*?RightPillState\.connectedFinishClose/,
+    "a re-entrant newer open during SurfaceManager close must survive stale snapshot teardown");
+assert.match(source,
+    /function returnConnectedFocus[\s\S]*?connectedDescriptor\?\.invoker[\s\S]*?forceActiveFocus\(Qt\.PopupFocusReason\)[\s\S]*?connectedMarkFocusReturned/,
+    "connected close must return invoker focus once before guarded teardown");
+assert.match(source,
+    /onOpened\(ownerId: string, descriptor: var, screen: var\)[\s\S]*?descriptor\?\.barConnected === true[\s\S]*?adoptConnectedSurface/,
+    "SurfaceManager connected opens must adopt a frozen presentation snapshot");
+
 for (const forbidden of ["Loader {", "QsMenuOpener", "Quickshell.Services.SystemTray", "repeat: true", "ChatGPT"])
     assert.equal(source.includes(forbidden), false, `RightPillCoordinator owns forbidden ${forbidden}`);
 
@@ -50,8 +91,8 @@ assert.match(windowSource, /visible:\s*window\.styleActive/);
 assert.doesNotMatch(windowSource, /Loader\s*\{/);
 assert.match(windowSource, /Region \{ item: activeInputRegion \}/);
 assert.match(windowSource,
-    /SurfaceManager\.descriptor\?\.barConnected === true[\s\S]*?SurfaceManager\.screen === window\.screenModel/,
-    "EdgeMenuWindow must own connected descriptors for its screen");
+    /RightPillCoordinator\.connectedSurfacePresented[\s\S]*?RightPillCoordinator\.connectedScreen === window\.screenModel/,
+    "EdgeMenuWindow must retain the frozen connected presentation for its screen during exit");
 assert.match(windowSource, /WlrLayershell\.keyboardFocus:\s*window\.ownsMenu/,
     "connected descriptors must focus only the Edge window");
 assert.doesNotMatch(windowSource, /Region \{ item: (left|right)CompactInputRegion \}/,
@@ -74,21 +115,28 @@ assert.match(surfaceSource, /SystemTrayMenuView\s*\{/);
 assert.equal((surfaceSource.match(/\bLoader\s*\{/g) || []).length, 1,
     "EdgeMenuSurface must own one connected-content Loader");
 assert.match(surfaceSource,
-    /SurfaceManager\.descriptor\?\.barConnected === true[\s\S]*?SurfaceManager\.screen === root\.screenModel/,
-    "EdgeMenuSurface must select only its screen-local connected descriptor");
-assert.match(surfaceSource, /SurfaceManager\.descriptor\?\.anchor/,
+    /RightPillCoordinator\.connectedSurfacePresented[\s\S]*?RightPillCoordinator\.connectedScreen === root\.screenModel/,
+    "EdgeMenuSurface must retain the screen-local connected snapshot during exit");
+assert.match(surfaceSource, /RightPillCoordinator\.connectedDescriptor\?\.anchor/,
     "connected branch geometry must select the descriptor anchor");
 assert.match(surfaceSource, /rightContent\.connectivityAnchorRect\(/,
     "connected branch geometry must consume the EndIsland anchor");
 assert.match(surfaceSource,
-    /function onOpened\([\s\S]*?descriptor\?\.barConnected === true[\s\S]*?root\.freezeRightAnchor\(\)/,
+    /function onConnectedGenerationChanged\(\)[\s\S]*?root\.freezeRightAnchor\(\)/,
     "every connected descriptor open must freeze its selected right anchor");
-assert.match(surfaceSource, /source:\s*active \? SurfaceManager\.descriptor\.source : ""/,
-    "Edge Loader source must come from the connected descriptor");
+assert.match(surfaceSource,
+    /source:\s*active \? RightPillCoordinator\.connectedDescriptor\.source : ""/,
+    "Edge Loader source must stay frozen from the connected descriptor through exit");
 assert.match(surfaceSource, /property:\s*"availableViewportHeight"[\s\S]*?value:\s*menuClip\.height/,
     "Connected Audio viewport must bind to the branch viewport");
 assert.match(surfaceSource, /onDismissRequested[\s\S]*?root\.closePresentedMenu\(\)/,
     "connected content dismissal must use the shared close intent");
+assert.match(windowSource,
+    /readonly property bool ownsMenu:[\s\S]*?window\.ownsConnectedSurface/,
+    "Edge window focus and full active input region must survive connected exit");
+assert.match(surfaceSource,
+    /active:\s*root\.ownsConnectedSurface[\s\S]*?enabled:\s*!RightPillCoordinator\.connectedClosing/,
+    "connected Loader must remain active but stop accepting content input during exit");
 assert.doesNotMatch(surfaceSource, /menuOpenedAt|<\s*700/,
     "outside dismissal must not have a post-open dead interval");
 assert.match(surfaceSource, /CenterNotchCoordinator\.openExpanded\(root\.screenModel\.name\)/,
@@ -177,8 +225,6 @@ assert.match(surfaceSource, /EndIsland\s*\{[\s\S]*?z:\s*2/,
 assert.match(source, /import qs\.Titonium\.Core\.Surfaces/);
 assert.match(source, /readonly property bool connectedSurfaceActive:/);
 assert.match(source, /SurfaceManager\.descriptor\?\.barConnected === true/);
-assert.match(source, /if \(!root\.connectedSurfaceActive\)[\s\S]*?SurfaceManager\.close\(SurfaceManager\.ownerId\)/,
-    "RightPillCoordinator close must delegate connected lifecycle to SurfaceManager");
 assert.match(source, /if \(root\.menuActive && !SystemTrayService\.popupPrepared\)/,
     "System Tray validity must not close Network, Bluetooth, or Audio descriptors");
 

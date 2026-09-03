@@ -4,7 +4,6 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import qs.Titonium.Core.Runtime
-import qs.Titonium.Core.Surfaces
 import qs.Titonium.Theme
 
 PanelWindow {
@@ -12,8 +11,8 @@ PanelWindow {
     required property ShellScreen screenModel
     property bool styleActive: true
     readonly property bool connectedSurfaceForScreen:
-        SurfaceManager.descriptor?.barConnected === true
-        && SurfaceManager.screen === window.screenModel
+        RightPillCoordinator.connectedSurfacePresented
+        && RightPillCoordinator.connectedScreen === window.screenModel
     readonly property bool ownsConnectedSurface: window.styleActive
         && window.connectedSurfaceForScreen
     readonly property bool ownsMenu: window.styleActive && (

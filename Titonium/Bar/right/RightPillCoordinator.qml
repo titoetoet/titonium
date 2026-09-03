@@ -21,9 +21,17 @@ QtObject {
     property bool leftHovered: false
     property bool rightHovered: false
     readonly property bool hovered: root.leftHovered || root.rightHovered
+    property var connectedState: RightPillState.connectedInitialState()
+    readonly property bool connectedSurfacePresented:
+        root.connectedState.ownerId.length > 0
+    readonly property string connectedOwnerId: root.connectedState.ownerId
+    readonly property int connectedGeneration: root.connectedState.generation
+    readonly property var connectedDescriptor: root.connectedState.descriptor
+    readonly property var connectedScreen: root.connectedState.screen
+    readonly property bool connectedClosing: root.connectedState.closing
     readonly property bool menuActive: root.ownerScreenName.length > 0
-    readonly property bool connectedSurfaceActive: SurfaceManager.active
-        && SurfaceManager.descriptor?.barConnected === true
+    readonly property bool connectedSurfaceActive: root.connectedSurfacePresented
+        && !root.connectedClosing
     readonly property bool presentationActive: root.menuActive || root.connectedSurfaceActive
     property real transitionProgress: root.presentationActive ? 1 : 0
     readonly property bool active: root.menuActive
@@ -42,12 +50,55 @@ QtObject {
     function beginOpen(screenName: string, edge: string, source: string): bool {
         if (!screenName || (edge !== "left" && edge !== "right"))
             return false;
+        root.clearConnectedForMenu();
         root.exitingScreenName = "";
         root.exitingEdge = "";
         root.menuSource = source;
         root.activeEdge = edge;
         root.ownerScreenName = screenName;
         return true;
+    }
+
+    function finalizeDisplacedMenu(): void {
+        if (!RightPillState.shouldFinalizeMenuForConnected(
+                root.menuActive, root.exitingScreenName))
+            return;
+        root.ownerScreenName = "";
+        root.exitingScreenName = "";
+        root.activeEdge = "";
+        root.exitingEdge = "";
+        root.menuSource = "";
+        SystemTrayService.resetPopupNavigation();
+    }
+
+    function clearConnectedForMenu(): void {
+        if (!root.connectedSurfacePresented)
+            return;
+        const ownerId = root.connectedOwnerId;
+        const generation = root.connectedGeneration;
+        root.connectedState = RightPillState.connectedClear(
+            root.connectedState, ownerId, generation);
+        if (SurfaceManager.ownerId === ownerId)
+            SurfaceManager.close(ownerId);
+    }
+
+    function adoptConnectedSurface(ownerId: string, descriptor: var, screen: var): void {
+        root.finalizeDisplacedMenu();
+        const adopted = RightPillState.connectedOpen(
+            root.connectedState, ownerId, descriptor, screen);
+        if (adopted === root.connectedState) {
+            if (SurfaceManager.ownerId === ownerId)
+                SurfaceManager.close(ownerId);
+            return;
+        }
+        root.connectedState = adopted;
+    }
+
+    function discardConnectedForNewOwner(): void {
+        if (!root.connectedSurfacePresented)
+            return;
+        root.connectedState = RightPillState.connectedClear(root.connectedState,
+            root.connectedOwnerId, root.connectedGeneration);
     }
 
     function toggleApp(screenName: string, edge: string, appId: string, appName: string): bool {
@@ -80,9 +131,51 @@ QtObject {
     }
 
     function closeConnectedSurface(): bool {
-        if (!root.connectedSurfaceActive)
+        if (!root.connectedSurfaceActive
+                || SurfaceManager.ownerId !== root.connectedOwnerId
+                || SurfaceManager.descriptor?.barConnected !== true)
             return false;
-        return SurfaceManager.close(SurfaceManager.ownerId);
+        const ownerId = root.connectedOwnerId;
+        const generation = root.connectedGeneration;
+        const requested = RightPillState.connectedRequestClose(
+            root.connectedState, ownerId, generation);
+        if (requested === root.connectedState)
+            return false;
+        root.connectedState = requested;
+        root.returnConnectedFocus(ownerId, generation);
+        if (Motion.reduced)
+            root.finishConnectedClose(ownerId, generation);
+        return true;
+    }
+
+    function returnConnectedFocus(ownerId: string, generation: int): bool {
+        if (!root.connectedClosing || root.connectedOwnerId !== ownerId
+                || root.connectedState.closingGeneration !== generation
+                || root.connectedState.focusReturned
+                || SurfaceManager.ownerId !== ownerId)
+            return false;
+        const invoker = root.connectedDescriptor?.invoker || null;
+        if (!invoker || !invoker.forceActiveFocus)
+            return false;
+        invoker.forceActiveFocus(Qt.PopupFocusReason);
+        root.connectedState = RightPillState.connectedMarkFocusReturned(
+            root.connectedState, ownerId, generation);
+        return true;
+    }
+
+    function finishConnectedClose(ownerId: string, generation: int): bool {
+        if (!root.connectedClosing || root.connectedOwnerId !== ownerId
+                || root.connectedState.closingGeneration !== generation)
+            return false;
+        const closingState = root.connectedState;
+        if (SurfaceManager.ownerId === ownerId
+                && SurfaceManager.descriptor?.barConnected === true)
+            SurfaceManager.close(ownerId);
+        if (root.connectedState !== closingState)
+            return false;
+        root.connectedState = RightPillState.connectedFinishClose(
+            closingState, ownerId, generation);
+        return root.connectedState !== closingState;
     }
 
     function finishClose(screenName: string): void {
@@ -100,6 +193,9 @@ QtObject {
             easing.type: Easing.BezierSpline
             easing.bezierCurve: Motion.springDamped
             onFinished: {
+                if (root.connectedClosing)
+                    root.finishConnectedClose(root.connectedOwnerId,
+                        root.connectedState.closingGeneration);
                 if (!root.active && root.exitingScreenName.length > 0)
                     root.finishClose(root.exitingScreenName);
             }
@@ -111,6 +207,29 @@ QtObject {
         function onPopupPreparedChanged(): void {
             if (root.menuActive && !SystemTrayService.popupPrepared)
                 root.close();
+        }
+    }
+
+
+    property Connections surfaceConnection: Connections {
+        target: SurfaceManager
+
+        function onOpened(ownerId: string, descriptor: var, screen: var): void {
+            if (descriptor?.barConnected === true)
+                root.adoptConnectedSurface(ownerId, descriptor, screen);
+            else
+                root.discardConnectedForNewOwner();
+        }
+
+        function onClosed(ownerId: string): void {
+            if (!root.connectedSurfacePresented || root.connectedOwnerId !== ownerId
+                    || root.connectedClosing)
+                return;
+            const generation = root.connectedGeneration;
+            root.connectedState = RightPillState.connectedRequestClose(
+                root.connectedState, ownerId, generation);
+            if (Motion.reduced)
+                root.finishConnectedClose(ownerId, generation);
         }
     }
 }

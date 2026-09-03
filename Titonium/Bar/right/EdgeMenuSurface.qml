@@ -4,7 +4,6 @@ import QtQuick
 import Quickshell
 import qs.Titonium.Bar.islands
 import qs.Titonium.Bar.notch
-import qs.Titonium.Core.Surfaces
 import qs.Titonium.Overlays.SystemTray
 import qs.Titonium.Shared as Shared
 import qs.Titonium.Theme
@@ -16,18 +15,21 @@ FocusScope {
 
     required property ShellScreen screenModel
     required property real compactY
-    readonly property bool ownsConnectedSurface: SurfaceManager.active
-        && SurfaceManager.descriptor?.barConnected === true
-        && SurfaceManager.screen === root.screenModel
+    readonly property bool ownsConnectedSurface:
+        RightPillCoordinator.connectedSurfacePresented
+        && RightPillCoordinator.connectedScreen === root.screenModel
     readonly property bool ownsMenu: root.ownsConnectedSurface
         || RightPillCoordinator.ownerScreenName === root.screenModel.name
-    readonly property bool closing: RightPillCoordinator.exitingScreenName === root.screenModel.name
+    readonly property bool closing:
+        RightPillCoordinator.exitingScreenName === root.screenModel.name
+        || (root.ownsConnectedSurface && RightPillCoordinator.connectedClosing)
     readonly property string presentedEdge: root.ownsConnectedSurface ? "right"
         : (root.ownsMenu ? RightPillCoordinator.activeEdge : RightPillCoordinator.exitingEdge)
     readonly property real presentedProgress: root.ownsMenu || root.closing
         ? RightPillCoordinator.transitionProgress : 0
     readonly property rect connectivityAnchor: root.ownsConnectedSurface
-        ? rightContent.connectivityAnchorRect(SurfaceManager.descriptor?.anchor || "")
+        ? rightContent.connectivityAnchorRect(
+            RightPillCoordinator.connectedDescriptor?.anchor || "")
         : Qt.rect(0, 0, 0, 0)
     readonly property real activeContentHeight: root.ownsConnectedSurface
         ? connectedLoader.implicitHeight : menuView.implicitContentHeight
@@ -124,9 +126,9 @@ FocusScope {
     }
 
     Connections {
-        target: SurfaceManager
-        function onOpened(ownerId: string, descriptor: var, screen: var): void {
-            if (descriptor?.barConnected === true && screen === root.screenModel)
+        target: RightPillCoordinator
+        function onConnectedGenerationChanged(): void {
+            if (root.ownsConnectedSurface)
                 root.freezeRightAnchor();
         }
     }
@@ -255,9 +257,10 @@ FocusScope {
             id: connectedLoader
             anchors.fill: parent
             active: root.ownsConnectedSurface
-            source: active ? SurfaceManager.descriptor.source : ""
+            source: active ? RightPillCoordinator.connectedDescriptor.source : ""
             opacity: RightPillState.contentOpacity(root.presentedProgress, "menu")
-            enabled: root.ownsConnectedSurface && root.presentedProgress > 0.7
+            enabled: !RightPillCoordinator.connectedClosing
+                && root.ownsConnectedSurface && root.presentedProgress > 0.7
             transform: Translate { y: (1 - connectedLoader.opacity) * 8 }
 
             onStatusChanged: {
