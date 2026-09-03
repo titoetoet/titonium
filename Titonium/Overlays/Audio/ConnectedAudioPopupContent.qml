@@ -36,92 +36,101 @@ Item {
 
     signal dismissRequested()
 
-    ColumnLayout {
-        id: contentColumn
-        x: 16
-        y: 16
-        width: Math.max(0, root.width - 32)
-        spacing: Metrics.spacingMedium
+    Flickable {
+        id: contentViewport
+        anchors.fill: parent
+        contentWidth: width
+        contentHeight: Math.max(height, root.implicitContentHeight)
+        clip: true
+        boundsBehavior: Flickable.StopAtBounds
 
-        AudioControlRow {
-            id: outputRow
-            Layout.fillWidth: true
-            kind: "output"
-        }
+        ColumnLayout {
+            id: contentColumn
+            x: 16
+            y: 16
+            width: Math.max(0, contentViewport.width - 32)
+            spacing: Metrics.spacingMedium
 
-        Shared.TextLabel {
-            id: outputDevicesLabel
-            Layout.fillWidth: true
-            text: I18n.tr("audio.output.devices")
-            variant: "label"
-            strong: true
-            Accessible.role: Accessible.Heading
-        }
-
-        ListView {
-            id: outputDeviceList
-            Layout.fillWidth: true
-            Layout.preferredHeight: root.outputDeviceHeight
-            Layout.minimumHeight: 0
-            clip: true
-            spacing: Metrics.spacingXSmall
-            model: AudioService.outputDevices
-            boundsBehavior: Flickable.StopAtBounds
-
-            delegate: AudioOutputDeviceRow {
-                required property var modelData
-                width: outputDeviceList.width
-                device: modelData
+            AudioControlRow {
+                id: outputRow
+                Layout.fillWidth: true
+                kind: "output"
             }
-        }
 
-        AudioControlRow {
-            id: inputRow
-            Layout.fillWidth: true
-            kind: "input"
-        }
-
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: Metrics.borderWidth
-            color: Theme.border
-            visible: root.hasStreams
-        }
-
-        Shared.Button {
-            id: applicationsButton
-            Layout.fillWidth: true
-            visible: root.hasStreams
-            label: I18n.tr("audio.applications")
-            iconName: root.streamsExpanded ? "expand_less" : "expand_more"
-            variant: "quiet"
-            size: "small"
-            contentAlignment: Qt.AlignLeft
-            accessibleName: I18n.tr(root.streamsExpanded
-                ? "audio.applications.collapse.accessible"
-                : "audio.applications.expand.accessible")
-            onTriggered: root.streamsExpanded = !root.streamsExpanded
-        }
-
-        Item {
-            id: streamViewport
-            Layout.fillWidth: true
-            Layout.preferredHeight: root.streamHeight
-            Layout.minimumHeight: 0
-            visible: root.hasStreams && root.streamsExpanded
+            Shared.TextLabel {
+                id: outputDevicesLabel
+                Layout.fillWidth: true
+                text: I18n.tr("audio.output.devices")
+                variant: "label"
+                strong: true
+                Accessible.role: Accessible.Heading
+            }
 
             ListView {
-                id: streamList
-                anchors.fill: parent
+                id: outputDeviceList
+                Layout.fillWidth: true
+                Layout.preferredHeight: root.outputDeviceHeight
+                Layout.minimumHeight: 0
                 clip: true
-                spacing: Metrics.spacingSmall
-                model: AudioService.playbackStreams
+                spacing: Metrics.spacingXSmall
+                model: AudioService.outputDevices
                 boundsBehavior: Flickable.StopAtBounds
 
-                delegate: AudioStreamRow {
+                delegate: AudioOutputDeviceRow {
                     required property var modelData
-                    width: streamList.width
-                    stream: modelData
+                    width: outputDeviceList.width
+                    device: modelData
+                }
+            }
+
+            AudioControlRow {
+                id: inputRow
+                Layout.fillWidth: true
+                kind: "input"
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: Metrics.borderWidth
+                color: Theme.border
+                visible: root.hasStreams
+            }
+
+            Shared.Button {
+                id: applicationsButton
+                Layout.fillWidth: true
+                visible: root.hasStreams
+                label: I18n.tr("audio.applications")
+                iconName: root.streamsExpanded ? "expand_less" : "expand_more"
+                variant: "quiet"
+                size: "small"
+                contentAlignment: Qt.AlignLeft
+                accessibleName: I18n.tr(root.streamsExpanded
+                    ? "audio.applications.collapse.accessible"
+                    : "audio.applications.expand.accessible")
+                onTriggered: root.streamsExpanded = !root.streamsExpanded
+            }
+
+            Item {
+                id: streamViewport
+                Layout.fillWidth: true
+                Layout.preferredHeight: root.streamHeight
+                Layout.minimumHeight: 0
+                visible: root.hasStreams && root.streamsExpanded
+
+                ListView {
+                    id: streamList
+                    anchors.fill: parent
+                    clip: true
+                    spacing: Metrics.spacingSmall
+                    model: AudioService.playbackStreams
+                    boundsBehavior: Flickable.StopAtBounds
+
+                    delegate: AudioStreamRow {
+                        required property var modelData
+                        width: streamList.width
+                        stream: modelData
+                    }
                 }
             }
         }

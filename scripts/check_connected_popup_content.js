@@ -55,5 +55,11 @@ assert.match(audio, /Math\.min\(root\.maximumHeight, root\.availableViewportHeig
     "Audio stream sizing must be bounded by the host-provided viewport height");
 assert.doesNotMatch(audio, /root\.height\s*-\s*root\.panelTop/,
     "Audio content must not derive viewport height from a full-screen surface");
+assert.match(audio, /Flickable\s*\{\s*id:\s*contentViewport[\s\S]*?anchors\.fill:\s*parent[\s\S]*?contentHeight:\s*Math\.max\(height, root\.implicitContentHeight\)/,
+    "Audio content must expose a full-body scroll path when its host is shorter than fixed controls");
+const shortViewportHeight = 120;
+const fixedContentHeight = 160;
+assert.equal(Math.max(shortViewportHeight, fixedContentHeight) > shortViewportHeight, true,
+    "a viewport shorter than fixed Audio content must retain vertically accessible overflow");
 
 console.log("PASS Connected popup content boundary contract");
