@@ -33,7 +33,7 @@ assert.equal(typeof rules.presentation, "function",
     "StartIsland rules must project separate app and context fields");
 assert.deepEqual(JSON.parse(JSON.stringify(rules.presentation(
     "Telegram", "3 unread messages", "Telegram system title", true))),
-    { appName: "Telegram", title: "3 unread messages", hasContext: true });
+    { appName: "Telegram", title: "Telegram system title", hasContext: true });
 assert.deepEqual(JSON.parse(JSON.stringify(rules.presentation(
     "Firefox", "", "MDN — Firefox", false))),
     { appName: "Firefox", title: "MDN — Firefox", hasContext: true });
@@ -42,8 +42,8 @@ assert.deepEqual(JSON.parse(JSON.stringify(rules.presentation(
     { appName: "Titonium", title: "", hasContext: false });
 assert.deepEqual(JSON.parse(JSON.stringify(rules.presentation(
     "ChatGPT", "", "Private system title", true))),
-    { appName: "ChatGPT", title: "", hasContext: false },
-    "a tray app must never fall through to the compositor title while its menu context loads");
+    { appName: "ChatGPT", title: "Private system title", hasContext: true },
+    "a menu-bearing app still presents its compositor window title");
 assert.deepEqual(JSON.parse(JSON.stringify(rules.presentation(
     "Antigravity IDE", "", "titonium - Antigravity IDE - BluetoothDeviceRow.qml", false))),
     { appName: "Antigravity IDE", title: "titonium - BluetoothDeviceRow.qml", hasContext: true },
@@ -54,9 +54,13 @@ assert.deepEqual(JSON.parse(JSON.stringify(rules.presentation(
     "a tray app without menu context must fall back to its window title");
 assert.deepEqual(JSON.parse(JSON.stringify(rules.presentation(
     "Antigravity", "1 agent running", "Mijia Evaporative Fan Res...", true))),
-    { appName: "Antigravity", title: "1 agent running", hasContext: true },
-    "active tray context must take precedence over window title");
-console.log("PASS StartIsland tray-context and non-tray title fallback fixtures");
+    { appName: "Antigravity", title: "Mijia Evaporative Fan Res...", hasContext: true },
+    "window title must take precedence over menu task context");
+assert.deepEqual(JSON.parse(JSON.stringify(rules.presentation(
+    "ChatGPT", "Cân giữa menu và resize pill", "", true))),
+    { appName: "ChatGPT", title: "Cân giữa menu và resize pill", hasContext: true },
+    "the first menu task becomes Window Title fallback when compositor title is empty");
+console.log("PASS StartIsland title-first and first-task fallback fixtures");
 
 const pill = fs.readFileSync(pillPath, "utf8");
 for (const fragment of [
@@ -73,7 +77,6 @@ for (const fragment of [
     "text: \"·\"",
     "visible: root.presentation.hasContext",
     "id: titleLabel",
-    "outlined: false",
     "Text.ElideRight",
     "maximumLineCount: 1",
 ]) {
@@ -87,4 +90,8 @@ assert.equal(pill.includes("id: activitySeparator"), false,
     "Center content must not use a vertical divider");
 assert.equal(pill.includes("Layout.preferredWidth: 120"), false,
     "short app names must not leave a fixed-width gap before the title");
+assert.equal(pill.includes("strong: root.notchOpen"), false,
+    "opening Center must not change title font metrics or resize the left pill");
+assert.match(pill, /id:\s*titleLabel[\s\S]*?strong:\s*false/,
+    "window title must keep stable regular-weight metrics");
 console.log("PASS bounded natural-width active-window presentation contract");

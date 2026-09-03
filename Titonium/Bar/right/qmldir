@@ -1,0 +1,4 @@
+module qs.Titonium.Bar.right
+singleton RightPillCoordinator 1.0 RightPillCoordinator.qml
+EdgeMenuWindow 1.0 EdgeMenuWindow.qml
+EdgeMenuSurface 1.0 EdgeMenuSurface.qml

@@ -8,3 +8,6 @@ Slider 1.0 Slider.qml
 Icon 1.0 Icon.qml
 SystemIcon 1.0 SystemIcon.qml
 TextLabel 1.0 TextLabel.qml
+ConnectedPillShape 1.0 ConnectedPillShape.qml
+EdgePillShape 1.0 EdgePillShape.qml
+AnchoredMenuPillShape 1.0 AnchoredMenuPillShape.qml

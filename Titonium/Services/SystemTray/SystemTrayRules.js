@@ -6,7 +6,11 @@ var GENERIC_IDENTITY_TOKENS = Object.freeze({
     client: true,
     com: true,
     desktop: true,
+    google: true,
+    icon: true,
     io: true,
+    microsoft: true,
+    mozilla: true,
     net: true,
     org: true,
     status: true,
@@ -254,6 +258,16 @@ function sameApplication(appId, appName, item) {
         if (itemKeys[keys[index]] === true)
             return true;
     }
+    var appTokens = identityTokens(appId).concat(identityTokens(appName));
+    var itemTokens = identityTokens(item.id).concat(identityTokens(item.title),
+        identityTokens(item.tooltipTitle));
+    var itemTokenSet = {};
+    for (var itemIndex = 0; itemIndex < itemTokens.length; itemIndex++)
+        itemTokenSet[itemTokens[itemIndex]] = true;
+    for (var appIndex = 0; appIndex < appTokens.length; appIndex++) {
+        if (itemTokenSet[appTokens[appIndex]] === true)
+            return true;
+    }
     return false;
 }
 
@@ -266,6 +280,10 @@ function matchingIndex(appId, appName, descriptors) {
             return index;
     }
     return -1;
+}
+
+function canOpenAppMenu(appId, appName) {
+    return true;
 }
 
 function hasMenuForApp(appId, appName, records) {

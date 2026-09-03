@@ -11,8 +11,6 @@ FOCUS_STORE = CENTER / "CenterFocusStore.qml"
 QMLDIR = CENTER / "qmldir"
 APP = ROOT / "Titonium/App.qml"
 CENTER_VIEW = ROOT / "Titonium/Bar/islands/CenterIsland.qml"
-CENTER_OVERVIEW = ROOT / "Titonium/Bar/notch/OverviewPage.qml"
-CENTER_FOCUS_CARD = ROOT / "Titonium/Bar/notch/OverviewFocusCard.qml"
 ACCEPTANCE = ROOT / "scripts/center_attention_acceptance.sh"
 
 
@@ -67,18 +65,13 @@ def main() -> int:
             'readonly property string promptsPath: Quickshell.dataPath("center/focus-prompts.txt")',
             "readonly property string text:",
             "readonly property bool ready:",
-            "function openScratchpad(): bool",
-            "function saveToday(value: string): bool",
             "function snapshot(): string",
             "watchChanges: true",
             "blockLoading: true",
             "printErrors: false",
             'command: ["stat", "-c", "%Y", root.focusPath]',
-            'command: ["mkdir", "-p", root.centerPath]',
-            'command: ["xdg-open", root.focusPath]',
             "StdioCollector {",
             "onFileChanged:",
-            "CenterAttentionService.publish",
             "repeat: false",
         ):
             if fragment not in source:
@@ -91,7 +84,11 @@ def main() -> int:
             'command: "',
             '["sh", "-c"',
             '["bash", "-c"',
+            '["mkdir", "-p"',
+            '["xdg-open"',
             "repeat: true",
+            "function openScratchpad",
+            "function saveToday",
             "Component.onCompleted: root.openScratchpad",
         ):
             if forbidden in source:
@@ -132,23 +129,13 @@ def main() -> int:
         source = CENTER_VIEW.read_text(encoding="utf-8")
         for fragment in (
             "CenterAttentionService.presentation",
-            "CenterActivityService.presentation",
+            "CenterNotchCoordinator.activitySlots.primary",
             "CenterFocusStore.text",
         ):
             if fragment not in source:
                 errors.append(f"Center view missing service projection: {fragment}")
         if "CenterFocusStore.openScratchpad()" in source:
             errors.append("TopBar Center must not bypass the Center Notch")
-
-    if CENTER_OVERVIEW.is_file() and CENTER_FOCUS_CARD.is_file():
-        overview_source = CENTER_OVERVIEW.read_text(encoding="utf-8")
-        source = CENTER_FOCUS_CARD.read_text(encoding="utf-8")
-        if "OverviewFocusCard" not in overview_source:
-            errors.append("Center Overview does not compose its Daily Focus card")
-        if source.count("CenterFocusStore.openScratchpad()") != 1:
-            errors.append("Center Overview must own exactly one explicit Daily Focus action")
-    else:
-        errors.append("missing Center Overview Daily Focus owner")
 
     bar_root = ROOT / "Titonium/Bar"
     for path in bar_root.rglob("*.qml"):

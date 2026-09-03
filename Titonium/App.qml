@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell
+import Quickshell.Hyprland
 import qs.Titonium.AgentApproval
 import qs.Titonium.Bar
 import qs.Titonium.Core.Surfaces
@@ -26,8 +27,17 @@ Scope {
 
     BarHost {
         onCenterRequested: screen => router.openCenterNotch(screen, "overview")
-        onNotificationsRequested: screen => router.openCenterNotch(screen, "notifications")
+        onBannerRequested: (screen, context, autoDismiss) =>
+            router.openCenterBanner(screen, context, autoDismiss)
         onSourceRequested: (screen, intent) => router.activateCenterSource(screen, intent)
+        onSettingsRequested: screen => router.openSettings(screen, "bar")
+    }
+
+    GlobalShortcut {
+        appid: "titonium"
+        name: "dynamicIsland"
+        description: "Open Expanded Dynamic Island"
+        onPressed: router.openCenterNotch(null, "overview")
     }
 
     DockHost {

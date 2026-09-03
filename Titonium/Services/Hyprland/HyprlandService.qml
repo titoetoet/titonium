@@ -27,8 +27,13 @@ Singleton {
     function activeWorkspaceId(screen: var): int {
         return root.monitorFor(screen)?.activeWorkspace?.id || 1;
     }
-    function workspaceSnapshot(screen: var, count: int): var {
-        const activeId = root.activeWorkspaceId(screen);
+    function focusedWorkspaceId(screen: var): int {
+        return Number(Hyprland.focusedWorkspace?.id)
+            || root.activeWorkspaceId(screen);
+    }
+    function workspaceSnapshot(screen: var, count: int, followFocus: bool): var {
+        const activeId = followFocus
+            ? root.focusedWorkspaceId(screen) : root.activeWorkspaceId(screen);
         const source = Hyprland.workspaces.values || [];
         const facts = [];
         for (let index = 0; index < source.length; index++) {

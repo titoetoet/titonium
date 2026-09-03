@@ -1,7 +1,6 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import qs.Titonium.Shared as Shared
 import qs.Titonium.Theme
 
 Item {
@@ -10,14 +9,6 @@ Item {
     width: Metrics.widgetHeight
     height: Metrics.widgetHeight
     readonly property bool hovered: logoHover.hovered
-    scale: root.hovered ? 1.04 : 1.0
-
-    Shared.Surface {
-        anchors.fill: parent
-        tone: root.hovered ? "interactive" : "elevated"
-        radius: Metrics.radiusLarge
-        outlined: false
-    }
 
     Rectangle {
         anchors.centerIn: parent
@@ -30,6 +21,7 @@ Item {
     }
 
     Image {
+        id: logoImage
         anchors.centerIn: parent
         width: 24
         height: 24
@@ -39,6 +31,16 @@ Item {
         mipmap: true
         sourceSize.width: 64
         sourceSize.height: 64
+        scale: Motion.reduced ? 1 : (logoHover.hovered ? 1.08 : 1)
+        transform: Translate { y: !Motion.reduced && logoHover.hovered ? -1 : 0 }
+
+        Behavior on scale {
+            NumberAnimation {
+                duration: Motion.reduced ? 0 : 140
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Motion.springDamped
+            }
+        }
     }
 
     HoverHandler {
@@ -46,10 +48,4 @@ Item {
         cursorShape: Qt.ArrowCursor
     }
 
-    Behavior on scale {
-        NumberAnimation {
-            duration: Motion.fast
-            easing.type: Easing.OutCubic
-        }
-    }
 }

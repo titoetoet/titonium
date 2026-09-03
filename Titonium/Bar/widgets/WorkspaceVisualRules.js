@@ -8,11 +8,11 @@ function occupiedWidth(appCount, iconSize, spacing) {
 }
 
 function pillHeight(active) {
-    return active === true ? 28 : 24;
+    return 24;
 }
 
 function slotHeight() {
-    return pillHeight(true);
+    return 24;
 }
 
 function backgroundColor(index, active, mutedPalette, activeBlue) {

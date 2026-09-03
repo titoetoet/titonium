@@ -7,6 +7,10 @@ Item {
     id: root
     property string tone: "surface"
     property int radius: Metrics.radiusSmall
+    property int topLeftRadius: root.radius
+    property int topRightRadius: root.radius
+    property int bottomLeftRadius: root.radius
+    property int bottomRightRadius: root.radius
     property int padding: 0
     property bool outlined: true
     property color borderColor: Theme.border
@@ -25,6 +29,10 @@ Item {
     Rectangle {
         anchors.fill: parent
         radius: root.radius
+        topLeftRadius: root.topLeftRadius
+        topRightRadius: root.topRightRadius
+        bottomLeftRadius: root.bottomLeftRadius
+        bottomRightRadius: root.bottomRightRadius
         color: root.resolvedColor
         opacity: 1.0
         border.width: root.outlined ? Metrics.borderWidth : 0

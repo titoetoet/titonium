@@ -99,8 +99,8 @@ def main() -> int:
     else:
         source = CENTER_VIEW.read_text(encoding="utf-8")
         for fragment in (
-            "readonly property var eventPresentation: CenterAttentionService.presentation",
-            "readonly property var activityPresentation: CenterActivityService.presentation",
+            'CenterAttentionService.presentation?.source === "media"',
+            "readonly property var activityPresentation: CenterNotchCoordinator.activitySlots.primary",
             "readonly property var primaryPresentation: root.eventPresentation || root.activityPresentation",
             "root.primaryPresentation.title",
             "CenterFocusStore.text",

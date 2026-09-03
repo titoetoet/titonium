@@ -14,6 +14,7 @@ QtObject {
     readonly property bool popupCanGoBack: Internal.SystemTrayBackend.popupCanGoBack
     readonly property string popupTitle: Internal.SystemTrayBackend.popupTitle
     readonly property bool popupIsInputMethod: Internal.SystemTrayBackend.popupIsInputMethod
+    readonly property bool popupPrepared: Internal.SystemTrayBackend.popupPrepared
 
     function inputMenuIcon(label: string): string {
         return SystemTrayRules.inputMenuIcon(label);

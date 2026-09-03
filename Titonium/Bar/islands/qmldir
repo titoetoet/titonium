@@ -4,9 +4,7 @@ StartIsland 1.0 StartIsland.qml
 ActiveWindowPill 1.0 ActiveWindowPill.qml
 CenterIsland 1.0 CenterIsland.qml
 CenterPigMascot 1.0 CenterPigMascot.qml
-CenterGroup 1.0 CenterGroup.qml
 TopbarPin 1.0 TopbarPin.qml
 EndIsland 1.0 EndIsland.qml
-NotificationPill 1.0 NotificationPill.qml
 ConnectivityPill 1.0 ConnectivityPill.qml
 StatusPill 1.0 StatusPill.qml

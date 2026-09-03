@@ -15,16 +15,16 @@ INPUT_VIEW = ROOT / "Titonium/Bar/widgets/InputMethod.qml"
 ACTIVE_WINDOW = ROOT / "Titonium/Bar/islands/ActiveWindowPill.qml"
 CHECK = ROOT / "scripts/check.sh"
 POPUP_DIR = ROOT / "Titonium/Overlays/SystemTray"
-POPUP_COORDINATOR = POPUP_DIR / "SystemTrayPopupCoordinator.qml"
-POPUP_SURFACE = POPUP_DIR / "SystemTrayPopupSurface.qml"
+MENU_VIEW = POPUP_DIR / "SystemTrayMenuView.qml"
 POPUP_QMLDIR = POPUP_DIR / "qmldir"
+RIGHT_COORDINATOR = ROOT / "Titonium/Bar/right/RightPillCoordinator.qml"
 
 
 def main() -> int:
     errors: list[str] = []
 
     for path in (SERVICE, BACKEND, RULES, QMLDIR, INTERNAL_QMLDIR,
-                 POPUP_COORDINATOR, POPUP_SURFACE, POPUP_QMLDIR):
+                 MENU_VIEW, POPUP_QMLDIR, RIGHT_COORDINATOR):
         if not path.is_file():
             errors.append(f"missing SystemTray capability file: {path.relative_to(ROOT)}")
 
@@ -105,7 +105,7 @@ def main() -> int:
         "InputMethodService.english",
         "name: root.keyboardIcon",
         "acceptedButtons: Qt.LeftButton | Qt.RightButton",
-        "SystemTrayPopupCoordinator.toggleInput(root.screen, root)",
+        "RightPillCoordinator.toggleInput(root.screen.name, \"right\")",
     ):
         if fragment not in input_view:
             errors.append(f"Input icon lost protected presentation: {fragment}")
@@ -115,8 +115,8 @@ def main() -> int:
         "SystemTrayService.selectApp",
         "SystemTrayService.menuContextForApp",
         "SystemTrayService.hasMenuForApp",
-        "SystemTrayPopupCoordinator.toggleApp",
-        "CenterNotchCoordinator.toggle",
+        "RightPillCoordinator.toggleApp",
+        "CenterNotchCoordinator.openExpanded",
     ):
         if fragment not in active_source:
             errors.append(f"ActiveWindowPill missing tray-menu contract: {fragment}")
@@ -135,14 +135,19 @@ def main() -> int:
             if fragment not in backend_source:
                 errors.append(f"SystemTray backend missing popup-kind contract: {fragment}")
 
-    if POPUP_COORDINATOR.is_file():
-        source = POPUP_COORDINATOR.read_text(encoding="utf-8")
-        for fragment in ("SurfaceManager.open", "prepareAppMenu", "prepareInputMenu"):
+    if RIGHT_COORDINATOR.is_file():
+        source = RIGHT_COORDINATOR.read_text(encoding="utf-8")
+        for fragment in ("toggleApp", "toggleInput", "prepareAppMenu", "prepareInputMenu"):
             if fragment not in source:
-                errors.append(f"SystemTray popup coordinator missing: {fragment}")
+                errors.append(f"Right Pill coordinator missing: {fragment}")
 
-    if POPUP_SURFACE.is_file():
-        source = POPUP_SURFACE.read_text(encoding="utf-8")
+    for obsolete in (POPUP_DIR / "SystemTrayPopupCoordinator.qml",
+                     POPUP_DIR / "SystemTrayPopupSurface.qml"):
+        if obsolete.exists():
+            errors.append(f"detached popup boundary must be removed: {obsolete.relative_to(ROOT)}")
+
+    if MENU_VIEW.is_file():
+        source = MENU_VIEW.read_text(encoding="utf-8")
         for fragment in ("SystemTrayService.popupEntries", "enterPopupEntry",
                          "triggerPopupEntry", "popupBack",
                          "SystemTrayService.popupIsInputMethod",
@@ -156,10 +161,10 @@ def main() -> int:
                 errors.append(f"SystemTray popup surface missing: {fragment}")
         if 'visible: !SystemTrayService.popupIsInputMethod\n' not in source:
             errors.append("SystemTray popup must hide native icons for Input Method entries")
-        if "if (!SystemTrayService.popupIsInputMethod)" not in source:
+        if "&& !SystemTrayService.popupIsInputMethod" not in source:
             errors.append("Input Method selection must keep its popup open")
         if ('visible: !SystemTrayService.popupIsInputMethod\n'
-                '                                    && menuRow.modelData.buttonType !== "none"'
+                '                                && menuRow.modelData.buttonType !== "none"'
                 not in source):
             errors.append("native app menus must retain their own check/radio indicators")
         label_index = source.find("? menuRow.inputPresentation.label")
@@ -172,6 +177,10 @@ def main() -> int:
             if obsolete_header in source:
                 errors.append(
                     f"SystemTray popup must not retain its redundant first row: {obsolete_header}")
+        for forbidden in ("Shared.Panel", "PanelWindow", "SurfaceManager",
+                          "Quickshell.Services.SystemTray", "QsMenuOpener", "ChatGPT"):
+            if forbidden in source:
+                errors.append(f"shared SystemTray menu view owns forbidden boundary: {forbidden}")
 
     check_source = CHECK.read_text(encoding="utf-8")
     for fragment in (

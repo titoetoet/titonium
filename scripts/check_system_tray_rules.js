@@ -125,6 +125,14 @@ assert.equal(
     rules.matchingIndex("chatgpt", "ChatGPT", descriptors), 3,
     "the service must resolve the native tray item aligned with a matched descriptor");
 assert.equal(
+    rules.matchingIndex("google-chrome", "Google Chrome", descriptors), 3,
+    "Chrome windows may use their Chromium-hosted status menu");
+assert.equal(
+    rules.sameApplication("vesktop", "Discord", {
+        id: "vesktop_status_icon_1", title: "", tooltipTitle: "Vesktop"
+    }), true,
+    "a window class token must match its native menu without an app-specific alias");
+assert.equal(
     rules.matchingIndex("org.fcitx.Fcitx5", "Fcitx 5", descriptors), -1,
     "Input Method tray items must never become StartIsland menus");
 
@@ -219,6 +227,8 @@ assert.deepEqual(JSON.parse(JSON.stringify(inputChoices)), [
 ], "input-method choices preserve native radio selection metadata");
 assert.equal(rules.hasMenuForApp("chatgpt", "ChatGPT", selectionRecords), true,
     "ChatGPT must be identified as a tray-menu app for title fallback policy");
+assert.equal(rules.hasMenuForApp("google-chrome", "Google Chrome", selectionRecords), true,
+    "Google Chrome must retain its Chromium-hosted tray menu");
 assert.equal(rules.hasMenuForApp("org.mozilla.firefox", "Firefox", selectionRecords), false,
     "an app without a matching tray menu must use its compositor title");
 assert.equal(rules.popupEntryAction(menuEntries, 0), "none",
@@ -278,6 +288,11 @@ assert.equal(
     rules.runningContext(taskRunningEntries),
     "3 tasks in progress",
     "generic in-progress task count in tray menu becomes context");
+
+assert.equal(rules.canOpenAppMenu("chatgpt", "ChatGPT"), true,
+    "ChatGPT is permitted to open its app popup menu");
+assert.equal(rules.canOpenAppMenu("antigravity", "Antigravity"), true,
+    "every app with a native tray menu is permitted to open it");
 
 const selectedMenuRecord = rules.selectRecord("chatgpt", "ChatGPT", selectionRecords);
 assert.equal(selectedMenuRecord.nativeIndex, 2,

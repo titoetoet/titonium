@@ -67,18 +67,7 @@ console.log("PASS stable date hashing distributes normalized prompts");
 
 const centerIsland = fs.readFileSync(path.join(root, "Titonium", "Bar", "islands",
     "CenterIsland.qml"), "utf8");
-const overview = fs.readFileSync(path.join(root, "Titonium", "Bar", "notch",
-    "OverviewPage.qml"), "utf8");
-const overviewFocus = fs.readFileSync(path.join(root, "Titonium", "Bar", "notch",
-    "OverviewFocusCard.qml"), "utf8");
 assert.equal(centerIsland.includes("CenterFocusStore.openScratchpad()"), false,
     "TopBar Center must open the Notch instead of Daily Focus directly");
 assert.match(centerIsland, /signal notchRequested\(var screen\)/);
-assert.equal((overviewFocus.match(/CenterFocusStore\.openScratchpad\(\)/g) || []).length, 1,
-    "Overview owns one explicit Daily Focus action");
-assert.match(overview, /OverviewFocusCard/);
-assert.match(overviewFocus, /center_notch\.overview\.focus\.title/);
-assert.match(overviewFocus, /center_notch\.overview\.daily_focus\.open/);
-assert.match(overviewFocus, /QtControls\.TextField/);
-assert.match(overviewFocus, /CenterFocusStore\.saveToday\(focusInput\.text\)/);
-console.log("PASS Daily Focus moved behind explicit Center Overview action");
+console.log("PASS Daily Focus remains a compact read-only projection");

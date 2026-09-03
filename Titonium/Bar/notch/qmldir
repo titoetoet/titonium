@@ -1,12 +1,5 @@
 module qs.Titonium.Bar.notch
 singleton CenterNotchCoordinator 1.0 CenterNotchCoordinator.qml
-CenterNotchWindow 1.0 CenterNotchWindow.qml
+CenterPillWindow 1.0 CenterPillWindow.qml
 CenterNotchSurface 1.0 CenterNotchSurface.qml
 CenterNotch 1.0 CenterNotch.qml
-CenterNotchViewport 1.0 CenterNotchViewport.qml
-OverviewPage 1.0 OverviewPage.qml
-OverviewWeatherHero 1.0 OverviewWeatherHero.qml
-OverviewFocusCard 1.0 OverviewFocusCard.qml
-OverviewMediaCard 1.0 OverviewMediaCard.qml
-NotificationsPage 1.0 NotificationsPage.qml
-NotificationHistoryRow 1.0 NotificationHistoryRow.qml

@@ -7,6 +7,11 @@ QtObject {
     id: root
 
     readonly property bool pinned: Preferences.bar.autoHide !== true
+    property bool revealed: root.pinned
+
+    function setRevealed(value: bool): void {
+        root.revealed = value;
+    }
 
     function togglePinned(): bool {
         const nextAutoHide = root.pinned;

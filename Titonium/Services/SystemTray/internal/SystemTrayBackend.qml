@@ -13,6 +13,7 @@ Scope {
     property string selectedAppName: ""
     property string popupTitle: ""
     property bool popupIsInputMethod: false
+    readonly property bool popupPrepared: internal.popupCurrentMenu !== null
 
     readonly property var records: SystemTrayRules.projectRecords(
         (SystemTray.items.values || []).map(item => ({
@@ -93,7 +94,18 @@ Scope {
     }
 
     function hasMenuForApp(appId: string, appName: string): bool {
-        return SystemTrayRules.hasMenuForApp(appId, appName, root.records);
+        return root.menuRecordForApp(appId, appName) !== null;
+    }
+
+    function menuRecordForApp(appId: string, appName: string): var {
+        for (let index = 0; index < root.records.length; index++) {
+            const record = root.records[index];
+            if (record?.inputMethod !== true
+                    && SystemTrayRules.sameApplication(appId, appName, record)
+                    && root.nativeItemForRecord(record)?.menu)
+                return record;
+        }
+        return null;
     }
 
     function menuContextForApp(appId: string, appName: string): string {
@@ -122,7 +134,7 @@ Scope {
 
     function prepareRecordMenu(record: var, title: string): bool {
         const nativeItem = root.nativeItemForRecord(record);
-        if (!nativeItem || record?.hasMenu !== true || !nativeItem.menu)
+        if (!nativeItem?.menu)
             return false;
         internal.popupBaseMenu = nativeItem.menu;
         internal.popupCurrentMenu = nativeItem.menu;
@@ -133,8 +145,10 @@ Scope {
 
     function prepareAppMenu(appId: string, appName: string): bool {
         root.popupIsInputMethod = false;
-        const record = SystemTrayRules.selectRecord(appId, appName, root.records);
-        if (!record?.hasMenu)
+        if (!SystemTrayRules.canOpenAppMenu(appId, appName))
+            return false;
+        const record = root.menuRecordForApp(appId, appName);
+        if (!record)
             return false;
         root.selectApp(appId, appName);
         return root.prepareRecordMenu(record, appName);

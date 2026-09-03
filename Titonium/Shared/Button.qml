@@ -19,6 +19,8 @@ FocusScope {
     property int contentAlignment: Qt.AlignHCenter
     property color iconColor: root.foregroundColor
     property bool iconSpinning: false
+    property bool iconHoverMotion: false
+    property bool backgroundVisible: true
     property string accessibleName: root.label.length > 0 ? root.label : root.iconName
     signal triggered()
 
@@ -48,9 +50,18 @@ FocusScope {
     implicitHeight: root.controlHeight
     activeFocusOnTab: root.enabled
     opacity: root.enabled ? 1.0 : 0.55
+    scale: root.pressed && !root.iconHoverMotion && !Motion.reduced ? 0.96 : 1.0
+
+    Behavior on scale {
+        NumberAnimation {
+            duration: Motion.fast
+            easing.type: Easing.OutCubic
+        }
+    }
 
     Rectangle {
         anchors.fill: parent
+        visible: root.backgroundVisible
         radius: root.backgroundRadius
         color: root.backgroundColor
         border.width: root.activeFocus && root.showFocusRing ? Metrics.borderWidth
@@ -71,6 +82,23 @@ FocusScope {
             name: root.iconName
             size: root.iconSize
             color: root.iconColor
+            scale: Motion.reduced ? 1 : (root.iconHoverMotion && root.pressed ? 0.96
+                : (root.iconHoverMotion && root.hovered ? 1.08 : 1))
+            transform: Translate {
+                y: !Motion.reduced && root.iconHoverMotion && root.hovered ? -1 : 0
+
+                Behavior on y {
+                    NumberAnimation { duration: Motion.reduced ? 0 : 140; easing.type: Easing.OutCubic }
+                }
+            }
+
+            Behavior on scale {
+                NumberAnimation {
+                    duration: Motion.reduced ? 0 : 140
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Motion.springDamped
+                }
+            }
 
             RotationAnimator {
                 target: actionIcon
@@ -95,7 +123,10 @@ FocusScope {
     TapHandler {
         id: tapHandler
         enabled: root.enabled
-        onTapped: { root.forceActiveFocus(Qt.MouseFocusReason); root.activate(); }
+        onTapped: {
+            root.forceActiveFocus(Qt.MouseFocusReason);
+            root.activate();
+        }
     }
     Keys.onPressed: event => {
         if (root.enabled && (event.key === Qt.Key_Space || event.key === Qt.Key_Return

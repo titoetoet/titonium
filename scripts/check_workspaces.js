@@ -84,8 +84,8 @@ assert.equal(visual.occupiedWidth(1, 17, 3), 40);
 assert.equal(visual.occupiedWidth(2, 17, 3), 53);
 assert.equal(visual.occupiedWidth(3, 17, 3), 73);
 assert.equal(visual.pillHeight(false), 24);
-assert.equal(visual.pillHeight(true), 28);
-assert.equal(visual.slotHeight(), 28);
+assert.equal(visual.pillHeight(true), 24);
+assert.equal(visual.slotHeight(), 24);
 assert.equal(visual.backgroundColor(0, false, mutedPalette, activeBlue), "#233a5e");
 assert.equal(visual.backgroundColor(3, false, mutedPalette, activeBlue), "#49305f");
 assert.equal(visual.backgroundColor(3, true, mutedPalette, activeBlue), activeBlue);
@@ -98,6 +98,33 @@ const workspacesSource = fs.readFileSync(path.join(root, "Titonium", "Bar", "wid
 const startSource = fs.readFileSync(path.join(root, "Titonium", "Bar", "islands",
     "StartIsland.qml"), "utf8");
 assert.match(workspacesSource, /readonly property int count: Preferences\.bar\.workspaceCount/);
+assert.match(workspacesSource,
+    /activeWorkspaceId: HyprlandService\.focusedWorkspaceId\(root\.screen\)/);
+assert.match(workspacesSource,
+    /workspaceSnapshot\(root\.screen, root\.count, true\)/);
 assert.equal(workspacesSource.includes("property int count: 5"), false);
 assert.equal(startSource.includes("count: 5"), false);
+for (const fragment of [
+    "id: selectionHighlight",
+    "function moveSelectionHighlight(workspaceId: int)",
+    "function activateWorkspace(workspaceId: int)",
+    "function selectionGeometry(workspaceId: int)",
+    "root.moveSelectionHighlight(workspaceId);\n        HyprlandService.activateWorkspace(workspaceId);",
+    "readonly property bool visuallyActive:",
+    "workspaceItem.modelData.id === root.visualWorkspaceId",
+    "visible: workspaceItem.modelData.occupied && !workspaceItem.visuallyActive",
+    "onActiveWorkspaceIdChanged:",
+    "onTapped: root.activateWorkspace(workspaceItem.modelData.id)",
+    "id: selectionMotion",
+    "id: stretchPhase",
+    "id: settlePhase",
+    "Motion.reduced",
+]) {
+    assert.match(workspacesSource, new RegExp(fragment.replace(/[()]/g, "\\$&")),
+        `Workspaces missing shared sliding selection contract: ${fragment}`);
+}
+assert.equal(workspacesSource.includes("workspaceRepeater.itemAt(index)"), false,
+    "selection geometry must not depend on transient Repeater delegates");
+assert.equal(workspacesSource.includes("workspaceItem.modelData.active ? 10 : 7"), false,
+    "active workspace must not resize its internal marker");
 console.log("PASS workspace count follows effective Settings preview");

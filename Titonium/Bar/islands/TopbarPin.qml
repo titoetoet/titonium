@@ -8,22 +8,19 @@ import qs.Titonium.Theme
 Item {
     id: root
 
-    implicitWidth: Metrics.controlHeight
-    implicitHeight: Metrics.controlHeight
-
-    Shared.Surface {
-        anchors.fill: parent
-        tone: "elevated"
-        radius: Metrics.radiusLarge
-        outlined: false
-    }
+    implicitWidth: Metrics.controlHeightSmall
+    implicitHeight: Metrics.widgetHeight
 
     Shared.Button {
-        anchors.fill: parent
+        anchors.centerIn: parent
+        width: Metrics.controlHeightSmall
+        height: Metrics.controlHeightSmall
         iconName: BarVisibilityState.pinned ? "keep" : "keep_off"
+        iconHoverMotion: true
+        backgroundVisible: false
         variant: "quiet"
         size: "small"
-        selected: BarVisibilityState.pinned
+        iconColor: BarVisibilityState.pinned ? Theme.accent : Theme.textPrimary
         showFocusRing: false
         backgroundRadius: Metrics.radiusLarge
         accessibleName: I18n.tr(BarVisibilityState.pinned

@@ -31,9 +31,10 @@ function label(appName, context) {
 
 function presentation(appName, trayContext, windowTitle, hasTrayMenu) {
     const app = text(appName) || "Titonium";
-    const source = (hasTrayMenu === true && text(trayContext))
-        ? text(trayContext)
-        : (hasTrayMenu === true && app.toLocaleLowerCase() === "chatgpt" ? "" : windowTitle);
+    // Window identity and menu capability are separate concerns. Prefer the
+    // compositor title; a menu's first running/recent task is only a fallback
+    // when the window does not publish one.
+    const source = text(windowTitle) || (hasTrayMenu === true ? text(trayContext) : "");
     const detail = contextText(app, source);
     return {
         appName: app,

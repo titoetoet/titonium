@@ -2,42 +2,39 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Titonium.Bar.widgets
+import qs.Titonium.Bar.right
 import qs.Titonium.Theme
-import qs.Titonium.Shared as Shared
 
 Item {
     id: root
     required property var screen
+    property real menuAnchorOffset: 0
 
-    implicitWidth: startRow.implicitWidth
+    implicitWidth: startRow.implicitWidth + Metrics.spacingXSmall * 2
     implicitHeight: Metrics.widgetHeight
+    readonly property real menuAnchorX: startRow.x + activeWindow.x
+        + activeWindow.menuAnchorX
+    readonly property real menuAnchorWidth: activeWindow.menuAnchorWidth
+    onImplicitWidthChanged: RightPillCoordinator.setCompactWidth("left", root.implicitWidth + 16)
+    Component.onCompleted: RightPillCoordinator.setCompactWidth("left", root.implicitWidth + 16)
 
     Row {
         id: startRow
         anchors.verticalCenter: parent.verticalCenter
-        spacing: Metrics.spacingSmall
+        x: Metrics.spacingXSmall
+        spacing: Metrics.spacingXSmall
 
         ArchLogo {}
 
-        Item {
-            width: workspaces.implicitWidth + Metrics.spacingXSmall * 2
-            height: Metrics.widgetHeight
-
-            Shared.Surface {
-                anchors.fill: parent
-                tone: "elevated"
-                radius: Metrics.radiusLarge
-            }
-
-            Workspaces {
-                id: workspaces
-                anchors.centerIn: parent
-                screen: root.screen
-            }
+        Workspaces {
+            id: workspaces
+            screen: root.screen
         }
 
         ActiveWindowPill {
+            id: activeWindow
             screen: root.screen
+            menuAnchorOffset: root.menuAnchorOffset
         }
     }
 }

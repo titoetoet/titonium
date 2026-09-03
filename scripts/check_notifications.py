@@ -10,9 +10,7 @@ SERVICE_ROOT = ROOT / "Titonium/Services/Notifications"
 SERVICE = SERVICE_ROOT / "NotificationService.qml"
 QMLDIR = SERVICE_ROOT / "qmldir"
 PRESENTATION_ROOT = ROOT / "Titonium/Notifications"
-CENTER_NOTCH_ROOT = ROOT / "Titonium/Bar/notch"
 APP = ROOT / "Titonium/App.qml"
-BELL = ROOT / "Titonium/Bar/widgets/NotificationBell.qml"
 PRESENTATION_FILES = {
     "ToastHost.qml": (
         "Variants {",
@@ -226,61 +224,10 @@ def validate_presentation(errors: list[str]) -> None:
         catalog_path = ROOT / f"config/i18n/{locale}.json"
         catalog = json.loads(catalog_path.read_text(encoding="utf-8")).get("strings", {})
         for key in (
-            "notification.bell.none", "notification.bell.unread",
             "notification.toast.fallback_app", "notification.toast.dismiss",
         ):
             if not isinstance(catalog.get(key), str) or not catalog[key]:
                 errors.append(f"{locale} catalog missing notification key: {key}")
-
-
-def validate_center_page(errors: list[str]) -> None:
-    files = {
-        "NotificationsPage.qml": (
-            "model: NotificationService.notifications",
-            "NotificationService.markAllRead()",
-            "NotificationService.dismissAll()",
-            "onDismissRequested: id => NotificationService.dismiss(id)",
-            "QtControls.ScrollView",
-            "Component.onCompleted:",
-        ),
-        "NotificationHistoryRow.qml": (
-            "required property var notification",
-            "required property double observedAt",
-            "signal dismissRequested(int notificationId)",
-            "Shared.SystemIcon",
-            "root.dismissRequested(root.notification.id)",
-            "NotificationRules.relativeAge",
-        ),
-    }
-    sources: list[str] = []
-    for filename, fragments in files.items():
-        path = CENTER_NOTCH_ROOT / filename
-        if not path.is_file():
-            errors.append(f"missing Center notification page: {filename}")
-            continue
-        source = path.read_text(encoding="utf-8")
-        sources.append(source)
-        for fragment in fragments:
-            if fragment not in source:
-                errors.append(f"{filename} missing Center notification contract: {fragment}")
-    feature = "\n".join(sources)
-    for forbidden in (
-        "NotificationServer", "Quickshell.Services.Notifications", "Process",
-        "FileView", "DBus", "execDetached", "Timer {",
-    ):
-        if forbidden in feature:
-            errors.append(f"Center notification page owns forbidden dependency: {forbidden}")
-
-    viewport = (CENTER_NOTCH_ROOT / "CenterNotchViewport.qml").read_text(encoding="utf-8")
-    if viewport.count('NotificationsPage { pageId: "notifications" }') != 1:
-        errors.append("Center viewport must own exactly one lazy Notifications page factory")
-    qmldir = (CENTER_NOTCH_ROOT / "qmldir").read_text(encoding="utf-8")
-    for entry in (
-        "NotificationsPage 1.0 NotificationsPage.qml",
-        "NotificationHistoryRow 1.0 NotificationHistoryRow.qml",
-    ):
-        if qmldir.count(entry) != 1:
-            errors.append(f"Center notch qmldir missing unique entry: {entry}")
 
 
 def validate_composition(errors: list[str]) -> None:
@@ -309,21 +256,6 @@ def validate_composition(errors: list[str]) -> None:
         ):
             if fragment not in ipc:
                 errors.append(f"notifications IPC missing narrow state contract: {fragment}")
-    if not BELL.is_file():
-        errors.append("missing NotificationBell.qml")
-        return
-    bell_source = BELL.read_text(encoding="utf-8")
-    if "import qs.Titonium.Services.Notifications" not in bell_source:
-        errors.append("NotificationBell must consume the descriptor-only notification service")
-    for fragment in (
-        "width: 24", "height: 24", 'iconName: "notifications"',
-        "visible: NotificationService.hasUnread", "width: 6", "height: 6",
-        "root.notificationsRequested()", "NotificationService.unreadCount",
-    ):
-        if fragment not in bell_source:
-            errors.append(f"NotificationBell missing contract: {fragment}")
-    if "NotificationService.markAllRead()" in bell_source:
-        errors.append("Notification Bell must open history before read state is mutated")
 
 
 def main() -> int:
@@ -338,7 +270,6 @@ def main() -> int:
     validate_service(errors)
     validate_ownership(errors)
     validate_presentation(errors)
-    validate_center_page(errors)
     validate_composition(errors)
     validate_gate_fixtures(errors)
     if errors:

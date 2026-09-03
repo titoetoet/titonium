@@ -11,6 +11,8 @@ import "NotificationRules.js" as NotificationRules
 Singleton {
     id: root
 
+    signal urgentNotification(var descriptor)
+
     property var projectedNotifications: Object.freeze([])
     property var toastIds: Object.freeze([])
     property var unreadIds: Object.freeze([])
@@ -152,6 +154,8 @@ Singleton {
                         ? I18n.tr("capture.screenshot_saved")
                         : I18n.tr("menubar.center.notification_new"), now));
             root.syncUnreadIndicator();
+            if (item.urgency >= 2)
+                root.urgentNotification(item);
             notification.closed.connect(() => root.expireToast(item.id));
         }
     }

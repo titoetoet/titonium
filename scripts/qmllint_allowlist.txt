@@ -9,3 +9,7 @@ Type QProcess::ExitStatus of parameter exitStatus
 # qmltypes but not declaratively, so qmllint cannot resolve the return type of
 # Bluetooth.defaultAdapter. The runtime resolves it correctly.
 Type "BluetoothAdapter" of property "defaultAdapter" not found
+# Quickshell 0.3.1 exports Hyprland GlobalShortcut at runtime through an imported
+# private module, but qmllint does not follow that qmldir import/prototype chain.
+PostReloadHook was not found
+Type GlobalShortcut is used but it is not resolved

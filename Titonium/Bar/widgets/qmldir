@@ -1,4 +1,4 @@
 module qs.Titonium.Bar.widgets
+NotificationBell 1.0 NotificationBell.qml
 Workspaces 1.0 Workspaces.qml
 InputMethod 1.0 InputMethod.qml
-NotificationBell 1.0 NotificationBell.qml

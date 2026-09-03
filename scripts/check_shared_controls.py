@@ -36,6 +36,13 @@ def main() -> int:
     for fragment in (
         "property color iconColor: root.foregroundColor",
         "color: root.iconColor",
+        "property bool iconHoverMotion: false",
+        "root.iconHoverMotion && root.hovered ? 1.08",
+        "root.iconHoverMotion && root.hovered ? -1 : 0",
+        "Motion.reduced ? 0 : 140",
+        "root.pressed && !root.iconHoverMotion",
+        "property bool backgroundVisible: true",
+        "visible: root.backgroundVisible",
     ):
         if fragment not in button:
             errors.append(f"Shared Button missing icon-color override contract: {fragment}")

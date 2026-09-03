@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Titonium.Bar.notch
+import qs.Titonium.Bar.right
 import qs.Titonium.Core.Runtime
 import qs.Titonium.Core.Screens
 import qs.Titonium.Core.Surfaces
@@ -18,6 +19,7 @@ QtObject {
                 || !SettingsCoordinator.forceCancelAndClose())
             return "unavailable:busy";
         CenterNotchCoordinator.close();
+        RightPillCoordinator.close();
         const screen = ScreenRouter.screenForName(requestedScreen?.name
             || HyprlandService.focusedMonitorName);
         if (!screen)
@@ -43,6 +45,7 @@ QtObject {
             return "unavailable:no-screen";
         SurfaceManager.close("");
         CenterNotchCoordinator.close();
+        RightPillCoordinator.close();
         const opened = SettingsCoordinator.open(screen.name, pageId);
         return opened ? "open:" + screen.name + ";page="
             + SettingsCoordinator.requestedPage : "unavailable:busy";
@@ -67,9 +70,31 @@ QtObject {
                 || !SettingsCoordinator.forceCancelAndClose())
             return "unavailable:busy";
         SurfaceManager.close("");
-        const opened = CenterNotchCoordinator.open(screen.name, pageId);
+        RightPillCoordinator.close();
+        const opened = pageId === "banner"
+            ? CenterNotchCoordinator.openBanner(screen.name,
+                CenterNotchCoordinator.primaryContext)
+            : CenterNotchCoordinator.openExpanded(screen.name);
         return opened ? "open:" + screen.name + ";page="
-            + CenterNotchCoordinator.requestedPage : "unavailable:no-screen";
+            + CenterNotchCoordinator.requestedPage + ";state="
+            + CenterNotchCoordinator.visualState : "unavailable:no-screen";
+    }
+
+    function openCenterBanner(requestedScreen: var, context: var, autoDismiss: bool): string {
+        const screen = ScreenRouter.screenForName(requestedScreen?.name
+            || HyprlandService.focusedMonitorName);
+        if (!screen)
+            return "unavailable:no-screen";
+        if (!SettingsLifecycleRules.canYield(SettingsCoordinator.active, Preferences.savePending)
+                || !SettingsCoordinator.forceCancelAndClose())
+            return "unavailable:busy";
+        SurfaceManager.close("");
+        RightPillCoordinator.close();
+        const opened = autoDismiss
+            ? CenterNotchCoordinator.openAutoNotification(screen.name, context)
+            : CenterNotchCoordinator.openBanner(screen.name, context);
+        return opened ? "open:" + screen.name + ";page=banner;state="
+            + CenterNotchCoordinator.visualState : "unavailable:policy";
     }
 
     property Connections surfaceConnection: Connections {
@@ -82,6 +107,7 @@ QtObject {
                     return;
                 }
                 CenterNotchCoordinator.close();
+                RightPillCoordinator.close();
             }
         }
     }
@@ -90,9 +116,24 @@ QtObject {
         target: CenterNotchCoordinator
 
         function onActiveChanged(): void {
-            if (CenterNotchCoordinator.active
-                    && !SettingsCoordinator.forceCancelAndClose())
-                CenterNotchCoordinator.close();
+            if (CenterNotchCoordinator.active) {
+                RightPillCoordinator.close();
+                if (!SettingsCoordinator.forceCancelAndClose())
+                    CenterNotchCoordinator.close();
+            }
+        }
+    }
+
+    property Connections rightPillConnection: Connections {
+        target: RightPillCoordinator
+
+        function onActiveChanged(): void {
+            if (!RightPillCoordinator.active)
+                return;
+            SurfaceManager.close("");
+            CenterNotchCoordinator.close();
+            if (!SettingsCoordinator.forceCancelAndClose())
+                RightPillCoordinator.close();
         }
     }
 }
