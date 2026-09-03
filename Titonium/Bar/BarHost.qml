@@ -2,13 +2,16 @@ pragma ComponentBehavior: Bound
 
 import Quickshell
 import qs.Titonium.Bar.notch
+import qs.Titonium.Bar.right
+import qs.Titonium.Core.Runtime
 import qs.Titonium.Core.Screens
 
 Scope {
     id: root
     signal centerRequested(var screen)
-    signal notificationsRequested(var screen)
+    signal bannerRequested(var screen, var context, bool autoDismiss)
     signal sourceRequested(var screen, string intent)
+    signal settingsRequested(var screen)
 
     Variants {
         model: ScreenPolicy.screens
@@ -18,11 +21,18 @@ Scope {
             BarSurface {
                 screenModel: screenScope.modelData
                 onCenterRequested: screen => root.centerRequested(screen)
-                onNotificationsRequested: screen => root.notificationsRequested(screen)
                 onSourceRequested: (screen, intent) => root.sourceRequested(screen, intent)
             }
-            CenterNotchWindow {
+            CenterPillWindow {
                 screenModel: screenScope.modelData
+                styleActive: Preferences.barStyle === "connected"
+                onBannerRequested: (screen, context, autoDismiss) =>
+                    root.bannerRequested(screen, context, autoDismiss)
+                onSettingsRequested: screen => root.settingsRequested(screen)
+            }
+            EdgeMenuWindow {
+                screenModel: screenScope.modelData
+                styleActive: Preferences.barStyle === "connected"
             }
         }
     }

@@ -1,0 +1,57 @@
+pragma ComponentBehavior: Bound
+
+import QtQuick
+import Quickshell
+import Quickshell.Wayland
+import qs.Titonium.Core.Runtime
+import qs.Titonium.Theme
+
+PanelWindow {
+    id: window
+    required property ShellScreen screenModel
+    property bool styleActive: true
+    readonly property bool ownsMenu: window.styleActive
+        && RightPillCoordinator.ownerScreenName === window.screenModel.name
+    readonly property bool dismissing: window.styleActive
+        && RightPillCoordinator.exitingScreenName === window.screenModel.name
+    readonly property real compactY: BarVisibilityState.revealed || window.ownsMenu
+        ? 0 : -Metrics.barHeight + 2
+
+    screen: window.screenModel
+    visible: window.styleActive
+    color: "transparent"
+    aboveWindows: true
+    exclusiveZone: 0
+    WlrLayershell.namespace: "titonium-edge-menu"
+    WlrLayershell.layer: WlrLayer.Overlay
+    WlrLayershell.exclusionMode: ExclusionMode.Ignore
+    WlrLayershell.keyboardFocus: window.ownsMenu
+        ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    anchors { top: true; bottom: true; left: true; right: true }
+    mask: Region {
+        Region { item: activeInputRegion }
+        Region { item: dismissingInputRegion }
+    }
+
+    Item { id: activeInputRegion; width: window.ownsMenu ? window.width : 0; height: window.ownsMenu ? window.height : 0 }
+    Item {
+        id: dismissingInputRegion
+        visible: window.dismissing
+        x: Math.min(surface.activeBranch.x, surface.presentedRightCompactX); y: 0
+        width: visible ? Math.max(surface.activeBranch.x + surface.activeBranch.width,
+            surface.presentedLeftCompactWidth) - x : 0
+        height: visible ? surface.activeBranch.y + surface.activeBranch.height : 0
+    }
+
+    EdgeMenuSurface {
+        id: surface
+        anchors.fill: parent
+        screenModel: window.screenModel
+        compactY: window.compactY
+    }
+
+    onStyleActiveChanged: {
+        if (!window.styleActive && RightPillCoordinator.active)
+            RightPillCoordinator.close();
+    }
+}

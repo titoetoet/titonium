@@ -21,22 +21,20 @@ def main() -> int:
         "assets/arch-prism.svg",
         "islands/ActiveWindowPill.qml",
         "islands/CenterIsland.qml",
-        "islands/CenterGroup.qml",
         "islands/TopbarPin.qml",
         "islands/EndIsland.qml",
-        "islands/NotificationPill.qml",
         "islands/ConnectivityPill.qml",
         "islands/StatusPill.qml",
         "widgets/Workspaces.qml",
-        "widgets/NotificationBell.qml",
         "BarVisibilityRules.js",
         "notch/qmldir",
         "notch/CenterNotchCoordinator.qml",
-        "notch/CenterNotchWindow.qml",
+        "notch/CenterPillWindow.qml",
         "notch/CenterNotchSurface.qml",
         "notch/CenterNotch.qml",
-        "notch/CenterNotchViewport.qml",
-        "notch/OverviewPage.qml",
+        "right/RightPillCoordinator.qml",
+        "right/EdgeMenuWindow.qml",
+        "right/EdgeMenuSurface.qml",
     )
     for relative in required:
         if not (BAR / relative).is_file():
@@ -46,7 +44,8 @@ def main() -> int:
         "BarHost.qml": (
             "Variants {",
             "model: ScreenPolicy.screens",
-            "CenterNotchWindow {",
+            "CenterPillWindow {",
+            "EdgeMenuWindow {",
         ),
         "BarSurface.qml": (
             "PanelWindow {",
@@ -55,52 +54,46 @@ def main() -> int:
             "id: edgeReveal",
             "hideDelay.restart()",
             "mask: Region {",
-            "Region { item: bar.notificationHitbox }",
+            "Region { item: root.leftHitbox }",
+            "Region { item: root.rightHitbox }",
+            "active: Preferences.barStyle === \"connected\"",
+            "active: Preferences.barStyle === \"classic\"",
+            "CenterNotchCoordinator.active",
         ),
-        "Bar.qml": ("StartIsland {", "CenterGroup {", "EndIsland {",
-                    "NotificationPill {", "id: notificationPill",
-                    "x: centerGroup.x + centerGroup.width + Metrics.spacingSmall",
-                    "BarLayout.centerX(root.width, centerGroup.width)",
-                    "readonly property alias centerHitbox: centerGroup",
-                    "readonly property alias notificationHitbox: notificationPill",
+        "Bar.qml": ("id: leftReservation", "id: rightReservation",
+                    "readonly property alias leftHitbox:",
+                    "readonly property alias rightHitbox:",
+                    "StartIsland {", "EndIsland {",
+                    "RightPillCoordinator.leftCompactWidth",
+                    "RightPillCoordinator.compactWidth",
+                    "CenterNotchCoordinator.islandWidth",
                     "signal centerRequested(var screen)",
                     "readonly property bool hovered:"),
-        "islands/CenterGroup.qml": (
-            "CenterIsland {",
-            "id: centerIsland",
-            "signal notchRequested(var screen)",
-            "onNotchRequested: screen => root.notchRequested(screen)",
-        ),
         "islands/CenterIsland.qml": (
             "CenterFocusStore.text",
             'I18n.tr("menubar.center.focus_fallback")',
             "strong: true",
-            "Behavior on implicitWidth",
-            "Behavior on implicitHeight",
-            "easing.bezierCurve: [0.34, 1.22, 0.64, 1, 1, 1]",
+            "CenterNotchCoordinator.setCompactWidth(root.implicitWidth)",
             "readonly property string presentationKey:",
             "const fullTransition = root.displayedPresentationKey !== root.presentationKey",
-            "root.sizeMorphEnabled = fullTransition && !Motion.reduced",
             "id: presentationFade",
             "duration: 160",
-            "scale: root.notchOpen ? 0.97 : 1",
         ),
         "islands/TopbarPin.qml": (
             "BarVisibilityState.togglePinned()",
             "menubar.bar_pin.pin", "menubar.bar_pin.autohide",
-            "radius: Metrics.radiusLarge", "showFocusRing: false",
+            "showFocusRing: false",
             "backgroundRadius: Metrics.radiusLarge",
+            "backgroundVisible: false",
         ),
         "islands/qmldir": (
             "ArchLogo 1.0 ArchLogo.qml",
             "ActiveWindowPill 1.0 ActiveWindowPill.qml",
             "CenterIsland 1.0 CenterIsland.qml",
-            "CenterGroup 1.0 CenterGroup.qml",
             "TopbarPin 1.0 TopbarPin.qml",
-            "NotificationPill 1.0 NotificationPill.qml",
         ),
         "islands/ActiveWindowPill.qml": (
-            "CenterNotchCoordinator.toggle",
+            "CenterNotchCoordinator.openExpanded",
             "CenterNotchCoordinator.ownerScreenName",
             "HyprlandService.activeWindow",
             "ApplicationService.nameForAppId",
@@ -113,76 +106,76 @@ def main() -> int:
             "id: activityDot",
             'text: "·"',
             "id: titleLabel",
-            "outlined: false",
             "Text.ElideRight",
             "maximumLineCount: 1",
             "Shared.SystemIcon",
-            "Shared.Surface {",
+            "id: activeAppIcon",
+            "centerHover.hovered ? 1.08 : 1",
         ),
         "islands/ConnectivityPill.qml": (
             "readonly property int fullImplicitWidth",
-            "radius: Metrics.radiusLarge",
-            "spacing: 0",
-        ),
-        "islands/NotificationPill.qml": (
-            "NotificationBell {",
-            "id: notificationBell",
-            "Shared.Surface {",
-            "radius: Metrics.radiusLarge",
-            "implicitHeight: Metrics.widgetHeight",
-            "visible: NotificationService.hasUnread",
-            "signal notificationsRequested()",
+            "implicitWidth: root.fullImplicitWidth",
+            "spacing: Metrics.spacingXSmall",
         ),
         "islands/EndIsland.qml": (
             "TopbarPin {",
             "ConnectivityPill {",
             "StatusPill {",
-            "connectivity.fullImplicitWidth",
+            "readonly property int preferredWidth: endRow.implicitWidth",
+            "NotificationBell {",
+            "spacing: Metrics.spacingSmall",
+            "anchors.right: parent.right",
         ),
         "islands/StatusPill.qml": ("InputMethod {",),
-        "notch/CenterNotchWindow.qml": (
+        "notch/CenterPillWindow.qml": (
             "PanelWindow {",
-            "Loader {",
-            "active: window.ownsNotch",
+            "CenterNotchSurface {",
+            "property bool styleActive: true",
+            "visible: window.styleActive",
             "WlrLayershell.exclusionMode: ExclusionMode.Ignore",
             "WlrLayershell.keyboardFocus:",
             "readonly property bool dismissing:",
-            "active: window.ownsNotch || window.dismissing",
             "closeRequested: window.dismissing",
             "Region { item: activeInputRegion }",
-            "width: window.ownsNotch ? window.width : 0",
+            "Region { item: compactInputRegion }",
         ),
         "notch/CenterNotchCoordinator.qml": (
-            "property bool pinned: false",
             "property string exitingScreenName:",
             "function finishClose(screenName: string): void",
-            "function togglePinned(screenName: string): bool",
-            "root.pinned = false",
+            "function openBanner(screenName: string, context: var): bool",
+            "function openExpanded(screenName: string): bool",
+            "function finishDrag(offset: real, velocity: real): var",
+            "function completeDragSettle(targetState: string): void",
+            "property real dragProgress: 0",
         ),
         "notch/CenterNotchSurface.qml": (
-            "CenterNotchCoordinator.close()",
-            "!CenterNotchCoordinator.pinned",
+            "CenterNotchCoordinator.collapse()",
             "Keys.onEscapePressed",
-            "readonly property real panelTop: Metrics.barHeight + Metrics.barSpacing",
-            "anchors.topMargin: root.panelTop",
-            "root.height - root.panelTop - Metrics.barPadding",
-            "id: notchEntrance",
-            "Approved cubic baseline (2026-09-03)",
-            "from: 0.93",
-            "from: -14",
-            "PauseAnimation { duration: 30 }",
-            "id: notchExit",
-            "onFinished: root.closeAnimationFinished()",
+            "readonly property real bannerWidth: 480",
+            "readonly property real expandedWidth:",
+            "readonly property real targetHeight:",
+            "readonly property real targetRadius:",
+            "property real transitionProgress:",
+            "readonly property real compactContentOpacity:",
+            "readonly property real openContentOpacity:",
+            "Shared.ConnectedPillShape {",
+            "bodyWidth: islandBody.width",
+            "bodyHeight: islandBody.height",
+            "CenterIsland {",
+            "id: nestedSatellite",
+            "property bool satellitePresented:",
+            "trailingReservedWidth: root.satellitePresented ? 44 : 0",
+            "CenterNotchState.connectedBodyWidth(",
+            "root.closeAnimationFinished();",
         ),
         "notch/CenterNotch.qml": (
-            "CenterNotchViewport {",
-            "requestedPage: CenterNotchCoordinator.requestedPage",
-            "topLeftRadius: 20",
-            "topRightRadius: 20",
-            "bottomLeftRadius: 20",
-            "bottomRightRadius: 20",
+            "readonly property bool isBanner:",
+            "id: bannerLayer",
+            'I18n.tr("center_notch.canvas.title")',
             "property bool entranceRequested:",
-            "id: contentEntranceOffset",
+            "property real canvasContentProgress:",
+            "DragHandler",
+            "signal dragFinished(real offset, real velocity)",
         ),
     }
     for filename, fragments in contracts.items():
@@ -208,7 +201,7 @@ def main() -> int:
     if connectivity.is_file():
         source = connectivity.read_text(encoding="utf-8")
         for fragment in (
-            "readonly property int controlSize: 24",
+            "readonly property int controlSize: 28",
             "id: networkButton",
             "id: bluetoothButton",
             "id: audioButton",
@@ -229,13 +222,60 @@ def main() -> int:
         source = end_island.read_text(encoding="utf-8")
         pin_index = source.find("TopbarPin {")
         connectivity_index = source.find("ConnectivityPill {")
+        notification_index = source.find("NotificationBell {")
         status_index = source.find("StatusPill {")
-        if not (0 <= pin_index < connectivity_index < status_index):
-            errors.append("EndIsland order must be Pin, Connectivity, then Input")
+        if not (0 <= notification_index < status_index < pin_index < connectivity_index):
+            errors.append("EndIsland order must be Notification, Input, Pin, then Connectivity")
+
+    for shell_name in ("StartIsland.qml", "EndIsland.qml"):
+        source = (BAR / "islands" / shell_name).read_text(encoding="utf-8")
+        if "Shared.EdgePillShape {" in source:
+            errors.append(f"{shell_name} must remain presentation-only")
+        if "Shared.Surface {" in source:
+            errors.append(f"{shell_name} must not layer a card beneath its edge pill shape")
+    for child_name in (
+        "ArchLogo.qml", "ActiveWindowPill.qml", "TopbarPin.qml",
+        "ConnectivityPill.qml", "StatusPill.qml",
+    ):
+        source = (BAR / "islands" / child_name).read_text(encoding="utf-8")
+        if "Shared.Surface {" in source:
+            errors.append(f"{child_name} must not draw a detached nested surface")
+
+    notification_bell = BAR / "widgets/NotificationBell.qml"
+    if not notification_bell.is_file():
+        errors.append("missing conditional Top Bar NotificationBell")
+    else:
+        source = notification_bell.read_text(encoding="utf-8")
+        for fragment in (
+            "visible: NotificationService.hasUnread",
+            "NotificationService.unreadCount",
+            "function onUnreadCountChanged()",
+            "loops: 3",
+            "CenterNotchCoordinator.openBanner",
+            "Motion.reduced",
+        ):
+            if fragment not in source:
+                errors.append(f"NotificationBell missing transient contract: {fragment}")
+
+    topbar_motion_sources = {
+        "TopbarPin.qml": 1,
+        "ConnectivityPill.qml": 3,
+    }
+    for child_name, expected_count in topbar_motion_sources.items():
+        source = (BAR / "islands" / child_name).read_text(encoding="utf-8")
+        if source.count("iconHoverMotion: true") != expected_count:
+            errors.append(f"{child_name} must opt each interactive icon into icon-only hover motion")
 
     status_pill = BAR / "islands/StatusPill.qml"
     if status_pill.is_file() and "Clock {" in status_pill.read_text(encoding="utf-8"):
         errors.append("StatusPill must keep Clock temporarily disabled")
+
+    input_method = BAR / "widgets/InputMethod.qml"
+    if input_method.is_file():
+        source = input_method.read_text(encoding="utf-8")
+        for fragment in ("id: inputHover", "hoverEnabled: true", "inputHover.containsMouse ? 1.08 : 1"):
+            if fragment not in source:
+                errors.append(f"InputMethod missing icon-only hover motion: {fragment}")
 
     workspaces = BAR / "widgets/Workspaces.qml"
     if workspaces.is_file():
@@ -248,12 +288,11 @@ def main() -> int:
             "WorkspaceVisualRules.occupiedWidth",
             "WorkspaceVisualRules.pillHeight",
             "WorkspaceVisualRules.slotHeight",
-            "Theme.workspacePalette",
             "Theme.workspaceActivePalette[0]",
-            "opacity: workspaceItem.modelData.active ? 1.0 : 0.76",
+            "readonly property color inactiveColor:",
             "Shared.SystemIcon",
             "modelData.apps",
-            "workspaceColor",
+            "hoverHandler.hovered ? 1.08 : 1",
             "? workspaceItem.occupiedWidth",
             "WheelHandler",
             "HyprlandService.activateWorkspace",
@@ -296,6 +335,11 @@ def main() -> int:
     arch_asset = BAR / "assets/arch-prism.svg"
     if arch_logo.is_file():
         source = arch_logo.read_text(encoding="utf-8")
+        for fragment in ("id: logoImage", "logoHover.hovered ? 1.08 : 1"):
+            if fragment not in source:
+                errors.append(f"ArchLogo missing icon-only hover motion: {fragment}")
+        if "scale: root.hovered" in source:
+            errors.append("ArchLogo must not scale its entire control on hover")
         for fragment in ("Image {", "arch-prism.svg", "width: Metrics.widgetHeight"):
             if fragment not in source:
                 errors.append(f"ArchLogo missing visual contract: {fragment}")
@@ -310,16 +354,16 @@ def main() -> int:
         except ET.ParseError as error:
             errors.append(f"Arch Prism SVG is invalid XML: {error}")
 
-    center_group = BAR / "islands/CenterGroup.qml"
-    if center_group.is_file():
-        source = center_group.read_text(encoding="utf-8")
-        for forbidden in ("BarVisibilityState", "pinPill", "keep_off", "menubar.bar_pin"):
-            if forbidden in source:
-                errors.append(f"CenterGroup must not own detached Pin behavior: {forbidden}")
-
     center_island = BAR / "islands/CenterIsland.qml"
     if center_island.is_file():
         source = center_island.read_text(encoding="utf-8")
+        for forbidden in (
+            "anticipationScale",
+            "scale: root.notchOpen ? 0.97 : 1",
+            "scale: (root.notchOpen ? 0.97 : 1)",
+        ):
+            if forbidden in source:
+                errors.append(f"Center compact content must not scale on open: {forbidden}")
         for fragment in (
             "CenterAttentionService.presentation",
             "CenterFocusStore.text",
@@ -327,9 +371,10 @@ def main() -> int:
             "signal notchRequested(var screen)",
             "Text.ElideRight",
             "maximumLineCount: 1",
-            "Layout.maximumWidth: 320",
-            "implicitHeight: Metrics.controlHeight",
-            "Shared.Surface {",
+            "Layout.fillWidth: true",
+            "Layout.minimumWidth: 0",
+            "clip: true",
+            "implicitHeight: root.forcedHeight",
             "CenterPresentationRules.leadingIcon(",
             "readonly property string leadingIcon:",
             "TapHandler {",
@@ -386,10 +431,6 @@ def main() -> int:
         if path.is_file() and hashlib.sha256(path.read_bytes()).hexdigest() != expected_hash:
             errors.append(f"notification batch changed protected Input Method: {path.relative_to(ROOT)}")
 
-    active_window_pill = BAR / "islands/ActiveWindowPill.qml"
-    if active_window_pill.is_file() and active_window_pill.read_text(encoding="utf-8").count("Shared.Surface {") != 1:
-        errors.append("Active Window must own one rounded surface after Pin is detached")
-
     for relative in (
         "Overlays/Audio/AudioPopupSurface.qml",
         "Overlays/Bluetooth/BluetoothPopupSurface.qml",
@@ -399,10 +440,28 @@ def main() -> int:
         if "readonly property real panelTop: Metrics.barHeight + Metrics.barSpacing" not in source:
             errors.append(f"{relative} must follow the shared TopBar height")
 
-    for relative in ("islands/StartIsland.qml", "islands/StatusPill.qml"):
-        path = BAR / relative
-        if path.is_file() and "radius: Metrics.radiusLarge" not in path.read_text(encoding="utf-8"):
-            errors.append(f"{relative} must use Dock-like rounded group geometry")
+    bar_source = (BAR / "Bar.qml").read_text(encoding="utf-8")
+    if "x: 0" not in bar_source:
+        errors.append("StartIsland must attach directly to the left screen edge")
+    if "x: root.width - width" not in bar_source:
+        errors.append("Right Pill reservation must attach directly to the right screen edge")
+    if bar_source.count("anchors.top: parent.top") < 2:
+        errors.append("Both edge pills must attach directly to the top screen edge")
+
+    edge_shape = ROOT / "Titonium/Shared/EdgePillShape.qml"
+    if not edge_shape.is_file():
+        errors.append("missing Shared/EdgePillShape.qml")
+    else:
+        source = edge_shape.read_text(encoding="utf-8")
+        for fragment in (
+            'property string edge: "left"',
+            'readonly property bool leftEdge: root.edge === "left"',
+            "ShapePath {",
+            "PathCubic {",
+            "preferredRendererType: Shape.CurveRenderer",
+        ):
+            if fragment not in source:
+                errors.append(f"EdgePillShape missing geometry contract: {fragment}")
 
     if BAR.exists():
         feature = "\n".join(path.read_text(encoding="utf-8") for path in BAR.rglob("*.qml"))
@@ -422,8 +481,10 @@ def main() -> int:
                 errors.append(f"direct Bar contains forbidden dependency: {forbidden}")
         for path in BAR.rglob("*.qml"):
             source = path.read_text(encoding="utf-8")
-            if "Timer {" in source and path.name != "BarSurface.qml":
+            if "Timer {" in source and path.name not in ("BarSurface.qml", "CenterNotchCoordinator.qml"):
                 errors.append(f"direct Bar contains timer outside auto-hide boundary: {path.name}")
+            if path.name == "CenterNotchCoordinator.qml" and "repeat: true" in source:
+                errors.append("Dynamic Island notification timeout must be one-shot")
             if path.name == "BarSurface.qml" and "repeat: true" in source:
                 errors.append("TopBar auto-hide delay must never poll")
 
@@ -440,7 +501,7 @@ def main() -> int:
         ):
             errors.append("Center Notch imports a future connectivity service")
         for filename, source in notch_sources.items():
-            if filename != "CenterNotchWindow.qml" and "Loader {" in source:
+            if "Loader {" in source:
                 errors.append(f"{filename} contains an always-resident notch Loader boundary")
 
     protected_acceptance = (ROOT / "scripts/protected_acceptance.sh").read_text(encoding="utf-8")
@@ -461,24 +522,14 @@ def main() -> int:
         "menubar.bar_pin.autohide",
         "menubar.center.focus_fallback",
         "menubar.center.accessible",
-        "menubar.center.scratchpad_open_failed",
         "menubar.center.indicator.media",
         "menubar.center.indicator.timer",
         "menubar.center.indicator.jobs",
         "menubar.connectivity.network_planned",
         "menubar.connectivity.bluetooth_planned",
         "menubar.connectivity.audio_planned",
-        "notification.bell.none",
-        "notification.bell.unread",
-        "center_notch.title",
-        "center_notch.tab.overview",
-        "center_notch.overview.description",
-        "center_notch.overview.daily_focus",
-        "center_notch.overview.daily_focus.open",
-        "center_notch.overview.layout",
-        "center_notch.overview.keyboard",
-        "center_notch.overview.lazy",
-        "center_notch.overview.solid",
+        "center_notch.canvas.title",
+        "center_notch.canvas.description",
     }
     for locale in ("en", "vi"):
         catalog = json.loads((ROOT / f"config/i18n/{locale}.json").read_text(encoding="utf-8"))

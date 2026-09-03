@@ -16,62 +16,170 @@ const context = vm.createContext({ Math, Number, isFinite });
 vm.runInContext(source, context, { filename: helperPath });
 const plain = value => JSON.parse(JSON.stringify(value));
 
-assert.deepEqual(plain(context.primaryPages()), [
-    { id: "overview", icon: "dashboard" },
-], "Center exposes Dashboard as its only page");
 assert.equal(context.normalizePage("unknown"), "overview", "unknown page falls back safely");
 assert.equal(context.normalizePage("monitoring"), "overview",
     "System Monitoring is detached from Center");
-assert.equal(context.normalizePage("notifications"), "notifications",
-    "notifications remain available as a direct hidden route");
-assert.equal(context.arrowPage("overview", -1), "overview", "Dashboard navigation is stable");
-assert.equal(context.arrowPage("overview", 1), "overview", "Dashboard navigation stays put");
-assert.equal(context.wheelPage("overview", -1), "overview", "wheel clamps at the first page");
-assert.equal(context.wheelPage("overview", 1), "overview", "wheel stays on Dashboard");
-assert.deepEqual(
-    plain(context.transitionPlan("overview", "overview", true, 160)),
-    { duration: 0, offset: 12 },
-    "reduced motion removes duration while preserving direction",
-);
-assert.equal(
-    context.transitionPlan("overview", "overview", false, 900).duration,
-    220,
-    "transition duration is bounded",
-);
-assert.equal(context.transitionPlan("overview", "overview", false, 160).offset, 12,
-    "single-page transition remains deterministic");
-
-assert.deepEqual(
-    plain(context.pinTransition("", "DP-1", false, "toggle")),
-    { ownerScreenName: "DP-1", pinned: true, shouldClose: false },
-    "pin opens Center on the requested screen",
-);
-assert.deepEqual(
-    plain(context.pinTransition("DP-1", "DP-1", true, "toggle")),
-    { ownerScreenName: "", pinned: false, shouldClose: true },
-    "toggling an active pin closes and clears it",
-);
-assert.deepEqual(
-    plain(context.pinTransition("DP-1", "DP-3", false, "toggle")),
-    { ownerScreenName: "DP-3", pinned: true, shouldClose: false },
-    "pin ownership transfers to the requested screen",
-);
-assert.deepEqual(
-    plain(context.pinTransition("DP-1", "DP-1", true, "close")),
-    { ownerScreenName: "", pinned: false, shouldClose: true },
-    "explicit close always clears pin state",
-);
-
-console.log("PASS Dashboard Center Notch with direct notification route fixtures");
+assert.equal(context.normalizePage("notifications"), "overview",
+    "retired notification route falls back to the expanded canvas");
+assert.equal(context.normalizePage("banner"), "banner",
+    "banner remains a distinct compact action mode");
+assert.equal(context.visualState(false, "overview", 0), "compact");
+assert.equal(context.visualState(false, "overview", 1), "satellite");
+assert.equal(context.visualState(true, "banner", 0), "banner");
+assert.equal(context.visualState(true, "overview", 0), "expanded");
+const ranked = [{ id: "media", source: "media", icon: "music_note" },
+    { id: "recording", source: "recording" }, { id: "ignored", source: "timer" }];
+const focus = { id: "focus:daily", source: "focus", icon: "center_focus_strong",
+    label: "Ship Dynamic Island" };
+assert.deepEqual(plain(context.activitySlots(ranked, focus)), {
+    primary: focus, secondary: ranked[0]
+}, "Focus stays primary while the highest-ranked live activity becomes Satellite");
+assert.deepEqual(plain(context.activitySlots([], focus)), {
+    primary: focus, secondary: null
+}, "Focus remains the sole compact activity when the system is idle");
+const notification = { id: "notification:42", source: "notification",
+    icon: "notifications", label: "New message" };
+assert.deepEqual(plain(context.activitySlots(ranked, focus, notification)), {
+    primary: focus, secondary: notification
+}, "a current notification temporarily owns the nested segment");
+assert.deepEqual(plain(context.activitySlots(ranked, focus, null, false)), {
+    primary: ranked[0], secondary: ranked[1]
+}, "disabling Focus promotes Media to primary and preserves another activity as secondary");
+assert.deepEqual(plain(context.contextForActivity(ranked[0])), {
+    source: "media", id: "media", title: "", icon: "music_note"
+});
+assert.deepEqual(plain(context.layoutProfile(1920, 1080)), {
+    compactHeight: 36, primaryMinWidth: 180, primaryMaxWidth: 260, nestedMaxWidth: 320,
+    gap: 8, ultrawide: false
+}, "standard displays use logical 36dp geometry and a 260dp ceiling");
+assert.deepEqual(plain(context.layoutProfile(2293, 960)), {
+    compactHeight: 42, primaryMinWidth: 180, primaryMaxWidth: 340, nestedMaxWidth: 340,
+    gap: 8, ultrawide: true
+}, "scaled ultrawide displays are classified by aspect ratio, not physical pixels");
+assert.equal(context.connectedBodyWidth(220, 18), 184,
+    "a 220px primary includes both 18px shoulders instead of growing to 256px");
+assert.equal(context.compactPrimaryWidth(120, 260), 180,
+    "Satellite retains State 1 minimum width for short content");
+assert.equal(context.compactPrimaryWidth(205, 260), 205,
+    "Satellite preserves readable content width below the ceiling");
+assert.equal(context.compactPrimaryWidth(280, 260), 260,
+    "standard Satellite elides only at the shared 260dp ceiling");
+assert.equal(context.compactPrimaryWidth(330, 340), 330,
+    "ultrawide Satellite preserves content up to its larger ceiling");
+assert.deepEqual(plain(context.dragSettlePlan(0.3, 30, 200)), {
+    targetState: "banner", targetProgress: 0, duration: 117
+}, "a cancelled drag settles back from its current progress");
+assert.deepEqual(plain(context.dragSettlePlan(0.4, 60, 100)), {
+    targetState: "expanded", targetProgress: 1, duration: 144
+}, "a completed drag settles forward without snapping to one");
+assert.deepEqual(plain(context.dragSettlePlan(0.9, 10, 600)), {
+    targetState: "expanded", targetProgress: 1, duration: 99
+}, "velocity completion uses the minimum bounded settle duration");
+assert.equal(context.dragDecision(48, 0), "expanded");
+assert.equal(context.dragDecision(12, 500), "expanded");
+assert.equal(context.dragDecision(47, 499), "banner");
+assert.equal(context.shouldAutoOpen("compact", "agent", 0), true);
+assert.equal(context.shouldAutoOpen("satellite", "notification", 2), true);
+assert.equal(context.shouldAutoOpen("banner", "notification", 2), false);
+assert.equal(context.shouldAutoOpen("expanded", "agent", 0), false);
+assert.equal(context.shouldAutoOpen("compact", "media", 3), false);
+assert.equal(context.entryPage("agent"), "overview",
+    "AI approval bypasses Banner and enters the expanded State 4 canvas");
+assert.equal(context.entryPage("notification"), "banner",
+    "non-AI contextual activity continues to use Banner");
+console.log("PASS Center pill canvas and banner state fixtures");
 
 const barRoot = path.join(__dirname, "..", "Titonium", "Bar");
 const sources = Object.fromEntries([
-    "CenterNotch.qml", "CenterNotchSurface.qml", "CenterNotchWindow.qml", "../BarHost.qml",
+    "CenterNotch.qml", "CenterNotchSurface.qml", "CenterPillWindow.qml", "../BarHost.qml",
 ].map(relative => {
     const file = path.join(barRoot, "notch", relative);
     return [relative, fs.existsSync(file) ? fs.readFileSync(file, "utf8") : ""];
 }));
 assert.doesNotMatch(sources["CenterNotch.qml"], /CenterNotchRail/);
 assert.doesNotMatch(sources["CenterNotch.qml"], /settingsRequested/);
-assert.doesNotMatch(sources["CenterNotchSurface.qml"], /settingsRequested/);
-console.log("PASS Center Notch owns Dashboard and direct notification history");
+assert.match(sources["CenterNotchSurface.qml"], /settingsRequested/);
+assert.match(sources["CenterNotch.qml"], /readonly property bool isBanner:/);
+assert.match(sources["CenterNotch.qml"], /property real canvasContentProgress:/,
+    "banner and canvas content must cross-fade from shared progress");
+assert.match(sources["CenterNotch.qml"], /CenterNotchCoordinator\.toggleFocus\(\)/,
+    "the Focus banner exposes the session Focus toggle");
+assert.doesNotMatch(sources["CenterNotch.qml"],
+    /id:\s*bannerLayer[\s\S]*?visible:\s*root\.agentContext[\s\S]*?id:\s*dragHandle/,
+    "AI approval actions must not remain in State 3 Banner");
+assert.match(sources["CenterNotch.qml"], /id:\s*expandedAgentApproval/,
+    "State 4 must own the expanded AI approval presentation");
+assert.match(sources["CenterNotch.qml"], /AgentApprovalCard\s*\{/,
+    "State 4 reuses the complete approval action surface");
+assert.match(sources["CenterNotchSurface.qml"],
+    /CenterNotchCoordinator\.openAgentApproval\(/,
+    "incoming AI approval must route directly to State 4");
+assert.match(sources["CenterNotchSurface.qml"],
+    /CenterNotchState\.entryPage\(context\.source\)/,
+    "reopening a pending AI approval from the compact pill must still enter State 4");
+assert.match(sources["CenterNotchSurface.qml"], /property real transitionProgress:/,
+    "compact and open content must follow one reversible progress value");
+assert.match(sources["CenterNotchSurface.qml"], /visible:\s*root\.compactContentOpacity > 0/,
+    "compact content must remain mounted during the geometry morph");
+assert.match(sources["CenterNotchSurface.qml"], /visible:\s*root\.openContentOpacity > 0/,
+    "open content must enter from the shared transition progress");
+assert.doesNotMatch(sources["CenterNotchSurface.qml"],
+    /scale:\s*1\s*-\s*root\.transitionProgress\s*\*\s*0\.03/,
+    "compact text and icons must not shrink during the surface morph");
+const centerIslandSource = fs.readFileSync(path.join(barRoot, "islands", "CenterIsland.qml"), "utf8");
+assert.doesNotMatch(centerIslandSource, /Behavior on implicit(Width|Height)/,
+    "compact content must publish one target size instead of animating geometry internally");
+assert.doesNotMatch(centerIslandSource, /sizeMorphEnabled|syncIslandGeometry/,
+    "legacy per-frame geometry synchronization must stay removed");
+assert.match(centerIslandSource, /CenterNotchCoordinator\.setCompactWidth\(root\.implicitWidth\)/,
+    "compact content publishes only its width target to the visual owner");
+assert.equal((sources["CenterNotchSurface.qml"].match(/Shared\.ConnectedPillShape\s*\{/g) || []).length, 1,
+    "popup must render one connected silhouette");
+assert.match(sources["CenterPillWindow.qml"], /visible: window.styleActive/,
+    "one screen-local owner remains mounted across every state");
+assert.doesNotMatch(sources["CenterPillWindow.qml"], /Loader\s*\{/);
+assert.match(sources["CenterNotchSurface.qml"],
+    /StartIsland\s*\{[\s\S]*?visible:\s*root\.ownsIsland/,
+    "an open Center must retain interactive left-pill controls in its owning window");
+assert.match(sources["CenterNotchSurface.qml"],
+    /EndIsland\s*\{[\s\S]*?visible:\s*root\.ownsIsland/,
+    "an open Center must retain interactive right-pill controls in its owning window");
+assert.doesNotMatch(sources["CenterNotchSurface.qml"], /RoundCorner/);
+assert.doesNotMatch(sources["CenterNotchSurface.qml"], /filler|seam/i);
+assert.doesNotMatch(sources["CenterNotchSurface.qml"], /id:\s*satelliteBubble/,
+    "State 2 must not restore a detached satellite bubble");
+assert.match(sources["CenterNotchSurface.qml"], /id:\s*nestedSatellite/,
+    "State 2 keeps the secondary hitbox inside the monolithic pill");
+assert.match(sources["CenterNotchSurface.qml"], /id:\s*nestedEqualizer/,
+    "Music uses a live equalizer in the nested segment");
+assert.match(sources["CenterNotchSurface.qml"],
+    /model:\s*\[4, 7, 5, 8, 3\]/,
+    "the nested equalizer owns five independently animated bars");
+assert.match(sources["CenterNotchSurface.qml"],
+    /running:\s*root\.satelliteDesired\s*&&\s*nestedEqualizer\.visible\s*&&\s*!Motion\.reduced/,
+    "the equalizer must stop when Music is hidden or Reduced Motion is active");
+assert.match(sources["CenterNotchSurface.qml"], /id:\s*nestedNotificationIcon/,
+    "notification uses the nested wobble presentation");
+assert.doesNotMatch(sources["CenterNotchSurface.qml"],
+    /id:\s*nestedSatellite[\s\S]*?border\.width[\s\S]*?HoverHandler/,
+    "the nested segment must remain borderless");
+assert.match(sources["CenterNotchSurface.qml"], /id:\s*nestedExitRelease/,
+    "nested width release must not depend on an interruptible opacity callback");
+assert.match(centerIslandSource,
+    /CenterAttentionService\.presentation\?\.source === "media"/,
+    "media events must not displace Focus from the primary segment");
+assert.equal(fs.existsSync(path.join(barRoot, "islands", "CenterGroup.qml")), false,
+    "legacy compact visual owner is removed");
+assert.equal(fs.existsSync(path.join(barRoot, "islands", "NotificationPill.qml")), false,
+    "legacy unread-notification satellite is removed");
+assert.equal(fs.existsSync(path.join(barRoot, "widgets", "NotificationBell.qml")), true,
+    "conditional notification bell is integrated into the unified right pill");
+for (const retired of [
+    "CenterNotchViewport.qml", "OverviewPage.qml", "OverviewWeatherHero.qml",
+    "OverviewFocusCard.qml", "OverviewMediaCard.qml", "NotificationsPage.qml",
+    "NotificationHistoryRow.qml",
+]) {
+    assert.equal(fs.existsSync(path.join(barRoot, "notch", retired)), false,
+        `${retired} must not survive the clean-canvas replacement`);
+}
+console.log("PASS Center Notch owns the rewritten banner and expanded canvas");
