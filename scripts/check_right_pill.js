@@ -15,7 +15,8 @@ for (const fragment of [
     'property string exitingScreenName: ""',
     'property string activeEdge: ""',
     'property string exitingEdge: ""',
-    'property real transitionProgress: root.active ? 1 : 0',
+    'readonly property bool presentationActive: root.menuActive || root.connectedSurfaceActive',
+    'property real transitionProgress: root.presentationActive ? 1 : 0',
     'readonly property bool active:',
     'function toggleApp(screenName: string, edge: string, appId: string, appName: string): bool',
     'SystemTrayService.prepareAppMenu(appId, appName)',
@@ -23,7 +24,7 @@ for (const fragment of [
     'SystemTrayService.prepareInputMenu()',
     'function finishClose(screenName: string): void',
     'SystemTrayService.resetPopupNavigation()',
-    'duration: Motion.reduced ? 0 : (root.active ? 240 : 190)',
+    'duration: Motion.reduced ? 0 : (root.presentationActive ? 240 : 190)',
     'easing.bezierCurve: Motion.springDamped',
     'SystemTrayService.popupPrepared',
 ]) assert.equal(source.includes(fragment), true, `RightPillCoordinator missing ${fragment}`);
@@ -48,6 +49,11 @@ assert.match(windowSource, /property bool styleActive:\s*true/);
 assert.match(windowSource, /visible:\s*window\.styleActive/);
 assert.doesNotMatch(windowSource, /Loader\s*\{/);
 assert.match(windowSource, /Region \{ item: activeInputRegion \}/);
+assert.match(windowSource,
+    /SurfaceManager\.descriptor\?\.barConnected === true[\s\S]*?SurfaceManager\.screen === window\.screenModel/,
+    "EdgeMenuWindow must own connected descriptors for its screen");
+assert.match(windowSource, /WlrLayershell\.keyboardFocus:\s*window\.ownsMenu/,
+    "connected descriptors must focus only the Edge window");
 assert.doesNotMatch(windowSource, /Region \{ item: (left|right)CompactInputRegion \}/,
     "inactive EdgeMenuWindow must pass compact edge clicks to BarSurface");
 assert.equal((surfaceSource.match(/Shared\.AnchoredMenuPillShape\s*\{/g) || []).length, 2);
@@ -65,6 +71,24 @@ assert.match(surfaceSource, /root\.presentedEdge !== "right"/);
 assert.match(surfaceSource, /compactWidth: root\.presentedLeftCompactWidth/);
 assert.match(surfaceSource, /compactX: root\.presentedRightCompactX/);
 assert.match(surfaceSource, /SystemTrayMenuView\s*\{/);
+assert.equal((surfaceSource.match(/\bLoader\s*\{/g) || []).length, 1,
+    "EdgeMenuSurface must own one connected-content Loader");
+assert.match(surfaceSource,
+    /SurfaceManager\.descriptor\?\.barConnected === true[\s\S]*?SurfaceManager\.screen === root\.screenModel/,
+    "EdgeMenuSurface must select only its screen-local connected descriptor");
+assert.match(surfaceSource, /SurfaceManager\.descriptor\?\.anchor/,
+    "connected branch geometry must select the descriptor anchor");
+assert.match(surfaceSource, /rightContent\.connectivityAnchorRect\(/,
+    "connected branch geometry must consume the EndIsland anchor");
+assert.match(surfaceSource,
+    /function onOpened\([\s\S]*?descriptor\?\.barConnected === true[\s\S]*?root\.freezeRightAnchor\(\)/,
+    "every connected descriptor open must freeze its selected right anchor");
+assert.match(surfaceSource, /source:\s*active \? SurfaceManager\.descriptor\.source : ""/,
+    "Edge Loader source must come from the connected descriptor");
+assert.match(surfaceSource, /property:\s*"availableViewportHeight"[\s\S]*?value:\s*menuClip\.height/,
+    "Connected Audio viewport must bind to the branch viewport");
+assert.match(surfaceSource, /onDismissRequested[\s\S]*?root\.closePresentedMenu\(\)/,
+    "connected content dismissal must use the shared close intent");
 assert.doesNotMatch(surfaceSource, /menuOpenedAt|<\s*700/,
     "outside dismissal must not have a post-open dead interval");
 assert.match(surfaceSource, /CenterNotchCoordinator\.openExpanded\(root\.screenModel\.name\)/,
@@ -95,9 +119,24 @@ assert.match(shapeSource, /root\.attachmentRadius/);
 
 const endIsland = fs.readFileSync(path.join(root, "Titonium", "Bar", "islands",
     "EndIsland.qml"), "utf8");
+const connectivityPill = fs.readFileSync(path.join(root, "Titonium", "Bar", "islands",
+    "ConnectivityPill.qml"), "utf8");
 const bar = fs.readFileSync(path.join(root, "Titonium", "Bar", "Bar.qml"), "utf8");
 const host = fs.readFileSync(path.join(root, "Titonium", "Bar", "BarHost.qml"), "utf8");
 assert.doesNotMatch(endIsland, /Shared\.EdgePillShape/);
+assert.match(connectivityPill, /function anchorRect\(name: string\): rect/);
+for (const [name, button] of [
+    ["network", "networkButton"],
+    ["bluetooth", "bluetoothButton"],
+    ["audio", "audioButton"],
+]) assert.match(connectivityPill, new RegExp(`name === "${name}"[\\s\\S]*?${button}`),
+    `ConnectivityPill must map ${name} to ${button}`);
+assert.match(connectivityPill,
+    /Qt\.rect\(iconRow\.x \+ item\.x, iconRow\.y \+ item\.y, item\.width, item\.height\)/);
+assert.match(endIsland, /function connectivityAnchorRect\(name: string\): rect/);
+assert.match(endIsland, /connectivity\.anchorRect\(name\)/);
+assert.match(endIsland, /connectivity\.mapToItem\(root,/,
+    "EndIsland must convert connectivity anchors into its own coordinates");
 assert.match(bar, /EndIsland\s*\{/);
 assert.match(bar, /StartIsland\s*\{/);
 assert.match(bar, /readonly property alias leftHitbox:/);
@@ -127,11 +166,21 @@ assert.match(inputMethod, /toggleInput\(root\.screen\.name, "right"\)/);
 assert.match(endIsland, /property real menuAnchorOffset:/);
 assert.match(inputMethod, /Translate \{ x: root\.menuAnchorOffset \}/);
 assert.match(surfaceSource, /StartIsland\s*\{[\s\S]*?menuAnchorOffset: root\.leftSourceOffset/);
-assert.match(surfaceSource, /EndIsland\s*\{[\s\S]*?menuAnchorOffset: root\.rightSourceOffset/);
+assert.match(surfaceSource,
+    /EndIsland\s*\{[\s\S]*?menuAnchorOffset: root\.ownsConnectedSurface \? 0\s*:\s*root\.rightSourceOffset/,
+    "connectivity popups must keep unrelated EndIsland controls stationary");
 assert.match(surfaceSource, /StartIsland\s*\{[\s\S]*?z:\s*2/,
     "window-title controls must stay above the overlapping menu clip");
 assert.match(surfaceSource, /EndIsland\s*\{[\s\S]*?z:\s*2/,
     "right-side controls must stay above the overlapping menu clip");
+
+assert.match(source, /import qs\.Titonium\.Core\.Surfaces/);
+assert.match(source, /readonly property bool connectedSurfaceActive:/);
+assert.match(source, /SurfaceManager\.descriptor\?\.barConnected === true/);
+assert.match(source, /if \(!root\.connectedSurfaceActive\)[\s\S]*?SurfaceManager\.close\(SurfaceManager\.ownerId\)/,
+    "RightPillCoordinator close must delegate connected lifecycle to SurfaceManager");
+assert.match(source, /if \(root\.menuActive && !SystemTrayService\.popupPrepared\)/,
+    "System Tray validity must not close Network, Bluetooth, or Audio descriptors");
 
 const classicPopupPath = path.join(root, "Titonium", "Overlays", "SystemTray",
     "ClassicSystemTrayPopupSurface.qml");

@@ -76,15 +76,24 @@ def main() -> int:
         if "qs.Titonium.Dock" in path.read_text(encoding="utf-8"):
             errors.append(f"Core must not import Dock: {path.relative_to(ROOT)}")
 
-    require_fragments(OVERLAY, (
+    overlay = require_fragments(OVERLAY, (
         "mask: Region {",
-        "width: window.modelData.width",
-        "height: window.modelData.height",
         "SurfaceInputRegions.regionsFor(window.modelData)",
         "intersection: Intersection.Subtract",
         "overlayInputRegions.body",
         "overlayInputRegions.edge",
+        "SurfaceManager.descriptor.barConnected !== true",
     ), errors)
+    if "active: window.ownsSurface && Boolean(SurfaceManager.descriptor.source)\n" \
+            "                    && SurfaceManager.descriptor.barConnected !== true" not in overlay:
+        errors.append("OverlayHost Loader must exclude connected Bar descriptors")
+    if "visible: window.ownsOverlaySurface" not in overlay:
+        errors.append("OverlayHost window must not paint connected Bar descriptors")
+    if "WlrLayershell.keyboardFocus: window.ownsOverlaySurface" not in overlay:
+        errors.append("OverlayHost must not focus connected Bar descriptors")
+    if "width: window.ownsOverlaySurface ? window.modelData.width : 0" not in overlay \
+            or "height: window.ownsOverlaySurface ? window.modelData.height : 0" not in overlay:
+        errors.append("OverlayHost mask must be empty for connected Bar descriptors")
 
     require_fragments(DOCK_WINDOW, (
         "import qs.Titonium.Core.Surfaces",

@@ -1,22 +1,50 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.Titonium.Bar.right
+import qs.Titonium.Bar.widgets
 import qs.Titonium.Theme
 
 Item {
     id: root
     required property var screen
     property bool showConnectivityDiagnostics: true
-    readonly property int preferredWidth: topbarPin.implicitWidth + Metrics.barSpacing
-        + connectivity.fullImplicitWidth + Metrics.barSpacing + status.implicitWidth
+    property real menuAnchorOffset: 0
+    readonly property int preferredWidth: endRow.implicitWidth
+        + Metrics.spacingXSmall * 2
+    readonly property real menuAnchorX: endRow.x + status.x + status.menuAnchorX
+    readonly property real menuAnchorWidth: status.menuAnchorWidth
 
-    implicitWidth: endRow.implicitWidth
+    implicitWidth: endRow.implicitWidth + Metrics.spacingXSmall * 2
     implicitHeight: Metrics.widgetHeight
+
+    function connectivityAnchorRect(name: string): rect {
+        const childRect = connectivity.anchorRect(name);
+        if (childRect.width <= 0 || childRect.height <= 0)
+            return Qt.rect(0, 0, 0, 0);
+        const point = connectivity.mapToItem(root, childRect.x, childRect.y);
+        return Qt.rect(point.x, point.y, childRect.width, childRect.height);
+    }
+
+    onImplicitWidthChanged: RightPillCoordinator.setCompactWidth("right", root.implicitWidth + 16)
+    Component.onCompleted: RightPillCoordinator.setCompactWidth("right", root.implicitWidth + 16)
 
     Row {
         id: endRow
-        anchors.fill: parent
-        spacing: Metrics.barSpacing
+        anchors.verticalCenter: parent.verticalCenter
+        anchors.right: parent.right
+        anchors.rightMargin: Metrics.spacingXSmall
+        spacing: Metrics.spacingSmall
+
+        NotificationBell {
+            screen: root.screen
+        }
+
+        StatusPill {
+            id: status
+            screen: root.screen
+            menuAnchorOffset: root.menuAnchorOffset
+        }
 
         TopbarPin {
             id: topbarPin
@@ -26,10 +54,6 @@ Item {
             id: connectivity
             screen: root.screen
             showDiagnostics: root.showConnectivityDiagnostics
-        }
-        StatusPill {
-            id: status
-            screen: root.screen
         }
     }
 }

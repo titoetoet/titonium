@@ -16,9 +16,11 @@ Scope {
 
             readonly property bool ownsSurface: SurfaceManager.active
                 && SurfaceManager.screen === window.modelData
+            readonly property bool ownsOverlaySurface: window.ownsSurface
+                && SurfaceManager.descriptor.barConnected !== true
 
             screen: window.modelData
-            visible: window.ownsSurface
+            visible: window.ownsOverlaySurface
             color: "transparent"
             implicitWidth: window.modelData.width
             implicitHeight: window.modelData.height
@@ -26,7 +28,7 @@ Scope {
             WlrLayershell.namespace: "titonium-overlay"
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.exclusionMode: ExclusionMode.Ignore
-            WlrLayershell.keyboardFocus: window.ownsSurface
+            WlrLayershell.keyboardFocus: window.ownsOverlaySurface
                 && SurfaceManager.descriptor.keyboardFocus === "exclusive"
                 ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
 
@@ -34,8 +36,8 @@ Scope {
             readonly property var overlayInputRegions:
                 SurfaceInputRegions.regionsFor(window.modelData)
             mask: Region {
-                width: window.modelData.width
-                height: window.modelData.height
+                width: window.ownsOverlaySurface ? window.modelData.width : 0
+                height: window.ownsOverlaySurface ? window.modelData.height : 0
 
                 Region {
                     x: window.overlayInputRegions.body.x
@@ -58,6 +60,7 @@ Scope {
                 id: overlayLoader
                 anchors.fill: parent
                 active: window.ownsSurface && Boolean(SurfaceManager.descriptor.source)
+                    && SurfaceManager.descriptor.barConnected !== true
                 source: active ? SurfaceManager.descriptor.source : ""
 
                 onLoaded: {

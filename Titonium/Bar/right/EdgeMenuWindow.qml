@@ -4,14 +4,21 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import qs.Titonium.Core.Runtime
+import qs.Titonium.Core.Surfaces
 import qs.Titonium.Theme
 
 PanelWindow {
     id: window
     required property ShellScreen screenModel
     property bool styleActive: true
-    readonly property bool ownsMenu: window.styleActive
-        && RightPillCoordinator.ownerScreenName === window.screenModel.name
+    readonly property bool connectedSurfaceForScreen:
+        SurfaceManager.descriptor?.barConnected === true
+        && SurfaceManager.screen === window.screenModel
+    readonly property bool ownsConnectedSurface: window.styleActive
+        && window.connectedSurfaceForScreen
+    readonly property bool ownsMenu: window.styleActive && (
+        RightPillCoordinator.ownerScreenName === window.screenModel.name
+        || window.ownsConnectedSurface)
     readonly property bool dismissing: window.styleActive
         && RightPillCoordinator.exitingScreenName === window.screenModel.name
     readonly property real compactY: BarVisibilityState.revealed || window.ownsMenu
@@ -55,6 +62,8 @@ PanelWindow {
             return;
         if (RightPillCoordinator.ownerScreenName === window.screenModel.name)
             RightPillCoordinator.close();
+        if (window.connectedSurfaceForScreen)
+            RightPillCoordinator.closeConnectedSurface();
         if (RightPillCoordinator.exitingScreenName === window.screenModel.name)
             RightPillCoordinator.finishClose(window.screenModel.name);
     }

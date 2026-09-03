@@ -15,12 +15,13 @@ Item {
     id: root
     required property var screen
     property bool showDiagnostics: true
-    readonly property int controlSize: 24
+    readonly property int controlSize: 28
     readonly property int innerPadding: 2
     readonly property int diagnosticsWidth: networkButton.width + bluetoothButton.width
     readonly property int audioWidth: audioButton.implicitWidth
-    readonly property int fullImplicitWidth: root.diagnosticsWidth + root.audioWidth
-        + root.innerPadding * 2
+    readonly property int fullImplicitWidth: root.audioWidth + root.innerPadding * 2
+        + (root.showDiagnostics
+            ? root.diagnosticsWidth + Metrics.spacingXSmall * 2 : 0)
     readonly property string outputAccessibleName: AudioService.outputAvailable
         ? AudioService.outputName : I18n.tr("audio.output")
     readonly property string audioAccessibleName: !AudioService.outputAvailable
@@ -47,20 +48,20 @@ Item {
         "name": NetworkService.connectedName
     })
 
-    implicitWidth: root.audioWidth + root.innerPadding * 2
-        + (root.showDiagnostics ? root.diagnosticsWidth : 0)
+    implicitWidth: root.fullImplicitWidth
     implicitHeight: Metrics.widgetHeight
 
-    Shared.Surface {
-        anchors.fill: parent
-        tone: "elevated"
-        radius: Metrics.radiusLarge
+    function anchorRect(name: string): rect {
+        const item = name === "network" ? networkButton
+            : (name === "bluetooth" ? bluetoothButton : (name === "audio" ? audioButton : null));
+        return item ? Qt.rect(iconRow.x + item.x, iconRow.y + item.y, item.width, item.height)
+            : Qt.rect(0, 0, 0, 0);
     }
 
     Row {
         id: iconRow
         anchors.centerIn: parent
-        spacing: 0
+        spacing: Metrics.spacingXSmall
 
         Shared.Button {
             id: networkButton
@@ -68,6 +69,7 @@ Item {
             width: root.controlSize
             height: root.controlSize
             iconName: NetworkService.iconName
+            iconHoverMotion: true
             variant: "quiet"
             size: "small"
             showFocusRing: false
@@ -81,6 +83,7 @@ Item {
             width: root.controlSize
             height: root.controlSize
             iconName: root.bluetoothIconName
+            iconHoverMotion: true
             iconColor: root.bluetoothIconColor
             variant: "quiet"
             size: "small"
@@ -93,6 +96,7 @@ Item {
             width: root.controlSize
             height: root.controlSize
             iconName: AudioService.outputIcon
+            iconHoverMotion: true
             variant: "quiet"
             size: "small"
             showFocusRing: false
