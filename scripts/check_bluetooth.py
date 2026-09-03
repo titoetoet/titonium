@@ -197,9 +197,11 @@ def bluetooth_locale_errors() -> list[str]:
 
 def ipc_open_path_errors(coordinator: str) -> list[str]:
     block = function_block(coordinator, "openForIpc")
+    descriptor_block = function_block(coordinator, "descriptorFor")
     if ("function openForIpc(screen: var): bool" not in coordinator
             or "ScreenRouter.screenForName(screen?.name" not in block
-            or '"invoker": null' not in block
+            or 'root.descriptorFor(owner, "bluetooth", null)' not in block
+            or '"invoker": invoker' not in descriptor_block
             or "SurfaceManager.open" not in block):
         return ["Bluetooth coordinator must provide explicit nullable-invoker IPC open path"]
     same_owner = re.search(
@@ -391,7 +393,12 @@ def validate_presentation(errors: list[str]) -> None:
         "function close(): bool",
         "ScreenRouter",
         '"bluetooth:"',
-        '"source": Qt.resolvedUrl("BluetoothPopupSurface.qml")',
+        "BarPopupRouting.presentation(Preferences.barStyle, feature)",
+        '"source": Qt.resolvedUrl(route.source)',
+        '"feature": feature',
+        '"barConnected": route.owner === "edge"',
+        '"anchor": route.anchor',
+        "RightPillCoordinator.toggleConnectedSurface(owner)",
         '"keyboardFocus": "exclusive"',
         "SurfaceManager.open",
         "SurfaceManager.close",
@@ -541,10 +548,11 @@ def validate_presentation(errors: list[str]) -> None:
 def focus_return_errors(coordinator: str, popup: str) -> list[str]:
     errors = []
     open_block = function_block(coordinator, "open")
+    descriptor_block = function_block(coordinator, "descriptorFor")
     toggle_block = function_block(coordinator, "toggle")
     close_block = function_block(popup, "close")
     if ("invoker: var" not in open_block or "!invoker" not in open_block
-            or '"invoker": invoker' not in open_block):
+            or '"invoker": invoker' not in descriptor_block):
         errors.append("Bluetooth coordinator must require and pass its invoker")
     if "root.open(routedScreen, invoker)" not in toggle_block:
         errors.append("Bluetooth toggle must forward its invoker to open")

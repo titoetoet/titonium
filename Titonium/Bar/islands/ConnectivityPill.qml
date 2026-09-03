@@ -101,7 +101,7 @@ Item {
             size: "small"
             showFocusRing: false
             accessibleName: root.audioAccessibleName
-            onTriggered: AudioPopupCoordinator.toggle(root.screen)
+            onTriggered: AudioPopupCoordinator.toggle(root.screen, audioButton)
 
             WheelHandler {
                 onWheel: event => {

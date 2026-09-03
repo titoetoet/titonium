@@ -2,9 +2,13 @@ pragma Singleton
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.Titonium.Bar.notch
+import qs.Titonium.Core.Runtime
+import qs.Titonium.Core.Screens
 import qs.Titonium.Core.Surfaces
 import qs.Titonium.Services.SystemTray
 import qs.Titonium.Theme
+import "BarPopupRouting.js" as BarPopupRouting
 import "RightPillState.js" as RightPillState
 
 QtObject {
@@ -20,6 +24,8 @@ QtObject {
     readonly property real compactWidth: root.rightCompactWidth
     property bool leftHovered: false
     property bool rightHovered: false
+    property var invocationScreen: null
+    property var invocationInvoker: null
     readonly property bool hovered: root.leftHovered || root.rightHovered
     property var connectedState: RightPillState.connectedInitialState()
     readonly property bool connectedSurfacePresented:
@@ -45,6 +51,50 @@ QtObject {
             root.leftCompactWidth = value;
         else if (edge === "right")
             root.rightCompactWidth = value;
+    }
+
+    function systemTrayOwnerFor(screen: var, feature: string): string {
+        return screen?.name ? "system-tray:" + screen.name + ":" + feature : "";
+    }
+
+    function setInvocationContext(screen: var, invoker: var): void {
+        root.invocationScreen = screen;
+        root.invocationInvoker = invoker;
+    }
+
+    function takeInvocationContext(screenName: string): var {
+        const matches = root.invocationScreen?.name === screenName;
+        const context = {
+            "screen": matches ? root.invocationScreen : null,
+            "invoker": matches ? root.invocationInvoker : null,
+        };
+        root.invocationScreen = null;
+        root.invocationInvoker = null;
+        return context;
+    }
+
+    function openPrepared(screenName: string, edge: string, feature: string,
+            source: string, screen: var, invoker: var): bool {
+        const routedScreen = ScreenRouter.screenForName(screen?.name || screenName);
+        const owner = root.systemTrayOwnerFor(routedScreen, feature);
+        const route = BarPopupRouting.presentation(Preferences.barStyle, feature);
+        if (!owner || !route)
+            return false;
+        if (route.owner === "edge")
+            return root.beginOpen(routedScreen.name, edge, source);
+        if (!invoker)
+            return false;
+        const descriptor = {
+            "source": Qt.resolvedUrl("../../Overlays/SystemTray/" + route.source),
+            "keyboardFocus": "exclusive",
+            "closeOnMonitorChange": true,
+            "ownerId": owner,
+            "feature": feature,
+            "barConnected": route.owner === "edge",
+            "anchor": route.anchor,
+            "invoker": invoker,
+        };
+        return SurfaceManager.open(owner, descriptor, routedScreen);
     }
 
     function beginOpen(screenName: string, edge: string, source: string): bool {
@@ -102,22 +152,40 @@ QtObject {
     }
 
     function toggleApp(screenName: string, edge: string, appId: string, appName: string): bool {
+        const context = root.takeInvocationContext(screenName);
+        const screen = context.screen;
+        const invoker = context.invoker;
+        const routedScreen = ScreenRouter.screenForName(screen?.name || screenName);
+        const owner = root.systemTrayOwnerFor(routedScreen, "app");
         const source = "app:" + appId + ":" + appName;
         if (root.active && root.ownerScreenName === screenName
                 && root.activeEdge === edge && root.menuSource === source)
             return root.close();
+        if (owner && SurfaceManager.ownerId === owner)
+            return SurfaceManager.close(owner);
+        if (Preferences.barStyle === "classic" && !invoker)
+            return false;
         if (!SystemTrayService.prepareAppMenu(appId, appName))
             return false;
-        return root.beginOpen(screenName, edge, source);
+        return root.openPrepared(screenName, edge, "app", source, screen, invoker);
     }
 
     function toggleInput(screenName: string, edge: string): bool {
+        const context = root.takeInvocationContext(screenName);
+        const screen = context.screen;
+        const invoker = context.invoker;
+        const routedScreen = ScreenRouter.screenForName(screen?.name || screenName);
+        const owner = root.systemTrayOwnerFor(routedScreen, "input");
         if (root.active && root.ownerScreenName === screenName
                 && root.activeEdge === edge && root.menuSource === "input")
             return root.close();
+        if (owner && SurfaceManager.ownerId === owner)
+            return SurfaceManager.close(owner);
+        if (Preferences.barStyle === "classic" && !invoker)
+            return false;
         if (!SystemTrayService.prepareInputMenu())
             return false;
-        return root.beginOpen(screenName, edge, "input");
+        return root.openPrepared(screenName, edge, "input", "input", screen, invoker);
     }
 
     function close(): bool {
@@ -216,6 +284,26 @@ QtObject {
         SystemTrayService.resetPopupNavigation();
     }
 
+    function closeForStyleChange(): void {
+        const ownerId = SurfaceManager.ownerId;
+        const centerScreenName = CenterNotchCoordinator.ownerScreenName
+            || CenterNotchCoordinator.exitingScreenName;
+        const menuScreenName = root.ownerScreenName || root.exitingScreenName;
+        root.invocationScreen = null;
+        root.invocationInvoker = null;
+        root.forceCloseConnectedSurface();
+        if (ownerId && SurfaceManager.ownerId === ownerId)
+            SurfaceManager.close(ownerId);
+        if (CenterNotchCoordinator.active)
+            CenterNotchCoordinator.close();
+        if (centerScreenName)
+            CenterNotchCoordinator.finishClose(centerScreenName);
+        if (root.active)
+            root.close();
+        if (menuScreenName)
+            root.finishClose(menuScreenName);
+    }
+
     Behavior on transitionProgress {
         NumberAnimation {
             duration: Motion.reduced ? 0 : (root.presentationActive ? 240 : 190)
@@ -236,6 +324,14 @@ QtObject {
         function onPopupPreparedChanged(): void {
             if (root.menuActive && !SystemTrayService.popupPrepared)
                 root.close();
+        }
+    }
+
+    property Connections preferenceConnection: Connections {
+        target: Preferences
+
+        function onBarStyleChanged(): void {
+            root.closeForStyleChange();
         }
     }
 

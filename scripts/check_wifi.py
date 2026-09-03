@@ -122,7 +122,10 @@ def presentation_errors() -> list[str]:
     pill = source(PILL)
     for fragment in (
         "pragma Singleton", "ScreenRouter", "SurfaceManager.open", "SurfaceManager.close",
-        '"network:"', '"source": Qt.resolvedUrl("NetworkPopupSurface.qml")',
+        '"network:"', "BarPopupRouting.presentation(Preferences.barStyle, feature)",
+        '"source": Qt.resolvedUrl(route.source)', '"feature": feature',
+        '"barConnected": route.owner === "edge"', '"anchor": route.anchor',
+        "RightPillCoordinator.toggleConnectedSurface(owner)",
         '"keyboardFocus": "exclusive"', "function open(screen: var, invoker: var): bool",
         "function toggle(screen: var, invoker: var): bool", "function close(): bool",
     ):

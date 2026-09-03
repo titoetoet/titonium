@@ -325,14 +325,19 @@ def main() -> int:
     ), "Audio overlay module")
     require_fragments(errors, OVERLAY_ROOT / "AudioPopupCoordinator.qml", (
         "pragma Singleton",
-        "function open(screen: var): bool",
-        "function toggle(screen: var): bool",
+        "function open(screen: var, invoker = null): bool",
+        "function toggle(screen: var, invoker = null): bool",
         "function close(): bool",
-        '"source": Qt.resolvedUrl("AudioPopupSurface.qml")',
+        "BarPopupRouting.presentation(Preferences.barStyle, feature)",
+        '"source": Qt.resolvedUrl(route.source)',
         '"keyboardFocus": "exclusive"',
         '"closeOnMonitorChange": true',
         '"ownerId": owner',
-        "SurfaceManager.ownerId === root.ownerFor(screen)",
+        '"feature": feature',
+        '"barConnected": route.owner === "edge"',
+        '"anchor": route.anchor',
+        '"invoker": invoker',
+        "RightPillCoordinator.toggleConnectedSurface(owner)",
     ), "Audio popup coordinator")
     require_fragments(errors, OVERLAY_ROOT / "AudioPopupSurface.qml", (
         "TapHandler {",
@@ -567,7 +572,7 @@ def main() -> int:
         'I18n.tr("audio.output.accessible.muted"',
         'I18n.tr("audio.output.accessible.volume"',
         "accessibleName: root.audioAccessibleName",
-        "AudioPopupCoordinator.toggle(root.screen)",
+        "AudioPopupCoordinator.toggle(root.screen, audioButton)",
         "AudioService.adjustOutputVolume",
         "WheelHandler {",
     ), "Connectivity pill")

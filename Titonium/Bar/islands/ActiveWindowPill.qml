@@ -3,10 +3,10 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import qs.Titonium.Bar.notch
+import qs.Titonium.Bar.right
 import qs.Titonium.Core.Runtime
 import qs.Titonium.Services.Applications
 import qs.Titonium.Services.Hyprland
-import qs.Titonium.Overlays.SystemTray
 import qs.Titonium.Services.SystemTray
 import qs.Titonium.Shared as Shared
 import qs.Titonium.Theme
@@ -15,6 +15,8 @@ import "ActiveWindowRules.js" as ActiveWindowRules
 FocusScope {
     id: root
     required property var screen
+    property real menuAnchorOffset: 0
+    transform: Translate { x: root.menuAnchorOffset }
 
     readonly property var activeWindow: HyprlandService.activeWindow
     readonly property string appName: root.activeWindow
@@ -31,6 +33,16 @@ FocusScope {
         root.activeWindow?.title || "",
         root.trayMenuAvailable)
     readonly property bool notchOpen: CenterNotchCoordinator.ownerScreenName === root.screen.name
+    // Centre on the title rail that is actually painted. Using the full layout
+    // width is incorrect for long, elided titles (for example Discord), while
+    // using titleLabel alone ignores the leading app identity.
+    readonly property real menuAnchorX: activityRow.x + activeAppIcon.x
+    readonly property real menuAnchorRight: activityRow.x
+        + (titleLabel.visible
+            ? titleLabel.x + Math.min(titleLabel.width, titleLabel.paintedWidth)
+            : appNameLabel.x + Math.min(appNameLabel.width, appNameLabel.paintedWidth))
+    readonly property real menuAnchorWidth: Math.max(1,
+        root.menuAnchorRight - root.menuAnchorX)
 
     implicitWidth: Math.min(520, activityRow.implicitWidth + Metrics.spacingLarge * 2)
     implicitHeight: Metrics.controlHeight
@@ -47,19 +59,13 @@ FocusScope {
     }
 
     function activate(): void {
-        if (SystemTrayPopupCoordinator.toggleApp(
-                root.screen, root, root.activeWindow?.appId || "", root.appName)) {
+        RightPillCoordinator.setInvocationContext(root.screen, root);
+        if (RightPillCoordinator.toggleApp(
+                root.screen.name, "left", root.activeWindow?.appId || "", root.appName)) {
             CenterNotchCoordinator.close();
             return;
         }
-        CenterNotchCoordinator.toggle(root.screen.name);
-    }
-
-    Shared.Surface {
-        anchors.fill: parent
-        tone: centerHover.hovered || root.notchOpen ? "interactive" : "elevated"
-        radius: Metrics.radiusLarge
-        outlined: false
+        CenterNotchCoordinator.openExpanded(root.screen.name);
     }
 
     RowLayout {
@@ -70,12 +76,24 @@ FocusScope {
         spacing: Metrics.spacingSmall
 
         Shared.SystemIcon {
+            id: activeAppIcon
             Layout.preferredWidth: 20
             Layout.preferredHeight: 20
             sourceName: root.activeWindow?.icon || ""
             fallbackName: "deployed_code"
             size: 20
             tone: root.notchOpen ? "accent" : "secondary"
+            scale: Motion.reduced ? 1 : (activeTap.pressed ? 0.96
+                : (centerHover.hovered ? 1.08 : 1))
+            transform: Translate { y: !Motion.reduced && centerHover.hovered ? -1 : 0 }
+
+            Behavior on scale {
+                NumberAnimation {
+                    duration: Motion.reduced ? 0 : 140
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Motion.springDamped
+                }
+            }
         }
 
         Shared.TextLabel {
@@ -102,7 +120,7 @@ FocusScope {
             visible: root.presentation.hasContext
             text: root.presentation.title
             variant: "label"
-            strong: root.notchOpen
+            strong: false
             elide: Text.ElideRight
             maximumLineCount: 1
         }
@@ -113,10 +131,8 @@ FocusScope {
         cursorShape: Qt.PointingHandCursor
     }
     TapHandler {
-        onTapped: {
-            root.forceActiveFocus(Qt.MouseFocusReason);
-            root.activate();
-        }
+        id: activeTap
+        onTapped: root.activate()
     }
     Keys.onPressed: event => {
         if (event.key === Qt.Key_Space || event.key === Qt.Key_Return
