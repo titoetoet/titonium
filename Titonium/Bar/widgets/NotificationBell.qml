@@ -14,7 +14,6 @@ Item {
 
     implicitWidth: 28
     implicitHeight: Metrics.widgetHeight
-    activeFocusOnTab: true
 
     function activate(): void {
         root.toggleRequested(root.screen, root);
@@ -103,17 +102,7 @@ Item {
     HoverHandler { id: bellHover; cursorShape: Qt.PointingHandCursor }
     TapHandler {
         id: bellTap
-        onTapped: {
-            root.forceActiveFocus(Qt.MouseFocusReason);
-            root.activate();
-        }
-    }
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Space || event.key === Qt.Key_Return
-                || event.key === Qt.Key_Enter) {
-            root.activate();
-            event.accepted = true;
-        }
+        onTapped: root.activate()
     }
 
     Accessible.role: Accessible.Button

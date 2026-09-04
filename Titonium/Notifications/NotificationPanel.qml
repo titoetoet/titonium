@@ -7,6 +7,7 @@ import qs.Titonium.Core.Surfaces
 import qs.Titonium.Services.Notifications
 import qs.Titonium.Shared as Shared
 import qs.Titonium.Theme
+import "NotificationPanelLifecycle.js" as NotificationPanelLifecycle
 
 FocusScope {
     id: root
@@ -28,6 +29,7 @@ FocusScope {
 
     property bool closing: false
     property bool focusReturned: false
+    property string mountedOwnerId: ""
     property var closingDescriptor: null
     property var closingScreen: null
     property var closingInvoker: null
@@ -36,6 +38,25 @@ FocusScope {
         const local = item.mapFromItem(root, point.x, point.y);
         return local.x >= 0 && local.y >= 0
             && local.x <= item.width && local.y <= item.height;
+    }
+
+    function syncPanelMount(): void {
+        const plan = NotificationPanelLifecycle.transition(
+            root.mountedOwnerId, root.ownerId);
+        if (plan.unmountOwnerId)
+            NotificationCoordinator.panelUnmounted(plan.unmountOwnerId);
+        root.mountedOwnerId = plan.mountedOwnerId;
+        if (plan.mountOwnerId)
+            NotificationCoordinator.panelMounted(plan.mountOwnerId);
+        if (plan.markRead)
+            NotificationCoordinator.markAllRead();
+    }
+
+    function teardownPanelMount(): void {
+        const plan = NotificationPanelLifecycle.teardown(root.mountedOwnerId);
+        root.mountedOwnerId = plan.mountedOwnerId;
+        if (plan.unmountOwnerId)
+            NotificationCoordinator.panelUnmounted(plan.unmountOwnerId);
     }
 
     function returnFocus(): void {
@@ -260,14 +281,14 @@ FocusScope {
         }
     }
 
+    onOwnerIdChanged: root.syncPanelMount()
     onDescriptorChanged: root.reopenIfReplaced()
     Component.onCompleted: {
-        NotificationCoordinator.panelMounted(root.ownerId);
-        NotificationCoordinator.markAllRead();
+        root.syncPanelMount();
         panel.forceActiveFocus(Qt.PopupFocusReason);
     }
     Component.onDestruction: {
-        NotificationCoordinator.panelUnmounted(root.ownerId);
+        root.teardownPanelMount();
         root.returnFocus();
     }
 }
