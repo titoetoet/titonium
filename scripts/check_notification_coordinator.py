@@ -34,6 +34,8 @@ def main() -> int:
         "pragma Singleton",
         'import "NotificationRules.js" as NotificationRules',
         'import "NotificationCoordinatorRules.js" as CoordinatorRules',
+        "property var coordinatorState: CoordinatorRules.setPresentationEligible(",
+        "CoordinatorRules.initialState(), false, 0)",
         "readonly property var history:",
         "readonly property var toasts:",
         "readonly property var unread:",

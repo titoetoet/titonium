@@ -16,12 +16,26 @@ const connected = read("Titonium/Bar/center/presentations/Connected/ConnectedRen
 
 assert.match(controller, /readonly property string mode:/);
 assert.match(controller, /readonly property string selectedContextId:/);
+assert.match(controller, /readonly property string presentationOwner:/);
 assert.match(controller, /readonly property var viewState: Object\.freeze\(/);
+assert.match(controller, /property bool automaticPresentationAvailable:/);
+assert.match(controller, /readonly property bool criticalPresentationEligible:/);
+assert.match(controller, /CenterSurfaceState\.automaticPresentationEligible/);
+assert.match(controller, /intent\.type === "set-presentation-available"/);
+assert.match(controller, /CenterDomain\.setPresentationEligible/);
 assert.match(controller, /CenterSurfaceState\.pauseDeadline/);
 assert.match(controller, /CenterSurfaceState\.resumeDeadline/);
+assert.match(controller, /CenterDomain\.pausePresentation/);
+assert.match(controller, /CenterDomain\.resumePresentation/);
+assert.match(controller, /CenterDomain\.completePresentation/);
+assert.match(controller, /CenterSurfaceState\.applyPresentationResult/);
+assert.match(controller, /function onPresentationEnded\(request: var\): void/);
 assert.match(host, /CenterCompactWindow\s*\{/);
 assert.match(host, /CenterOverlayWindow\s*\{/);
 assert.match(host, /snapshot: CenterDomain\.snapshot/);
+assert.match(host,
+    /Component\.onDestruction:[\s\S]*?CenterSurfaceController\.ownerScreenName === root\.screenModel\.name[\s\S]*?type: "surface-revoked"/,
+    "losing the eligible Center host must revoke automatic presentation availability");
 assert.match(compact, /WlrLayershell\.keyboardFocus: WlrKeyboardFocus\.None/);
 assert.match(compact,
     /mask: Region \{[\s\S]*?id: inputMask[\s\S]*?Region \{ item: inputRegion \}[\s\S]*?\}/);
@@ -37,6 +51,14 @@ assert.match(connected, /required property var viewState/);
 assert.match(connected, /required property var profile/);
 assert.match(connected, /signal intentRequested\(var intent\)/);
 assert.match(connected, /type: "invoke-action"/);
+
+const router = read("Titonium/Orchestration/SurfaceRouter.qml");
+assert.match(router, /function automaticCenterPresentationAvailable\(\): bool/);
+assert.match(router, /function syncAutomaticCenterPresentation\(\): void/);
+assert.match(router, /presentationOwner === "notification"/);
+assert.match(router, /CenterSurfaceController\.criticalPresentationEligible/);
+assert.doesNotMatch(router, /\bNotificationService\b|\bNotificationCoordinator\b/,
+    "surface arbitration must stay behind the neutral controller/domain adapter boundary");
 
 for (const legacy of [
     "Titonium/Bar/notch/CenterNotchCoordinator.qml",

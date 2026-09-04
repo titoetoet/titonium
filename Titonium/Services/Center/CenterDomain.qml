@@ -9,8 +9,11 @@ QtObject {
     id: root
 
     signal presentationRequested(var request)
+    signal presentationEnded(var request)
 
     property var storedSnapshot: null
+    property string activeNotificationPresentationId: ""
+    property string activeNotificationContextId: ""
     readonly property var rawProjection: ({
         contexts: capture.contexts.concat(media.contexts, notifications.contexts,
             approval.contexts, focus.contexts, timers.contexts, jobs.contexts),
@@ -31,6 +34,66 @@ QtObject {
         return dispatcher.dispatch(root.snapshot, intent);
     }
 
+    function setPresentationEligible(eligible: bool): bool {
+        const previousPresentationId = String(
+            root.notifications.presentation?.id || "");
+        const changed = root.notifications.setPresentationEligible(eligible);
+        if (changed && eligible) {
+            root.rebuild();
+            const resumedPresentationId = String(
+                root.notifications.presentation?.id || "");
+            root.syncNotificationPresentation(
+                previousPresentationId === resumedPresentationId);
+        }
+        return changed;
+    }
+
+    function adapterForPresentation(contextId: string): var {
+        const context = root.snapshot.contexts.find(item => item.id === contextId);
+        return context && context.source === "notification" ? root.notifications : null;
+    }
+
+    function pausePresentation(contextId: string): bool {
+        const adapter = root.adapterForPresentation(contextId);
+        return adapter ? adapter.pausePresentation(contextId) : false;
+    }
+
+    function resumePresentation(contextId: string): bool {
+        const adapter = root.adapterForPresentation(contextId);
+        return adapter ? adapter.resumePresentation(contextId) : false;
+    }
+
+    function completePresentation(contextId: string): var {
+        const adapter = root.adapterForPresentation(contextId);
+        return adapter ? adapter.completePresentation(contextId) : Object.freeze({
+            accepted: false,
+            status: "stale",
+            reason: "missing-presentation",
+            closePolicy: "keep",
+        });
+    }
+
+    function syncNotificationPresentation(force: bool): void {
+        const presentation = root.notifications.presentation;
+        const nextId = String(presentation?.id || "");
+        if (!force && nextId === root.activeNotificationPresentationId)
+            return;
+        const previousId = root.activeNotificationPresentationId;
+        const previousContextId = root.activeNotificationContextId;
+        root.activeNotificationPresentationId = nextId;
+        root.activeNotificationContextId = String(presentation?.contextId || "");
+        if (presentation) {
+            root.presentationRequested(presentation);
+            return;
+        }
+        if (previousId)
+            root.presentationEnded(Object.freeze({
+                id: previousId,
+                source: "notification",
+                contextId: previousContextId,
+            }));
+    }
+
     function contextIdForPresentation(presentation: var): string {
         if (!presentation)
             return "";
@@ -49,6 +112,7 @@ QtObject {
             return;
         root.presentationRequested(Object.freeze({
             id: String(presentation.id || contextId) + ":presentation",
+            source: String(presentation.source || "attention"),
             contextId: contextId,
             requestedMode: "banner",
             attention: presentation.source === "agent" ? "blocking" : "transient",
@@ -82,6 +146,17 @@ QtObject {
         }
     }
 
+    property Connections notificationConnection: Connections {
+        target: root.notifications
+        function onPresentationChanged(): void {
+            root.rebuild();
+            root.syncNotificationPresentation(false);
+        }
+    }
+
     onRawProjectionChanged: root.rebuild()
-    Component.onCompleted: root.rebuild()
+    Component.onCompleted: {
+        root.rebuild();
+        root.syncNotificationPresentation(false);
+    }
 }

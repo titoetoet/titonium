@@ -22,6 +22,7 @@ const snapshot = Object.freeze({
     contexts: Object.freeze([
         Object.freeze({ id: "focus:daily", attention: "ambient" }),
         Object.freeze({ id: "notification:42", attention: "transient" }),
+        Object.freeze({ id: "notification:43", attention: "transient" }),
         Object.freeze({ id: "agent:req", attention: "blocking" }),
     ]),
 });
@@ -35,13 +36,58 @@ assert.equal(state.ownerScreenName, "DP-1");
 const firstGeneration = state.generation;
 state = rules.transition(state, snapshot, {
     type: "present", contextId: "notification:42", requestedMode: "banner",
-    timeoutMs: 4000, focusPolicy: "none",
+    timeoutMs: 4000, focusPolicy: "none", presentationOwner: "notification",
 }, 1100);
 assert.deepEqual([state.mode, state.deadline, state.selectedContextId],
     ["banner", 5100, "notification:42"]);
+assert.equal(state.presentationOwner, "notification");
 assert.ok(state.generation > firstGeneration);
 assert.ok(Object.isFrozen(state));
 console.log("PASS Center surface opens compact and timed banner through explicit grants");
+
+assert.equal(rules.automaticPresentationEligible(Object.assign({}, state, {
+    mode: "compact", presentationOwner: "",
+})), true);
+assert.equal(rules.automaticPresentationEligible(Object.assign({}, state, {
+    mode: "satellite", presentationOwner: "",
+})), true);
+assert.equal(rules.automaticPresentationEligible(state), true);
+assert.equal(rules.automaticPresentationEligible(Object.assign({}, state, {
+    mode: "expanded", presentationOwner: "user",
+})), false);
+assert.equal(rules.automaticPresentationEligible(Object.assign({}, state, {
+    mode: "banner", presentationOwner: "user",
+})), false);
+console.log("PASS only compact, satellite, or the owned critical banner permits automatic entry");
+
+const replacement = rules.transition(state, snapshot, {
+    type: "present", contextId: "notification:43", requestedMode: "banner",
+    timeoutMs: 4000, focusPolicy: "none", presentationOwner: "notification",
+}, 1200);
+assert.deepEqual([replacement.mode, replacement.selectedContextId,
+    replacement.presentationOwner, replacement.deadline],
+["banner", "notification:43", "notification", 5200]);
+const userBanner = rules.transition(rules.transition(rules.initialState(), snapshot,
+    { type: "surface-granted", screenName: "DP-1" }, 0), snapshot, {
+    type: "present", contextId: "focus:daily", requestedMode: "banner",
+    timeoutMs: 0, focusPolicy: "none", presentationOwner: "user",
+}, 100);
+assert.strictEqual(rules.transition(userBanner, snapshot, {
+    type: "present", contextId: "notification:42", requestedMode: "banner",
+    timeoutMs: 4000, focusPolicy: "none", presentationOwner: "notification",
+}, 200), userBanner);
+console.log("PASS FIFO content can replace its banner without preempting user-owned context");
+
+assert.strictEqual(rules.applyPresentationResult(replacement, snapshot, {
+    accepted: true, closePolicy: "keep",
+}, 1300), replacement);
+const exhausted = rules.applyPresentationResult(replacement, snapshot, {
+    accepted: true, closePolicy: "compact",
+}, 1300);
+assert.equal(exhausted.mode, "compact");
+assert.equal(exhausted.presentationOwner, "");
+assert.equal(exhausted.deadline, 0);
+console.log("PASS FIFO completion keeps the banner until queue exhaustion then collapses");
 
 const bannerGeneration = state.generation;
 assert.strictEqual(rules.transition(state, snapshot,
@@ -57,7 +103,7 @@ assert.equal(state.mode, "expanded");
 assert.equal(state.focusPolicy, "exclusive");
 const unchanged = rules.transition(state, snapshot, {
     type: "present", contextId: "notification:42", requestedMode: "banner",
-    timeoutMs: 4000, focusPolicy: "none",
+    timeoutMs: 4000, focusPolicy: "none", presentationOwner: "notification",
 }, 3300);
 assert.strictEqual(unchanged, state);
 console.log("PASS transient presentation never interrupts expanded interaction");

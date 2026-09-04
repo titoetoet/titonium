@@ -104,8 +104,8 @@ def main() -> int:
             "required property var snapshot",
             "root.snapshot.contexts.find",
             "root.snapshot.primary",
-            "root.context?.title",
-            "root.context?.subtitle",
+            "root.displayedContext?.title",
+            "root.displayedContext?.subtitle",
             "root.snapshot.capabilities.actions.filter",
             'type: "invoke-action"',
         ):

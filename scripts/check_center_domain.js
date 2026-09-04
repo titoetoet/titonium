@@ -16,6 +16,15 @@ const source = fs.readFileSync(rulesPath, "utf8").replace(/^\.pragma library\s*\
 const rules = vm.createContext({});
 vm.runInContext(source, rules, { filename: rulesPath });
 
+const notificationRulesPath = path.join(path.dirname(rulesPath), "adapters",
+    "NotificationCenterRules.js");
+assert.equal(fs.existsSync(notificationRulesPath), true,
+    "Notification Center projection rules must normalize coordinator values");
+const notificationRules = vm.createContext({ encodeURIComponent, decodeURIComponent });
+vm.runInContext(fs.readFileSync(notificationRulesPath, "utf8")
+    .replace(/^\.pragma library\s*\n/, ""), notificationRules,
+{ filename: notificationRulesPath });
+
 function plain(value) {
     return JSON.parse(JSON.stringify(value));
 }
@@ -37,6 +46,76 @@ function context(id, sourceName, kind, title, occurredAt, overrides = {}) {
         actionIds: [],
     }, overrides);
 }
+
+const criticalDescriptor = Object.freeze({
+    key: "native:7",
+    source: "native",
+    appName: "Fixture Mail",
+    appIcon: "mail-unread",
+    summary: "Reply needed",
+    body: "Please review the draft",
+    severity: "critical",
+    category: "notification",
+    actions: Object.freeze([Object.freeze({ id: "open.reply", label: "Open" })]),
+    receivedAt: 700,
+});
+const criticalContext = notificationRules.context(criticalDescriptor);
+assert.deepEqual(plain(criticalContext), {
+    id: "notification:native:7",
+    source: "notification",
+    kind: "notification",
+    title: "Reply needed",
+    subtitle: "Please review the draft",
+    icon: "mail-unread",
+    tone: "critical",
+    attention: "transient",
+    progress: null,
+    occurredAt: 700,
+    expiresAt: 0,
+    details: {
+        notificationKey: "native:7",
+        appName: "Fixture Mail",
+        body: "Please review the draft",
+        category: "notification",
+    },
+    actionIds: ["notification.action:open.reply", "notification.dismiss"],
+});
+assert.equal(Object.isFrozen(criticalContext), true);
+assert.equal(Object.isFrozen(criticalContext.details), true);
+assert.equal(Object.isFrozen(criticalContext.actionIds), true);
+assert.deepEqual(plain(notificationRules.capabilities(criticalDescriptor, criticalContext.id)), [{
+    id: "notification.action:open.reply",
+    contextId: "notification:native:7",
+    role: "primary",
+    label: "Open",
+    icon: "open_in_new",
+    enabled: true,
+}, {
+    id: "notification.dismiss",
+    contextId: "notification:native:7",
+    role: "destructive",
+    label: "Dismiss",
+    icon: "close",
+    enabled: true,
+}]);
+assert.deepEqual(plain(notificationRules.presentation(criticalDescriptor)), {
+    id: "notification:native:7:presentation",
+    source: "notification",
+    contextId: "notification:native:7",
+    requestedMode: "banner",
+    attention: "transient",
+    timeoutMs: 4000,
+    focusPolicy: "none",
+});
+assert.deepEqual(plain(notificationRules.actionIntent(
+    "notification.action:open.reply", "notification:native:7")), {
+    kind: "action", key: "native:7", actionId: "open.reply",
+});
+assert.deepEqual(plain(notificationRules.actionIntent(
+    "notification.dismiss", "notification:native:7")), {
+    kind: "dismiss", key: "native:7", actionId: "",
+});
+console.log("PASS coordinator critical values normalize into one Center presentation context");
 
 const allSources = ["capture", "media", "notification", "agent", "focus", "timer", "job"];
 const sourceContexts = allSources.map((name, index) =>
@@ -128,16 +207,28 @@ for (const name of adapterNames) {
 
 const notificationAdapter = fs.readFileSync(path.join(centerRoot, "adapters",
     "NotificationCenterAdapter.qml"), "utf8");
-assert.match(notificationAdapter, /const contextId = "notification:" \+ item\.key/,
-    "Notification adapter must retain the service's namespaced descriptor identity");
+for (const fragment of [
+    "NotificationCoordinator.currentCritical",
+    "NotificationCenterRules.context(root.currentCritical)",
+    "NotificationCenterRules.capabilities(root.currentCritical, root.context.id)",
+    "NotificationCenterRules.presentation(root.currentCritical)",
+    "function setPresentationEligible(eligible: bool): bool",
+    "function pausePresentation(contextId: string): bool",
+    "function resumePresentation(contextId: string): bool",
+    "function completePresentation(contextId: string): var",
+    "NotificationCoordinator.setCriticalPresentationEligible(eligible)",
+    "NotificationCoordinator.pauseCritical()",
+    "NotificationCoordinator.resumeCritical()",
+    "NotificationCoordinator.completeCritical(intent.key)",
+])
+    assert.ok(notificationAdapter.includes(fragment),
+        `Notification adapter missing coordinator contract: ${fragment}`);
+assert.doesNotMatch(notificationAdapter, /\bNotificationService\b|\+ item\.id|notificationId: item\.id/,
+    "Notification adapter must consume only coordinator-resolved values");
 assert.match(notificationAdapter,
-    /const notificationKey = contextId\.slice\("notification:"\.length\)/,
-    "Notification adapter must recover the stable key without native identity");
-assert.match(notificationAdapter, /NotificationService\.dismiss\(notificationKey\)/,
-    "Notification adapter must dismiss through the stable service boundary");
-assert.doesNotMatch(notificationAdapter, /\+ item\.id|notificationId: item\.id|Number\(contextId\.slice/,
-    "Notification adapter must not rely on leaked native numeric IDs");
-console.log("PASS Notification Center adapter preserves stable notification keys");
+    /function setPresentationEligible\(eligible: bool\): bool \{[\s\S]*?if \(!eligible\)[\s\S]*?NotificationCoordinator\.pauseCritical\(\)[\s\S]*?NotificationCoordinator\.setCriticalPresentationEligible\(eligible\)[\s\S]*?if \(eligible\)[\s\S]*?NotificationCoordinator\.resumeCritical\(\)/,
+    "ineligible user interaction must suspend, then resume, the coordinator deadline");
+console.log("PASS Notification Center adapter preserves coordinator authority and stable keys");
 
 for (const file of ["CenterDomain.qml", "CenterActionDispatcher.qml"])
     assert.equal(fs.existsSync(path.join(centerRoot, file)), true, `missing ${file}`);
@@ -147,5 +238,17 @@ assert.match(fs.readFileSync(path.join(centerRoot, "qmldir"), "utf8"),
 const domainSource = fs.readFileSync(path.join(centerRoot, "CenterDomain.qml"), "utf8");
 assert.match(domainSource, /readonly property var snapshot/);
 assert.match(domainSource, /signal presentationRequested\(var request\)/);
+assert.match(domainSource, /signal presentationEnded\(var request\)/);
 assert.match(domainSource, /function dispatch\(intent: var\): var/);
+for (const fragment of [
+    "function setPresentationEligible(eligible: bool): bool",
+    "function pausePresentation(contextId: string): bool",
+    "function resumePresentation(contextId: string): bool",
+    "function completePresentation(contextId: string): var",
+    "root.notifications.presentation",
+])
+    assert.ok(domainSource.includes(fragment), `Center Domain missing ${fragment}`);
+assert.match(domainSource,
+    /const previousPresentationId = String\([\s\n]*root\.notifications\.presentation\?\.id \|\| ""\);[\s\S]*?const resumedPresentationId = String\([\s\n]*root\.notifications\.presentation\?\.id \|\| ""\);[\s\S]*?root\.syncNotificationPresentation\([\s\n]*previousPresentationId === resumedPresentationId\)/,
+    "first eligibility must emit once while a resumed paused item is re-presented");
 console.log("PASS Center Domain owns seven narrow listener-free adapters and dispatch boundary");

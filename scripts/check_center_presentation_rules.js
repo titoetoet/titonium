@@ -51,6 +51,20 @@ assert.equal(rules.geometry(connected, { width: 360, height: 800 }, "expanded").
 assert.equal(rules.profile("invalid").id, "connected");
 console.log("PASS four Center presentation profiles provide frozen clamped geometry");
 
+const firstBannerGeometry = rules.geometry(connected, { width: 1920, height: 1080 }, "banner");
+const nextBannerGeometry = rules.geometry(connected, { width: 1920, height: 1080 }, "banner");
+assert.deepEqual(plain(firstBannerGeometry), {
+    x: 720, y: 0, width: 480, height: 72, radius: 22,
+});
+assert.deepEqual(plain(nextBannerGeometry), plain(firstBannerGeometry));
+assert.deepEqual(plain(rules.contextTransition(connected, false)), {
+    kind: "crossfade", exitMs: 80, enterMs: 120,
+});
+assert.deepEqual(plain(rules.contextTransition(connected, true)), {
+    kind: "replace", exitMs: 0, enterMs: 0,
+});
+console.log("PASS FIFO content changes preserve banner geometry and honor Reduced Motion");
+
 for (const file of ["CenterRenderer.qml", ...["Pill", "Notch", "Connected", "Classic"]
     .flatMap(name => [`presentations/${name}/${name}Renderer.qml`,
         `presentations/${name}/${name}Profile.js`])])
@@ -67,6 +81,12 @@ for (const fragment of ["required property var snapshot", "required property var
     "signal transitionFinished(int generation)", "readonly property rect visualBounds",
     "readonly property rect interactiveBounds"])
     assert.ok(renderer.includes(fragment), `Connected renderer missing ${fragment}`);
+for (const fragment of ["property var displayedContext", "id: contentStage",
+    "SequentialAnimation", "PresentationRules.contextTransition",
+    "HoverHandler", 'type: "pause-timeout"', 'type: "resume-timeout"'])
+    assert.ok(renderer.includes(fragment), `Connected renderer missing FIFO presentation: ${fragment}`);
+assert.doesNotMatch(renderer, /Loader\s*\{/,
+    "FIFO content replacement must not replace the mounted banner owner");
 assert.doesNotMatch(renderer, /Services\.(Capture|Mpris|Notifications|AgentApproval|Center)/);
 assert.doesNotMatch(renderer, /\b(Process|FileView|Timer)\s*\{/);
 console.log("PASS Connected renderer exposes neutral state and intent contract");

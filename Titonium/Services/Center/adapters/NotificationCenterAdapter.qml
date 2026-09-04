@@ -2,38 +2,82 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Titonium.Services.Notifications
+import "NotificationCenterRules.js" as NotificationCenterRules
 
 QtObject {
     id: root
-    readonly property var contexts: Object.freeze(NotificationService.notifications.map(item => {
-        const contextId = "notification:" + item.key;
-        return Object.freeze({
-            id: contextId, source: "notification", kind: "notification",
-            title: item.summary || item.body || "Notification", subtitle: item.appName || "",
-            icon: item.appIcon || "notifications", tone: item.urgency >= 2 ? "critical" : "normal",
-            attention: item.urgency >= 2 ? "transient" : "ambient", progress: null,
-            occurredAt: item.createdAt || 0, expiresAt: 0,
-            details: Object.freeze({ notificationKey: item.key, body: item.body || "" }),
-            actionIds: Object.freeze(["notification.dismiss"])
-        });
-    }))
+
+    readonly property var currentCritical: NotificationCoordinator.currentCritical
+    readonly property var context: NotificationCenterRules.context(root.currentCritical)
+    readonly property var contexts: Object.freeze(root.context ? [root.context] : [])
     readonly property var indicators: Object.freeze([Object.freeze({
-        id: "notification:unread", icon: "notifications", accessibleName: "Unread notifications",
-        tone: "normal", active: NotificationService.hasUnread
+        id: "notification:unread",
+        icon: "notifications",
+        accessibleName: "Unread notifications",
+        tone: "normal",
+        active: NotificationCoordinator.hasUnread,
     })])
-    readonly property var actions: Object.freeze(root.contexts.map(item => Object.freeze({
-        id: "notification.dismiss", contextId: item.id, role: "destructive",
-        label: "Dismiss", icon: "close", enabled: true
-    })))
-    function dispatch(actionId: string, contextId: string, idempotencyKey: string): var {
-        if (actionId !== "notification.dismiss" || contextId.indexOf("notification:") !== 0)
+    readonly property var actions: root.context
+        ? NotificationCenterRules.capabilities(root.currentCritical, root.context.id)
+        : Object.freeze([])
+    readonly property var presentation:
+        NotificationCenterRules.presentation(root.currentCritical)
+
+    function dispatch(actionId: string, contextId: string,
+            idempotencyKey: string): var {
+        const intent = NotificationCenterRules.actionIntent(actionId, contextId);
+        if (!intent || !root.currentCritical || intent.key !== root.currentCritical.key)
             return root.result(false, "stale", "unknown-action");
-        const notificationKey = contextId.slice("notification:".length);
-        const accepted = NotificationService.dismiss(notificationKey);
-        return root.result(accepted, accepted ? "completed" : "stale", "");
+        const accepted = intent.kind === "dismiss"
+            ? NotificationCoordinator.dismiss(intent.key)
+            : NotificationCoordinator.action(intent.key, intent.actionId);
+        return root.result(accepted, accepted ? "completed" : "stale",
+            accepted ? "" : "unavailable-action");
     }
+
+    function setPresentationEligible(eligible: bool): bool {
+        let changed = false;
+        if (!eligible)
+            changed = NotificationCoordinator.pauseCritical() || changed;
+        changed = NotificationCoordinator.setCriticalPresentationEligible(eligible) || changed;
+        if (eligible)
+            changed = NotificationCoordinator.resumeCritical() || changed;
+        return changed;
+    }
+
+    function pausePresentation(contextId: string): bool {
+        const intent = NotificationCenterRules.actionIntent(
+            "notification.dismiss", contextId);
+        if (!intent || !root.currentCritical || intent.key !== root.currentCritical.key)
+            return false;
+        return NotificationCoordinator.pauseCritical();
+    }
+
+    function resumePresentation(contextId: string): bool {
+        const intent = NotificationCenterRules.actionIntent(
+            "notification.dismiss", contextId);
+        if (!intent || !root.currentCritical || intent.key !== root.currentCritical.key)
+            return false;
+        return NotificationCoordinator.resumeCritical();
+    }
+
+    function completePresentation(contextId: string): var {
+        const intent = NotificationCenterRules.actionIntent(
+            "notification.dismiss", contextId);
+        if (!intent || !root.currentCritical || intent.key !== root.currentCritical.key)
+            return root.result(false, "stale", "missing-presentation");
+        const accepted = NotificationCoordinator.completeCritical(intent.key);
+        return root.result(accepted, accepted ? "completed" : "stale",
+            accepted ? "" : "missing-presentation");
+    }
+
     function result(accepted: bool, status: string, reason: string): var {
-        return Object.freeze({ accepted: accepted, status: status, reason: reason,
-            closePolicy: accepted ? "compact" : "keep" });
+        return Object.freeze({
+            accepted: accepted,
+            status: status,
+            reason: reason,
+            closePolicy: accepted && !NotificationCoordinator.currentCritical
+                ? "compact" : "keep",
+        });
     }
 }

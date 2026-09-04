@@ -9,7 +9,8 @@ import "NotificationCoordinatorRules.js" as CoordinatorRules
 QtObject {
     id: root
 
-    property var coordinatorState: CoordinatorRules.initialState()
+    property var coordinatorState: CoordinatorRules.setPresentationEligible(
+        CoordinatorRules.initialState(), false, 0)
     property int deadlineGeneration: 0
     property string scheduledCriticalKey: ""
     property int scheduledCriticalGeneration: 0
