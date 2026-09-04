@@ -57,6 +57,15 @@ QtObject {
             reason: reason });
     }
 
+    function prepareSessionLock(): bool {
+        SurfaceManager.close("");
+        RightPillCoordinator.forceCloseConnectedSurface();
+        RightPillCoordinator.closeForStyleChange();
+        root.closeCenter("session-lock");
+        SettingsCoordinator.closeForSessionLock();
+        return true;
+    }
+
     function openSpotlight(scope: string, query: string, stateMode: string, requestedScreen: var): string {
         if (!SettingsLifecycleRules.canYield(SettingsCoordinator.active, Preferences.savePending)
                 || !SettingsCoordinator.forceCancelAndClose())

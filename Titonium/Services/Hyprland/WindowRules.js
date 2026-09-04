@@ -138,3 +138,14 @@ function orderByIds(windows, orderedIds) {
     }
     return Object.freeze(result);
 }
+
+function workspaceWindowCount(windows, workspaceId, monitorName) {
+    const source = Array.isArray(windows) ? windows : [];
+    const targetWorkspaceId = Number(workspaceId);
+    const targetMonitorName = text(monitorName);
+    if (!Number.isInteger(targetWorkspaceId) || targetWorkspaceId <= 0)
+        return 0;
+    return source.filter(window => Number(window?.workspaceId) === targetWorkspaceId
+        && (!targetMonitorName || !text(window?.monitorName)
+            || text(window.monitorName) === targetMonitorName)).length;
+}

@@ -51,7 +51,13 @@ FocusScope {
 
             RowLayout {
                 Layout.fillWidth: true
-                Shared.Icon { name: root.context?.icon || "center_focus_strong"; size: 18 }
+                Shared.SystemIcon {
+                    Layout.preferredWidth: 18
+                    Layout.preferredHeight: 18
+                    sourceName: root.context?.icon || ""
+                    fallbackName: root.context?.icon || "center_focus_strong"
+                    size: 18
+                }
                 Shared.TextLabel {
                     Layout.fillWidth: true
                     text: root.context?.title || "Center"

@@ -15,6 +15,12 @@ function slotHeight() {
     return 24;
 }
 
+function shouldSkipSelectionMove(selectionReady, visualWorkspaceId,
+        requestedWorkspaceId, motionRunning, alreadyAligned) {
+    return selectionReady === true && visualWorkspaceId === requestedWorkspaceId
+        && alreadyAligned === true;
+}
+
 function backgroundColor(index, active, mutedPalette, activeBlue) {
     if (active === true)
         return activeBlue;

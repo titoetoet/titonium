@@ -54,6 +54,15 @@ QtObject {
         return root.discardAndClose();
     }
 
+    function closeForSessionLock(): bool {
+        if (!Preferences.savePending)
+            Preferences.cancel();
+        root.ownerScreenName = "";
+        root.requestedPage = "general";
+        root.discardConfirmationVisible = false;
+        return true;
+    }
+
     function apply(): bool {
         if (!root.active || Preferences.savePending)
             return false;

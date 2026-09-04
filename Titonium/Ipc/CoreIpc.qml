@@ -18,6 +18,7 @@ QtObject {
         target: "app"
         function status(): string { return Preferences.ready ? "ready" : "not-ready"; }
         function closeTransient(): void { SurfaceManager.close(""); }
+        function prepareLock(): bool { return root.router.prepareSessionLock(); }
     }
 
 

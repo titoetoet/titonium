@@ -9,6 +9,45 @@ function text(value) {
     return typeof value === "string" ? value.trim() : "";
 }
 
+function monitorByName(monitors, screenName) {
+    const source = monitors && typeof monitors.length === "number" ? monitors : [];
+    const target = text(screenName);
+    if (!target)
+        return null;
+    for (let index = 0; index < source.length; index++) {
+        if (text(source[index]?.name) === target)
+            return source[index];
+    }
+    return null;
+}
+
+function focusedWorkspaceId(monitors, fallback) {
+    const source = monitors && typeof monitors.length === "number" ? monitors : [];
+    for (let index = 0; index < source.length; index++) {
+        const monitor = source[index];
+        if (monitor?.focused !== true)
+            continue;
+        const workspaceId = positiveInteger(monitor?.activeWorkspace?.id, 0);
+        if (workspaceId > 0)
+            return workspaceId;
+    }
+    return positiveInteger(fallback, 1);
+}
+
+function focusedMonitorWorkspaceId(monitors, monitorName, fallback) {
+    const monitor = monitorByName(monitors, monitorName);
+    return positiveInteger(monitor?.activeWorkspace?.id, positiveInteger(fallback, 0));
+}
+
+function focusedWorkspaceEventId(eventName, fields) {
+    const source = fields && typeof fields.length === "number" ? fields : [];
+    if (eventName === "focusedmon" || eventName === "focusedmonv2")
+        return positiveInteger(source[1], 0);
+    if (eventName === "workspace" || eventName === "workspacev2")
+        return positiveInteger(source[0], 0);
+    return 0;
+}
+
 function groupStart(activeId, count) {
     const size = Math.max(1, Math.min(10, positiveInteger(count, 5)));
     const active = positiveInteger(activeId, 1);

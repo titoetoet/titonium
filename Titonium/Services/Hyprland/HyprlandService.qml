@@ -16,6 +16,9 @@ Singleton {
     property var projectedWindows: Object.freeze([])
     property var recentWindowIds: Object.freeze([])
     property int workspaceWindowCount: 0
+    property int policyActiveWorkspaceId: 1
+    property int focusedWorkspaceIdValue: 1
+    property bool focusInitialized: false
 
     readonly property var windows: root.projectedWindows
     readonly property string activeToplevelId: root.nativeWindowId(Hyprland.activeToplevel)
@@ -23,17 +26,28 @@ Singleton {
         root.projectedWindows, root.activeToplevelId)
     readonly property int activeWorkspaceWindowCount: root.workspaceWindowCount
 
-    function monitorFor(screen: var): var { return screen ? Hyprland.monitorFor(screen) : null; }
+    function monitorFor(screen: var): var {
+        if (!screen?.name)
+            return null;
+        const matched = WorkspaceRules.monitorByName(
+            Hyprland.monitors.values || [], screen.name);
+        if (matched)
+            return matched;
+        const fallback = Hyprland.monitorFor(screen);
+        return fallback?.name === screen.name ? fallback : null;
+    }
     function activeWorkspaceId(screen: var): int {
         return root.monitorFor(screen)?.activeWorkspace?.id || 1;
     }
     function focusedWorkspaceId(screen: var): int {
-        return Number(Hyprland.focusedWorkspace?.id)
-            || root.activeWorkspaceId(screen);
+        return root.focusedWorkspaceIdValue || root.activeWorkspaceId(screen);
     }
     function workspaceSnapshot(screen: var, count: int, followFocus: bool): var {
         const activeId = followFocus
             ? root.focusedWorkspaceId(screen) : root.activeWorkspaceId(screen);
+        return root.workspaceSnapshotForId(count, activeId);
+    }
+    function workspaceSnapshotForId(count: int, activeId: int): var {
         const source = Hyprland.workspaces.values || [];
         const facts = [];
         for (let index = 0; index < source.length; index++) {
@@ -49,6 +63,18 @@ Singleton {
             });
         }
         return WorkspaceRules.project(activeId, count, facts, root.windows);
+    }
+    function bootstrapFocusedWorkspace(): void {
+        if (root.focusInitialized)
+            return;
+        const monitors = Hyprland.monitors.values || [];
+        const workspaceId = WorkspaceRules.focusedMonitorWorkspaceId(
+            monitors, root.focusedMonitorName, 0)
+            || WorkspaceRules.focusedWorkspaceId(monitors, 0);
+        if (workspaceId <= 0)
+            return;
+        root.focusedWorkspaceIdValue = workspaceId;
+        root.focusInitialized = true;
     }
     function activateWorkspace(workspaceId: int): void {
         if (workspaceId < 1) return;
@@ -137,18 +163,9 @@ Singleton {
         root.projectedWindows = WindowRules.orderByIds(descriptors, root.recentWindowIds);
 
         const screen = ScreenPolicy.screens.length > 0 ? ScreenPolicy.screens[0] : null;
-        let activeId = 0;
-        for (let index = 0; index < descriptors.length; index++) {
-            const window = descriptors[index];
-            if (window.active && window.workspaceId > 0) {
-                activeId = window.workspaceId;
-                break;
-            }
-        }
-        if (activeId <= 0)
-            activeId = root.activeWorkspaceId(screen);
-        root.workspaceWindowCount = descriptors.filter(window => window.workspaceId === activeId
-            && (!screen || !window.monitorName || window.monitorName === screen.name)).length;
+        root.policyActiveWorkspaceId = root.activeWorkspaceId(screen);
+        root.workspaceWindowCount = WindowRules.workspaceWindowCount(
+            descriptors, root.policyActiveWorkspaceId, screen?.name || "");
     }
 
     function focusWindow(id: string): bool {
@@ -174,18 +191,34 @@ Singleton {
     Connections {
         target: Hyprland
         function onRawEvent(event: HyprlandEvent): void {
+            const fields = event.parse(2);
             if (event.name === "focusedmon" || event.name === "focusedmonv2")
-                root.focusedMonitorName = event.parse(2)[0] || "";
+                root.focusedMonitorName = fields[0] || "";
             root.recomputeWindows();
+            const eventWorkspaceId = WorkspaceRules.focusedWorkspaceEventId(event.name, fields);
+            if (eventWorkspaceId > 0) {
+                root.focusedWorkspaceIdValue = eventWorkspaceId;
+                root.focusInitialized = true;
+            }
         }
         function onActiveToplevelChanged(): void { root.recomputeWindows(); }
         function onFocusedWorkspaceChanged(): void { root.recomputeWindows(); }
     }
 
+    property Connections monitorModelConnections: Connections {
+        target: Hyprland.monitors
+        function onValuesChanged(): void {
+            root.bootstrapFocusedWorkspace();
+            root.recomputeWindows();
+        }
+    }
+
     Component.onCompleted: {
         root.focusedMonitorName = Hyprland.focusedMonitor?.name || "";
+        Hyprland.refreshMonitors();
         Hyprland.refreshWorkspaces();
         Hyprland.refreshToplevels();
+        Qt.callLater(root.bootstrapFocusedWorkspace);
         Qt.callLater(root.recomputeWindows);
     }
 }

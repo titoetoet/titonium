@@ -124,6 +124,15 @@ assert.deepEqual(plain(rules.orderByIds([
 ], ["0x2", "0x1", "0x3"]).map(window => window.id)), ["0x2", "0x1", "0x3"]);
 console.log("PASS Window MRU input fixtures");
 
+const multiMonitorWindows = [
+    { id: "dp1-editor", workspaceId: 1, monitorName: "DP-1", active: false },
+    { id: "dp3-browser", workspaceId: 7, monitorName: "DP-3", active: true },
+];
+assert.equal(rules.workspaceWindowCount(multiMonitorWindows, 1, "DP-1"), 1,
+    "focusing another monitor must not make the DP-1 workspace appear empty");
+assert.equal(rules.workspaceWindowCount(multiMonitorWindows, 7, "DP-1"), 0);
+console.log("PASS monitor-local active workspace count fixtures");
+
 const registry = loadLibrary(registryPath).create();
 const activationOrder = [];
 let closed = 0;
@@ -161,10 +170,13 @@ assert.equal(serviceSource.includes("Hyprland.workspaces.values || []"), true,
     "workspace resolution must be able to scan the native workspace model");
 assert.equal(serviceSource.includes("Hyprland.refreshWorkspaces()"), true,
     "native workspace state must be refreshed before the initial projection");
+assert.equal(serviceSource.includes("Hyprland.refreshMonitors()"), true,
+    "native monitor state must be refreshed before screen-local workspace projection");
 assert.equal(serviceSource.includes("Hyprland.refreshToplevels()"), true,
     "native toplevel state must be refreshed before the initial projection");
-assert.equal(serviceSource.includes("window.active && window.workspaceId > 0"), true,
-    "active workspace count must prefer the projected active window over stale monitor state");
+assert.match(serviceSource,
+    /WindowRules\.workspaceWindowCount\(\s*descriptors, root\.policyActiveWorkspaceId, screen\?\.name \|\| ""\)/,
+    "Dock emptiness must follow the allowed screen workspace, not global focus");
 assert.equal(serviceSource.includes("Qt.callLater"), true);
 assert.equal(serviceSource.indexOf("root.activateWorkspace(plan.workspaceId)")
     < serviceSource.indexOf("Hyprland.dispatch(command)"), true);

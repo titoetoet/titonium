@@ -15,8 +15,9 @@ Item {
     readonly property int emptySlotWidth: 24
     readonly property int appIconSize: 17
     readonly property int appSpacing: 3
-    readonly property int activeWorkspaceId: HyprlandService.focusedWorkspaceId(root.screen)
-    readonly property var items: HyprlandService.workspaceSnapshot(root.screen, root.count, true)
+    readonly property int activeWorkspaceId: HyprlandService.focusedWorkspaceIdValue
+    readonly property var items: HyprlandService.workspaceSnapshotForId(
+        root.count, root.activeWorkspaceId)
     readonly property color inactiveColor: Theme.light ? "#e5e7eb" : "#2b303b"
     property bool selectionReady: false
     property int visualWorkspaceId: 0
@@ -57,11 +58,11 @@ Item {
             return;
         const targetX = target.x;
         const targetWidth = target.width;
-        const sameWorkspace = root.selectionReady
-            && root.visualWorkspaceId === workspaceId;
         const alreadyAligned = Math.abs(selectionHighlight.x - targetX) < 0.5
             && Math.abs(selectionHighlight.width - targetWidth) < 0.5;
-        if (sameWorkspace && (selectionMotion.running || alreadyAligned))
+        if (WorkspaceVisualRules.shouldSkipSelectionMove(root.selectionReady,
+                root.visualWorkspaceId, workspaceId,
+                selectionMotion.running, alreadyAligned))
             return;
         root.visualWorkspaceId = workspaceId;
         if (!root.selectionReady || Motion.reduced) {

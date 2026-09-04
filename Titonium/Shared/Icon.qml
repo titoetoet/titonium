@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Titonium.Theme
+import "IconRules.js" as IconRules
 
 Item {
     id: root
@@ -11,6 +12,7 @@ Item {
     property real fill: 0
     property string accessibleName: ""
     property color color: root.resolvedColor
+    readonly property string resolvedName: IconRules.semanticName(root.name, "image")
     readonly property color resolvedColor: ({ primary: Theme.textPrimary,
         secondary: Theme.textSecondary, disabled: Theme.textDisabled, accent: Theme.accent,
         success: Theme.success, warning: Theme.warning, danger: Theme.danger })[root.tone]
@@ -22,7 +24,7 @@ Item {
     Text {
         anchors.fill: parent
         visible: Typography.iconFontReady
-        text: root.name
+        text: root.resolvedName
         color: root.color
         font.family: Typography.iconFamily
         font.pixelSize: root.size
