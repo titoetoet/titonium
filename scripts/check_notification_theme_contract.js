@@ -28,6 +28,44 @@ assert.deepEqual(plain(presentation.presentation("classic")), {
     anchor: "",
 }, "Classic history must report the detached overlay presentation");
 
+function directRowChildren(source, rowId) {
+    const idIndex = source.indexOf(`id: ${rowId}`);
+    assert.notEqual(idIndex, -1, `missing Row id ${rowId}`);
+    const openingBrace = source.lastIndexOf("{", idIndex);
+    assert.notEqual(openingBrace, -1, `missing Row opening brace for ${rowId}`);
+    assert.match(source.slice(Math.max(0, openingBrace - 16), openingBrace), /Row\s*$/,
+        `${rowId} must identify a Row`);
+
+    const children = [];
+    let depth = 0;
+    for (let index = openingBrace + 1; index < source.length; index++) {
+        if (source[index] === "{") {
+            if (depth === 0) {
+                const type = source.slice(Math.max(openingBrace + 1, index - 96), index)
+                    .match(/([A-Za-z_][\w.]*)\s*$/)?.[1];
+                assert.ok(type, `${rowId} direct child must have a QML type`);
+                children.push({ type, openingBrace: index, source: "" });
+            }
+            depth++;
+        } else if (source[index] === "}") {
+            depth--;
+            if (depth === 0)
+                children.at(-1).source = source.slice(children.at(-1).openingBrace, index + 1);
+            if (depth < 0)
+                return children;
+        }
+    }
+    assert.fail(`${rowId} Row is not closed`);
+}
+
+function assertNotificationBellIsFinalControl(source, relative) {
+    const children = directRowChildren(source, "endRow");
+    const finalControl = children.at(-1);
+    assert.ok(finalControl.type === "NotificationBell"
+            || /\bNotificationBell\s*\{/.test(finalControl.source),
+    `${relative} must keep NotificationBell as the final direct End-island Row control`);
+}
+
 const topbarControl = read("Titonium/Bar/widgets/NotificationBell.qml");
 assert.match(topbarControl, /readonly property string iconName:\s*"history"/,
     "the rightmost Topbar Notification Center control must retain its fixed history glyph");
@@ -42,9 +80,18 @@ for (const relative of [
     "Titonium/Bar/classic/ClassicEndIsland.qml",
 ]) {
     const source = read(relative);
-    assert.ok(source.lastIndexOf("NotificationBell {") > source.lastIndexOf("ConnectivityPill {"),
-        `${relative} must keep Notification Center as the rightmost Topbar control`);
+    assertNotificationBellIsFinalControl(source, relative);
 }
+
+assert.throws(() => assertNotificationBellIsFinalControl(`
+    Row {
+        id: endRow
+        NotificationBell {}
+        Item {}
+    }
+`, "appended-control fixture"),
+/final direct End-island Row control/,
+"an appended Topbar control must invalidate the rightmost Notification Center contract");
 
 const secondary = read("Titonium/Bar/center/CenterSecondaryPill.qml");
 assert.match(secondary, /name:\s*"notifications"/,

@@ -2,6 +2,11 @@
 set -euo pipefail
 
 project_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# Validate the style-aware, read-only presentation contract before creating
+# fixture state, so a preflight failure cannot leave a temporary directory.
+node "$project_root/scripts/check_notification_theme_contract.js"
+
 live_hypr="/home/cole/.config/hypr/hyprland.lua"
 dotfiles_hypr="/home/cole/Projects/titonium-hyprland/config/hypr/hyprland.lua"
 test_dir="$(mktemp -d --tmpdir titonium-notifications-acceptance.XXXXXX)"
@@ -13,10 +18,6 @@ shell_pid=""
 before_git="$(git -C "$project_root" status --porcelain=v1)"
 before_live="$(sha256sum -- "$live_hypr")"
 before_dotfiles="$(sha256sum -- "$dotfiles_hypr")"
-
-# Validate the style-aware, read-only presentation contract before deciding
-# whether this session may start an isolated native-notification fixture.
-node "$project_root/scripts/check_notification_theme_contract.js"
 
 cleanup() {
     if [[ -n "$shell_pid" ]] && kill -0 "$shell_pid" 2>/dev/null; then

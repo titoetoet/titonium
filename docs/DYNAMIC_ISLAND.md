@@ -54,10 +54,18 @@ The 16-item critical queue is presented by the existing controller, which suppli
 and pauses/resumes its remaining deadline on banner hover. A banner must not preempt expanded or
 otherwise user-owned Center interaction.
 
-The always-visible Notification Bell opens one independent, lazy history panel on the clicked
-eligible screen. The panel marks history read only after it has mounted; matching teardown releases
-its owner, while stale or monitor-loss cleanup cannot close a newer panel. Standard actions,
-per-item dismissal and clear-all are user-only panel/Center intents.
+The rightmost Topbar Notification Center control is always visible in both Bar styles. It retains a
+fixed non-bell `history` glyph as unread state changes; only its unread badge may change. Connected
+opens history from that exact control as one continuous right-pill chassis, while Classic opens its
+detached overlay shell. The panel marks history read only after it has mounted; matching teardown
+releases its owner, while stale or monitor-loss cleanup cannot close a newer panel. Standard actions,
+per-item dismissal and clear-all are user-only panel intents.
+
+The non-interactive Center secondary compact pill is the only notification bell presentation. It may
+show the unread bell and a bounded wobble when unread count increases; Reduced Motion removes that
+motion without changing notification state. It is presentation data, not a satellite lifecycle mode,
+and does not redesign or change the behavior of the current primary pill. The critical FIFO Center
+banner path above remains unchanged.
 
 Policy precedence is block, native application override in Custom mode, allowlisted internal event,
 native urgency, then normal fallback. `follow` proceeds to the later rules; `quiet`, `normal`, and
