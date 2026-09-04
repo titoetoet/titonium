@@ -12,6 +12,7 @@ assert.equal(fs.existsSync(rulesPath), true, "NotificationPanelRouting rules mus
 const source = fs.readFileSync(rulesPath, "utf8").replace(/^\.pragma library\s*\n/, "");
 const routing = vm.createContext({});
 vm.runInContext(source, routing, { filename: rulesPath });
+const plain = value => JSON.parse(JSON.stringify(value));
 
 assert.equal(routing.ownerId("DP-1"), "notification-panel:DP-1");
 assert.equal(routing.ownerId("  DP-2  "), "notification-panel:DP-2");
@@ -24,4 +25,22 @@ assert.equal(routing.toggleAction("notification-panel:DP-1",
     "notification-panel:DP-1"), "close");
 assert.equal(routing.toggleAction("notification-panel:DP-1", ""), "reject");
 
-console.log("PASS notification panel toggle and screen-owner routing");
+assert.equal(typeof routing.presentation, "function",
+    "NotificationPanelRouting must expose a pure style presentation rule");
+assert.deepEqual(plain(routing.presentation("connected")), {
+    owner: "edge",
+    source: "ConnectedNotificationPanelContent.qml",
+    anchor: "notifications",
+}, "Connected Notification Center must route through the exact right-pill control");
+assert.deepEqual(plain(routing.presentation("classic")), {
+    owner: "overlay",
+    source: "ClassicNotificationPanel.qml",
+    anchor: "",
+}, "Classic Notification Center must retain its detached overlay");
+assert.deepEqual(plain(routing.presentation("unknown")), {
+    owner: "edge",
+    source: "ConnectedNotificationPanelContent.qml",
+    anchor: "notifications",
+}, "unknown style values must fail closed to the shipped Connected presentation");
+
+console.log("PASS style-aware notification panel and screen-owner routing");

@@ -54,6 +54,7 @@ def main() -> int:
     bar_surface = read("Titonium/Bar/BarSurface.qml", errors)
     connected_bar = read("Titonium/Bar/Bar.qml", errors)
     connected_end = read("Titonium/Bar/islands/EndIsland.qml", errors)
+    edge_surface = read("Titonium/Bar/right/EdgeMenuSurface.qml", errors)
     classic_bar = read("Titonium/Bar/classic/ClassicBar.qml", errors)
     classic_end = read("Titonium/Bar/classic/ClassicEndIsland.qml", errors)
     router = read("Titonium/Orchestration/SurfaceRouter.qml", errors)
@@ -61,6 +62,8 @@ def main() -> int:
     overlay_host = read("Titonium/Core/Surfaces/OverlayHost.qml", errors)
     panel = read("Titonium/Notifications/NotificationPanel.qml", errors)
     classic_panel = read("Titonium/Notifications/ClassicNotificationPanel.qml", errors)
+    connected_panel = read(
+        "Titonium/Notifications/ConnectedNotificationPanelContent.qml", errors)
     content = read("Titonium/Notifications/NotificationHistoryContent.qml", errors)
     lifecycle = read("Titonium/Notifications/NotificationPanelLifecycle.js", errors)
     row = read("Titonium/Notifications/NotificationHistoryRow.qml", errors)
@@ -136,10 +139,17 @@ def main() -> int:
     require(router, "SurfaceRouter", (
         "function toggleNotificationPanel(requestedScreen: var, invoker: var): string",
         "NotificationPanelRouting.ownerId(screen.name)",
-        "NotificationPanelRouting.toggleAction(SurfaceManager.ownerId, owner)",
-        'Qt.resolvedUrl("../Notifications/NotificationPanel.qml")',
+        "NotificationPanelRouting.presentation(RightPillCoordinator.presentedStyle)",
+        "BarPopupRouting.existingOpenAction(owner,",
+        "RightPillCoordinator.toggleConnectedSurface(owner)",
+        "SurfaceManager.close(owner)",
+        'Qt.resolvedUrl("../Notifications/" + route.source)',
         '"keyboardFocus": "exclusive"',
         '"closeOnMonitorChange": true',
+        '"feature": "notifications"',
+        '"barConnected": route.owner === "edge"',
+        '"anchor": route.anchor',
+        '"invoker": invoker',
         "SettingsLifecycleRules.canYield(SettingsCoordinator.active, Preferences.savePending)",
         'root.closeCenter("notifications-opened")',
         "RightPillCoordinator.close()",
@@ -148,6 +158,16 @@ def main() -> int:
     toggle = function_block(router, "toggleNotificationPanel")
     if "NotificationCoordinator.markAllRead()" in toggle:
         errors.append("SurfaceRouter must not mark history read before the lazy panel mounts")
+    require(connected_end, "EndIsland notification anchor", (
+        "function anchorRect(name: string): rect",
+        'name === "notifications"',
+        "notifications.mapToItem(root, 0, 0)",
+        "id: notifications",
+    ), errors)
+    require(edge_surface, "EdgeMenuSurface notification anchor", (
+        "rightContent.anchorRect(",
+        "RightPillCoordinator.connectedDescriptor?.anchor",
+    ), errors)
 
     require(coordinator, "NotificationCoordinator", (
         "readonly property bool panelOpen: root.coordinatorState.panelOpen",
@@ -191,6 +211,34 @@ def main() -> int:
     teardown_mount = function_block(classic_panel, "teardownPanelMount")
     if "NotificationCoordinator.panelUnmounted(plan.unmountOwnerId)" not in teardown_mount:
         errors.append("ClassicNotificationPanel teardown must unmount its cached owner")
+    require(connected_panel, "ConnectedNotificationPanelContent", (
+        "Item {", "property real availableViewportHeight:",
+        "signal dismissRequested()",
+        'import "NotificationPanelLifecycle.js" as NotificationPanelLifecycle',
+        "property bool loaded: false",
+        'property string mountedOwnerId: ""',
+        "RightPillCoordinator.connectedDescriptor?.feature === \"notifications\"",
+        "RightPillCoordinator.connectedOwnerId",
+        "function syncPanelMount(): void",
+        "if (!root.loaded)",
+        "NotificationPanelLifecycle.transition(",
+        "function teardownPanelMount(): void",
+        "NotificationPanelLifecycle.teardown(root.mountedOwnerId)",
+        "NotificationCoordinator.panelMounted(plan.mountOwnerId)",
+        "NotificationCoordinator.panelUnmounted(plan.unmountOwnerId)",
+        "NotificationCoordinator.markAllRead()",
+        "NotificationHistoryContent {",
+        "onDismissRequested: root.dismissRequested()",
+        "onOwnerIdChanged: root.syncPanelMount()",
+        "root.loaded = true",
+        "root.syncPanelMount()",
+        "Component.onDestruction: root.teardownPanelMount()",
+    ), errors)
+    for forbidden in ("SurfaceManager", "PanelWindow", "Shared.Panel",
+            "forceActiveFocus", "property var descriptor", "property var screen"):
+        if forbidden in connected_panel:
+            errors.append(
+                f"ConnectedNotificationPanelContent must leave chassis ownership to EdgeMenuSurface: {forbidden}")
     error_handler = re.search(r"else if \(status === Loader\.Error\)(?P<body>[^}]*)",
         overlay_host, re.DOTALL)
     if not error_handler or "releaseSnapshot()" not in error_handler.group("body"):
@@ -236,6 +284,7 @@ def main() -> int:
         "NotificationPanel 1.0 NotificationPanel.qml",
         "ClassicNotificationPanel 1.0 ClassicNotificationPanel.qml",
         "NotificationHistoryContent 1.0 NotificationHistoryContent.qml",
+        "ConnectedNotificationPanelContent 1.0 ConnectedNotificationPanelContent.qml",
         "NotificationHistoryRow 1.0 NotificationHistoryRow.qml",
     ), errors)
     if "NotificationPanel {" in app:

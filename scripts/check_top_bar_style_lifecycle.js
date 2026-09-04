@@ -19,6 +19,8 @@ function loadLibrary(relative) {
 
 const routing = loadLibrary("Titonium/Bar/right/BarPopupRouting.js");
 const connectedState = loadLibrary("Titonium/Bar/right/RightPillState.js");
+const notificationRouting = loadLibrary(
+    "Titonium/Orchestration/NotificationPanelRouting.js");
 
 assert.equal(routing.canToggle("audio:DP-1", null, false), true,
     "legacy Audio toggle(screen) must remain a valid request without an invoker");
@@ -84,6 +86,21 @@ for (const fixture of [
         anchor: "",
     }, `${feature} must select its exact Classic descriptor facts`);
 }
+
+assert.equal(typeof notificationRouting.presentation, "function",
+    "NotificationPanelRouting must expose a pure style presentation rule");
+assert.deepEqual(JSON.parse(JSON.stringify(
+    notificationRouting.presentation("connected"))), {
+    owner: "edge",
+    source: "ConnectedNotificationPanelContent.qml",
+    anchor: "notifications",
+}, "notification history must join the Connected right-pill chassis");
+assert.deepEqual(JSON.parse(JSON.stringify(
+    notificationRouting.presentation("classic"))), {
+    owner: "overlay",
+    source: "ClassicNotificationPanel.qml",
+    anchor: "",
+}, "notification history must remain detached in Classic");
 
 const coordinatorFiles = {
     network: "Titonium/Overlays/Network/NetworkPopupCoordinator.qml",
@@ -166,6 +183,7 @@ assert.match(inputMethod,
     "Input Method routing must preserve the exact screen and invoking control");
 
 const coordinator = read("Titonium/Bar/right/RightPillCoordinator.qml");
+const surfaceRouter = read("Titonium/Orchestration/SurfaceRouter.qml");
 assert.match(coordinator,
     /BarPopupRouting\.presentation\(root\.presentedStyle, feature\)/,
     "System Tray routes must use the centralized style selection");
@@ -187,6 +205,12 @@ assert.match(coordinator,
 assert.match(coordinator,
     /function closeForStyleChange\(\): void\s*\{[\s\S]*?SurfaceManager\.descriptor[\s\S]*?SurfaceManager\.screen[\s\S]*?forceCloseConnectedSurface\(\)[\s\S]*?RightPillState\.matchesSurfaceOpen\([\s\S]*?SurfaceManager\.close\([\s\S]*?CenterSurfaceController\.dispatch\(\{ type: "request-mode", mode: "compact" \}\)[\s\S]*?root\.close\(\)[\s\S]*?root\.finishClose\(/,
     "style cleanup must release the current owner and compact the neutral Center surface");
+assert.match(surfaceRouter,
+    /function toggleNotificationPanel[\s\S]*?NotificationPanelRouting\.presentation\(RightPillCoordinator\.presentedStyle\)[\s\S]*?BarPopupRouting\.existingOpenAction\([\s\S]*?action === "reverse"[\s\S]*?RightPillCoordinator\.toggleConnectedSurface\(owner\)/,
+    "Notification routing must reverse a retained same-owner Connected close");
+assert.match(surfaceRouter,
+    /function toggleNotificationPanel[\s\S]*?action === "preserve"[\s\S]*?route\.owner === "edge"[\s\S]*?RightPillCoordinator\.toggleConnectedSurface\(owner\)[\s\S]*?SurfaceManager\.close\(owner\)/,
+    "same-owner Notification toggles must close through the style's owning coordinator");
 
 const barSurface = read("Titonium/Bar/BarSurface.qml");
 const barHost = read("Titonium/Bar/BarHost.qml");
@@ -235,6 +259,25 @@ const capturedScreen = { name: "DP-1" };
 assert.equal(connectedState.matchesSurfaceOpen("audio:DP-1", replacementDescriptor,
     capturedScreen, "audio:DP-1", capturedDescriptor, capturedScreen), false,
 "a synchronous same-owner reopen must fail the stale descriptor identity guard");
+
+const notificationDescriptor = {
+    ownerId: "notification-panel:DP-1",
+    source: "ConnectedNotificationPanelContent.qml",
+    feature: "notifications",
+    barConnected: true,
+    anchor: "notifications",
+    invoker: "notification-button",
+};
+const notificationOpen = connectedState.connectedOpen(
+    connectedState.connectedInitialState(), notificationDescriptor.ownerId,
+    notificationDescriptor, capturedScreen);
+const notificationClosing = connectedState.connectedRequestClose(notificationOpen,
+    notificationOpen.ownerId, notificationOpen.generation);
+const notificationReleased = connectedState.connectedClear(notificationClosing,
+    notificationClosing.ownerId, notificationClosing.generation);
+assert.strictEqual(connectedState.connectedFinishClose(notificationReleased,
+    notificationClosing.ownerId, notificationClosing.generation), notificationReleased,
+    "a stale Connected notification close cannot clear a subsequently opened Classic owner");
 
 const check = read("scripts/check.sh");
 assert.match(check, /node "\$project_root\/scripts\/check_top_bar_style_lifecycle\.js"/,

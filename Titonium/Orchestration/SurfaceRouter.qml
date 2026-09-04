@@ -8,6 +8,7 @@ import qs.Titonium.Core.Surfaces
 import qs.Titonium.Core.Surfaces.Center
 import qs.Titonium.Services.Hyprland
 import qs.Titonium.Settings
+import "../Bar/right/BarPopupRouting.js" as BarPopupRouting
 import "../Settings/SettingsLifecycleRules.js" as SettingsLifecycleRules
 import "NotificationPanelRouting.js" as NotificationPanelRouting
 
@@ -89,24 +90,38 @@ QtObject {
         if (!screen)
             return "unavailable:no-screen";
         const owner = NotificationPanelRouting.ownerId(screen.name);
-        const action = NotificationPanelRouting.toggleAction(SurfaceManager.ownerId, owner);
-        if (action === "close") {
-            SurfaceManager.close(owner);
-            return "closed:" + screen.name;
+        const route = NotificationPanelRouting.presentation(RightPillCoordinator.presentedStyle);
+        const action = BarPopupRouting.existingOpenAction(owner,
+            SurfaceManager.ownerId,
+            SurfaceManager.descriptor?.barConnected === true,
+            RightPillCoordinator.connectedOwnerId,
+            RightPillCoordinator.connectedClosing,
+            SurfaceManager.isClosing(owner, SurfaceManager.descriptor,
+                SurfaceManager.screen));
+        if (action === "reverse") {
+            const reversed = RightPillCoordinator.toggleConnectedSurface(owner);
+            return reversed ? "open:" + screen.name : "unavailable:no-screen";
         }
-        if (action === "reject")
-            return "unavailable:no-screen";
+        if (action === "preserve") {
+            const closed = route.owner === "edge"
+                ? RightPillCoordinator.toggleConnectedSurface(owner)
+                : SurfaceManager.close(owner);
+            return closed ? "closed:" + screen.name : "unavailable:no-screen";
+        }
         if (!SettingsLifecycleRules.canYield(SettingsCoordinator.active, Preferences.savePending)
                 || !SettingsCoordinator.forceCancelAndClose())
             return "unavailable:busy";
         root.closeCenter("notifications-opened");
         RightPillCoordinator.close();
         const opened = SurfaceManager.open(owner, {
-            "source": Qt.resolvedUrl("../Notifications/NotificationPanel.qml"),
+            "source": Qt.resolvedUrl("../Notifications/" + route.source),
             "keyboardFocus": "exclusive",
             "closeOnMonitorChange": true,
             "ownerId": owner,
-            "invoker": invoker
+            "feature": "notifications",
+            "barConnected": route.owner === "edge",
+            "anchor": route.anchor,
+            "invoker": invoker,
         }, screen);
         return opened ? "open:" + screen.name : "unavailable:no-screen";
     }

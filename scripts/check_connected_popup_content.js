@@ -62,4 +62,48 @@ const fixedContentHeight = 160;
 assert.equal(Math.max(shortViewportHeight, fixedContentHeight) > shortViewportHeight, true,
     "a viewport shorter than fixed Audio content must retain vertically accessible overflow");
 
+const notificationRelative = path.join("Titonium", "Notifications",
+    "ConnectedNotificationPanelContent.qml");
+const notificationPath = path.join(root, notificationRelative);
+assert.equal(fs.existsSync(notificationPath), true,
+    `${notificationRelative} must exist`);
+const notification = fs.readFileSync(notificationPath, "utf8");
+for (const fragment of [
+    "property real availableViewportHeight: 440",
+    "signal dismissRequested()",
+    "NotificationHistoryContent {",
+    "onDismissRequested: root.dismissRequested()",
+    'import "NotificationPanelLifecycle.js" as NotificationPanelLifecycle',
+    "property bool loaded: false",
+    'property string mountedOwnerId: ""',
+    "if (!root.loaded)",
+    "NotificationPanelLifecycle.transition(",
+    "NotificationPanelLifecycle.teardown(root.mountedOwnerId)",
+    "NotificationCoordinator.panelMounted(plan.mountOwnerId)",
+    "NotificationCoordinator.panelUnmounted(plan.unmountOwnerId)",
+    "NotificationCoordinator.markAllRead()",
+    "onOwnerIdChanged: root.syncPanelMount()",
+    "root.loaded = true",
+    "root.syncPanelMount()",
+    "Component.onDestruction: root.teardownPanelMount()",
+]) assert.equal(notification.includes(fragment), true,
+    `${notificationRelative} must expose ${fragment}`);
+assert.match(notification,
+    /readonly property string ownerId:[\s\S]*?RightPillCoordinator\.connectedDescriptor\?\.feature === "notifications"[\s\S]*?RightPillCoordinator\.connectedOwnerId/,
+    "Connected history may mount only for the loaded notification owner");
+for (const forbidden of [
+    "Shared.Panel",
+    "SurfaceManager",
+    "forceActiveFocus",
+    "TapHandler",
+    "ParallelAnimation",
+    "PanelWindow",
+]) assert.equal(notification.includes(forbidden), false,
+    `${notificationRelative} must leave chassis, close ownership, and focus return to the right pill: ${forbidden}`);
+const notificationQmldir = fs.readFileSync(path.join(root,
+    "Titonium", "Notifications", "qmldir"), "utf8");
+assert.match(notificationQmldir,
+    /ConnectedNotificationPanelContent 1\.0 ConnectedNotificationPanelContent\.qml/,
+    "Notifications qmldir must export ConnectedNotificationPanelContent");
+
 console.log("PASS Connected popup content boundary contract");

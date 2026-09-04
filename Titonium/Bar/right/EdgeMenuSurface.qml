@@ -28,7 +28,7 @@ FocusScope {
     readonly property real presentedProgress: root.ownsMenu || root.closing
         ? RightPillCoordinator.transitionProgress : 0
     readonly property rect connectivityAnchor: root.ownsConnectedSurface
-        ? rightContent.connectivityAnchorRect(
+        ? root.connectedAnchorRect(
             RightPillCoordinator.connectedDescriptor?.anchor || "")
         : Qt.rect(0, 0, 0, 0)
     readonly property real activeContentHeight: root.ownsConnectedSurface
@@ -110,6 +110,12 @@ FocusScope {
             RightPillCoordinator.closeConnectedSurface();
         else
             RightPillCoordinator.close();
+    }
+
+    function connectedAnchorRect(name: string): rect {
+        if (name === "notifications")
+            return rightContent.anchorRect(name);
+        return rightContent.connectivityAnchorRect(name);
     }
 
     function freezeRightAnchor(): void {

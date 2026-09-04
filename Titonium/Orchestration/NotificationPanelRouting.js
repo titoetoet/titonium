@@ -16,3 +16,13 @@ function toggleAction(currentOwnerId, requestedOwnerId) {
         return "close";
     return currentOwnerId ? "replace" : "open";
 }
+
+function presentation(style) {
+    if (style === "classic")
+        return { owner: "overlay", source: "ClassicNotificationPanel.qml", anchor: "" };
+    return {
+        owner: "edge",
+        source: "ConnectedNotificationPanelContent.qml",
+        anchor: "notifications",
+    };
+}

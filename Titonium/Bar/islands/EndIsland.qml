@@ -27,6 +27,15 @@ Item {
         return Qt.rect(point.x, point.y, childRect.width, childRect.height);
     }
 
+    function anchorRect(name: string): rect {
+        if (name === "notifications") {
+            const point = notifications.mapToItem(root, 0, 0);
+            return Qt.rect(point.x, point.y,
+                notifications.width, notifications.height);
+        }
+        return root.connectivityAnchorRect(name);
+    }
+
     onImplicitWidthChanged: RightPillCoordinator.setCompactWidth("right", root.implicitWidth + 16)
     Component.onCompleted: RightPillCoordinator.setCompactWidth("right", root.implicitWidth + 16)
 
@@ -54,6 +63,7 @@ Item {
         }
 
         NotificationBell {
+            id: notifications
             screen: root.screen
             onToggleRequested: (screen, invoker) =>
                 root.notificationsRequested(screen, invoker)
