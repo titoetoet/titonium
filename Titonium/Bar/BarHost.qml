@@ -28,6 +28,8 @@ Scope {
             EdgeMenuWindow {
                 screenModel: screenScope.modelData
                 styleActive: RightPillCoordinator.presentedStyle === "connected"
+                onNotificationsRequested: (screen, invoker) =>
+                    root.notificationsRequested(screen, invoker)
             }
         }
     }

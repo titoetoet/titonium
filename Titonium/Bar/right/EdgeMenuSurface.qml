@@ -15,6 +15,7 @@ FocusScope {
 
     required property ShellScreen screenModel
     required property real compactY
+    signal notificationsRequested(var screen, var invoker)
     readonly property bool ownsConnectedSurface:
         RightPillCoordinator.connectedSurfacePresented
         && RightPillCoordinator.connectedScreen === root.screenModel
@@ -234,6 +235,8 @@ FocusScope {
         screen: root.screenModel
         menuAnchorOffset: root.ownsConnectedSurface ? 0
             : root.rightSourceOffset
+        onNotificationsRequested: (screen, invoker) =>
+            root.notificationsRequested(screen, invoker)
     }
 
     Item {

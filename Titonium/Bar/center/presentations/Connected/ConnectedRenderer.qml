@@ -35,8 +35,15 @@ FocusScope {
     readonly property real bodyRadius: root.viewState.mode === "expanded"
         ? root.profile.expanded.radius : (root.viewState.mode === "banner"
         ? root.profile.banner.radius : root.profile.compact.radius)
-    readonly property rect visualBounds: Qt.rect(shape.x, shape.y, shape.width, shape.height)
-    readonly property rect interactiveBounds: root.visualBounds
+    readonly property rect primaryVisualBounds: Qt.rect(
+        shape.x, shape.y, shape.width, shape.height)
+    readonly property var composedVisualBounds:
+        PresentationRules.combinedVisualBounds(root.primaryVisualBounds,
+            secondaryPill.visualBounds, secondaryPill.visible)
+    readonly property rect visualBounds: Qt.rect(
+        root.composedVisualBounds.x, root.composedVisualBounds.y,
+        root.composedVisualBounds.width, root.composedVisualBounds.height)
+    readonly property rect interactiveBounds: root.primaryVisualBounds
 
     function deadlineIntent(type: string): var {
         return {

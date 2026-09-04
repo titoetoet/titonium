@@ -11,6 +11,7 @@ PanelWindow {
     id: window
     required property ShellScreen screenModel
     property bool styleActive: true
+    signal notificationsRequested(var screen, var invoker)
     readonly property bool connectedSurfaceForScreen:
         RightPillCoordinator.connectedSurfacePresented
         && RightPillCoordinator.connectedScreen === window.screenModel
@@ -80,6 +81,8 @@ PanelWindow {
         anchors.fill: parent
         screenModel: window.screenModel
         compactY: window.compactY
+        onNotificationsRequested: (screen, invoker) =>
+            window.notificationsRequested(screen, invoker)
     }
 
     onStyleActiveChanged: {

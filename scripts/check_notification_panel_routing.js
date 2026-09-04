@@ -13,6 +13,15 @@ const source = fs.readFileSync(rulesPath, "utf8").replace(/^\.pragma library\s*\
 const routing = vm.createContext({});
 vm.runInContext(source, routing, { filename: rulesPath });
 const plain = value => JSON.parse(JSON.stringify(value));
+const loadLibrary = relative => {
+    const filename = path.join(root, relative);
+    const context = vm.createContext({ Math, Number, Object, String });
+    vm.runInContext(fs.readFileSync(filename, "utf8")
+        .replace(/^\.pragma library\s*\n/, ""), context, { filename });
+    return context;
+};
+const barRouting = loadLibrary("Titonium/Bar/right/BarPopupRouting.js");
+const rightPillState = loadLibrary("Titonium/Bar/right/RightPillState.js");
 
 assert.equal(routing.ownerId("DP-1"), "notification-panel:DP-1");
 assert.equal(routing.ownerId("  DP-2  "), "notification-panel:DP-2");
@@ -42,5 +51,61 @@ assert.deepEqual(plain(routing.presentation("unknown")), {
     source: "ConnectedNotificationPanelContent.qml",
     anchor: "notifications",
 }, "unknown style values must fail closed to the shipped Connected presentation");
+
+const screen = { name: "DP-1" };
+const notificationOwner = "notification-panel:DP-1";
+const notificationDescriptor = {
+    ownerId: notificationOwner,
+    source: "ConnectedNotificationPanelContent.qml",
+    feature: "notifications",
+    barConnected: true,
+    anchor: "notifications",
+    invoker: "notification-control",
+};
+const notificationOpen = rightPillState.connectedOpen(
+    rightPillState.connectedInitialState(), notificationOwner,
+    notificationDescriptor, screen);
+assert.equal(barRouting.existingOpenAction(notificationOwner, notificationOwner,
+    true, notificationOwner, false, false), "preserve",
+"the active Edge copy of the same notification control must select the guarded close path");
+const notificationClosing = rightPillState.connectedRequestClose(notificationOpen,
+    notificationOwner, notificationOpen.generation);
+assert.equal(notificationClosing.closing, true);
+assert.equal(notificationClosing.closingGeneration, notificationOpen.generation,
+    "same-control close must retain the owner generation until teardown");
+assert.equal(rightPillState.canReturnConnectedFocus(notificationClosing,
+    notificationOwner, notificationOpen.generation,
+    notificationOwner, true, false), true,
+"same-control close must preserve the exact-owner focus-return guard");
+
+assert.equal(barRouting.existingOpenAction(notificationOwner, "", false, "", false, false),
+    "open", "a notification request from an active legacy Edge menu must open history");
+assert.equal(rightPillState.shouldFinalizeMenuForConnected(false, "DP-1"), true,
+    "adopting notification history must finalize the displaced Edge-menu exit");
+
+const audioOwner = "audio:DP-1";
+const audioOpen = rightPillState.connectedOpen(rightPillState.connectedInitialState(),
+    audioOwner, {
+        ownerId: audioOwner,
+        source: "ConnectedAudioPopupContent.qml",
+        feature: "audio",
+        barConnected: true,
+        anchor: "audio",
+        invoker: "audio-control",
+    }, screen);
+assert.equal(barRouting.existingOpenAction(notificationOwner, audioOwner,
+    true, audioOwner, false, false), "open",
+"a notification request from another active connected surface must replace that control");
+const notificationReplacement = rightPillState.connectedOpen(audioOpen,
+    notificationOwner, notificationDescriptor, screen);
+assert.deepEqual([
+    notificationReplacement.ownerId,
+    notificationReplacement.descriptor.feature,
+    notificationReplacement.generation > audioOpen.generation,
+], [notificationOwner, "notifications", true],
+"cross-control replacement must adopt notification history as a newer owner generation");
+assert.strictEqual(rightPillState.connectedFinishClose(notificationReplacement,
+    audioOwner, audioOpen.generation), notificationReplacement,
+"a displaced control's stale completion must not clear notification history");
 
 console.log("PASS style-aware notification panel and screen-owner routing");

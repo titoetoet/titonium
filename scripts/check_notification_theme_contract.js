@@ -105,6 +105,43 @@ const classicCenter = read("Titonium/Bar/center/presentations/Classic/ClassicRen
 assert.doesNotMatch(classicCenter, /ConnectedPillShape|shoulderSize|bodyWidth\s*:[^\n]*shoulder/,
     "Classic Center must remain a shoulder-free detached surface");
 
+const acceptance = read("scripts/notifications_acceptance.sh");
+for (const fragment of [
+    "WAYLAND_DISPLAY",
+    "trigger_notification_control()",
+    "hyprctl dispatch global titonium:notifications",
+    "panel_matches()",
+    'call_ipc audio popup',
+    'call_ipc audio popupState',
+    'set_runtime_style "classic"',
+    'set_runtime_style "connected"',
+    '"titonium-edge-menu"',
+    '"titonium-overlay"',
+]) assert.ok(acceptance.includes(fragment),
+    `notification acceptance must exercise the live user route: ${fragment}`);
+const fixtureCreationIndex = acceptance.indexOf("test_dir=\"$(mktemp");
+const waylandPreflightIndex = acceptance.indexOf('[[ -z "${WAYLAND_DISPLAY:-}"');
+const notificationOwnerPreflightIndex = acceptance.indexOf(
+    "org.freedesktop.DBus NameHasOwner");
+assert.ok(fixtureCreationIndex >= 0, "notification acceptance must create one bounded fixture root");
+assert.ok(waylandPreflightIndex >= 0 && waylandPreflightIndex < fixtureCreationIndex,
+    "Wayland safe-skip must run before acceptance creates temporary fixture state");
+assert.ok(notificationOwnerPreflightIndex >= 0
+        && notificationOwnerPreflightIndex < fixtureCreationIndex,
+    "notification-owner safe-skip must run before acceptance creates temporary fixture state");
+assert.match(acceptance,
+    /trigger_notification_control[\s\S]*?wait_for_panel true notification-panel:DP-1 0[\s\S]*?trigger_notification_control[\s\S]*?wait_for_panel false "" 0/,
+    "the live shortcut must prove mounted/read then same-control teardown state");
+assert.match(acceptance,
+    /call_ipc audio popup[\s\S]*?trigger_notification_control[\s\S]*?call_ipc audio popupState/,
+    "Connected acceptance must switch from another active Edge owner to notification history");
+assert.match(acceptance,
+    /set_runtime_style "classic"[\s\S]*?trigger_notification_control[\s\S]*?titonium-overlay/,
+    "Classic acceptance must mount history through the detached overlay route");
+assert.match(acceptance,
+    /set_runtime_style "connected"[\s\S]*?wait_for_panel false "" 0/,
+    "a live style transition must tear down the previous notification owner");
+
 const check = read("scripts/check.sh");
 assert.match(check,
     /node "\$project_root\/scripts\/check_notification_theme_contract\.js"/,

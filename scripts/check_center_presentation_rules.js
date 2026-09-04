@@ -51,6 +51,25 @@ assert.equal(rules.geometry(connected, { width: 360, height: 800 }, "expanded").
 assert.equal(rules.profile("invalid").id, "connected");
 console.log("PASS four Center presentation profiles provide frozen clamped geometry");
 
+assert.equal(typeof rules.combinedVisualBounds, "function",
+    "Center presentation rules must expose visible-secondary bounds composition");
+assert.deepEqual(plain(rules.combinedVisualBounds(
+    { x: 850, y: 0, width: 220, height: 32 },
+    { x: 1070, y: 0, width: 52, height: 32 }, true)),
+{ x: 850, y: 0, width: 272, height: 32 },
+"Connected visual bounds must include the joined visible secondary pill");
+assert.deepEqual(plain(rules.combinedVisualBounds(
+    { x: 850, y: 8, width: 220, height: 36 },
+    { x: 1078, y: 8, width: 52, height: 36 }, true)),
+{ x: 850, y: 8, width: 280, height: 36 },
+"Classic visual bounds must include its detached visible secondary pill and gap");
+assert.deepEqual(plain(rules.combinedVisualBounds(
+    { x: 850, y: 8, width: 220, height: 36 },
+    { x: 1078, y: 8, width: 52, height: 36 }, false)),
+{ x: 850, y: 8, width: 220, height: 36 },
+"a hidden secondary pill must not expand exported visual bounds");
+console.log("PASS Center visual bounds include only a visible secondary pill");
+
 const firstBannerGeometry = rules.geometry(connected, { width: 1920, height: 1080 }, "banner");
 const nextBannerGeometry = rules.geometry(connected, { width: 1920, height: 1080 }, "banner");
 assert.deepEqual(plain(firstBannerGeometry), {
@@ -129,6 +148,9 @@ assert.doesNotMatch(secondaryPill, /ConnectedPillShape|shoulderSize/,
     "Center secondary pill must not own Connected concave shoulders");
 assert.doesNotMatch(secondaryPill, /Animation\.Infinite/,
     "Center secondary motion must always be bounded");
+assert.match(secondaryPill,
+    /function clearPresentation\(\): void\s*\{[\s\S]*?exitAnimation\.stop\(\)[\s\S]*?root\.stopMotion\(\)/,
+    "hidden and Reduced Motion clears must stop the exit animation as well as wobble");
 
 const renderer = fs.readFileSync(path.join(path.dirname(rulesPath),
     "presentations/Connected/ConnectedRenderer.qml"), "utf8");
@@ -137,8 +159,7 @@ assert.match(renderer, /Shared\.ConnectedPillShape\s*\{/,
 assert.match(renderer,
     /Shared\.SystemIcon\s*\{[\s\S]*?sourceName:\s*root\.displayedContext\?\.icon\s*\|\|\s*""[\s\S]*?fallbackName:\s*root\.displayedContext\?\.icon\s*\|\|\s*"center_focus_strong"/,
     "Center context icons must render image paths while retaining semantic glyph fallbacks");
-for (const fragment of ["bodyWidth: root.bodyWidth", "shoulderSize: root.shoulderSize",
-        "readonly property rect visualBounds: Qt.rect(shape.x, shape.y, shape.width, shape.height)"])
+for (const fragment of ["bodyWidth: root.bodyWidth", "shoulderSize: root.shoulderSize"])
     assert.ok(renderer.includes(fragment), `Center contour contract missing: ${fragment}`);
 for (const fragment of ["required property var snapshot", "required property var viewState",
     "required property var profile", "signal intentRequested(var intent)",
@@ -167,6 +188,10 @@ for (const fragment of [
     "indicator: root.notificationIndicator",
     "rendererVisible: root.visible",
     "x: shape.x + shape.width",
+    "readonly property rect primaryVisualBounds:",
+    "PresentationRules.combinedVisualBounds(root.primaryVisualBounds,",
+    "secondaryPill.visualBounds, secondaryPill.visible)",
+    "readonly property rect interactiveBounds: root.primaryVisualBounds",
 ])
     assert.ok(renderer.includes(fragment),
         `Connected secondary-pill composition missing: ${fragment}`);
@@ -194,11 +219,18 @@ for (const fragment of [
     "indicator: root.notificationIndicator",
     "rendererVisible: root.visible",
     "x: classicBody.x + classicBody.width + Metrics.spacingSmall",
+    "readonly property rect primaryVisualBounds:",
+    "PresentationRules.combinedVisualBounds(root.primaryVisualBounds,",
+    "secondaryPill.visualBounds, secondaryPill.visible)",
+    "readonly property rect interactiveBounds: root.primaryVisualBounds",
 ])
     assert.ok(classicRenderer.includes(fragment),
         `Classic secondary-pill composition missing: ${fragment}`);
 assert.doesNotMatch(classicRenderer, /secondary[\s\S]*?ConnectedPillShape/,
     "Classic secondary pill must remain detached and shoulder-free");
+for (const [source, label] of [[renderer, "Connected"], [classicRenderer, "Classic"]])
+    assert.doesNotMatch(source, /readonly property rect interactiveBounds:\s*root\.visualBounds/,
+        `${label} secondary visuals must not expand the primary-only input bounds`);
 console.log("PASS Classic renderer keeps the neutral contract without Connected shoulders");
 
 const topbarBell = fs.readFileSync(path.join(root, "Titonium", "Bar", "widgets",

@@ -36,6 +36,7 @@ Item {
     }
 
     function clearPresentation(): void {
+        exitAnimation.stop();
         root.stopMotion();
         root.opacity = 0;
         root.presented = false;

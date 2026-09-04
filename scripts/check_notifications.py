@@ -208,7 +208,7 @@ def validate_gate_fixtures(errors: list[str]) -> None:
         "first critical fixture was not the FIFO current item",
         "second critical fixture did not advance after first expiry",
         "critical FIFO queue did not drain after final expiry",
-        "notifications state", "notifications markRead",
+        "notifications state", "trigger_notification_control",
     ):
         if fragment not in acceptance:
             errors.append(f"notifications acceptance missing safe routing coverage: {fragment}")
@@ -218,17 +218,27 @@ def validate_gate_fixtures(errors: list[str]) -> None:
         errors.append("notifications acceptance must use NameHasOwner, not an implicit busctl status probe")
     if 'qs -p "$project_root" ipc call app status' in acceptance:
         errors.append("notifications acceptance must not infer notification D-Bus ownership from IPC readiness")
+    if "call_ipc notifications markRead" in acceptance:
+        errors.append(
+            "notifications acceptance must verify mark-read timing through a mounted history surface")
     documents = {
         "README.md": (
             "always-present Notification Bell",
             "independent top-right history panel",
         ),
         "docs/CURRENT_AUDIT.md": (
-            "independent Bell-owned history panel",
+            "fixed Topbar history control",
+            "Center-secondary bell",
+            "Connected right-pill chassis",
+            "Classic detached history panel",
             "critical FIFO",
         ),
         "docs/ROADMAP.md": (
             "Independent Notification Center — complete",
+            "fixed non-bell Notification Center control",
+            "Center-secondary bell",
+            "Connected right-pill chassis",
+            "Classic detached history panel",
             "persisted history remains a separately scoped storage decision",
         ),
     }
@@ -237,6 +247,7 @@ def validate_gate_fixtures(errors: list[str]) -> None:
         "Notification Center will be rebuilt later",
         "Add Notification Center/actions as a separate Service-contract extension",
     )
+    current_facing_forbidden = ("Bell-owned history panel", "Bell-owned panel")
     for relative, fragments in documents.items():
         document = (ROOT / relative).read_text(encoding="utf-8")
         for fragment in fragments:
@@ -245,6 +256,11 @@ def validate_gate_fixtures(errors: list[str]) -> None:
         for fragment in forbidden_document_phrases:
             if fragment in document:
                 errors.append(f"{relative} retains retired notification contract: {fragment}")
+        if relative in ("docs/CURRENT_AUDIT.md", "docs/ROADMAP.md"):
+            for fragment in current_facing_forbidden:
+                if fragment in document:
+                    errors.append(
+                        f"{relative} retains retired notification contract: {fragment}")
 
 
 def validate_service(errors: list[str]) -> None:

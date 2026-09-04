@@ -21,7 +21,8 @@ historical release tag.
 ## Current runtime ownership
 
 - `App.qml` is a thin composition root for Bar, Dock, transient overlays, Audio OSD, notification
-  toasts and Settings. The lazy independent Bell-owned history panel is routed through the existing
+  toasts and Settings. The fixed Topbar history control routes lazy Notification Center content
+  through the Connected right-pill chassis or Classic detached history panel using the existing
   transient-surface lifecycle. Agent Approval is projected through Center. Activation, cross-surface routing, the Bluetooth–Audio
   bridge and IPC adapters live in dedicated `Orchestration` and `Ipc` modules without changing
   public IPC targets or result strings.
@@ -30,13 +31,13 @@ historical release tag.
   of the Overview weather card and the `use24Hour` preference is still meaningful there.
 - Center is a top-attached semantic surface with compact, banner, and expanded presentations. The
   previous Overview/Notification-history presentation is retired; critical notifications use its
-  shared FIFO banner, while the independent Bell-owned history panel owns history, standard actions
-  and dismissal. System Monitor remains detached.
+  shared FIFO banner, while the fixed Topbar history control opens history, standard actions and
+  dismissal. The Center-secondary bell alone presents unread motion. System Monitor remains detached.
 - Bluetooth uses the native Quickshell service and a narrow service/view boundary. Audio handoff is
   coordinated through semantic signals; views do not own native Bluetooth objects.
 - Clipboard formatting and preview extraction live behind the Clipboard service plus pure helper
   rules. Native notification history and policy remain coordinator-owned; critical values route to
-  the shared critical FIFO while the Bell owns the independent history panel.
+  the shared critical FIFO while style-aware Notification Center shells own history presentation.
 - The Center pig is a user-configurable idle animation. Its drawing implementation is currently
   shared with the `demos/dancing_pig` visual fixture; this intentional dependency should be moved
   into a production-owned component if the demo is retired later.

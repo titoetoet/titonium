@@ -26,9 +26,11 @@ The previous feature roadmap is retired. Work now advances by researched capabil
    networking ownership, normalized descriptors, secret boundary, compact Bar control and lazy
    popup are implemented without command helpers.
 4. **Independent Notification Center — complete.** One native service, immutable bounded history,
-   an always-present Bell, a lazy screen-owned history panel, standard actions, per-application
-   policy, passive DP-1-only toasts and a critical FIFO Center route are covered by focused static
-   and safe foreground acceptance.
+   a fixed non-bell Notification Center control at the Topbar's right edge, a Center-secondary bell
+   for unread state, standard actions, per-application policy, passive DP-1-only toasts and a
+   critical FIFO Center route are covered by focused static and safe foreground acceptance.
+   History uses the Connected right-pill chassis or the Classic detached history panel according to
+   the active Topbar style.
 5. **Settings Center V1 — implementation and isolated acceptance complete; visual approval
    pending.** Eight lazy pages now edit a single transactional settings v7 model with
    Preview/Apply/Cancel, legacy Dock projection and DP-1-only lifecycle. The remaining checkpoint
@@ -36,7 +38,7 @@ The previous feature roadmap is retired. Work now advances by researched capabil
 
 Notification persistence: persisted history remains a separately scoped storage decision; the
 completed panel, action and policy contracts are session-only. The retired Center history view is
-not part of the independent Bell-owned panel.
+not part of the fixed Topbar history control or Center-secondary bell presentation.
 
 ## Continuing reference-repository research
 

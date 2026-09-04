@@ -55,6 +55,7 @@ def main() -> int:
     connected_bar = read("Titonium/Bar/Bar.qml", errors)
     connected_end = read("Titonium/Bar/islands/EndIsland.qml", errors)
     edge_surface = read("Titonium/Bar/right/EdgeMenuSurface.qml", errors)
+    edge_window = read("Titonium/Bar/right/EdgeMenuWindow.qml", errors)
     classic_bar = read("Titonium/Bar/classic/ClassicBar.qml", errors)
     classic_end = read("Titonium/Bar/classic/ClassicEndIsland.qml", errors)
     router = read("Titonium/Orchestration/SurfaceRouter.qml", errors)
@@ -114,6 +115,26 @@ def main() -> int:
             "signal notificationsRequested(var screen, var invoker)",
             "onNotificationsRequested:",
         ), errors)
+    require(edge_surface, "EdgeMenuSurface active-input notification route", (
+        "signal notificationsRequested(var screen, var invoker)",
+        "onNotificationsRequested: (screen, invoker) =>",
+        "root.notificationsRequested(screen, invoker)",
+    ), errors)
+    require(edge_window, "EdgeMenuWindow active-input notification route", (
+        "signal notificationsRequested(var screen, var invoker)",
+        "onNotificationsRequested: (screen, invoker) =>",
+        "window.notificationsRequested(screen, invoker)",
+    ), errors)
+    if not re.search(
+            r"EdgeMenuWindow\s*\{[\s\S]*?onNotificationsRequested:\s*"
+            r"\(screen, invoker\)\s*=>\s*root\.notificationsRequested\(screen, invoker\)",
+            bar_host):
+        errors.append(
+            "BarHost must forward notification requests from the input-owning EdgeMenuWindow")
+    require(edge_surface, "EdgeMenuSurface connected release guards", (
+        "RightPillCoordinator.releaseConnectedSurface(loadOwnerId, loadGeneration,",
+        "loadDescriptor, loadScreen)",
+    ), errors)
     require(classic_end, "ClassicEndIsland", (
         "NotificationBell {", "readonly property alias notificationHitbox:",
     ), errors)

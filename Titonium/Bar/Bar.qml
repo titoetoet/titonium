@@ -38,7 +38,7 @@ Item {
 
     Item {
         id: centerGroup
-        implicitWidth: 220
+        implicitWidth: BarLayout.symmetricCenterReservation(220, 52)
         width: implicitWidth
         implicitHeight: Metrics.barHeight
         x: BarLayout.centerX(root.width, centerGroup.width)

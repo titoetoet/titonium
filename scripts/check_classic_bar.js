@@ -45,6 +45,9 @@ requireSurfaceCount("Titonium/Bar/classic/ClassicStartIsland.qml", 3);
 assert.doesNotMatch(read("Titonium/Bar/classic/ClassicCenterGroup.qml"),
     /CenterIsland|Shared\.Surface|TapHandler|HoverHandler/,
     "Classic Center group is a passive reservation, not another visual owner");
+assert.match(read("Titonium/Bar/classic/ClassicCenterGroup.qml"),
+    /BarLayout\.symmetricCenterReservation\(220,\s*52 \+ Metrics\.spacingSmall\)/,
+    "Classic Center collision reservation must mirror its maximum trailing secondary footprint");
 requireFragments("Titonium/Bar/classic/ClassicEndIsland.qml", [
     "readonly property alias notificationHitbox: notificationSurface",
     "readonly property alias pinHitbox: pinSurface",

@@ -280,14 +280,16 @@ Notification acceptance never stops a resident Titonium shell: because
 `org.freedesktop.Notifications` has one session owner, it reports a skip when that shell is already
 running. With the name free, it starts one foreground shell and sends controlled normal and critical
 `notify-send` fixtures. It verifies DP-1-only passive toast ownership, history/unread preservation,
-the read-only panel/queue/policy state seam, the four-second critical FIFO route and the same
-`markRead()` boundary as the Topbar Notification Center. Before a live fixture (or a safe D-Bus
-ownership skip), it also runs the read-only themed contract: Connected reports the exact edge/right-
-pill history presentation, Classic reports the detached overlay presentation, the Topbar history glyph
+the read-only panel/queue/policy state seam and the four-second critical FIFO route. It drives the
+existing `titonium:notifications` global shortcut to verify owner mount, mark-read timing,
+same-control teardown and reopening; existing Audio and Spotlight IPC routes provide safe
+cross-control owners. The copied runtime settings file is switched between Connected and Classic to
+verify both shells and style-change teardown without touching live settings. Before a live fixture
+(or a safe D-Bus/Wayland skip), it also runs the read-only themed contract: the Topbar history glyph
 stays fixed and rightmost, Center alone owns the bell wobble, and Classic Center has no shoulders.
-It rejects runtime errors, repository writes and changes to either Hyprland configuration. It has no
-injection, action, dismissal or policy-patch IPC; standard-action and custom-policy behavior remain
-deterministic pure/static coverage.
+It rejects runtime errors, repository writes and changes to either Hyprland configuration. It adds no
+injection, action, dismissal, panel-control or policy-patch IPC; standard-action and custom-policy
+behavior remain deterministic pure/static coverage.
 
 After the focused fixture (or its safe skip), manually verify the assigned Titonium output:
 
@@ -424,12 +426,13 @@ policy priorities, and `clear` must remove only the matching active job or termi
 
 Run `./scripts/notifications_acceptance.sh` only when no resident Titonium instance owns the session
 notification D-Bus name; a `SKIP` is the safe result otherwise. The script covers passive toast and
-critical FIFO routing without synthetic notification IPC. Its read-only static companion covers
-Connected right-pill versus Classic detached history routing, the fixed non-bell rightmost Topbar
-control, Center-only bell wobble, and a shoulder-free Classic Center. Static fixtures also cover
-action values, custom policy, hover pause/resume, panel owner replacement, stale teardown and
-monitor-loss cleanup. Manually verify the Notification Center history panel rather than the retired
-Center history viewport.
+critical FIFO routing without synthetic notification IPC. When Wayland and the notification bus name
+are available, the global shortcut exercises Connected and Classic history mount/read/teardown,
+same-control toggles, cross-control replacement and temporary-runtime style transitions. Its static
+companion covers the Edge-window click-forwarding chain, fixed non-bell rightmost Topbar control,
+Center-only bell wobble and a shoulder-free Classic Center. Static fixtures also cover action values,
+custom policy, hover pause/resume, panel owner replacement, stale teardown and monitor-loss cleanup.
+Manually verify the Notification Center history panel rather than the retired Center history viewport.
 
 ## Center presentation checkpoint
 

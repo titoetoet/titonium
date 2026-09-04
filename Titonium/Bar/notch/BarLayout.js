@@ -11,6 +11,10 @@ function centerX(containerWidth, itemWidth) {
     return Math.max(0, Math.round((container - item) / 2));
 }
 
+function symmetricCenterReservation(primaryWidth, trailingExtent) {
+    return finiteNonNegative(primaryWidth) + finiteNonNegative(trailingExtent) * 2;
+}
+
 function optionalVisibility(containerWidth, startWidth, centerWidth, endWidth, gap) {
     const available = finiteNonNegative(containerWidth);
     const required = finiteNonNegative(startWidth) + finiteNonNegative(centerWidth)

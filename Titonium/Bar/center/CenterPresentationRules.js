@@ -57,6 +57,41 @@ function contextTransition(profileValue, reducedMotion) {
     return Object.freeze({ kind: "crossfade", exitMs: 80, enterMs: 120 });
 }
 
+function normalizedBounds(bounds) {
+    var value = bounds && typeof bounds === "object" ? bounds : {};
+    var x = Number(value.x);
+    var y = Number(value.y);
+    var width = Number(value.width);
+    var height = Number(value.height);
+    return Object.freeze({
+        x: Number.isFinite(x) ? x : 0,
+        y: Number.isFinite(y) ? y : 0,
+        width: Number.isFinite(width) ? Math.max(0, width) : 0,
+        height: Number.isFinite(height) ? Math.max(0, height) : 0,
+    });
+}
+
+function combinedVisualBounds(primary, secondary, secondaryVisible) {
+    var primaryBounds = normalizedBounds(primary);
+    if (secondaryVisible !== true)
+        return primaryBounds;
+    var secondaryBounds = normalizedBounds(secondary);
+    if (secondaryBounds.width <= 0 || secondaryBounds.height <= 0)
+        return primaryBounds;
+    var left = Math.min(primaryBounds.x, secondaryBounds.x);
+    var top = Math.min(primaryBounds.y, secondaryBounds.y);
+    var right = Math.max(primaryBounds.x + primaryBounds.width,
+        secondaryBounds.x + secondaryBounds.width);
+    var bottom = Math.max(primaryBounds.y + primaryBounds.height,
+        secondaryBounds.y + secondaryBounds.height);
+    return Object.freeze({
+        x: left,
+        y: top,
+        width: right - left,
+        height: bottom - top,
+    });
+}
+
 function secondaryIndicatorTransition(previous, indicator) {
     var previousValue = previous && typeof previous === "object" ? previous : {};
     var nextValue = indicator && typeof indicator === "object" ? indicator : {};
