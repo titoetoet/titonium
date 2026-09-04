@@ -27,6 +27,19 @@ PanelWindow {
         inputMask.changed();
     }
 
+    function closeIntent(): var {
+        if (window.viewState.mode === "banner"
+                && window.viewState.dismissalPolicy === "timed") {
+            return Object.freeze({
+                type: "user-dismiss-presentation",
+                generation: window.viewState.generation,
+                contextId: window.viewState.selectedContextId,
+                deadline: window.viewState.deadlineToken,
+            });
+        }
+        return Object.freeze({ type: "request-mode", mode: "compact" });
+    }
+
     onWantsInteractiveFocusChanged: {
         if (window.focusLease)
             FocusArbiter.request(window.focusOwnerId, window.focusLease,
@@ -84,7 +97,7 @@ PanelWindow {
             const point = eventPoint.position;
             if (point.x < bounds.x || point.x > bounds.x + bounds.width
                     || point.y < bounds.y || point.y > bounds.y + bounds.height)
-                CenterSurfaceController.dispatch({ type: "request-mode", mode: "compact" });
+                CenterSurfaceController.dispatch(window.closeIntent());
         }
     }
     CenterRenderer {
@@ -99,7 +112,7 @@ PanelWindow {
             if (window.dismissing)
                 CenterSurfaceController.finishClose(window.screenModel.name, generation);
         }
-        Keys.onEscapePressed: CenterSurfaceController.dispatch({ type: "request-mode", mode: "compact" })
+        Keys.onEscapePressed: CenterSurfaceController.dispatch(window.closeIntent())
     }
 
     Component.onDestruction: {

@@ -9,6 +9,7 @@ QtObject {
     id: root
 
     signal notificationPublished(var notification)
+    signal notificationRetired(string key, string reason)
 
     property var timerState: CenterTimerRules.initialState()
     property double scheduledAt: 0
@@ -127,7 +128,11 @@ QtObject {
     }
 
     function acknowledge(id: string): bool {
-        return CenterAttentionService.acknowledge("timer:" + id.trim());
+        const normalizedId = id.trim();
+        const acknowledged = CenterAttentionService.acknowledge("timer:" + normalizedId);
+        if (normalizedId)
+            root.notificationRetired("internal:timer_finished:" + normalizedId, "acknowledged");
+        return acknowledged;
     }
 
     function reschedule(): void {

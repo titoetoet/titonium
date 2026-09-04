@@ -84,17 +84,16 @@ timer_state=""
 center_state=""
 for _ in {1..40}; do
     timer_state="$(call_ipc timer state)"
-    center_state="$(call_ipc center state)"
-    if printf '%s\n%s' "$timer_state" "$center_state" | python3 -c '
+    notification_state="$(call_ipc notifications state)"
+    if printf '%s\n%s' "$timer_state" "$notification_state" | python3 -c '
 import json, sys
 timer = json.loads(sys.stdin.readline())
-center = json.loads(sys.stdin.readline())
-current = center.get("current") or {}
+notifications = json.loads(sys.stdin.readline())
+queue = notifications.get("queue") or {}
 ok = (
     timer.get("activeCount") == 0
-    and current.get("kind") == "timer_finished"
-    and current.get("priority") == 70
-    and current.get("actionable") is True
+    and queue.get("count") == 1
+    and queue.get("currentKey") in ("", "internal:timer_finished:acceptance")
 )
 raise SystemExit(0 if ok else 1)
 '; then
@@ -104,17 +103,20 @@ raise SystemExit(0 if ok else 1)
     sleep 0.1
 done
 if [[ $finished != true ]]; then
-    printf 'FAIL Timer did not finish: timer=%q center=%q\n' "$timer_state" "$center_state" >&2
+    printf 'FAIL Timer did not finish: timer=%q notifications=%q\n' \
+        "$timer_state" "$notification_state" >&2
     exit 1
 fi
 
 call_ipc timer acknowledge acceptance >/dev/null
-call_ipc center state | python3 -c '
+printf '%s\n%s' "$(call_ipc notifications state)" "$(call_ipc center state)" | python3 -c '
 import json, sys
-state = json.load(sys.stdin)
-if state.get("current") is not None:
+notifications = json.loads(sys.stdin.readline())
+center = json.loads(sys.stdin.readline())
+queue = notifications.get("queue") or {}
+if queue.get("count") != 0 or queue.get("currentKey") != "":
     raise SystemExit(1)
-if any(item.get("id") == "timer" for item in state.get("indicators", [])):
+if any(item.get("id") == "timer" for item in center.get("indicators", [])):
     raise SystemExit(1)
 '
 

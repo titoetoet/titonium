@@ -20,12 +20,18 @@ QtObject {
         function onNotificationPublished(notification: var): void {
             NotificationCoordinator.publishInternal(notification);
         }
+        function onNotificationRetired(key: string, reason: string): void {
+            NotificationCoordinator.retire(key, reason);
+        }
     }
 
     property Connections timerNotifications: Connections {
         target: CenterTimerService
         function onNotificationPublished(notification: var): void {
             NotificationCoordinator.publishInternal(notification);
+        }
+        function onNotificationRetired(key: string, reason: string): void {
+            NotificationCoordinator.retire(key, reason);
         }
     }
 }

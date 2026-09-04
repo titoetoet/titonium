@@ -31,6 +31,11 @@ function initialState() {
     return stateValue([], [], [], [], null, true, "");
 }
 
+function appliedPreferences(effective, committed, previewActive) {
+    var selected = previewActive === true ? committed : effective;
+    return selected && typeof selected === "object" ? selected : Object.freeze({});
+}
+
 function sourceState(value) {
     return value && typeof value === "object" ? value : initialState();
 }

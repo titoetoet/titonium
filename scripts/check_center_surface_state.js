@@ -113,9 +113,15 @@ const firstDeadlineIdentity = Object.freeze({
     contextId: state.selectedContextId,
     deadline: state.deadlineToken,
 });
+assert.equal(typeof rules.timedPresentationMatches, "function",
+    "timed presentation identity matching must be available");
+assert.equal(rules.timedPresentationMatches(state, firstDeadlineIdentity), true);
+assert.equal(rules.timedPresentationMatches(replacement, firstDeadlineIdentity), false);
 assert.equal(rules.deadlineMatches(state, firstDeadlineIdentity, 5100), true);
 assert.equal(rules.deadlineMatches(replacement, firstDeadlineIdentity, 6000), false);
 assert.strictEqual(rules.pauseDeadline(replacement, firstDeadlineIdentity, 2100), replacement);
+assert.strictEqual(rules.pauseDeadline(state, firstDeadlineIdentity, 5100), state,
+    "an elapsed exact deadline must stay armed for controller completion");
 assert.strictEqual(rules.transition(replacement, snapshot,
     Object.assign({ type: "timeout" }, firstDeadlineIdentity), 6000), replacement);
 state = rules.pauseDeadline(state, firstDeadlineIdentity, 2100);

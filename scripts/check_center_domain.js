@@ -118,6 +118,29 @@ assert.deepEqual(plain(notificationRules.actionIntent(
     "notification.action:open.reply", "notification:native:7")), {
     kind: "action", key: "native:7", actionId: "open.reply",
 });
+const opaqueActionDescriptor = Object.freeze(Object.assign({}, criticalDescriptor, {
+    actions: Object.freeze([
+        Object.freeze({ id: " open ", label: "Spaced" }),
+        Object.freeze({ id: "open", label: "Plain" }),
+        Object.freeze({ id: "   ", label: "Whitespace" }),
+        Object.freeze({ id: "", label: "Empty" }),
+    ]),
+}));
+const opaqueCapabilities = plain(notificationRules.capabilities(
+    opaqueActionDescriptor, criticalContext.id, labels));
+assert.deepEqual(opaqueCapabilities.slice(0, 3).map(action => action.id), [
+    "notification.action:%20open%20",
+    "notification.action:open",
+    "notification.action:%20%20%20",
+]);
+assert.deepEqual(plain(notificationRules.actionIntent(
+    opaqueCapabilities[0].id, criticalContext.id)), {
+    kind: "action", key: "native:7", actionId: " open ",
+});
+assert.deepEqual(plain(notificationRules.actionIntent(
+    opaqueCapabilities[2].id, criticalContext.id)), {
+    kind: "action", key: "native:7", actionId: "   ",
+});
 assert.deepEqual(plain(notificationRules.actionIntent(
     "notification.dismiss", "notification:native:7")), {
     kind: "dismiss", key: "native:7", actionId: "",

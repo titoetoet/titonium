@@ -41,6 +41,8 @@ def main() -> int:
         "readonly property var unread:",
         "readonly property var currentCritical:",
         "readonly property int criticalQueueCount:",
+        "readonly property var appliedPreferences: CoordinatorRules.appliedPreferences(",
+        "Preferences.committedState, Preferences.previewActive)",
         "function publish(descriptor: var): bool",
         "function publishInternal(event: var): bool",
         "function read(key: string): bool",
@@ -53,8 +55,10 @@ def main() -> int:
         "function retire(key: string, reason: string): bool",
         "NotificationRules.resolvePolicy",
         "CoordinatorRules.reclassify",
+        "function onCommittedStateChanged(): void { root.reclassify(); }",
         "NotificationService.dismiss(key)",
         "NotificationService.invokeAction(key, actionId)",
+        "root.appliedNotificationPreferences.keepCriticalUnread !== false",
     ))
     if coordinator.count("Timer {") != 0:
         errors.append("NotificationCoordinator must not own a presentation deadline Timer")
@@ -64,6 +68,15 @@ def main() -> int:
         if forbidden_countdown in coordinator:
             errors.append(
                 f"NotificationCoordinator owns forbidden presentation clock state: {forbidden_countdown}")
+    for preview_coupling in (
+        "descriptor, Preferences.effectiveState",
+        "root.coordinatorState, Preferences.effectiveState",
+        "function onNotificationsChanged(): void { root.reclassify(); }",
+        "Preferences.notifications.keepCriticalUnread",
+    ):
+        if preview_coupling in coordinator:
+            errors.append(
+                f"NotificationCoordinator destructively follows Settings preview: {preview_coupling}")
     for forbidden in ("NotificationServer {", "Process {", "FileView {"):
         if forbidden in coordinator:
             errors.append(f"NotificationCoordinator owns forbidden native behavior: {forbidden}")
@@ -84,17 +97,23 @@ def main() -> int:
     job = JOB.read_text(encoding="utf-8")
     timer = TIMER.read_text(encoding="utf-8")
     for source, label in ((job, "CenterJobService"), (timer, "CenterTimerService")):
-        require(errors, source, label, ("signal notificationPublished(var notification)",))
+        require(errors, source, label, (
+            "signal notificationPublished(var notification)",
+            "signal notificationRetired(string key, string reason)",
+        ))
         if "import qs.Titonium.Services.Notifications" in source:
             errors.append(f"{label} must emit values without importing Notifications")
     require(errors, job, "CenterJobService", (
         'result.event.kind === "job_failed"',
         'result.event.kind === "job_requires_action"',
         "root.notificationPublished(result.event)",
+        'root.notificationRetired("internal:job_failed:" + normalizedId, "source-cleared")',
+        'root.notificationRetired("internal:job_requires_action:" + normalizedId, "source-cleared")',
     ))
     require(errors, timer, "CenterTimerService", (
         'event.kind === "timer_finished"',
         "root.notificationPublished(publishedEvent)",
+        'root.notificationRetired("internal:timer_finished:" + normalizedId, "acknowledged")',
     ))
 
     bridge = BRIDGE.read_text(encoding="utf-8") if BRIDGE.is_file() else ""
@@ -107,6 +126,7 @@ def main() -> int:
         "NotificationCoordinator.publish(descriptor)",
         "NotificationCoordinator.retire(key, reason)",
         "NotificationCoordinator.publishInternal(notification)",
+        "function onNotificationRetired(key: string, reason: string): void",
     ))
     if "onDescriptorRemoved" in bridge or "NotificationCoordinator.withdraw" in bridge:
         errors.append("native close must retire presentation instead of deleting coordinator history")

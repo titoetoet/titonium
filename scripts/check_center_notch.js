@@ -28,6 +28,12 @@ assert.match(controller, /CenterSurfaceState\.pauseDeadline/);
 assert.match(controller, /CenterSurfaceState\.resumeDeadline/);
 assert.match(controller, /CenterDomain\.completePresentation/);
 assert.match(controller, /CenterSurfaceState\.applyPresentationResult/);
+assert.match(controller,
+    /intent\.type === "user-dismiss-presentation"[\s\S]*?CenterSurfaceState\.timedPresentationMatches\(root\.internalState, intent\)[\s\S]*?root\.completeActivePresentation\(intent\.contextId, now\)/,
+    "user dismissal must complete the exact generic timed presentation");
+assert.match(controller,
+    /intent\.type === "pause-timeout"[\s\S]*?CenterSurfaceState\.deadlineMatches\(root\.internalState, intent, now\)[\s\S]*?root\.completeActivePresentation\(intent\.contextId, now\)[\s\S]*?CenterSurfaceState\.pauseDeadline/,
+    "hover arriving at an elapsed exact deadline must complete that presentation");
 for (const scheduledField of ["scheduledDeadlineGeneration",
     "scheduledDeadlineContextId", "scheduledDeadline"])
     assert.match(controller, new RegExp(`property .* ${scheduledField}:`));
@@ -58,6 +64,11 @@ assert.match(compact, /x: renderer\.interactiveBounds\.x/);
 assert.match(overlay,
     /window\.viewState\.focusPolicy === "exclusive"[\s\S]*?WlrKeyboardFocus\.Exclusive/);
 assert.match(overlay, /CenterSurfaceController\.finishClose\(/);
+assert.match(overlay,
+    /function closeIntent\(\): var[\s\S]*?window\.viewState\.mode === "banner"[\s\S]*?window\.viewState\.dismissalPolicy === "timed"[\s\S]*?type: "user-dismiss-presentation"/,
+    "timed banner Escape/outside dismissal must be distinct from compact navigation");
+assert.equal((overlay.match(/CenterSurfaceController\.dispatch\(window\.closeIntent\(\)\)/g) || []).length,
+    2, "outside click and Escape must share the user-dismiss presentation intent");
 
 for (const profile of ["Pill", "Notch", "Connected", "Classic"])
     assert.match(renderer, new RegExp(`${profile}\\.${profile}Renderer`));

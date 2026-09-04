@@ -20,6 +20,11 @@ QtObject {
     readonly property bool panelOpen: root.coordinatorState.panelOpen
     readonly property var currentCritical: root.coordinatorState.currentCritical
     readonly property int criticalQueueCount: root.coordinatorState.criticalQueue.length
+    readonly property var appliedPreferences: CoordinatorRules.appliedPreferences(
+        Preferences.effectiveState,
+        Preferences.committedState, Preferences.previewActive)
+    readonly property var appliedNotificationPreferences:
+        root.appliedPreferences.modules?.notifications || ({})
 
     function valuesForKeys(keys: var): var {
         const result = [];
@@ -43,11 +48,11 @@ QtObject {
 
     function publish(descriptor: var): bool {
         const resolved = NotificationRules.resolvePolicy(
-            descriptor, Preferences.effectiveState);
+            descriptor, root.appliedPreferences);
         return root.applyState(CoordinatorRules.publish(
             root.coordinatorState, resolved, Date.now(),
             root.coordinatorState.presentationEligible,
-            Preferences.notifications.toastsEnabled !== false));
+            root.appliedNotificationPreferences.toastsEnabled !== false));
     }
 
     function publishInternal(event: var): bool {
@@ -124,7 +129,7 @@ QtObject {
         let next = CoordinatorRules.read(root.coordinatorState, key);
         if (next.currentCritical && next.currentCritical.key === key)
             next = CoordinatorRules.complete(next, key, Date.now(),
-                Preferences.notifications.keepCriticalUnread !== false);
+                root.appliedNotificationPreferences.keepCriticalUnread !== false);
         root.applyState(next);
         return true;
     }
@@ -141,7 +146,7 @@ QtObject {
     function completeCritical(key: string): bool {
         return root.applyState(CoordinatorRules.complete(
             root.coordinatorState, key, Date.now(),
-            Preferences.notifications.keepCriticalUnread !== false));
+            root.appliedNotificationPreferences.keepCriticalUnread !== false));
     }
 
     function setCriticalPresentationEligible(eligible: bool): bool {
@@ -151,14 +156,14 @@ QtObject {
 
     function reclassify(): bool {
         const resolver = descriptor => NotificationRules.resolvePolicy(
-            descriptor, Preferences.effectiveState);
+            descriptor, root.appliedPreferences);
         return root.applyState(CoordinatorRules.reclassify(
-            root.coordinatorState, Preferences.effectiveState, Date.now(), resolver,
-            Preferences.notifications.toastsEnabled !== false));
+            root.coordinatorState, root.appliedPreferences, Date.now(), resolver,
+            root.appliedNotificationPreferences.toastsEnabled !== false));
     }
 
     property Connections preferencesConnection: Connections {
         target: Preferences
-        function onNotificationsChanged(): void { root.reclassify(); }
+        function onCommittedStateChanged(): void { root.reclassify(); }
     }
 }

@@ -347,8 +347,8 @@ def validate_composition(errors: list[str]) -> None:
         errors.append("App must import the notification presentation module")
     device_path = ROOT / "Titonium/Ipc/DeviceIpc.qml"
     device_source = device_path.read_text(encoding="utf-8") if device_path.is_file() else ""
-    if "import qs.Titonium.Core.Runtime" not in device_source:
-        errors.append("notifications IPC policy projection must import runtime preferences")
+    if "import qs.Titonium.Services.Notifications" not in device_source:
+        errors.append("notifications IPC policy projection must consume the coordinator")
     ipc = notification_ipc(device_source)
     if not ipc:
         errors.append("DeviceIpc must expose the narrow notifications IPC target")
@@ -370,15 +370,17 @@ def validate_composition(errors: list[str]) -> None:
             "count: NotificationCoordinator.criticalQueueCount",
             "currentKey: NotificationCoordinator.currentCritical?.key || \"\"",
             "policy: {",
-            "mode: Preferences.notifications.policyMode === \"custom\" ? \"custom\" : \"automatic\"",
-            "allowCriticalOnIsland: Preferences.notifications.allowCriticalOnIsland !== false",
-            "keepCriticalUnread: Preferences.notifications.keepCriticalUnread !== false",
+            "mode: NotificationCoordinator.appliedNotificationPreferences.policyMode === \"custom\"",
+            "NotificationCoordinator.appliedNotificationPreferences.allowCriticalOnIsland !== false",
+            "NotificationCoordinator.appliedNotificationPreferences.keepCriticalUnread !== false",
             "NotificationCoordinator.markAllRead()",
         ):
             if fragment not in ipc:
                 errors.append(f"notifications IPC missing narrow state contract: {fragment}")
         if "NotificationService" in ipc:
             errors.append("notifications IPC must project NotificationCoordinator state")
+        if "Preferences.notifications" in ipc:
+            errors.append("notifications IPC must not report unapplied Settings preview policy")
 
 
 def main() -> int:

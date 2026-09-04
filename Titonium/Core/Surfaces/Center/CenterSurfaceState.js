@@ -195,6 +195,12 @@ function deadlineIdentityMatches(state, intent) {
         && Number(intent.deadline) === state.deadlineToken;
 }
 
+function timedPresentationMatches(state, intent) {
+    return deadlineIdentityMatches(state, intent)
+        && state.mode === "banner"
+        && state.dismissalPolicy === "timed";
+}
+
 function deadlineMatches(state, intent, now) {
     return deadlineIdentityMatches(state, intent)
         && state.mode === "banner"
@@ -206,7 +212,8 @@ function deadlineMatches(state, intent, now) {
 
 function pauseDeadline(state, intent, now) {
     if (!deadlineIdentityMatches(state, intent) || state.mode !== "banner"
-            || state.deadline <= 0)
+            || state.deadline <= 0 || !Number.isFinite(now)
+            || Number(now) >= state.deadline)
         return state;
     return nextState(state, { remainingMs: Math.max(0, state.deadline - Number(now)),
         deadline: 0 }, false);

@@ -2,7 +2,6 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell.Io
-import qs.Titonium.Core.Runtime
 import qs.Titonium.Core.Screens
 import qs.Titonium.Core.Surfaces
 import qs.Titonium.Overlays.Audio
@@ -107,9 +106,12 @@ QtObject {
                     currentKey: NotificationCoordinator.currentCritical?.key || "",
                 },
                 policy: {
-                    mode: Preferences.notifications.policyMode === "custom" ? "custom" : "automatic",
-                    allowCriticalOnIsland: Preferences.notifications.allowCriticalOnIsland !== false,
-                    keepCriticalUnread: Preferences.notifications.keepCriticalUnread !== false,
+                    mode: NotificationCoordinator.appliedNotificationPreferences.policyMode === "custom"
+                        ? "custom" : "automatic",
+                    allowCriticalOnIsland:
+                        NotificationCoordinator.appliedNotificationPreferences.allowCriticalOnIsland !== false,
+                    keepCriticalUnread:
+                        NotificationCoordinator.appliedNotificationPreferences.keepCriticalUnread !== false,
                 },
             });
         }

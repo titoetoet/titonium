@@ -10,6 +10,10 @@ function key(value) {
     return typeof value === "string" ? value.trim() : "";
 }
 
+function opaqueId(value) {
+    return typeof value === "string" && value.length > 0 ? value : "";
+}
+
 function label(labels, name) {
     return text(labels && labels[name]);
 }
@@ -20,7 +24,7 @@ function contextId(descriptor) {
 }
 
 function actionCapabilityId(actionId) {
-    var id = key(actionId);
+    var id = opaqueId(actionId);
     return id ? "notification.action:" + encodeURIComponent(id) : "";
 }
 

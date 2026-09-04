@@ -56,6 +56,14 @@ QtObject {
         return CenterDomain.setPresentationEligible(root.automaticPresentationEligible);
     }
 
+    function completeActivePresentation(contextId: string, now: double): var {
+        const result = CenterDomain.completePresentation(contextId);
+        if (result.accepted)
+            root.replaceState(CenterSurfaceState.applyPresentationResult(
+                root.internalState, CenterDomain.snapshot, result, now));
+        return result;
+    }
+
     function dispatch(intent: var): var {
         if (!intent || typeof intent !== "object")
             return false;
@@ -92,9 +100,29 @@ QtObject {
                 root.internalState, CenterDomain.snapshot, result, Date.now()));
             return result;
         }
+        if (intent.type === "user-dismiss-presentation") {
+            if (!CenterSurfaceState.timedPresentationMatches(root.internalState, intent))
+                return false;
+            const now = Date.now();
+            const result = root.completeActivePresentation(intent.contextId, now);
+            if (result.accepted)
+                return result;
+            return root.replaceState(CenterSurfaceState.transition(
+                root.internalState, CenterDomain.snapshot,
+                { type: "request-mode", mode: "compact" }, now));
+        }
         if (intent.type === "pause-timeout") {
+            const now = Date.now();
+            if (CenterSurfaceState.deadlineMatches(root.internalState, intent, now)) {
+                const result = root.completeActivePresentation(intent.contextId, now);
+                if (result.accepted)
+                    return result;
+                return root.replaceState(CenterSurfaceState.transition(
+                    root.internalState, CenterDomain.snapshot,
+                    Object.assign({}, intent, { type: "timeout" }), now));
+            }
             return root.replaceState(CenterSurfaceState.pauseDeadline(
-                root.internalState, intent, Date.now()));
+                root.internalState, intent, now));
         }
         if (intent.type === "resume-timeout") {
             return root.replaceState(CenterSurfaceState.resumeDeadline(
@@ -104,12 +132,9 @@ QtObject {
             const now = Date.now();
             if (!CenterSurfaceState.deadlineMatches(root.internalState, intent, now))
                 return false;
-            const result = CenterDomain.completePresentation(root.selectedContextId);
-            if (result.accepted) {
-                root.replaceState(CenterSurfaceState.applyPresentationResult(
-                    root.internalState, CenterDomain.snapshot, result, now));
+            const result = root.completeActivePresentation(intent.contextId, now);
+            if (result.accepted)
                 return result;
-            }
             return root.replaceState(CenterSurfaceState.transition(
                 root.internalState, CenterDomain.snapshot, intent, now));
         }

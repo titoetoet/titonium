@@ -9,6 +9,7 @@ QtObject {
     id: root
 
     signal notificationPublished(var notification)
+    signal notificationRetired(string key, string reason)
 
     property var jobState: CenterJobRules.initialState()
 
@@ -121,9 +122,14 @@ QtObject {
     }
 
     function clear(id: string): string {
+        const normalizedId = id.trim();
         const result = CenterJobRules.clear(root.jobState, id);
-        const eventCleared = CenterAttentionService.clear("job:" + id.trim());
+        const eventCleared = CenterAttentionService.clear("job:" + normalizedId);
         root.removeActivity(id);
+        if (normalizedId) {
+            root.notificationRetired("internal:job_failed:" + normalizedId, "source-cleared");
+            root.notificationRetired("internal:job_requires_action:" + normalizedId, "source-cleared");
+        }
         if (result.error)
             return eventCleared ? "ok" : result.error;
         root.jobState = result.next;

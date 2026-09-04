@@ -16,6 +16,13 @@ const source = fs.readFileSync(rulesPath, "utf8").replace(/^\.pragma library\s*\
 const rules = vm.createContext({});
 vm.runInContext(source, rules, { filename: rulesPath });
 
+const notificationRulesPath = path.join(root, "Titonium", "Services", "Notifications",
+    "NotificationRules.js");
+const notificationRules = vm.createContext({});
+vm.runInContext(fs.readFileSync(notificationRulesPath, "utf8")
+    .replace(/^\.pragma library\s*\n/, ""), notificationRules,
+{ filename: notificationRulesPath });
+
 const centerRulesPath = path.join(root, "Titonium", "Services", "Center", "adapters",
     "NotificationCenterRules.js");
 const centerRules = vm.createContext({ encodeURIComponent, decodeURIComponent });
@@ -234,6 +241,60 @@ assert.deepEqual(plain(replacementOrder.criticalQueue.map(entry => entry.key)),
     ["native:queued-a", "native:queued-b", "native:promoted"]);
 assert.equal(replacementOrder.criticalQueue[0], refreshedQueuedA);
 console.log("PASS reclassification preserves queued replacements before newly promoted toasts");
+
+const committedPreferences = Object.freeze({ modules: Object.freeze({
+    notifications: Object.freeze({
+        policyMode: "automatic",
+        allowCriticalOnIsland: true,
+        toastsEnabled: true,
+        applicationOverrides: Object.freeze({}),
+    }),
+}) });
+const previewPreferences = [
+    Object.freeze({ modules: Object.freeze({ notifications: Object.freeze({
+        policyMode: "custom", allowCriticalOnIsland: true, toastsEnabled: true,
+        applicationOverrides: Object.freeze({ "preview.desktop": "block" }),
+    }) }) }),
+    Object.freeze({ modules: Object.freeze({ notifications: Object.freeze({
+        policyMode: "custom", allowCriticalOnIsland: true, toastsEnabled: true,
+        applicationOverrides: Object.freeze({ "preview.desktop": "quiet" }),
+    }) }) }),
+    Object.freeze({ modules: Object.freeze({ notifications: Object.freeze({
+        policyMode: "automatic", allowCriticalOnIsland: true, toastsEnabled: false,
+        applicationOverrides: Object.freeze({}),
+    }) }) }),
+];
+assert.equal(typeof rules.appliedPreferences, "function",
+    "coordinator rules must select committed policy while Settings preview is active");
+let previewBaseline = rules.publish(rules.initialState(), item(
+    "native:visible-preview", "center", 100,
+    { appId: "preview.desktop" }), 100, true, true);
+previewBaseline = rules.publish(previewBaseline, item(
+    "native:pending-preview", "toast", 200,
+    { appId: "preview.desktop" }), 200, true, true);
+for (const preview of previewPreferences) {
+    const appliedDuringPreview = rules.appliedPreferences(
+        preview, committedPreferences, true);
+    assert.strictEqual(appliedDuringPreview, committedPreferences);
+    const previewed = rules.reclassify(previewBaseline, appliedDuringPreview, 300,
+        notificationRules.resolvePolicy,
+        appliedDuringPreview.modules.notifications.toastsEnabled);
+    const appliedAfterCancel = rules.appliedPreferences(
+        committedPreferences, committedPreferences, false);
+    const canceled = rules.reclassify(previewed, appliedAfterCancel, 400,
+        notificationRules.resolvePolicy,
+        appliedAfterCancel.modules.notifications.toastsEnabled);
+    assert.strictEqual(previewed.currentCritical, previewBaseline.currentCritical,
+        "preview must not replace the visible FIFO item");
+    assert.strictEqual(canceled.currentCritical, previewBaseline.currentCritical,
+        "Cancel must preserve the visible FIFO item");
+    assert.deepEqual(plain(canceled.history.map(entry => entry.key)),
+        ["native:pending-preview", "native:visible-preview"]);
+    assert.deepEqual(plain(canceled.toastKeys), ["native:pending-preview"]);
+    assert.deepEqual(plain(canceled.criticalQueue.map(entry => entry.key)),
+        ["native:visible-preview"]);
+}
+console.log("PASS block, quiet, and toast-disable previews cancel without destructive reclassification");
 
 const read = rules.read(reclassified, "native:pending");
 assert.deepEqual(plain(read.unreadKeys), ["native:current"]);
