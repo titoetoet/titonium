@@ -121,7 +121,8 @@ def validate_settings(data: Any) -> list[str]:
         overrides = notifications.get("applicationOverrides")
         if not isinstance(overrides, dict):
             errors.append("modules.notifications.applicationOverrides must be an object")
-        elif any(not isinstance(app_id, str) or not app_id
+        elif any(not isinstance(app_id, str) or not app_id.strip()
+                 or app_id.strip() in {"__proto__", "prototype", "constructor"}
                  or mode not in {"follow", "quiet", "normal", "critical", "block"}
                  for app_id, mode in overrides.items()):
             errors.append("modules.notifications.applicationOverrides is invalid")

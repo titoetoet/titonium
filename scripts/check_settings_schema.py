@@ -49,6 +49,8 @@ def validate(value: Any, schema: dict[str, Any], path: str = "$") -> list[str]:
         errors.append(f"{path}: must be one of {schema['enum']!r}")
     if isinstance(value, str) and "minLength" in schema and len(value) < schema["minLength"]:
         errors.append(f"{path}: must have at least {schema['minLength']} characters")
+    if isinstance(value, str) and "pattern" in schema and re.search(schema["pattern"], value) is None:
+        errors.append(f"{path}: must match {schema['pattern']!r}")
     if isinstance(value, int) and not isinstance(value, bool):
         if "minimum" in schema and value < schema["minimum"]:
             errors.append(f"{path}: must be at least {schema['minimum']}")
@@ -56,6 +58,10 @@ def validate(value: Any, schema: dict[str, Any], path: str = "$") -> list[str]:
             errors.append(f"{path}: must be at most {schema['maximum']}")
     if isinstance(value, dict):
         properties = schema.get("properties", {})
+        property_names = schema.get("propertyNames")
+        if isinstance(property_names, dict):
+            for key in value:
+                errors.extend(validate(key, property_names, f"{path}.<propertyName>"))
         for key in schema.get("required", []):
             if key not in value:
                 errors.append(f"{path}: missing required property {key!r}")
@@ -145,6 +151,15 @@ def main() -> int:
     if not any(error.startswith("$.modules.notifications.applicationOverrides.org.example.Mail:")
                for error in errors):
         raise AssertionError("invalid notification override was accepted by the JSON Schema")
+    for app_id in ("", "   ", "__proto__", " prototype ", " constructor "):
+        invalid_app_id = copy.deepcopy(defaults)
+        invalid_app_id["modules"]["notifications"]["applicationOverrides"] = {
+            app_id: "quiet",
+        }
+        errors = validate(invalid_app_id, schema)
+        if not any(error.startswith("$.modules.notifications.applicationOverrides.<propertyName>:")
+                   for error in errors):
+            raise AssertionError(f"unsafe notification override ID was accepted: {app_id!r}")
     print("PASS settings v7 JSON Schema defaults, notification policy, hidden-Dock parity, fixture, and invalid-style rejection")
     return 0
 

@@ -60,6 +60,15 @@ assert.deepEqual(plain(normal), {
 assert.equal(Object.isFrozen(normal), true);
 assert.equal(Object.isFrozen(normal.actions), true);
 
+const actionsDescriptor = rules.descriptor({
+    id: 8,
+    appId: "org.example.Actions",
+    actions: [{ id: " reply ", label: " Reply " }],
+}, 1235);
+assert.deepEqual(plain(actionsDescriptor.actions), [{ id: "reply", label: "Reply" }]);
+assert.equal(Object.isFrozen(actionsDescriptor.actions), true);
+assert.equal(Object.isFrozen(actionsDescriptor.actions[0]), true);
+
 assert.deepEqual(plain(rules.resolvePolicy(native(0), preferences())), {
     ...plain(normal),
     urgency: 0,
@@ -102,6 +111,23 @@ for (const [kind, category] of [
         receivedAt: 2000,
     });
 }
+
+const internalSingleSpace = rules.descriptor({
+    key: "internal:job_failed:build 42",
+    source: "internal",
+    kind: "job_failed",
+}, 2001);
+const internalDoubleSpace = rules.descriptor({
+    key: "internal:job_failed:build  42",
+    source: "internal",
+    kind: "job_failed",
+}, 2002);
+assert.equal(internalSingleSpace.key, "internal:job_failed:build 42");
+assert.equal(internalDoubleSpace.key, "internal:job_failed:build  42");
+assert.notEqual(internalSingleSpace.key, internalDoubleSpace.key,
+    "internal Job/Timer IDs preserve internal whitespace for exact lifecycle identity");
+assert.equal(rules.resolvePolicy(internalSingleSpace, preferences()).route, "center");
+assert.equal(rules.resolvePolicy(internalDoubleSpace, preferences()).route, "center");
 
 for (const [override, severity, route] of [
     ["follow", "critical", "center"],

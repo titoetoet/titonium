@@ -82,6 +82,10 @@
             "keepCriticalUnread": { "type": "boolean" },
             "applicationOverrides": {
               "type": "object",
+              "propertyNames": {
+                "type": "string",
+                "pattern": "^(?!\\s*$)(?!\\s*(?:__proto__|prototype|constructor)\\s*$).+$"
+              },
               "additionalProperties": { "enum": ["follow", "quiet", "normal", "critical", "block"] }
             }
           }

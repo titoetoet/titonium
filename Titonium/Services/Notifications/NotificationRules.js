@@ -4,6 +4,10 @@ function text(value) {
     return typeof value === "string" ? value.replace(/\s+/g, " ").trim() : "";
 }
 
+function trimmedText(value) {
+    return typeof value === "string" ? value.trim() : "";
+}
+
 function positiveId(value) {
     return Number.isInteger(value) && value > 0 ? value : 0;
 }
@@ -56,7 +60,7 @@ function descriptor(raw, receivedAt) {
     const source = raw && typeof raw === "object" ? raw : {};
     const internal = source.source === "internal";
     const id = internal ? 0 : positiveId(source.id);
-    const key = internal ? text(source.key) : (id ? "native:" + id : "");
+    const key = internal ? trimmedText(source.key) : (id ? "native:" + id : "");
     if (!key || (internal && key.indexOf("internal:") !== 0))
         return null;
     const timestamp = Number(receivedAt);
