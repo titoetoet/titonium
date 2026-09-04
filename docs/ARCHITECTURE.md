@@ -89,8 +89,9 @@ platform menu; without a menu it retains the centered four-corner popup fallback
 compositor window titles, omits the separator when no matching context exists and falls back to
 Titonium. The full Bar input mask is composed from the left, center and right pill hitboxes, preserving
 click-through elsewhere. The End island orders native Wi-Fi, Bluetooth and Audio controls before
-the protected Input Method. Notification state belongs to Dynamic Island content rather than a
-detached Bar bell. Clock remains temporarily disabled.
+the protected Input Method. The always-present `NotificationBell` opens the independent,
+top-right Notification Panel on the clicked screen; its badge reflects session unread state.
+Clock remains temporarily disabled.
 
 ### Edge-connected application menus
 
@@ -126,7 +127,8 @@ a prepared menu requests expanded Center instead. The frozen descriptor selects 
 anchor for the expanding right-pill branch until its exit animation completes. Classic restores
 detached `Shared.Surface` trees for launcher, Workspaces and Active Window on the left, plus
 separate pin, connectivity, and status surfaces on the right. Its centered reservation feeds the
-shared neutral Center owner; notification state is not rendered as a detached bell. Classic Network, Bluetooth, Audio, and System Tray
+shared neutral Center owner; the same always-present Notification Bell routes to the independent
+panel. Classic Network, Bluetooth, Audio, and System Tray
 popups use their existing OverlayHost surfaces rather than the Connected Edge window.
 
 ## State and presentation
@@ -160,9 +162,12 @@ display instead of copying Caelestia's view or theme system.
   and overlay code never imports PipeWire or writes raw node audio fields. Output selection
   re-resolves the requested descriptor ID inside the service before assigning PipeWire's preferred
   default sink.
-- `NotificationService`: the sole `NotificationServer` owner. It turns native objects into frozen,
-  newest-first value descriptors and exposes bounded history, toast IDs and session-only unread
-  state. Native objects never escape the service.
+- `NotificationService`: the sole `NotificationServer` owner. It turns native objects into frozen
+  value descriptors (including standard action values) and emits no native object beyond the
+  service boundary.
+- `NotificationCoordinator`: the shared, session-only history, unread, toast, panel and critical
+  queue authority. It applies policy before presentation; native and internal producers never own
+  panel state, deadlines or Center surfaces.
 - `SystemMonitorService`: an on-demand singleton retained for a standalone System Monitoring
   window. It is intentionally detached from Center and remains inactive until that window owns
   its lifecycle. When active, hot CPU/RAM/GPU metrics sample once per second while the process
@@ -257,8 +262,9 @@ PipeWire-node binding without selecting a device.
 The logical Center uses `closed`, `compact`, `banner`, and `expanded` modes. The domain may expose
 primary and secondary Live Activities without adding a lifecycle mode. AI approval requests
 expanded exclusive focus through the same controller. Notification unread state remains a passive
-indicator; Notification Center is deferred and System Monitor remains detached. The complete
-canonical contract is in `docs/DYNAMIC_ISLAND.md`.
+Bell badge; critical notification banners use the same neutral Center lifecycle, while the history
+panel remains an independent surface. System Monitor remains detached. The complete canonical
+contract is in `docs/DYNAMIC_ISLAND.md`.
 
 ## Protected feature flow
 
@@ -283,7 +289,8 @@ Settings IPC is deliberately lifecycle-only: `open`, `page`, `cancel` and `state
 restore or apply preferences remotely.
 
 Center's primary activation opens the expanded canvas, while secondary activation opens the
-banner. The new expanded canvas has no Settings, Daily Focus or Notification Center action yet.
+banner. The expanded canvas has no Settings or Daily Focus action; notification history is opened
+only through the Notification Bell and its global shortcut.
 Titonium Settings is exposed as a
 desktop entry in the application launcher and opens the standalone Settings surface through its
 lifecycle-only IPC. The Topbar Pin remains an independent Bar control rather than a Center action.
@@ -291,17 +298,43 @@ lifecycle-only IPC. The Topbar Pin remains an independent Bar control rather tha
 ## Native notification boundary
 
 Only `Titonium/Services/Notifications/NotificationService.qml` may import
-`Quickshell.Services.Notifications` or instantiate `NotificationServer`. The server advertises
-plain body support and session persistence only; markup, hyperlinks, images, actions and inline
-reply are disabled until their UI exists. A descriptor contains only `id`, app name/icon, summary,
-plain body, urgency and receive time. History is capped at 100, the active toast queue at three.
+`Quickshell.Services.Notifications` or instantiate `NotificationServer`. The server accepts plain
+body text and standard actions; markup, hyperlinks, inline reply and image payloads remain out of
+scope. A frozen descriptor contains its namespaced stable key, app name/icon, summary, plain body,
+native urgency, resolved severity/route, category, standard action values and receive time. Native
+objects never escape the service.
+
+`NotificationCoordinator` keeps at most 100 newest-first history entries, three passive toast IDs
+and 16 critical queue entries. The policy order is: `block`; a native application's custom override
+when Custom mode is selected; allowlisted internal `job_failed`, `job_requires_action` and
+`timer_finished`; native urgency; then the normal fallback. `follow` continues to the later rules.
+`quiet` records history only, `normal` creates a passive toast, and `critical` enters the FIFO Center
+queue. `allowCriticalOnIsland=false` converts critical presentation to history only. Policy never
+infers severity from title or body; malformed settings safely fall back to Automatic behavior.
+
+Low/normal native notifications enter history and, when enabled, the passive toast stack. Critical
+native or allowlisted internal notifications enter history and the FIFO Center queue without a
+duplicate toast. The `CenterSurfaceController` gives each queue item 4000 ms, pauses its remaining
+deadline while the banner is hovered, resumes it when hover leaves, and does not preempt expanded or
+otherwise user-owned Center interaction. Reduced Motion removes only the cross-fade/slide, not FIFO
+or timer behavior. Standard actions re-resolve through the native service; dismissal and clear-all
+are explicit user intents.
 
 `ToastHost` follows `ScreenPolicy.screens`, so DP-3 receives no Titonium toast surface. Its heavy
 stack loads only while toast IDs exist, takes no keyboard focus or exclusive zone, and masks input
-to the 360px stack. Each card owns one non-repeating five-second timer. Expiry removes presentation
-only; unread remains until the Bell is clicked. Notification history, unread and toast state are
-session-only. Because `org.freedesktop.Notifications` is a session-global D-Bus name, only one
-notification daemon can own it at a time; Titonium acceptance starts Titonium before its fixture.
+to the 360px stack. Each card owns one non-repeating timer. The always-present Bell opens one lazy,
+top-right history panel on its clicked screen and marks entries read only after that panel mounts;
+per-item dismissal, clear-all and standard actions stay inside the panel. Stale or lost-screen
+teardown releases only its matching panel owner. All notification state is session-only.
+
+`org.freedesktop.Notifications` is a session-global D-Bus name, so one daemon owns it at a time.
+`notifications_acceptance.sh` never stops a resident Titonium instance: it reports a skip when one
+is already running. Run its controlled foreground `notify-send` fixture only when the session name
+is free; an isolated D-Bus session is not substituted for this Hyprland-facing acceptance path.
+
+The public `notifications` IPC target deliberately retains only `state()` and `markRead()`. `state()`
+adds read-only scalar panel, critical-queue and effective-policy metadata; it exposes no descriptor
+injection, action, dismissal, policy-patch or panel-control method.
 
 ## Center acceptance seam
 

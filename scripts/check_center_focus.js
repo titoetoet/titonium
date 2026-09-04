@@ -71,7 +71,7 @@ const adapter = fs.readFileSync(path.join(root, "Titonium", "Services", "Center"
     "adapters", "FocusCenterAdapter.qml"), "utf8");
 assert.equal(renderer.includes("CenterFocusStore"), false,
     "Center presentations must not own Daily Focus behavior");
-assert.match(renderer, /root\.context\?\.title/);
+assert.match(renderer, /root\.displayedContext\?\.title/);
 assert.match(adapter, /source: "focus"/);
 assert.match(adapter, /readonly property var actions: Object\.freeze\(\[\]\)/);
 assert.doesNotMatch(adapter, /openScratchpad|Process\s*\{|FileView\s*\{/);

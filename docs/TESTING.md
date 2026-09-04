@@ -17,9 +17,11 @@ or future-service dependency and no mutating Audio IPC. Popup content must remai
 its owner screen.
 
 The notification gates enforce one native `NotificationServer`, exact immutable descriptor fields,
-100-history/three-toast bounds, session-only unread transitions, DP-1-only Variants, lazy stack
-lifecycle and one non-repeating five-second timer per card. Urgent notification projection into
-Dynamic Island is service-mediated; no view imports the native Notifications module.
+100-history/three-toast/16-critical bounds, session-only unread transitions, policy precedence,
+standard-action value projection, DP-1-only toast ownership and lazy stack/panel lifecycle. Pure
+fixtures cover passive versus critical routing, FIFO completion, hover deadline pause/resume,
+custom overrides and stale/lost-screen panel cleanup. No view imports the native Notifications
+module, and the public IPC surface remains `notifications state|markRead` with read-only metadata.
 
 The only allowlisted QML warning is Quickshell 0.3.x metadata marking documented `PanelWindow` as
 uncreatable. New warnings are failures. UI code is rejected when it owns `Process`, `FileView` or
@@ -217,9 +219,9 @@ write clipboard content.
 Center acceptance verifies the `CenterSurfaceHost` namespaces and compact/banner/expanded lifecycle,
 proves that Spotlight compacts Center, and closes both surfaces again. It rejects runtime
 type/load errors, repository writes and changes to either Hyprland configuration hash. Notification
-history remains domain data rather than a presentation-owned route. The historical `centerNotch`
-IPC target is retained for acceptance compatibility; its state/result vocabulary is neutral mode
-state rather than a theme or page contract.
+history remains coordinator domain data; the independent Bell-owned panel consumes it, while Center
+has no history page. The historical `centerNotch` IPC target is retained for acceptance compatibility;
+its state/result vocabulary is neutral mode state rather than a theme or page contract.
 
 Audio acceptance launches one foreground shell and calls only `audio.state`, `audio.popup`,
 `audio.closePopup`, `audio.popupState`, `audio.osdState`, Center and Spotlight lifecycle IPC.
@@ -260,14 +262,16 @@ method or external media command:
 ./scripts/mpris_acceptance.sh
 ```
 
-Notification acceptance stops only Titonium, waits boundedly for its shell ID to be released,
-starts one foreground shell and then sends one controlled `notify-send` fixture. It requires one
-DP-1 toast and no DP-3 toast, verifies five-second presentation expiry preserves unread state, then
-uses the same `markRead()` boundary as the Bell. It rejects runtime errors, repository writes and
-changes to either Hyprland configuration. It does not dismiss or invoke notification actions.
+Notification acceptance never stops a resident Titonium shell: because
+`org.freedesktop.Notifications` has one session owner, it reports a skip when that shell is already
+running. With the name free, it starts one foreground shell and sends controlled normal and critical
+`notify-send` fixtures. It verifies DP-1-only passive toast ownership, history/unread preservation,
+the read-only panel/queue/policy state seam, the four-second critical FIFO route and the same
+`markRead()` boundary as the Bell. It rejects runtime errors, repository writes and changes to either
+Hyprland configuration. It has no injection, action, dismissal or policy-patch IPC; standard-action
+and custom-policy behavior remain deterministic pure/static coverage.
 
-After passing, restart with `qs -d -p /home/cole/Projects/titonium` and manually verify the assigned
-Titonium output:
+After the focused fixture (or its safe skip), manually verify the assigned Titonium output:
 
 - exactly one 44px bar with correct scaling/exclusive zone on DP-1 and no Titonium surface or
   exclusive zone on DP-3;
@@ -354,9 +358,11 @@ and `markRead()` reduced unread to zero.
 
 Manual review: change focus between apps and confirm Center renders the real icon and
 `App · title`, elides cleanly up to 520px, and opens its four-rounded-corner popup at the shared
-52px top offset. Send one to four notifications and inspect newest-first stacking, icon fallback,
-three-line body cap, close control, five-second expiry and the Bell dot. Clicking the Bell must only
-clear the dot. Notification Center, actions and persisted history remain deliberately deferred.
+52px top offset. Send low/normal and critical notifications: inspect newest-first passive stacking,
+icon fallback, three-line body cap, close control and configured toast expiry; confirm critical
+items use the FIFO Center banner with hover pause. The always-present Bell opens one top-right
+history panel on the clicked screen, marks it read after it opens, and exposes standard actions,
+per-item dismissal and clear-all. Persisted history remains deliberately out of scope.
 
 ## Daily Focus Center checkpoint
 
@@ -394,12 +400,13 @@ For a manual check, start a long-running job and confirm the jobs icon remains w
 do not repeatedly replace Daily Focus. Complete, fail and require-action events must use their
 policy priorities, and `clear` must remove only the matching active job or terminal event.
 
-## Center Notifications page checkpoint
+## Notification Center checkpoint
 
-Notification Center is deferred while its replacement is designed. Continue running
-`./scripts/notifications_acceptance.sh` only for the native service, toast expiry, unread state,
-DP-1 layer ownership and repository/Hyprland isolation. Do not treat the retired Center history
-viewport as an acceptance requirement.
+Run `./scripts/notifications_acceptance.sh` only when no resident Titonium instance owns the session
+notification D-Bus name; a `SKIP` is the safe result otherwise. The script covers passive toast and
+critical FIFO routing without synthetic notification IPC. Static fixtures cover action values,
+custom policy, hover pause/resume, panel owner replacement, stale teardown and monitor-loss cleanup.
+Manually verify the Bell-owned history panel rather than the retired Center history viewport.
 
 ## Dynamic Island four-state checkpoint
 

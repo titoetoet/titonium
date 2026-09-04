@@ -39,6 +39,10 @@ assert.equal(projectedDefaults.modules.dock.visibilityMode, "auto-hide");
 assert.deepEqual(projectedDefaults.modules.dock.pinnedIds, []);
 assert.equal(projectedDefaults.modules.notifications.toastsEnabled, true);
 assert.equal(projectedDefaults.modules.notifications.toastDuration, 5000);
+assert.equal(projectedDefaults.modules.notifications.policyMode, "automatic");
+assert.equal(projectedDefaults.modules.notifications.allowCriticalOnIsland, true);
+assert.equal(projectedDefaults.modules.notifications.keepCriticalUnread, true);
+assert.deepEqual(projectedDefaults.modules.notifications.applicationOverrides, {});
 
 const migrated = plain(context.project(legacy, defaults, legacyDock));
 assert.equal(migrated.$schema, "titonium.settings/v7");
@@ -66,6 +70,10 @@ assert.deepEqual(currentProjection.modules.dock.pinnedIds,
     ["org.mozilla.firefox.desktop"]);
 assert.equal(currentProjection.modules.notifications.toastsEnabled, false);
 assert.equal(currentProjection.modules.notifications.toastDuration, 9000);
+assert.equal(currentProjection.modules.notifications.policyMode, "automatic");
+assert.equal(currentProjection.modules.notifications.allowCriticalOnIsland, true);
+assert.equal(currentProjection.modules.notifications.keepCriticalUnread, true);
+assert.deepEqual(currentProjection.modules.notifications.applicationOverrides, {});
 
 const emptyCurrentDock = plain(context.project({
     schemaVersion: 7,
@@ -86,7 +94,19 @@ const invalid = plain(context.project({
         spotlight: { pageTransition: "spin", transitionDuration: 999 },
         bar: { workspaceCount: 99, autoHide: "yes" },
         dock: { visibilityMode: "glass", pinnedIds: ["A", "a", "B"] },
-        notifications: { toastsEnabled: "yes", toastDuration: 1 },
+        notifications: {
+            toastsEnabled: "yes",
+            toastDuration: 1,
+            policyMode: "unsafe",
+            allowCriticalOnIsland: "yes",
+            keepCriticalUnread: "yes",
+            applicationOverrides: {
+                " org.example.Mail ": "quiet",
+                "org.example.Chat": "untrusted",
+                "": "critical",
+                7: "block",
+            },
+        },
         clock: { use24Hour: "yes" },
         audio: { allowAmplification: "yes" },
     },
@@ -104,6 +124,38 @@ assert.equal(invalid.modules.dock.visibilityMode, "auto-hide");
 assert.deepEqual(invalid.modules.dock.pinnedIds, ["A", "B"]);
 assert.equal(invalid.modules.notifications.toastsEnabled, true);
 assert.equal(invalid.modules.notifications.toastDuration, 2000);
+assert.equal(invalid.modules.notifications.policyMode, "automatic");
+assert.equal(invalid.modules.notifications.allowCriticalOnIsland, true);
+assert.equal(invalid.modules.notifications.keepCriticalUnread, true);
+assert.deepEqual(invalid.modules.notifications.applicationOverrides, {
+    "7": "block",
+    "org.example.Mail": "quiet",
+});
+
+const customNotifications = plain(context.project({
+    modules: { notifications: {
+        policyMode: "custom",
+        allowCriticalOnIsland: false,
+        keepCriticalUnread: false,
+        applicationOverrides: {
+            "org.example.Mail": "follow",
+            "org.example.Chat": "quiet",
+            "org.example.Calendar": "normal",
+            "org.example.Build": "critical",
+            "org.example.Spam": "block",
+        },
+    } },
+}, defaults, null));
+assert.equal(customNotifications.modules.notifications.policyMode, "custom");
+assert.equal(customNotifications.modules.notifications.allowCriticalOnIsland, false);
+assert.equal(customNotifications.modules.notifications.keepCriticalUnread, false);
+assert.deepEqual(customNotifications.modules.notifications.applicationOverrides, {
+    "org.example.Mail": "follow",
+    "org.example.Chat": "quiet",
+    "org.example.Calendar": "normal",
+    "org.example.Build": "critical",
+    "org.example.Spam": "block",
+});
 
 assert.equal(context.project({ modules: { bar: { style: "classic" } } }, defaults, null)
     .modules.bar.style, "classic");

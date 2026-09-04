@@ -34,6 +34,8 @@ def main() -> int:
             "function clear(id: string): string",
             "function snapshot(): string",
             "function activate(): void",
+            "signal notificationPublished(var notification)",
+            "signal notificationRetired(string key, string reason)",
             "CenterJobRules.start",
             "CenterJobRules.progress",
             "CenterJobRules.complete",
@@ -48,6 +50,12 @@ def main() -> int:
             "function removeActivity(id: string): void",
             "CenterActivityService.upsert({",
             "CenterActivityService.remove(\"job:\" + id.trim())",
+            'result.event.kind === "job_failed"',
+            'result.event.kind === "job_requires_action"',
+            "root.notificationPublished(result.event)",
+            'root.notificationRetired("internal:job_failed:" + normalizedId, "source-cleared")',
+            'root.notificationRetired("internal:job_requires_action:" + normalizedId, "source-cleared")',
+            "CenterAttentionService.clear(result.event.id)",
             '"id": "job:" + job.id',
             '"source": "job"',
             '"label": job.label',
@@ -70,9 +78,14 @@ def main() -> int:
             "hyprctl",
             "ps ",
             "/proc",
+            "import qs.Titonium.Services.Notifications",
         ):
             if forbidden in source:
                 errors.append(f"CenterJobService has forbidden ownership: {forbidden}")
+        clear_index = source.find("CenterAttentionService.clear(result.event.id)")
+        publish_index = source.find("root.notificationPublished(result.event)")
+        if clear_index < 0 or publish_index < 0 or clear_index > publish_index:
+            errors.append("CenterJobService must clear the exact legacy event before rerouting it")
 
     if RULES.is_file():
         source = RULES.read_text(encoding="utf-8")

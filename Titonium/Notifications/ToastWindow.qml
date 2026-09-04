@@ -10,12 +10,12 @@ PanelWindow {
     id: window
     required property ShellScreen screenModel
     readonly property real panelTop: Metrics.barHeight + Metrics.barSpacing
-    readonly property int toastCount: NotificationService.toastNotifications.length
+    readonly property int toastCount: NotificationCoordinator.toasts.length
     readonly property real stackHeight: window.toastCount * 120
         + Math.max(0, window.toastCount - 1) * Metrics.spacingSmall
 
     screen: window.screenModel
-    visible: NotificationService.toastNotifications.length > 0
+    visible: NotificationCoordinator.toasts.length > 0
     color: "transparent"
     implicitWidth: 360 + Metrics.barPadding * 2
     implicitHeight: window.panelTop + window.stackHeight + Metrics.barPadding
@@ -38,7 +38,7 @@ PanelWindow {
         anchors.right: parent.right
         anchors.topMargin: window.panelTop
         anchors.rightMargin: Metrics.barPadding
-        active: NotificationService.toastNotifications.length > 0
+        active: NotificationCoordinator.toasts.length > 0
         sourceComponent: ToastStack {
             screenModel: window.screenModel
         }

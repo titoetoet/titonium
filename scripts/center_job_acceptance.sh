@@ -36,6 +36,31 @@ call_ipc() {
     qs -p "$runtime_root" ipc --pid "$shell_pid" call "$@"
 }
 
+wait_for_notification_queue() {
+    local expected_count="$1"
+    local expected_key="$2"
+    local state=""
+    for _ in {1..40}; do
+        state="$(call_ipc notifications state 2>/dev/null || true)"
+        if python3 -c '
+import json, sys
+try:
+    state = json.loads(sys.argv[1])
+except Exception:
+    raise SystemExit(1)
+queue = state.get("queue") or {}
+raise SystemExit(0 if queue.get("count") == int(sys.argv[2])
+    and queue.get("currentKey") in ("", sys.argv[3]) else 1)
+' "$state" "$expected_count" "$expected_key"; then
+            return 0
+        fi
+        sleep 0.1
+    done
+    printf 'FAIL Notification queue mismatch: expected=%s:%q state=%q\n' \
+        "$expected_count" "$expected_key" "$state" >&2
+    return 1
+}
+
 XDG_DATA_HOME="$test_dir/data" \
 XDG_STATE_HOME="$test_dir/state" \
 XDG_CACHE_HOME="$test_dir/cache" \
@@ -117,35 +142,38 @@ if [[ "$(call_ipc job clear build)" != "ok" ]]; then
     echo "FAIL terminal Job event could not be cleared" >&2
     exit 1
 fi
+call_ipc centerNotch close >/dev/null
 
 call_ipc job start download Download normal >/dev/null
 call_ipc job fail download "Download failed" >/dev/null
-printf '%s' "$(call_ipc center state)" | python3 -c '
-import json, sys
-current = (json.load(sys.stdin).get("current") or {})
-if current.get("kind") != "job_failed" or current.get("priority") != 70:
-    raise SystemExit(1)
-'
+wait_for_notification_queue 1 "internal:job_failed:download"
 call_ipc job clear download >/dev/null
+wait_for_notification_queue 0 ""
 
 call_ipc job start deploy Deploy important >/dev/null
 call_ipc job requireAction deploy "Approve deployment" >/dev/null
-printf '%s\n%s' "$(call_ipc job state)" "$(call_ipc center state)" | python3 -c '
+wait_for_notification_queue 1 "internal:job_requires_action:deploy"
+printf '%s\n%s' "$(call_ipc job state)" "$(call_ipc notifications state)" | python3 -c '
 import json, sys
 jobs = json.loads(sys.stdin.readline())
-center = json.loads(sys.stdin.readline())
-current = center.get("current") or {}
+notifications = json.loads(sys.stdin.readline())
+queue = notifications.get("queue") or {}
 if jobs.get("activeCount") != 1 or jobs["jobs"][0].get("status") != "requires_action":
     raise SystemExit(1)
-if current.get("kind") != "job_requires_action" or current.get("priority") != 90:
+if queue.get("count") != 1 or queue.get("currentKey") not in (
+        "", "internal:job_requires_action:deploy"):
     raise SystemExit(1)
 '
 call_ipc job clear deploy >/dev/null
-printf '%s\n%s' "$(call_ipc job state)" "$(call_ipc center state)" | python3 -c '
+printf '%s\n%s\n%s' "$(call_ipc job state)" "$(call_ipc notifications state)" \
+    "$(call_ipc center state)" | python3 -c '
 import json, sys
 jobs = json.loads(sys.stdin.readline())
+notifications = json.loads(sys.stdin.readline())
 center = json.loads(sys.stdin.readline())
-if jobs.get("activeCount") != 0 or center.get("current") is not None:
+queue = notifications.get("queue") or {}
+if jobs.get("activeCount") != 0 or queue.get("count") != 0 \
+        or queue.get("currentKey") != "":
     raise SystemExit(1)
 if any(item.get("id") == "jobs" for item in center.get("indicators", [])):
     raise SystemExit(1)

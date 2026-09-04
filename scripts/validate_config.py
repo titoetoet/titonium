@@ -101,7 +101,9 @@ def validate_settings(data: Any) -> list[str]:
         elif len({entry.casefold() for entry in pinned_ids}) != len(pinned_ids):
             errors.append("modules.dock.pinnedIds must be case-insensitively unique")
     notifications = modules.get("notifications")
-    if not isinstance(notifications, dict) or set(notifications) != {"toastsEnabled", "toastDuration"}:
+    if not isinstance(notifications, dict) or set(notifications) != {
+            "toastsEnabled", "toastDuration", "policyMode", "allowCriticalOnIsland",
+            "keepCriticalUnread", "applicationOverrides"}:
         errors.append("modules.notifications has an invalid shape")
     else:
         if not isinstance(notifications.get("toastsEnabled"), bool):
@@ -110,6 +112,20 @@ def validate_settings(data: Any) -> list[str]:
         if (not isinstance(toast_duration, int) or isinstance(toast_duration, bool)
                 or not 2000 <= toast_duration <= 10000):
             errors.append("modules.notifications.toastDuration must be an integer from 2000 to 10000")
+        if notifications.get("policyMode") not in {"automatic", "custom"}:
+            errors.append("modules.notifications.policyMode is invalid")
+        if not isinstance(notifications.get("allowCriticalOnIsland"), bool):
+            errors.append("modules.notifications.allowCriticalOnIsland must be a boolean")
+        if not isinstance(notifications.get("keepCriticalUnread"), bool):
+            errors.append("modules.notifications.keepCriticalUnread must be a boolean")
+        overrides = notifications.get("applicationOverrides")
+        if not isinstance(overrides, dict):
+            errors.append("modules.notifications.applicationOverrides must be an object")
+        elif any(not isinstance(app_id, str) or not app_id.strip()
+                 or app_id.strip() in {"__proto__", "prototype", "constructor"}
+                 or mode not in {"follow", "quiet", "normal", "critical", "block"}
+                 for app_id, mode in overrides.items()):
+            errors.append("modules.notifications.applicationOverrides is invalid")
     clock = modules.get("clock")
     if not isinstance(clock, dict) or set(clock) != {"use24Hour"}:
         errors.append("modules.clock must contain only use24Hour")

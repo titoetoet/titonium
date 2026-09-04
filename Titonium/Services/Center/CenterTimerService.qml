@@ -8,6 +8,9 @@ import "CenterTimerRules.js" as CenterTimerRules
 QtObject {
     id: root
 
+    signal notificationPublished(var notification)
+    signal notificationRetired(string key, string reason)
+
     property var timerState: CenterTimerRules.initialState()
     property double scheduledAt: 0
 
@@ -34,9 +37,13 @@ QtObject {
     }
 
     function publishEvent(event: var): void {
-        CenterAttentionService.publish(Object.assign({}, event, {
+        const publishedEvent = Object.freeze(Object.assign({}, event, {
             "title": root.eventTitle(event)
         }));
+        if (event.kind === "timer_finished")
+            root.notificationPublished(publishedEvent);
+        else
+            CenterAttentionService.publish(publishedEvent);
     }
 
     function syncIndicator(active: bool): void {
@@ -121,7 +128,11 @@ QtObject {
     }
 
     function acknowledge(id: string): bool {
-        return CenterAttentionService.acknowledge("timer:" + id.trim());
+        const normalizedId = id.trim();
+        const acknowledged = CenterAttentionService.acknowledge("timer:" + normalizedId);
+        if (normalizedId)
+            root.notificationRetired("internal:timer_finished:" + normalizedId, "acknowledged");
+        return acknowledged;
     }
 
     function reschedule(): void {

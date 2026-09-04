@@ -1,2 +1,3 @@
 module Titonium.Services.Notifications
+singleton NotificationCoordinator 1.0 NotificationCoordinator.qml
 singleton NotificationService 1.0 NotificationService.qml

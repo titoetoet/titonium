@@ -48,3 +48,11 @@ function geometry(profileValue, availableGeometry, mode) {
         width: width, height: Math.min(selected.height, availableHeight), radius: selected.radius
     });
 }
+
+function contextTransition(profileValue, reducedMotion) {
+    var crossfade = profileValue && profileValue.transitions
+        && profileValue.transitions.contextChange === "crossfade";
+    if (reducedMotion === true || !crossfade)
+        return Object.freeze({ kind: "replace", exitMs: 0, enterMs: 0 });
+    return Object.freeze({ kind: "crossfade", exitMs: 80, enterMs: 120 });
+}

@@ -94,14 +94,30 @@ QtObject {
         target: "notifications"
         function state(): string {
             return JSON.stringify({
-                descriptorCount: NotificationService.notifications.length,
-                toastCount: NotificationService.toastNotifications.length,
-                unreadCount: NotificationService.unreadCount,
+                descriptorCount: NotificationCoordinator.history.length,
+                toastCount: NotificationCoordinator.toasts.length,
+                unreadCount: NotificationCoordinator.unreadCount,
+                panel: {
+                    open: NotificationCoordinator.panelOpen,
+                    ownerId: NotificationCoordinator.coordinatorState.panelOwnerId,
+                },
+                queue: {
+                    count: NotificationCoordinator.criticalQueueCount,
+                    currentKey: NotificationCoordinator.currentCritical?.key || "",
+                },
+                policy: {
+                    mode: NotificationCoordinator.appliedNotificationPreferences.policyMode === "custom"
+                        ? "custom" : "automatic",
+                    allowCriticalOnIsland:
+                        NotificationCoordinator.appliedNotificationPreferences.allowCriticalOnIsland !== false,
+                    keepCriticalUnread:
+                        NotificationCoordinator.appliedNotificationPreferences.keepCriticalUnread !== false,
+                },
             });
         }
         function markRead(): string {
-            NotificationService.markAllRead();
-            return String(NotificationService.unreadCount);
+            NotificationCoordinator.markAllRead();
+            return String(NotificationCoordinator.unreadCount);
         }
     }
 

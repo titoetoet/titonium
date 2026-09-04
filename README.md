@@ -8,8 +8,10 @@ baseline features.
 ## Current UI
 
 - A 44 logical-pixel Bar with five Workspaces, Active Window context, Center attention/activity,
-  Notification history access, Topbar pin, Wi-Fi, Bluetooth, Audio and Input Method.
-- A lazy Center Notch with an Overview and a direct Notification history route.
+  an always-present Notification Bell, Topbar pin, Wi-Fi, Bluetooth, Audio and Input Method.
+- A lazy Center Notch for semantic attention/activity plus an independent top-right history panel
+  opened by the Notification Bell. Critical notifications use the Center FIFO banner; history,
+  standard actions, per-item dismissal and clear-all belong to the Bell-owned panel.
 - Spotlight Applications and Clipboard flows on `Super + Space` and `Super + V`.
 - A native Dock, audio popup/OSD, notification toasts, window switcher and transactional Settings.
 - An opt-in local Agent Approval surface for supported Antigravity and Codex approval requests
@@ -36,6 +38,7 @@ qs -p /home/cole/Projects/titonium ipc call app status
 qs -p /home/cole/Projects/titonium ipc call spotlight toggle
 qs -p /home/cole/Projects/titonium ipc call spotlight clipboard
 qs -p /home/cole/Projects/titonium ipc call centerNotch open overview
+qs -p /home/cole/Projects/titonium ipc call notifications state
 qs -p /home/cole/Projects/titonium ipc call audio state
 qs -p /home/cole/Projects/titonium ipc call bluetooth state
 ```

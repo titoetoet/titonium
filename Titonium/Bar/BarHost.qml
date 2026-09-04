@@ -9,6 +9,7 @@ import "center/CenterPresentationRules.js" as CenterPresentationRules
 Scope {
     id: root
     signal settingsRequested(var screen)
+    signal notificationsRequested(var screen, var invoker)
 
     Variants {
         model: ScreenPolicy.screens
@@ -17,6 +18,8 @@ Scope {
             required property var modelData
             BarSurface {
                 screenModel: screenScope.modelData
+                onNotificationsRequested: (screen, invoker) =>
+                    root.notificationsRequested(screen, invoker)
             }
             CenterSurfaceHost {
                 screenModel: screenScope.modelData

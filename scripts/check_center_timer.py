@@ -32,6 +32,8 @@ def main() -> int:
             "function acknowledge(id: string): bool",
             "function snapshot(): string",
             "function activate(): void",
+            "signal notificationPublished(var notification)",
+            "signal notificationRetired(string key, string reason)",
             "CenterTimerRules.start",
             "CenterTimerRules.cancel",
             "CenterTimerRules.advance",
@@ -51,6 +53,9 @@ def main() -> int:
             "function removeMissingActivities(previousState: var, nextState: var): void",
             "CenterActivityService.upsert({",
             "CenterActivityService.remove(\"timer:\" + id.trim())",
+            'event.kind === "timer_finished"',
+            "root.notificationPublished(publishedEvent)",
+            'root.notificationRetired("internal:timer_finished:" + normalizedId, "acknowledged")',
             '"id": "timer:" + timer.id',
             '"source": "timer"',
             '"label": timer.label',
@@ -73,6 +78,7 @@ def main() -> int:
             "ttl:",
             "import qs.Titonium.Bar",
             "import qs.Titonium.Overlays",
+            "import qs.Titonium.Services.Notifications",
         ):
             if forbidden in source:
                 errors.append(f"CenterTimerService has forbidden dependency: {forbidden}")

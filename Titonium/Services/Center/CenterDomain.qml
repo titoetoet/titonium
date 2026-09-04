@@ -9,8 +9,12 @@ QtObject {
     id: root
 
     signal presentationRequested(var request)
+    signal presentationEnded(var request)
 
     property var storedSnapshot: null
+    property string activePresentationId: ""
+    property string activePresentationOwnerId: ""
+    property string activePresentationContextId: ""
     readonly property var rawProjection: ({
         contexts: capture.contexts.concat(media.contexts, notifications.contexts,
             approval.contexts, focus.contexts, timers.contexts, jobs.contexts),
@@ -31,6 +35,63 @@ QtObject {
         return dispatcher.dispatch(root.snapshot, intent);
     }
 
+    function setPresentationEligible(eligible: bool): bool {
+        let changed = false;
+        const adapters = [root.notifications];
+        for (let index = 0; index < adapters.length; index++) {
+            const adapter = adapters[index];
+            const previousPresentationId = String(adapter.presentation?.id || "");
+            const adapterChanged = adapter.setPresentationEligible(eligible);
+            changed = adapterChanged || changed;
+            if (adapterChanged && eligible) {
+                root.rebuild();
+                const resumedPresentationId = String(adapter.presentation?.id || "");
+                root.syncAdapterPresentation(adapter,
+                    previousPresentationId === resumedPresentationId);
+            }
+        }
+        return changed;
+    }
+
+    function adapterForContext(contextId: string): var {
+        const context = root.snapshot.contexts.find(item => item.id === contextId);
+        return context ? dispatcher.routes[context.source] : null;
+    }
+
+    function completePresentation(contextId: string): var {
+        const adapter = root.adapterForContext(contextId);
+        return adapter && typeof adapter.completePresentation === "function"
+            ? adapter.completePresentation(contextId) : Object.freeze({
+            accepted: false,
+            status: "stale",
+            reason: "missing-presentation",
+            closePolicy: "keep",
+        });
+    }
+
+    function syncAdapterPresentation(adapter: var, force: bool): void {
+        const presentation = adapter?.presentation || null;
+        const nextId = String(presentation?.id || "");
+        if (!force && nextId === root.activePresentationId)
+            return;
+        const previousId = root.activePresentationId;
+        const previousOwnerId = root.activePresentationOwnerId;
+        const previousContextId = root.activePresentationContextId;
+        root.activePresentationId = nextId;
+        root.activePresentationOwnerId = String(presentation?.ownerId || "");
+        root.activePresentationContextId = String(presentation?.contextId || "");
+        if (presentation) {
+            root.presentationRequested(presentation);
+            return;
+        }
+        if (previousId)
+            root.presentationEnded(Object.freeze({
+                id: previousId,
+                ownerId: previousOwnerId,
+                contextId: previousContextId,
+            }));
+    }
+
     function contextIdForPresentation(presentation: var): string {
         if (!presentation)
             return "";
@@ -49,6 +110,8 @@ QtObject {
             return;
         root.presentationRequested(Object.freeze({
             id: String(presentation.id || contextId) + ":presentation",
+            ownerId: String(presentation.source || "attention"),
+            acquisitionPolicy: "preemptive",
             contextId: contextId,
             requestedMode: "banner",
             attention: presentation.source === "agent" ? "blocking" : "transient",
@@ -82,6 +145,17 @@ QtObject {
         }
     }
 
+    property Connections automaticPresentationConnection: Connections {
+        target: root.notifications
+        function onPresentationChanged(): void {
+            root.rebuild();
+            root.syncAdapterPresentation(root.notifications, false);
+        }
+    }
+
     onRawProjectionChanged: root.rebuild()
-    Component.onCompleted: root.rebuild()
+    Component.onCompleted: {
+        root.rebuild();
+        root.syncAdapterPresentation(root.notifications, false);
+    }
 }

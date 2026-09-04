@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Hyprland
 import qs.Titonium.Bar
+import qs.Titonium.Core.Runtime
 import qs.Titonium.Core.Surfaces
 import qs.Titonium.Dock
 import qs.Titonium.Ipc
@@ -17,6 +18,7 @@ Scope {
 
     ServiceBootstrap { id: serviceBootstrap }
     BluetoothAudioBridge {}
+    NotificationBridge {}
 
     SurfaceRouter {
         id: router
@@ -26,6 +28,8 @@ Scope {
 
     BarHost {
         onSettingsRequested: screen => router.openSettings(screen, "bar")
+        onNotificationsRequested: (screen, invoker) =>
+            router.toggleNotificationPanel(screen, invoker)
     }
 
     GlobalShortcut {
@@ -33,6 +37,13 @@ Scope {
         name: "dynamicIsland"
         description: "Open Expanded Dynamic Island"
         onPressed: router.openCenter(null, "overview", "")
+    }
+
+    GlobalShortcut {
+        appid: "titonium"
+        name: "notifications"
+        description: I18n.tr("shortcut.notifications.description")
+        onPressed: router.toggleNotificationPanel(null, null)
     }
 
     DockHost {

@@ -25,16 +25,18 @@ The previous feature roadmap is retired. Work now advances by researched capabil
 3. **Network/Wi-Fi native slice — automated acceptance complete, visual approval pending.** Native
    networking ownership, normalized descriptors, secret boundary, compact Bar control and lazy
    popup are implemented without command helpers.
-4. **Notification toast slice — complete.** One native service, immutable bounded history,
-   session-only unread Bell and a DP-1-only lazy stack of at most three five-second toasts passed
-   focused and protected acceptance on 2026-08-27.
+4. **Independent Notification Center — complete.** One native service, immutable bounded history,
+   an always-present Bell, a lazy screen-owned history panel, standard actions, per-application
+   policy, passive DP-1-only toasts and a critical FIFO Center route are covered by focused static
+   and safe foreground acceptance.
 5. **Settings Center V1 — implementation and isolated acceptance complete; visual approval
    pending.** Eight lazy pages now edit a single transactional settings v7 model with
    Preview/Apply/Cancel, legacy Dock projection and DP-1-only lifecycle. The remaining checkpoint
    is manual visual review plus persistence/rollback verification against backed-up live data.
 
-Deferred notification work is a rebuilt Notification Center, action invocation, persistence and
-per-application policy. The retired Center history view is not part of the completed toast slice.
+Notification persistence: persisted history remains a separately scoped storage decision; the
+completed panel, action and policy contracts are session-only. The retired Center history view is
+not part of the independent Bell-owned panel.
 
 ## Continuing reference-repository research
 
@@ -44,7 +46,8 @@ code. The first research set should cover:
 
 1. Hyprland Workspaces and System Tray.
 2. Audio and reusable slider/OSD behavior.
-3. Notification Center and action lifecycle, building on the completed toast service.
+3. Notification persistence and producer-specific reliability, building on the completed independent
+   panel, action and FIFO contracts.
 4. Further Network/Bluetooth reliability and device-detail patterns.
 
 ## Integration order
@@ -52,8 +55,8 @@ code. The first research set should cover:
 1. Replace one temporary bar widget using the selected reference pattern.
 2. Add System Tray as a bounded bar module.
 3. Establish animation and theme-input policy (static JSON or matugen) without coupling features.
-4. Add Notification Center/actions as a separate Service-contract extension → lazy View → live
-   acceptance milestone; do not expand the ToastHost into a god surface.
+4. Evaluate persisted notification storage only as a separately scoped Service-contract extension;
+   preserve the existing independent panel and never expand `ToastHost` into a god surface.
 5. Extend Settings only when another real module exposes a stable preference; keep mutation in the
    existing v7 transaction instead of adding per-page stores.
 

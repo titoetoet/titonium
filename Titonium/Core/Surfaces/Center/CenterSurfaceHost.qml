@@ -15,6 +15,14 @@ Scope {
                 screenName: root.screenModel.name });
     }
 
+    Component.onDestruction: {
+        if (CenterSurfaceController.ownerScreenName === root.screenModel.name)
+            CenterSurfaceController.dispatch({
+                type: "surface-revoked",
+                reason: "screen-removed",
+            });
+    }
+
     CenterCompactWindow {
         screenModel: root.screenModel
         snapshot: CenterDomain.snapshot

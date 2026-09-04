@@ -22,7 +22,11 @@
     },
     "notifications": {
       "toastsEnabled": true,
-      "toastDuration": 5000
+      "toastDuration": 5000,
+      "policyMode": "automatic",
+      "allowCriticalOnIsland": true,
+      "keepCriticalUnread": true,
+      "applicationOverrides": {}
     },
     "clock": { "use24Hour": true },
     "audio": { "allowAmplification": false }
