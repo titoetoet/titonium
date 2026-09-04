@@ -5,6 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CONTROLLER = ROOT / "Titonium/Core/Surfaces/Center/CenterSurfaceController.qml"
 ROUTER = ROOT / "Titonium/Orchestration/SurfaceRouter.qml"
+HOST_ROOT = ROOT / "Titonium/Core/Surfaces/Center"
 
 errors = []
 if not CONTROLLER.exists():
@@ -30,6 +31,10 @@ router_source = ROUTER.read_text()
 for fragment in ("function openCenter(", "function presentCenterBanner(", "function closeCenter("):
     if fragment not in router_source:
         errors.append(f"router missing neutral API: {fragment}")
+
+for filename in ("CenterSurfaceHost.qml", "CenterCompactWindow.qml", "CenterOverlayWindow.qml"):
+    if not (HOST_ROOT / filename).exists():
+        errors.append(f"missing neutral host file: {filename}")
 
 if errors:
     print("FAIL neutral Center architecture")

@@ -1,2 +1,5 @@
 module qs.Titonium.Core.Surfaces.Center
 singleton CenterSurfaceController 1.0 CenterSurfaceController.qml
+CenterSurfaceHost 1.0 CenterSurfaceHost.qml
+CenterCompactWindow 1.0 CenterCompactWindow.qml
+CenterOverlayWindow 1.0 CenterOverlayWindow.qml
