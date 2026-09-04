@@ -8,6 +8,7 @@ import "NotificationCenterRules.js" as NotificationCenterRules
 QtObject {
     id: root
 
+    property int unreadRevision: 0
     readonly property var currentCritical: NotificationCoordinator.currentCritical
     readonly property var labels: Object.freeze({
         fallbackTitle: I18n.tr("notification.toast.fallback_app"),
@@ -26,6 +27,8 @@ QtObject {
             }),
         tone: "normal",
         active: NotificationCoordinator.hasUnread,
+        count: NotificationCoordinator.unreadCount,
+        revision: root.unreadRevision,
     })])
     readonly property var actions: root.context
         ? NotificationCenterRules.capabilities(
@@ -68,5 +71,10 @@ QtObject {
             closePolicy: NotificationCenterRules.closePolicy(
                 accepted, !!NotificationCoordinator.currentCritical),
         });
+    }
+
+    property Connections unreadConnections: Connections {
+        target: NotificationCoordinator
+        function onUnreadCountChanged(): void { root.unreadRevision += 1; }
     }
 }

@@ -100,17 +100,29 @@ function normalizeContext(raw, now) {
 }
 
 function normalizeIndicator(raw) {
-    var allowlist = { id: true, icon: true, accessibleName: true, tone: true, active: true };
+    var allowlist = { id: true, icon: true, accessibleName: true, tone: true, active: true,
+        count: true, revision: true };
     if (!hasOnly(raw, allowlist))
         return null;
     var id = text(raw.id);
     var icon = text(raw.icon);
     var accessibleName = text(raw.accessibleName);
     var tone = text(raw.tone);
-    if (!id || !icon || !accessibleName || !TONES[tone] || typeof raw.active !== "boolean")
+    var hasCount = Object.prototype.hasOwnProperty.call(raw, "count");
+    var hasRevision = Object.prototype.hasOwnProperty.call(raw, "revision");
+    var count = Number(raw.count);
+    var revision = Number(raw.revision);
+    if (!id || !icon || !accessibleName || !TONES[tone] || typeof raw.active !== "boolean"
+            || (hasCount && (!Number.isInteger(count) || count < 0))
+            || (hasRevision && (!Number.isInteger(revision) || revision < 0)))
         return null;
-    return Object.freeze({ id: id, icon: icon, accessibleName: accessibleName,
-        tone: tone, active: raw.active });
+    var result = { id: id, icon: icon, accessibleName: accessibleName,
+        tone: tone, active: raw.active };
+    if (hasCount)
+        result.count = count;
+    if (hasRevision)
+        result.revision = revision;
+    return Object.freeze(result);
 }
 
 function normalizeCapability(raw, contextIds) {

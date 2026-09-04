@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import qs.Titonium.Core.Runtime
+import qs.Titonium.Bar.center
 import qs.Titonium.Shared as Shared
 import qs.Titonium.Theme
 import "../../CenterPresentationRules.js" as PresentationRules
@@ -20,6 +21,8 @@ FocusScope {
     property var pendingContext: null
     readonly property var contextActions: root.snapshot.capabilities.actions.filter(
         item => root.displayedContext && item.contextId === root.displayedContext.id)
+    readonly property var notificationIndicator: root.snapshot.indicators.find(
+        item => item.id === "notification:unread") || null
     readonly property var contextTransitionPlan:
         PresentationRules.contextTransition(root.profile, Motion.reduced)
     readonly property real shoulderSize: 18
@@ -176,6 +179,21 @@ FocusScope {
                 onFinished: root.transitionFinished(root.viewState.generation)
             }
         }
+    }
+
+    CenterSecondaryPill {
+        id: secondaryPill
+        x: shape.x + shape.width
+        y: shape.y
+        width: implicitWidth
+        height: root.profile.compact.height
+        indicator: root.notificationIndicator
+        rendererVisible: root.visible && root.viewState.mode === "compact"
+        backgroundColor: Theme.light ? "#ffffff" : "#000000"
+        topLeftRadius: 0
+        bottomLeftRadius: 0
+        topRightRadius: root.profile.compact.radius
+        bottomRightRadius: root.profile.compact.radius
     }
 
     SequentialAnimation {

@@ -199,6 +199,28 @@ const second = rules.snapshot(first, Object.assign({}, raw, {
 }), 102);
 assert.equal(second.revision, 2);
 assert.equal(second.indicators[0].id, "recording");
+const unreadIndicator = rules.normalizeIndicator({
+    id: "notification:unread",
+    icon: "notifications",
+    accessibleName: "3 unread notifications",
+    tone: "normal",
+    active: true,
+    count: 3,
+    revision: 7,
+});
+assert.deepEqual(plain(unreadIndicator), {
+    id: "notification:unread",
+    icon: "notifications",
+    accessibleName: "3 unread notifications",
+    tone: "normal",
+    active: true,
+    count: 3,
+    revision: 7,
+});
+assert.equal(Object.isFrozen(unreadIndicator), true);
+assert.equal(rules.normalizeIndicator(Object.assign({}, unreadIndicator, { count: -1 })), null);
+assert.equal(rules.normalizeIndicator(Object.assign({}, unreadIndicator, { count: 1.5 })), null);
+assert.equal(rules.normalizeIndicator(Object.assign({}, unreadIndicator, { revision: -1 })), null);
 console.log("PASS semantic snapshots are recursively frozen and revision-stable");
 
 const staleCapability = rules.normalizeCapability({
