@@ -6,7 +6,7 @@ const path = require("node:path");
 const vm = require("node:vm");
 
 const root = path.join(__dirname, "..");
-const rulesPath = path.join(root, "Titonium", "Bar", "islands",
+const rulesPath = path.join(root, "Titonium", "Bar", "center",
     "CenterPresentationRules.js");
 
 if (!fs.existsSync(rulesPath)) {
@@ -36,3 +36,33 @@ assert.equal(rules.leadingIcon(null, null, [
 ]), "center_focus_strong");
 assert.equal(rules.leadingIcon({ icon: "   " }, null), "center_focus_strong");
 console.log("PASS each Center presentation owns exactly one matching icon");
+
+function plain(value) { return JSON.parse(JSON.stringify(value)); }
+for (const style of ["pill", "notch", "connected", "classic"]) {
+    const profile = rules.profile(style);
+    assert.equal(profile.id, style);
+    assert.ok(Object.isFrozen(profile));
+    assert.ok(Object.isFrozen(profile.capabilities));
+}
+const connected = rules.profile("connected");
+assert.deepEqual(plain(connected.compact),
+    { inset: 4, minWidth: 160, maxWidth: 480, height: 32, radius: 16 });
+assert.equal(rules.geometry(connected, { width: 360, height: 800 }, "expanded").width, 320);
+assert.equal(rules.profile("invalid").id, "connected");
+console.log("PASS four Center presentation profiles provide frozen clamped geometry");
+
+for (const file of [
+    "CenterRenderer.qml",
+    "presentations/Connected/ConnectedRenderer.qml",
+    "presentations/Connected/ConnectedProfile.js",
+]) assert.equal(fs.existsSync(path.join(path.dirname(rulesPath), file)), true, `missing ${file}`);
+const renderer = fs.readFileSync(path.join(path.dirname(rulesPath),
+    "presentations/Connected/ConnectedRenderer.qml"), "utf8");
+for (const fragment of ["required property var snapshot", "required property var viewState",
+    "required property var profile", "signal intentRequested(var intent)",
+    "signal transitionFinished(int generation)", "readonly property rect visualBounds",
+    "readonly property rect interactiveBounds"])
+    assert.ok(renderer.includes(fragment), `Connected renderer missing ${fragment}`);
+assert.doesNotMatch(renderer, /Services\.(Capture|Mpris|Notifications|AgentApproval|Center)/);
+assert.doesNotMatch(renderer, /\b(Process|FileView|Timer)\s*\{/);
+console.log("PASS Connected renderer exposes neutral state and intent contract");
