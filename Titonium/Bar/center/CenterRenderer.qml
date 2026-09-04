@@ -1,0 +1,35 @@
+pragma ComponentBehavior: Bound
+
+import QtQuick
+import "presentations/Classic" as Classic
+import "presentations/Connected" as Connected
+import "presentations/Notch" as Notch
+import "presentations/Pill" as Pill
+
+Item {
+    id: root
+    required property var snapshot
+    required property var viewState
+    required property var profile
+    signal intentRequested(var intent)
+    signal transitionFinished(int generation)
+    readonly property var activeRenderer: root.profile.id === "pill" ? pill
+        : (root.profile.id === "notch" ? notch
+        : (root.profile.id === "classic" ? classic : connected))
+    readonly property rect visualBounds: root.activeRenderer.visualBounds
+    readonly property rect interactiveBounds: root.activeRenderer.interactiveBounds
+
+    Connected.ConnectedRenderer {
+        id: connected
+        anchors.fill: parent
+        visible: root.profile.id === "connected"
+        snapshot: root.snapshot
+        viewState: root.viewState
+        profile: root.profile
+        onIntentRequested: intent => root.intentRequested(intent)
+        onTransitionFinished: generation => root.transitionFinished(generation)
+    }
+    Pill.PillRenderer { id: pill; anchors.fill: parent; visible: root.profile.id === "pill"; snapshot: root.snapshot; viewState: root.viewState; profile: root.profile; onIntentRequested: intent => root.intentRequested(intent); onTransitionFinished: generation => root.transitionFinished(generation) }
+    Notch.NotchRenderer { id: notch; anchors.fill: parent; visible: root.profile.id === "notch"; snapshot: root.snapshot; viewState: root.viewState; profile: root.profile; onIntentRequested: intent => root.intentRequested(intent); onTransitionFinished: generation => root.transitionFinished(generation) }
+    Classic.ClassicRenderer { id: classic; anchors.fill: parent; visible: root.profile.id === "classic"; snapshot: root.snapshot; viewState: root.viewState; profile: root.profile; onIntentRequested: intent => root.intentRequested(intent); onTransitionFinished: generation => root.transitionFinished(generation) }
+}

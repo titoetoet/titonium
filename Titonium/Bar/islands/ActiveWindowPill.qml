@@ -1,8 +1,8 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.Titonium.Core.Surfaces.Center
 import QtQuick.Layouts
-import qs.Titonium.Bar.notch
 import qs.Titonium.Bar.right
 import qs.Titonium.Core.Runtime
 import qs.Titonium.Services.Applications
@@ -32,7 +32,7 @@ FocusScope {
         root.trayContext,
         root.activeWindow?.title || "",
         root.trayMenuAvailable)
-    readonly property bool notchOpen: CenterNotchCoordinator.ownerScreenName === root.screen.name
+    readonly property bool notchOpen: CenterSurfaceController.ownerScreenName === root.screen.name
     // Centre on the title rail that is actually painted. Using the full layout
     // width is incorrect for long, elided titles (for example Discord), while
     // using titleLabel alone ignores the leading app identity.
@@ -62,10 +62,11 @@ FocusScope {
         RightPillCoordinator.setInvocationContext(root.screen, root);
         if (RightPillCoordinator.toggleApp(
                 root.screen.name, "left", root.activeWindow?.appId || "", root.appName)) {
-            CenterNotchCoordinator.close();
+            CenterSurfaceController.dispatch({ type: "request-mode", mode: "compact" });
             return;
         }
-        CenterNotchCoordinator.openExpanded(root.screen.name);
+        CenterSurfaceController.dispatch({ type: "request-open",
+            screenName: root.screen.name, mode: "expanded" });
     }
 
     RowLayout {

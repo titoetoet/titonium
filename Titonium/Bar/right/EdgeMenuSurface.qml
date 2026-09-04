@@ -1,9 +1,9 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.Titonium.Core.Surfaces.Center
 import Quickshell
 import qs.Titonium.Bar.islands
-import qs.Titonium.Bar.notch
 import qs.Titonium.Overlays.SystemTray
 import qs.Titonium.Shared as Shared
 import qs.Titonium.Theme
@@ -141,13 +141,13 @@ FocusScope {
             enabled: root.ownsMenu
             onTapped: eventPoint => {
                 const point = eventPoint.position;
-                const centerWidth = Math.max(180,
-                    Math.min(340, CenterNotchCoordinator.islandWidth));
+                const centerWidth = 220;
                 const inCenter = point.x >= (root.width - centerWidth) / 2
                     && point.x <= (root.width + centerWidth) / 2
                     && point.y <= 40;
                 if (inCenter) {
-                    CenterNotchCoordinator.openExpanded(root.screenModel.name);
+                    CenterSurfaceController.dispatch({ type: "request-open",
+                        screenName: root.screenModel.name, mode: "expanded" });
                     return;
                 }
                 const inLeft = point.x <= root.presentedLeftCompactWidth

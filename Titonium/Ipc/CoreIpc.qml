@@ -1,8 +1,8 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.Titonium.Core.Surfaces.Center
 import Quickshell.Io
-import qs.Titonium.Bar.notch
 import qs.Titonium.Core.Runtime
 import qs.Titonium.Core.Screens
 import qs.Titonium.Core.Surfaces
@@ -50,27 +50,24 @@ QtObject {
             const screen = ScreenRouter.screenForName(HyprlandService.focusedMonitorName);
             if (!screen)
                 return "unavailable:no-screen";
-            return root.router.openCenterNotch(screen, page);
+            return root.router.openCenter(screen, page, "");
         }
         function page(page: string): string {
-            if (!CenterNotchCoordinator.requestPage(page))
+            if (!CenterSurfaceController.active)
                 return "unavailable:closed";
+            CenterSurfaceController.dispatch({ type: "request-mode",
+                mode: page === "banner" ? "banner" : "expanded" });
             return centerNotchIpc.state();
         }
         function close(): string {
-            CenterNotchCoordinator.close();
+            root.router.closeCenter("ipc-close");
             return "closed";
         }
         function state(): string {
-            const context = CenterNotchCoordinator.selectedContext || {};
-            const contextValue = (context.source || "idle") + ":" + (context.id || "");
-            if (!CenterNotchCoordinator.active)
-                return "closed;state=" + CenterNotchCoordinator.visualState
-                    + ";context=" + contextValue;
-            return "open:" + CenterNotchCoordinator.ownerScreenName
-                + ";page=" + CenterNotchCoordinator.requestedPage
-                + ";state=" + CenterNotchCoordinator.visualState
-                + ";context=" + contextValue;
+            if (!CenterSurfaceController.active)
+                return "closed";
+            return "open:" + CenterSurfaceController.ownerScreenName
+                + ";mode=" + CenterSurfaceController.mode;
         }
     }
 

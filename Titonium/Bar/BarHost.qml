@@ -1,15 +1,13 @@
 pragma ComponentBehavior: Bound
 
 import Quickshell
-import qs.Titonium.Bar.notch
 import qs.Titonium.Bar.right
 import qs.Titonium.Core.Screens
+import qs.Titonium.Core.Surfaces.Center
+import "center/CenterPresentationRules.js" as CenterPresentationRules
 
 Scope {
     id: root
-    signal centerRequested(var screen)
-    signal bannerRequested(var screen, var context, bool autoDismiss)
-    signal sourceRequested(var screen, string intent)
     signal settingsRequested(var screen)
 
     Variants {
@@ -19,15 +17,10 @@ Scope {
             required property var modelData
             BarSurface {
                 screenModel: screenScope.modelData
-                onCenterRequested: screen => root.centerRequested(screen)
-                onSourceRequested: (screen, intent) => root.sourceRequested(screen, intent)
             }
-            CenterPillWindow {
+            CenterSurfaceHost {
                 screenModel: screenScope.modelData
-                styleName: RightPillCoordinator.presentedStyle
-                onBannerRequested: (screen, context, autoDismiss) =>
-                    root.bannerRequested(screen, context, autoDismiss)
-                onSettingsRequested: screen => root.settingsRequested(screen)
+                profile: CenterPresentationRules.profile(RightPillCoordinator.presentedStyle)
             }
             EdgeMenuWindow {
                 screenModel: screenScope.modelData

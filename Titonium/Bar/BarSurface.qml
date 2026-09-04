@@ -1,10 +1,10 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.Titonium.Core.Surfaces.Center
 import Quickshell
 import Quickshell.Wayland
 import qs.Titonium.Bar.classic
-import qs.Titonium.Bar.notch
 import qs.Titonium.Bar.right
 import qs.Titonium.Core.Runtime
 import qs.Titonium.Theme
@@ -13,13 +13,11 @@ import "BarVisibilityRules.js" as BarVisibilityRules
 PanelWindow {
     id: root
     required property ShellScreen screenModel
-    signal centerRequested(var screen)
-    signal sourceRequested(var screen, string intent)
     readonly property int barHeight: Metrics.barHeight
     readonly property int edgeRevealHeight: 2
     readonly property bool revealRequested: BarVisibilityRules.shouldReveal(
         BarVisibilityState.pinned, edgeRevealHover.hovered, root.barHovered)
-        || CenterNotchCoordinator.active || RightPillCoordinator.active
+        || CenterSurfaceController.active || RightPillCoordinator.active
         || RightPillCoordinator.hovered
     property bool barRevealed: BarVisibilityState.pinned
     screen: root.screenModel
@@ -73,8 +71,6 @@ PanelWindow {
             width: parent.width
             height: parent.height
             screen: root.screenModel
-            onCenterRequested: screen => root.centerRequested(screen)
-            onSourceRequested: (screen, intent) => root.sourceRequested(screen, intent)
         }
     }
 
@@ -85,8 +81,6 @@ PanelWindow {
             width: parent.width
             height: parent.height
             screen: root.screenModel
-            onCenterRequested: screen => root.centerRequested(screen)
-            onSourceRequested: (screen, intent) => root.sourceRequested(screen, intent)
         }
     }
 

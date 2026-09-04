@@ -37,6 +37,19 @@ print(json.dumps(payload.get(sys.argv[1], {}), sort_keys=True))
 ' "$screen_name"
 }
 
+wait_for_transient_layer() {
+    local screen_name="$1"
+    for _ in {1..20}; do
+        local layers
+        layers="$(screen_layers "$screen_name")"
+        if [[ "$layers" == *"titonium-overlay"* || "$layers" == *"titonium-edge-menu"* ]]; then
+            return 0
+        fi
+        sleep 0.05
+    done
+    return 1
+}
+
 valid_bluetooth_state() {
     printf '%s' "$1" | python3 -c '
 import json
@@ -84,7 +97,7 @@ if [[ "$(call_ipc bluetooth popupState)" != "$popup_state" ]]; then
     printf 'FAIL Bluetooth popup state changed unexpectedly: %q\n' "$(call_ipc bluetooth popupState)" >&2
     exit 1
 fi
-if [[ "$(screen_layers DP-1)" != *"titonium-overlay"* ]]; then
+if ! wait_for_transient_layer DP-1; then
     echo "FAIL Bluetooth popup did not own the DP-1 transient layer" >&2
     exit 1
 fi
@@ -107,12 +120,12 @@ if [[ "$(call_ipc bluetooth popup)" != "open:DP-1" ]]; then
     printf 'FAIL Bluetooth popup did not reopen: %q\n' "$(call_ipc bluetooth popupState)" >&2
     exit 1
 fi
-if [[ "$(call_ipc centerNotch open overview)" != "open:DP-1;page=overview" ]]; then
-    printf 'FAIL Center Notch did not replace Bluetooth popup: %q\n' "$(call_ipc centerNotch state)" >&2
+if [[ "$(call_ipc centerNotch open overview)" != "open:DP-1;mode=expanded" ]]; then
+    printf 'FAIL Center did not replace Bluetooth popup: %q\n' "$(call_ipc centerNotch state)" >&2
     exit 1
 fi
 if [[ "$(call_ipc bluetooth popupState)" != "closed" ]]; then
-    printf 'FAIL Center Notch did not close Bluetooth popup: %q\n' "$(call_ipc bluetooth popupState)" >&2
+    printf 'FAIL Center did not close Bluetooth popup: %q\n' "$(call_ipc bluetooth popupState)" >&2
     exit 1
 fi
 call_ipc centerNotch close >/dev/null

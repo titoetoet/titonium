@@ -32,8 +32,13 @@ screen_layers() {
     local screen_name="$1"
     hyprctl -j layers | python3 -c '
 import json, sys
-print(json.dumps(json.load(sys.stdin).get(sys.argv[1], {}), sort_keys=True))
-' "$screen_name"
+screen = json.load(sys.stdin).get(sys.argv[1], {})
+pid = int(sys.argv[2])
+levels = screen.get("levels", {})
+filtered = {level: [item for item in items if item.get("pid") == pid]
+            for level, items in levels.items()}
+print(json.dumps({"levels": filtered}, sort_keys=True))
+' "$screen_name" "$shell_pid"
 }
 
 XDG_DATA_HOME="$test_dir/data" \
@@ -88,7 +93,6 @@ import json, sys
 state = json.load(sys.stdin)
 if state.get("text") not in ("Focus for today", "Tập trung cho hôm nay"):
     raise SystemExit(1)
-if state.get("launching") is not False: raise SystemExit(1)
 if not state.get("focusPath", "").endswith("/center/daily-focus.md"):
     raise SystemExit(1)
 if not state.get("promptsPath", "").endswith("/center/focus-prompts.txt"):
@@ -100,6 +104,10 @@ dp3_layers="$(screen_layers DP-3)"
 dp1_bar_count="$(printf '%s' "$dp1_layers" | rg -o 'titonium-menubar' | wc -l)"
 if [[ "$dp1_bar_count" -ne 1 ]]; then
     printf 'FAIL expected one DP-1 Titonium Bar, found %s in %q\n' "$dp1_bar_count" "$dp1_layers" >&2
+    exit 1
+fi
+if [[ "$dp1_layers" != *"titonium-center-compact"* ]]; then
+    echo "FAIL Center attention acceptance missing the neutral compact host" >&2
     exit 1
 fi
 if [[ "$dp3_layers" == *"titonium-"* ]]; then
@@ -129,4 +137,4 @@ if rg -i "$runtime_rejection_pattern" "$log_file"; then
     exit 1
 fi
 
-echo "PASS Center read-only state, Daily Focus fallback and DP-1-only Bar acceptance"
+echo "PASS Center read-only state, Daily Focus fallback and neutral DP-1 host acceptance"

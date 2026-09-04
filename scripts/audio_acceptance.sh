@@ -72,17 +72,17 @@ if [[ "$(call_ipc audio popupState)" != "$popup_state" ]]; then
 fi
 
 center_notch_state="$(call_ipc centerNotch open overview)"
-if [[ "$center_notch_state" != "open:${popup_screen};page=overview" ]]; then
-    printf 'FAIL Center Notch screen/page mismatch: expected %q, got %q\n' \
-        "open:${popup_screen};page=overview" "$center_notch_state" >&2
+if [[ "$center_notch_state" != "open:${popup_screen};mode=expanded" ]]; then
+    printf 'FAIL Center screen/mode mismatch: expected %q, got %q\n' \
+        "open:${popup_screen};mode=expanded" "$center_notch_state" >&2
     exit 1
 fi
 if [[ "$(call_ipc audio popupState)" != "closed" ]]; then
-    printf 'FAIL Center Notch did not close Audio popup: %q\n' "$(call_ipc audio popupState)" >&2
+    printf 'FAIL Center did not close Audio popup: %q\n' "$(call_ipc audio popupState)" >&2
     exit 1
 fi
 if [[ "$(call_ipc centerNotch close)" != "closed" ]]; then
-    echo "FAIL Center Notch did not close" >&2
+    echo "FAIL Center did not close" >&2
     exit 1
 fi
 
@@ -138,4 +138,4 @@ if rg -i "$runtime_rejection_pattern" "$log_file"; then
     exit 1
 fi
 
-echo "PASS audio read-only popup, Center Notch and Spotlight acceptance"
+echo "PASS audio read-only popup, Center and Spotlight acceptance"

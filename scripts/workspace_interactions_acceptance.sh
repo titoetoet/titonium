@@ -62,7 +62,7 @@ if not isinstance(state.get("items"), list): raise SystemExit(1)
 '
 
 center_state="$(call_ipc centerNotch open overview)"
-[[ "$center_state" == open:DP-1\;page=overview ]]
+[[ "$center_state" == open:DP-1\;mode=expanded ]]
 [[ "$(call_ipc centerNotch close)" == "closed" ]]
 [[ "$(call_ipc centerNotch state)" == "closed" ]]
 

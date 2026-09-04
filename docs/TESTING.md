@@ -214,15 +214,15 @@ acceptance uses IPC to exercise Spotlight scope/query/close transitions, confirm
 isolation and verifies both Hyprland configuration hashes. It does not launch an application or
 write clipboard content.
 
-Dynamic Island acceptance verifies the shared owner, connected silhouette, four-state lifecycle,
-and that unsupported page requests normalize to the expanded `overview` canvas while `banner`
-remains a distinct valid state. It proves that Spotlight closes the Center surface and closes both
-surfaces again. It rejects runtime type/load errors, repository writes and changes to either
-Hyprland configuration hash. Notification Center is deliberately deferred; notification history
-is not exposed as a general navigation rail.
+Center acceptance verifies the `CenterSurfaceHost` namespaces and compact/banner/expanded lifecycle,
+proves that Spotlight compacts Center, and closes both surfaces again. It rejects runtime
+type/load errors, repository writes and changes to either Hyprland configuration hash. Notification
+history remains domain data rather than a presentation-owned route. The historical `centerNotch`
+IPC target is retained for acceptance compatibility; its state/result vocabulary is neutral mode
+state rather than a theme or page contract.
 
 Audio acceptance launches one foreground shell and calls only `audio.state`, `audio.popup`,
-`audio.closePopup`, `audio.popupState`, `audio.osdState`, Center Notch and Spotlight lifecycle IPC.
+`audio.closePopup`, `audio.popupState`, `audio.osdState`, Center and Spotlight lifecycle IPC.
 It checks state formatting, idle OSD, popup mutual exclusion, clean runtime logs, repository
 isolation and both unchanged Hyprland configuration hashes. It never calls or exposes volume,
 mute, adjustment, OSD-show or device-selection IPC.
@@ -360,13 +360,12 @@ clear the dot. Notification Center, actions and persisted history remain deliber
 
 ## Daily Focus Center checkpoint
 
-Automated coverage consists of the pure priority and Daily Focus fixtures, the Center ownership
-contract, full qmllint gate, foreground smoke and read-only Center acceptance. Before starting the
-MPRIS slice, manually verify on DP-1 that the combined `CenterIsland + Pin` group remains physically
-centered, the Daily Focus text is visually quiet and elides on one line, and one click opens the
-configured Markdown handler. Confirm the Pin remains independently targetable. Also confirm
-`ActiveWindowPill` remains immediately after Workspaces and still opens Center Notch. DP-3 must
-remain free of Titonium surfaces throughout.
+Automated coverage consists of the pure priority and Daily Focus fixtures, the neutral Center
+domain/host ownership contract, full qmllint gate, foreground smoke and read-only Center
+acceptance. Manually verify on DP-1 that the Center reservation remains physically centered, Daily
+Focus is projected through the active renderer, and the Pin remains independently targetable.
+Also confirm `ActiveWindowPill` remains immediately after Workspaces and requests expanded Center.
+DP-3 must remain free of Titonium surfaces throughout.
 
 ## MPRIS Center checkpoint
 

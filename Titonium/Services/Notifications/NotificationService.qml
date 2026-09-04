@@ -148,6 +148,8 @@ Singleton {
             root.projectedNotifications = NotificationRules.upsert(
                 root.projectedNotifications, item, 100);
             root.unreadIds = NotificationRules.markUnread(root.unreadIds, item.id);
+            if (root.toastsEnabled)
+                root.toastIds = NotificationRules.addToast(root.toastIds, item.id, 3);
             if (root.centerEventsReady)
                 CenterAttentionService.publish(NotificationRules.centerEvent(
                     item, item.summary.toLowerCase() === "screenshot saved"

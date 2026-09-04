@@ -163,7 +163,8 @@ assert.match(surfaceSource,
     "connected Loader must remain active but stop accepting content input during exit");
 assert.doesNotMatch(surfaceSource, /menuOpenedAt|<\s*700/,
     "outside dismissal must not have a post-open dead interval");
-assert.match(surfaceSource, /CenterNotchCoordinator\.openExpanded\(root\.screenModel\.name\)/,
+assert.match(surfaceSource,
+    /CenterSurfaceController\.dispatch\(\{ type: "request-open",[\s\S]*?screenName: root\.screenModel\.name, mode: "expanded" \}\)/,
     "Center clicks intercepted by an open edge menu must route to Center");
 assert.match(surfaceSource, /enabled:\s*root\.ownsMenu && root\.presentedProgress > 0\.7/,
     "outside dismissal must not consume the gesture that opens an edge menu");

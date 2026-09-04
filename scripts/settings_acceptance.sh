@@ -101,12 +101,12 @@ require_equal "$(call_ipc settings state)" "closed" \
     "Spotlight closes Settings and cancels preview"
 
 require_equal "$(call_ipc centerNotch open overview)" \
-    "open:DP-1;page=overview" "Center Notch open"
-require_equal "$(call_ipc spotlight state)" "closed" "Center Notch closes Spotlight"
+    "open:DP-1;mode=expanded" "Center open"
+require_equal "$(call_ipc spotlight state)" "closed" "Center closes Spotlight"
 
 require_equal "$(call_ipc settings open dock)" \
     "open:DP-1;page=dock" "Settings reopens on Dock"
-require_equal "$(call_ipc centerNotch state)" "closed" "Settings closes Center Notch"
+require_equal "$(call_ipc centerNotch state)" "closed" "Settings closes Center"
 require_equal "$(call_ipc settings cancel)" "closed" "Settings cancel"
 require_equal "$(call_ipc settings state)" "closed" "Settings closed state"
 

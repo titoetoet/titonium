@@ -71,12 +71,18 @@ highlight owns active state: its leading edge first stretches across the distanc
 and new workspace, then its trailing edge settles to the target width. Workspace delegates and app
 icons never resize as part of this selection transition.
 
-Only `CenterNotchSurface` owns width, height and radius animation. `CenterIsland` measures its
-content and publishes one target width; it must not animate implicit geometry or synchronize
-presentation fields through the Coordinator on animation frames.
+Only renderers below `Bar/center/presentations` own Center width, height, radius, and content
+animation. They receive immutable semantic and view state and report transition completion with
+the supplied generation; they do not synchronize business state during animation frames.
 
 It is solid, opaque and compositor-independent. There is no theme catalog, material resolver,
 glass backend, shader, blur or `hyprland.lua` synchronization in the current runtime.
+
+Center's Pill, Notch, Connected, and Classic profiles are presentation choices over one semantic
+snapshot and one controller state. Profiles may select geometry, radii, transitions, and supported
+layout affordances. They must not import source services, select business priority, own timeouts,
+change screen ownership, or execute actions. Switching the Top Bar style passes a new immutable
+profile to the existing `CenterSurfaceHost`; it does not recreate the Center domain or controller.
 
 Future repository research may evaluate matugen or a simple `colors.json` input. The accepted
 design must keep semantic token names stable, load data once, validate/fallback safely and avoid

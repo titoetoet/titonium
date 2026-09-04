@@ -21,14 +21,14 @@ historical release tag.
 ## Current runtime ownership
 
 - `App.qml` is a thin composition root for Bar, Dock, transient overlays, Audio OSD, notification
-  toasts, Settings and Agent Approval. Activation, cross-surface routing, the Bluetooth–Audio
+  toasts and Settings. Agent Approval is projected through Center. Activation, cross-surface routing, the Bluetooth–Audio
   bridge and IPC adapters live in dedicated `Orchestration` and `Ipc` modules without changing
   public IPC targets or result strings.
-- `Bar` owns Start and End hitboxes plus an inert true-center reservation; `CenterPillWindow` owns
-  the Dynamic Island visual and input geometry in every state. Clock is not rendered; time remains part
+- `Bar` owns Start and End hitboxes plus an inert true-center reservation; `CenterSurfaceHost` owns
+  the Center visual and input geometry in every mode. Clock is not rendered; time remains part
   of the Overview weather card and the `use24Hour` preference is still meaningful there.
-- Dynamic Island is a top-attached, single-silhouette morph from compact/satellite into a context banner
-  or an expanded canvas. The previous Overview and Notification-history presentation is retired;
+- Center is a top-attached semantic surface with compact, banner, and expanded presentations. The
+  previous Overview and Notification-history presentation is retired;
   Notification Center will be rebuilt later. System Monitor remains detached.
 - Bluetooth uses the native Quickshell service and a narrow service/view boundary. Audio handoff is
   coordinated through semantic signals; views do not own native Bluetooth objects.

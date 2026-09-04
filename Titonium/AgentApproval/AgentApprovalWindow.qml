@@ -4,7 +4,6 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import qs.Titonium.Services.AgentApproval
-import qs.Titonium.Bar.notch
 import qs.Titonium.Theme
 
 PanelWindow {
@@ -13,7 +12,6 @@ PanelWindow {
     readonly property real popupTop: Metrics.barHeight + Metrics.barSpacing
     readonly property bool ownsApproval: AgentApprovalService.hasPending
         && AgentApprovalService.popupScreenName === window.screenModel.name
-        && !CenterNotchCoordinator.handlesAgentApproval
 
     readonly property bool isFileChange: AgentApprovalService.currentIsFileChange
 

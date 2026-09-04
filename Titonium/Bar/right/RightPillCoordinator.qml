@@ -2,7 +2,7 @@ pragma Singleton
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import qs.Titonium.Bar.notch
+import qs.Titonium.Core.Surfaces.Center
 import qs.Titonium.Core.Runtime
 import qs.Titonium.Core.Screens
 import qs.Titonium.Core.Surfaces
@@ -328,8 +328,6 @@ QtObject {
         const ownerId = SurfaceManager.ownerId;
         const descriptor = SurfaceManager.descriptor;
         const screen = SurfaceManager.screen;
-        const centerScreenName = CenterNotchCoordinator.ownerScreenName
-            || CenterNotchCoordinator.exitingScreenName;
         const menuScreenName = root.ownerScreenName || root.exitingScreenName;
         root.invocationScreen = null;
         root.invocationInvoker = null;
@@ -338,10 +336,8 @@ QtObject {
                 SurfaceManager.ownerId, SurfaceManager.descriptor,
                 SurfaceManager.screen, ownerId, descriptor, screen))
             SurfaceManager.close(ownerId);
-        if (CenterNotchCoordinator.active)
-            CenterNotchCoordinator.close();
-        if (centerScreenName)
-            CenterNotchCoordinator.finishClose(centerScreenName);
+        if (CenterSurfaceController.active)
+            CenterSurfaceController.dispatch({ type: "request-mode", mode: "compact" });
         if (root.active)
             root.close();
         if (menuScreenName)

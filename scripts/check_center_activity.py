@@ -14,7 +14,9 @@ APP = ROOT / "Titonium/App.qml"
 CHECK = ROOT / "scripts/check.sh"
 EN = ROOT / "config/i18n/en.json"
 VI = ROOT / "config/i18n/vi.json"
-CENTER_VIEW = ROOT / "Titonium/Bar/islands/CenterIsland.qml"
+CENTER_VIEW = ROOT / "Titonium/Bar/center/presentations/Connected/ConnectedRenderer.qml"
+JOB_ADAPTER = CENTER / "adapters/JobCenterAdapter.qml"
+TIMER_ADAPTER = CENTER / "adapters/TimerCenterAdapter.qml"
 ACCEPTANCE = ROOT / "scripts/center_activity_acceptance.sh"
 TESTING = ROOT / "docs/TESTING.md"
 
@@ -95,30 +97,43 @@ def main() -> int:
             errors.append(f"missing Center Activity locale key: {key}")
 
     if not CENTER_VIEW.is_file():
-        errors.append("missing CenterIsland.qml")
+        errors.append("missing neutral Center renderer")
     else:
         source = CENTER_VIEW.read_text(encoding="utf-8")
         for fragment in (
-            'CenterAttentionService.presentation?.source === "media"',
-            "readonly property var activityPresentation: CenterNotchCoordinator.activitySlots.primary",
-            "readonly property var primaryPresentation: root.eventPresentation || root.activityPresentation",
-            "root.primaryPresentation.title",
-            "CenterFocusStore.text",
-            'I18n.tr("menubar.center.focus_fallback")',
-            "strong: true",
+            "required property var snapshot",
+            "root.snapshot.contexts.find",
+            "root.snapshot.primary",
+            "root.context?.title",
+            "root.context?.subtitle",
+            "root.snapshot.capabilities.actions.filter",
+            'type: "invoke-action"',
         ):
             if fragment not in source:
-                errors.append(f"CenterIsland missing Activity projection: {fragment}")
+                errors.append(f"Center renderer missing semantic projection: {fragment}")
         for forbidden in (
             "Timer {",
             "Process {",
             "FileView {",
             "CenterActivityService.upsert",
             "CenterActivityService.remove",
-            "CenterFocusStore.openScratchpad()",
+            "CenterJobService",
+            "CenterTimerService",
         ):
             if forbidden in source:
-                errors.append(f"CenterIsland owns forbidden runtime behavior: {forbidden}")
+                errors.append(f"Center renderer owns forbidden runtime behavior: {forbidden}")
+
+    for adapter, fragments in (
+        (JOB_ADAPTER, ('source: "job"', 'id: "job:" + item.id', '"job.clear"')),
+        (TIMER_ADAPTER, ('source: "timer"', 'id: "timer:" + item.id', '"timer.cancel"')),
+    ):
+        if not adapter.is_file():
+            errors.append(f"missing Center activity adapter: {adapter.name}")
+            continue
+        adapter_source = adapter.read_text(encoding="utf-8")
+        for fragment in fragments:
+            if fragment not in adapter_source:
+                errors.append(f"{adapter.name} missing activity projection: {fragment}")
 
     if not ACCEPTANCE.is_file():
         errors.append("missing center_activity_acceptance.sh")

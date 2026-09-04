@@ -240,12 +240,12 @@ elif state.get("showingFocus") is not True or state.get("presentation") is not N
 '
 
 notch_open="$(call_ipc centerNotch open overview)"
-if [[ "$notch_open" != open:*";page=overview" ]]; then
-    printf 'FAIL Center Notch did not open: %q\n' "$notch_open" >&2
+if [[ "$notch_open" != open:*";mode=expanded" ]]; then
+    printf 'FAIL Center did not open: %q\n' "$notch_open" >&2
     exit 1
 fi
 if [[ "$(call_ipc centerNotch close)" != "closed" ]]; then
-    echo "FAIL Center Notch did not close" >&2
+    echo "FAIL Center did not close" >&2
     exit 1
 fi
 
