@@ -63,16 +63,16 @@ QtObject {
 
     function openBanner(screenName: string, context: var): bool {
         autoDismissTimer.stop();
-        root.selectedContext = context && typeof context === "object"
-            ? Object.freeze(Object.assign({}, context)) : root.primaryContext;
+        root.selectedContext = CenterNotchState.normalizeContext(
+            context && typeof context === "object" ? context : root.primaryContext);
         root.dragProgress = 0;
         return root.open(screenName, "banner");
     }
 
     function openAgentApproval(screenName: string, context: var): bool {
         autoDismissTimer.stop();
-        root.selectedContext = context && typeof context === "object"
-            ? Object.freeze(Object.assign({}, context)) : Object.freeze({
+        root.selectedContext = CenterNotchState.normalizeContext(
+            context && typeof context === "object" ? context : {
                 source: "agent", id: "", title: ""
             });
         root.dragProgress = 0;
@@ -97,7 +97,7 @@ QtObject {
     function openExpanded(screenName: string): bool {
         autoDismissTimer.stop();
         if (!root.selectedContext || root.selectedContext.source === "idle")
-            root.selectedContext = root.primaryContext;
+            root.selectedContext = CenterNotchState.normalizeContext(root.primaryContext);
         root.dragProgress = 0;
         return root.open(screenName, "overview");
     }

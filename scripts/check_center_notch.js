@@ -45,9 +45,43 @@ assert.deepEqual(plain(context.activitySlots(ranked, focus, notification)), {
 assert.deepEqual(plain(context.activitySlots(ranked, focus, null, false)), {
     primary: ranked[0], secondary: ranked[1]
 }, "disabling Focus promotes Media to primary and preserves another activity as secondary");
+const mediaAfterTimer = [
+    { id: "timer-first", source: "timer", label: "Timer" },
+    { id: "media-second", source: "media", label: "Track" },
+    { id: "job-third", source: "job", label: "Render" }
+];
+assert.deepEqual(plain(context.activitySlots(mediaAfterTimer, focus, null, false)), {
+    primary: mediaAfterTimer[1], secondary: mediaAfterTimer[0]
+}, "Focus-disabled selection promotes Media even when it is not first");
+assert.deepEqual(plain(context.activitySlots(mediaAfterTimer, focus, notification, true)), {
+    primary: focus, secondary: notification
+}, "notification temporarily replaces the ordered live activity");
+assert.deepEqual(plain(context.activitySlots(mediaAfterTimer, focus, null, true)), {
+    primary: focus, secondary: mediaAfterTimer[0]
+}, "notification expiry restores the first ordered live activity");
 assert.deepEqual(plain(context.contextForActivity(ranked[0])), {
     source: "media", id: "media", title: "", icon: "music_note"
 });
+const richTimer = {
+    id: "shared", source: "timer", label: "Build", icon: "timer",
+    progress: 37, deadline: 123456, customField: "retained"
+};
+assert.deepEqual(plain(context.normalizeContext(richTimer)), {
+    id: "shared", source: "timer", label: "Build", icon: "timer",
+    progress: 37, deadline: 123456, customField: "retained", title: "Build"
+}, "context normalization retains service-owned fields");
+assert.equal(context.contextIdentity({ source: "timer", id: "shared" }),
+    "timer\u0000shared");
+assert.notEqual(
+    context.contextIdentity({ source: "timer", id: "shared" }),
+    context.contextIdentity({ source: "job", id: "shared" }),
+    "independent sources may reuse an id"
+);
+const colliding = [richTimer, { id: "shared", source: "job", label: "Render" }];
+assert.deepEqual(plain(context.activitySlots(colliding, null, null, false)), {
+    primary: richTimer,
+    secondary: colliding[1]
+}, "secondary selection compares source and id together");
 assert.deepEqual(plain(context.layoutProfile(1920, 1080)), {
     compactHeight: 36, primaryMinWidth: 180, primaryMaxWidth: 260, nestedMaxWidth: 320,
     gap: 8, ultrawide: false

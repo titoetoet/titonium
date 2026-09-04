@@ -35,7 +35,7 @@ function activitySlots(activities, focusActivity, secondaryOverride, focusEnable
         ? secondaryOverride : null;
     if (!secondary) {
         for (let index = 0; index < source.length; index++) {
-            if (!primary || source[index]?.id !== primary.id) {
+            if (!primary || contextIdentity(source[index]) !== contextIdentity(primary)) {
                 secondary = source[index];
                 break;
             }
@@ -86,14 +86,24 @@ function dragSettlePlan(progress, offset, velocity) {
 }
 
 function contextForActivity(activity) {
-    if (!activity || typeof activity !== "object")
-        return Object.freeze({ source: "idle", id: "", title: "" });
-    return Object.freeze({
-        source: String(activity.source || "idle"),
-        id: String(activity.id || ""),
-        title: String(activity.label || activity.title || ""),
-        icon: String(activity.icon || "bolt")
-    });
+    return normalizeContext(activity);
+}
+
+function contextIdentity(context) {
+    if (!context || typeof context !== "object")
+        return "idle\u0000";
+    return String(context.source || "idle") + "\u0000" + String(context.id || "");
+}
+
+function normalizeContext(context) {
+    if (!context || typeof context !== "object")
+        return Object.freeze({ source: "idle", id: "", title: "", icon: "" });
+    const result = Object.assign({}, context);
+    result.source = String(result.source || "idle");
+    result.id = String(result.id || "");
+    result.title = String(result.title || result.label || "");
+    result.icon = String(result.icon || "bolt");
+    return Object.freeze(result);
 }
 
 function dragDecision(offset, velocity) {
