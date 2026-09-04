@@ -444,7 +444,7 @@ def validate_presentation(errors: list[str]) -> None:
         if forbidden in popup:
             errors.append(f"Bluetooth device sections must be static, not dropdown controls: {forbidden}")
     for fragment in (
-        "property var descriptor:", "property var screen:", "Shared.Panel", "SurfaceManager.close",
+        "property var descriptor:", "property var screen:", "Shared.Panel", "SurfaceManager.closeOwned",
         "Keys.onEscapePressed", "TapHandler {", "anchors.fill: parent",
         "readonly property real panelTop: Metrics.barHeight + Metrics.barSpacing",
         "anchors.rightMargin: Metrics.barPadding", "width: 380", "BluetoothDeviceRow",
@@ -459,8 +459,8 @@ def validate_presentation(errors: list[str]) -> None:
     ):
         if fragment not in classic_popup:
             errors.append(f"missing Classic Bluetooth popup contract: {fragment}")
-    if classic_popup.count("SurfaceManager.close(root.ownerId)") != 1:
-        errors.append("Classic Bluetooth popup must close SurfaceManager exactly once through teardown")
+    if classic_popup.count("SurfaceManager.closeOwned(") != 1:
+        errors.append("Classic Bluetooth popup must close exactly its frozen SurfaceManager identity")
     for forbidden in ("Quickshell.Bluetooth", "Bluetooth.defaultAdapter", "Process", "FileView"):
         if forbidden in classic_popup:
             errors.append(f"forbidden Classic Bluetooth popup dependency: {forbidden}")

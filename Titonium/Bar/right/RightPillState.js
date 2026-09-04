@@ -77,6 +77,16 @@ function matchesSurfaceOpen(managerOwnerId, managerDescriptor, managerScreen,
         && screen !== null;
 }
 
+function matchesConnectedSnapshot(current, ownerId, generation, descriptor, screen) {
+    return current !== null && current !== undefined
+        && current.ownerId === String(ownerId || "")
+        && current.generation === Number(generation)
+        && current.descriptor === descriptor
+        && current.screen === screen
+        && descriptor !== null
+        && screen !== null;
+}
+
 function connectedOpen(current, ownerId, descriptor, screen) {
     const owner = String(ownerId || "");
     const snapshot = connectedDescriptorSnapshot(descriptor);

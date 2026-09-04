@@ -5,6 +5,7 @@ import qs.Titonium.Core.Surfaces
 import qs.Titonium.Services.SystemTray
 import qs.Titonium.Shared as Shared
 import qs.Titonium.Theme
+import "../../Bar/right/EdgeMenuGeometry.js" as EdgeMenuGeometry
 
 FocusScope {
     id: root
@@ -13,6 +14,7 @@ FocusScope {
     property var screen: null
     readonly property string ownerId: root.descriptor?.ownerId || ""
     readonly property var invoker: root.descriptor?.invoker || null
+    readonly property var anchorRect: root.descriptor?.anchorRect || null
     readonly property var popupEntries: SystemTrayService.popupEntries
     readonly property int maximumHeight: 560
     readonly property real panelTop: Metrics.barHeight + Metrics.barSpacing
@@ -25,13 +27,22 @@ FocusScope {
     property bool closing: false
     property bool focusReturned: false
     property bool navigationReset: false
+    property var closingDescriptor: null
+    property var closingScreen: null
+    property var closingInvoker: null
 
     function returnFocus(): void {
         if (root.focusReturned)
             return;
+        const ownedDescriptor = root.closingDescriptor || root.descriptor;
+        const ownedScreen = root.closingScreen || root.screen;
+        if (SurfaceManager.active
+                && !SurfaceManager.matches(root.ownerId, ownedDescriptor, ownedScreen))
+            return;
         root.focusReturned = true;
-        if (root.invoker?.forceActiveFocus)
-            root.invoker.forceActiveFocus(Qt.PopupFocusReason);
+        const target = root.closingInvoker || root.invoker;
+        if (target?.forceActiveFocus)
+            target.forceActiveFocus(Qt.PopupFocusReason);
     }
 
     function resetNavigation(): void {
@@ -42,15 +53,37 @@ FocusScope {
     }
 
     function finishClose(): void {
+        if (!root.closingDescriptor || !SurfaceManager.matches(
+                root.ownerId, root.closingDescriptor, root.closingScreen))
+            return;
         root.returnFocus();
         root.resetNavigation();
-        if (root.ownerId)
-            SurfaceManager.close(root.ownerId);
+        SurfaceManager.closeOwned(root.ownerId, root.closingDescriptor, root.closingScreen);
+    }
+
+    function reopenIfReplaced(): void {
+        if (!root.closing || root.descriptor === root.closingDescriptor)
+            return;
+        panelExit.stop();
+        root.closing = false;
+        root.closingDescriptor = null;
+        root.closingScreen = null;
+        root.closingInvoker = null;
+        root.focusReturned = false;
+        root.navigationReset = false;
+        if (!Motion.reduced)
+            panelEntrance.restart();
+        panel.forceActiveFocus(Qt.PopupFocusReason);
     }
 
     function close(): void {
         if (root.closing)
             return;
+        if (!SurfaceManager.beginClose(root.ownerId, root.descriptor, root.screen))
+            return;
+        root.closingDescriptor = root.descriptor;
+        root.closingScreen = root.screen;
+        root.closingInvoker = root.invoker;
         root.closing = true;
         if (Motion.reduced) {
             root.finishClose();
@@ -77,15 +110,16 @@ FocusScope {
 
     Shared.Panel {
         id: panel
-        width: 380
+        width: Math.min(380, Math.max(1, root.width - Metrics.barPadding * 2))
         height: Math.min(root.maximumHeight, root.availableHeight, root.contentHeight)
+        x: EdgeMenuGeometry.detachedPopupX(root.anchorRect, root.descriptor?.anchorScreenName
+            || "", root.width, panel.width, Metrics.barPadding)
         anchors.top: parent.top
-        anchors.right: parent.right
         anchors.topMargin: root.panelTop
-        anchors.rightMargin: Metrics.barPadding
         customColor: Theme.surface
         clipContent: true
-        transformOrigin: Item.Top
+        transformOrigin: root.descriptor?.anchorEdge === "left"
+            ? Item.TopLeft : Item.TopRight
         opacity: Motion.reduced ? 1 : 0
         scale: Motion.reduced ? 1 : 0.94
         transform: Translate {
@@ -165,6 +199,7 @@ FocusScope {
         event.accepted = true;
     }
 
+    onDescriptorChanged: root.reopenIfReplaced()
     Component.onCompleted: panel.forceActiveFocus(Qt.PopupFocusReason)
     Component.onDestruction: root.resetNavigation()
 }

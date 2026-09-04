@@ -62,7 +62,7 @@
           "required": ["visibilityMode", "pinnedIds"],
           "additionalProperties": false,
           "properties": {
-            "visibilityMode": { "enum": ["auto-hide", "always-visible", "reserve-space"] },
+            "visibilityMode": { "enum": ["auto-hide", "always-visible", "reserve-space", "hidden"] },
             "pinnedIds": {
               "type": "array",
               "uniqueItems": true,

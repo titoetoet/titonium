@@ -360,7 +360,7 @@ def main() -> int:
         "AudioStreamRow {",
     ), "Audio popup surface")
     require_fragments(errors, OVERLAY_ROOT / "ClassicAudioPopupSurface.qml", (
-        "property var descriptor:", "property var screen:", "Shared.Panel", "SurfaceManager.close",
+        "property var descriptor:", "property var screen:", "Shared.Panel", "SurfaceManager.closeOwned",
         "Keys.onEscapePressed", "TapHandler {", "anchors.fill: parent",
         "width: 380", "readonly property real panelTop: Metrics.barHeight + Metrics.barSpacing",
         "anchors.rightMargin: Metrics.barPadding", "AudioControlRow {", "AudioOutputDeviceRow {",
@@ -373,8 +373,8 @@ def main() -> int:
     ), "Classic Audio popup surface")
     classic_audio_path = OVERLAY_ROOT / "ClassicAudioPopupSurface.qml"
     if classic_audio_path.is_file() and classic_audio_path.read_text(encoding="utf-8").count(
-            "SurfaceManager.close(root.ownerId)") != 1:
-        errors.append("Classic Audio popup must close SurfaceManager exactly once through teardown")
+            "SurfaceManager.closeOwned(") != 1:
+        errors.append("Classic Audio popup must close exactly its frozen SurfaceManager identity")
     require_fragments(errors, OVERLAY_ROOT / "AudioSlider.qml", (
         "property real serviceValue: 0",
         "property real maximumValue: 1",

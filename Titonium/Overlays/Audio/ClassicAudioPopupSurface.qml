@@ -40,24 +40,54 @@ FocusScope {
 
     property bool closing: false
     property bool focusReturned: false
+    property var closingDescriptor: null
+    property var closingScreen: null
+    property var closingInvoker: null
 
     function returnFocus(): void {
         if (root.focusReturned)
             return;
+        const ownedDescriptor = root.closingDescriptor || root.descriptor;
+        const ownedScreen = root.closingScreen || root.screen;
+        if (SurfaceManager.active
+                && !SurfaceManager.matches(root.ownerId, ownedDescriptor, ownedScreen))
+            return;
         root.focusReturned = true;
-        if (root.descriptor?.invoker?.forceActiveFocus)
-            root.descriptor.invoker.forceActiveFocus(Qt.PopupFocusReason);
+        const target = root.closingInvoker || root.descriptor?.invoker || null;
+        if (target?.forceActiveFocus)
+            target.forceActiveFocus(Qt.PopupFocusReason);
     }
 
     function finishClose(): void {
+        if (!root.closingDescriptor || !SurfaceManager.matches(
+                root.ownerId, root.closingDescriptor, root.closingScreen))
+            return;
         root.returnFocus();
-        if (root.ownerId)
-            SurfaceManager.close(root.ownerId);
+        SurfaceManager.closeOwned(root.ownerId, root.closingDescriptor, root.closingScreen);
+    }
+
+    function reopenIfReplaced(): void {
+        if (!root.closing || root.descriptor === root.closingDescriptor)
+            return;
+        panelExit.stop();
+        root.closing = false;
+        root.closingDescriptor = null;
+        root.closingScreen = null;
+        root.closingInvoker = null;
+        root.focusReturned = false;
+        if (!Motion.reduced)
+            panelEntrance.restart();
+        panel.forceActiveFocus(Qt.PopupFocusReason);
     }
 
     function close(): void {
         if (root.closing)
             return;
+        if (!SurfaceManager.beginClose(root.ownerId, root.descriptor, root.screen))
+            return;
+        root.closingDescriptor = root.descriptor;
+        root.closingScreen = root.screen;
+        root.closingInvoker = root.descriptor?.invoker || null;
         root.closing = true;
         if (Motion.reduced) {
             root.finishClose();
@@ -248,6 +278,7 @@ FocusScope {
         event.accepted = true;
     }
 
+    onDescriptorChanged: root.reopenIfReplaced()
     Component.onCompleted: panel.forceActiveFocus(Qt.PopupFocusReason)
     Component.onDestruction: root.returnFocus()
 }

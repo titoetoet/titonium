@@ -50,3 +50,24 @@ function sourceOffset(sourceX, sourceWidth, targetRect, progress) {
     const targetCenter = targetX + targetWidth / 2;
     return (targetCenter - sourceCenter) * clamp(finite(progress, 0), 0, 1);
 }
+
+function anchorSnapshot(edge, screenName, x, y, width, height) {
+    return Object.freeze({
+        edge: edge === "right" ? "right" : "left",
+        screenName: String(screenName || ""),
+        x: finite(x, 0),
+        y: finite(y, 0),
+        width: Math.max(1, finite(width, 1)),
+        height: Math.max(1, finite(height, 1))
+    });
+}
+
+function detachedPopupX(anchor, screenName, outputWidth, popupWidth, margin) {
+    const inset = Math.max(0, finite(margin, 12));
+    const output = Math.max(inset * 2 + 1, finite(outputWidth, inset * 2 + 1));
+    const width = Math.max(1, Math.min(finite(popupWidth, 380), output - inset * 2));
+    if (!anchor || anchor.screenName !== String(screenName || ""))
+        return Math.max(inset, output - inset - width);
+    const center = finite(anchor.x, inset) + Math.max(1, finite(anchor.width, 1)) / 2;
+    return clamp(center - width / 2, inset, output - inset - width);
+}

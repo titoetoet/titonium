@@ -9,6 +9,7 @@ Item {
     id: root
 
     required property var screen
+    readonly property alias centerHitbox: centerSurface
     signal notchRequested(var screen)
     signal sourceRequested(var screen, string intent)
     implicitWidth: centerIsland.implicitWidth + Metrics.spacingLarge * 2

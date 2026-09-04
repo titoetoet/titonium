@@ -11,12 +11,14 @@ function canToggle(ownerId, invoker, requiresInvoker) {
 }
 
 function existingOpenAction(requestOwnerId, managerOwnerId, barConnected,
-        connectedOwnerId, connectedClosing) {
+        connectedOwnerId, connectedClosing, classicClosing) {
     if (!requestOwnerId || requestOwnerId !== managerOwnerId)
         return "open";
     if (barConnected === true && connectedOwnerId === requestOwnerId
             && connectedClosing === true)
         return "reverse";
+    if (barConnected !== true && classicClosing === true)
+        return "replace";
     return "preserve";
 }
 

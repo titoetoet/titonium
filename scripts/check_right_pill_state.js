@@ -98,6 +98,10 @@ assert.equal(firstClosing.descriptor.source, "ConnectedNetworkPopupContent.qml",
 assert.strictEqual(state.connectedFinishClose(firstClosing,
     "network:DP-1", 999), firstClosing,
     "a stale finish generation cannot clear the exiting snapshot");
+assert.equal(state.matchesConnectedSnapshot(firstClosing,
+    firstClosing.ownerId, firstClosing.generation,
+    firstClosing.descriptor, firstClosing.screen), true,
+    "Loader failure and screen teardown may release only their exact connected snapshot");
 
 const reopenedConnected = state.connectedOpen(firstClosing, "network:DP-1", {
     barConnected: true,
@@ -112,6 +116,10 @@ assert.equal(reopenedConnected.descriptor.anchor, "audio");
 assert.strictEqual(state.connectedFinishClose(reopenedConnected,
     "network:DP-1", firstConnected.generation), reopenedConnected,
     "an old completion cannot clear a newer owner generation");
+assert.equal(state.matchesConnectedSnapshot(reopenedConnected,
+    firstConnected.ownerId, firstConnected.generation,
+    firstConnected.descriptor, firstConnected.screen), false,
+    "an old Loader failure cannot release a reopened connected owner");
 
 const reopenedClosing = state.connectedRequestClose(reopenedConnected,
     "network:DP-1", reopenedConnected.generation);

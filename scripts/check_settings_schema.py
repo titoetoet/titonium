@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import copy
+import ast
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -14,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_PATH = ROOT / "config/schemas/settings.schema.json"
 DEFAULTS_PATH = ROOT / "config/defaults/settings.json"
 V7_FIXTURE_PATH = ROOT / "tests/fixtures/settings-v7-runtime.json"
+VALIDATOR_PATH = ROOT / "scripts/validate_config.py"
 
 
 def load(path: Path) -> Any:
@@ -88,12 +91,28 @@ def main() -> int:
     require_valid("shipped defaults", defaults, schema)
     require_valid("v7 runtime fixture", fixture, schema)
 
+    hidden_dock = copy.deepcopy(defaults)
+    hidden_dock["modules"]["dock"]["visibilityMode"] = "hidden"
+    require_valid("hidden Dock runtime fixture", hidden_dock, schema)
+
+    schema_modes = set(schema["properties"]["modules"]["properties"]["dock"]
+                       ["properties"]["visibilityMode"]["enum"])
+    validator_source = VALIDATOR_PATH.read_text(encoding="utf-8")
+    match = re.search(
+        r'dock\.get\("visibilityMode"\) not in (\{[^\n]+\})', validator_source)
+    if match is None:
+        raise AssertionError("could not find the Dock visibility validator enum")
+    validator_modes = set(ast.literal_eval(match.group(1)))
+    if schema_modes != validator_modes:
+        raise AssertionError(
+            f"Dock visibility schema/validator mismatch: {schema_modes} != {validator_modes}")
+
     invalid_style = copy.deepcopy(defaults)
     invalid_style["modules"]["bar"]["style"] = "detached-ish"
     errors = validate(invalid_style, schema)
     if not any(error.startswith("$.modules.bar.style:") for error in errors):
         raise AssertionError("invalid bar style was accepted by the JSON Schema")
-    print("PASS settings v7 JSON Schema defaults, fixture, and invalid-style rejection")
+    print("PASS settings v7 JSON Schema defaults, hidden-Dock parity, fixture, and invalid-style rejection")
     return 0
 
 

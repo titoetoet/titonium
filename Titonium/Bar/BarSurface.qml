@@ -33,19 +33,43 @@ PanelWindow {
     anchors { top: true; left: true; right: true }
     readonly property var activeBar: connectedBarLoader.active
         ? connectedBarLoader.item : classicBarLoader.item
-    readonly property var leftHitbox: root.activeBar ? root.activeBar.leftHitbox : null
-    readonly property var centerHitbox: root.activeBar && classicBarLoader.active
-        ? root.activeBar.centerHitbox : null
-    readonly property var notificationHitbox: root.activeBar && classicBarLoader.active
-        ? root.activeBar.notificationHitbox : null
-    readonly property var rightHitbox: root.activeBar ? root.activeBar.rightHitbox : null
+    readonly property var connectedLeftHitbox:
+        root.hitbox(connectedBarLoader.item, "leftHitbox")
+    readonly property var connectedRightHitbox:
+        root.hitbox(connectedBarLoader.item, "rightHitbox")
+    readonly property var classicArchHitbox:
+        root.hitbox(classicBarLoader.item, "archHitbox")
+    readonly property var classicWorkspaceHitbox:
+        root.hitbox(classicBarLoader.item, "workspaceHitbox")
+    readonly property var classicActiveWindowHitbox:
+        root.hitbox(classicBarLoader.item, "activeWindowHitbox")
+    readonly property var classicCenterHitbox:
+        root.hitbox(classicBarLoader.item, "centerHitbox")
+    readonly property var classicNotificationHitbox:
+        root.hitbox(classicBarLoader.item, "notificationHitbox")
+    readonly property var classicPinHitbox:
+        root.hitbox(classicBarLoader.item, "pinHitbox")
+    readonly property var classicConnectivityHitbox:
+        root.hitbox(classicBarLoader.item, "connectivityHitbox")
+    readonly property var classicStatusHitbox:
+        root.hitbox(classicBarLoader.item, "statusHitbox")
     readonly property bool barHovered: root.activeBar ? root.activeBar.hovered : false
+
+    function hitbox(item: var, name: string): var {
+        return item ? item[name] : null;
+    }
     mask: Region {
         Region { item: edgeReveal }
-        Region { item: root.leftHitbox }
-        Region { item: root.centerHitbox }
-        Region { item: root.notificationHitbox }
-        Region { item: root.rightHitbox }
+        Region { item: root.connectedLeftHitbox }
+        Region { item: root.connectedRightHitbox }
+        Region { item: root.classicArchHitbox }
+        Region { item: root.classicWorkspaceHitbox }
+        Region { item: root.classicActiveWindowHitbox }
+        Region { item: root.classicCenterHitbox }
+        Region { item: root.classicNotificationHitbox }
+        Region { item: root.classicPinHitbox }
+        Region { item: root.classicConnectivityHitbox }
+        Region { item: root.classicStatusHitbox }
     }
 
     Component {

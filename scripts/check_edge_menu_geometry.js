@@ -55,4 +55,23 @@ for (const control of connectivityControls) {
         `${control.name} 380px branch clamps to the 12px output margin`);
 }
 
+const leftAnchor = context.anchorSnapshot("left", "DP-1", 96, 4, 260, 28);
+assert.equal(Object.isFrozen(leftAnchor), true,
+    "Classic descriptors must retain an immutable invoker snapshot");
+assert.deepEqual({...leftAnchor}, {
+    edge: "left", screenName: "DP-1", x: 96, y: 4, width: 260, height: 28,
+});
+assert.equal(context.detachedPopupX(leftAnchor, "DP-1", 1920, 380, 12), 36,
+    "a left Active Window popup centers beneath its frozen invoker");
+
+const rightAnchor = context.anchorSnapshot("right", "HDMI-A-1", 1836, 4, 28, 28);
+assert.equal(context.detachedPopupX(rightAnchor, "HDMI-A-1", 1920, 380, 12), 1528,
+    "a right Input popup clamps to its output-local right margin");
+assert.equal(context.detachedPopupX(rightAnchor, "DP-1", 1920, 380, 12), 1528,
+    "a mismatched output never consumes another output's coordinate snapshot");
+assert.equal(context.detachedPopupX(
+    context.anchorSnapshot("left", "portrait", 2, 4, 20, 28),
+    "portrait", 320, 296, 12), 12,
+    "narrow outputs clamp a left invoker without producing a negative popup origin");
+
 console.log("PASS control-anchored edge menu geometry fixtures");

@@ -10,6 +10,8 @@ const required = [
     "Titonium/Bar/classic/ClassicBar.qml",
     "Titonium/Bar/classic/ClassicStartIsland.qml",
     "Titonium/Bar/classic/ClassicCenterGroup.qml",
+    "Titonium/Bar/classic/ClassicCenterNotchWindow.qml",
+    "Titonium/Bar/classic/ClassicCenterNotchSurface.qml",
     "Titonium/Bar/classic/ClassicEndIsland.qml",
     "Titonium/Bar/classic/qmldir",
 ];
@@ -29,6 +31,9 @@ function requireSurfaceCount(relative, expected) {
 }
 
 requireFragments("Titonium/Bar/classic/ClassicStartIsland.qml", [
+    "readonly property alias archHitbox: archSurface",
+    "readonly property alias workspaceHitbox: workspaceSurface",
+    "readonly property alias activeWindowHitbox: activeWindowSurface",
     "id: archSurface",
     "id: workspaceSurface",
     "id: activeWindowSurface",
@@ -38,12 +43,16 @@ requireFragments("Titonium/Bar/classic/ClassicStartIsland.qml", [
 ]);
 requireSurfaceCount("Titonium/Bar/classic/ClassicStartIsland.qml", 3);
 requireFragments("Titonium/Bar/classic/ClassicCenterGroup.qml", [
+    "readonly property alias centerHitbox: centerSurface",
     "id: centerSurface",
     "Shared.Surface {",
     "CenterIsland {",
 ]);
 requireSurfaceCount("Titonium/Bar/classic/ClassicCenterGroup.qml", 1);
 requireFragments("Titonium/Bar/classic/ClassicEndIsland.qml", [
+    "readonly property alias pinHitbox: pinSurface",
+    "readonly property alias connectivityHitbox: connectivitySurface",
+    "readonly property alias statusHitbox: statusSurface",
     "id: pinSurface",
     "id: connectivitySurface",
     "id: statusSurface",
@@ -56,10 +65,14 @@ requireFragments("Titonium/Bar/classic/ClassicBar.qml", [
     "id: notificationSurface",
     "Shared.Surface {",
     "NotificationBell {",
-    "readonly property alias leftHitbox: startIsland",
-    "readonly property alias centerHitbox: centerGroup",
+    "readonly property alias archHitbox: startIsland.archHitbox",
+    "readonly property alias workspaceHitbox: startIsland.workspaceHitbox",
+    "readonly property alias activeWindowHitbox: startIsland.activeWindowHitbox",
+    "readonly property alias centerHitbox: centerGroup.centerHitbox",
     "readonly property alias notificationHitbox: notificationSurface",
-    "readonly property alias rightHitbox: endIsland",
+    "readonly property alias pinHitbox: endIsland.pinHitbox",
+    "readonly property alias connectivityHitbox: endIsland.connectivityHitbox",
+    "readonly property alias statusHitbox: endIsland.statusHitbox",
 ]);
 requireSurfaceCount("Titonium/Bar/classic/ClassicBar.qml", 1);
 
@@ -70,15 +83,78 @@ assert.match(surface, /active:\s*RightPillCoordinator\.presentedStyle\s*===\s*"c
     "Classic Bar Loader must be active only in classic mode");
 requireFragments("Titonium/Bar/BarSurface.qml", [
     "readonly property var activeBar:",
-    "root.activeBar ? root.activeBar.leftHitbox : null",
-    "root.activeBar && classicBarLoader.active",
-    "? root.activeBar.centerHitbox : null",
-    "? root.activeBar.notificationHitbox : null",
-    "root.activeBar ? root.activeBar.rightHitbox : null",
+    "readonly property var connectedLeftHitbox:",
+    "readonly property var connectedRightHitbox:",
+    "readonly property var classicArchHitbox:",
+    "readonly property var classicWorkspaceHitbox:",
+    "readonly property var classicActiveWindowHitbox:",
+    "readonly property var classicCenterHitbox:",
+    "readonly property var classicNotificationHitbox:",
+    "readonly property var classicPinHitbox:",
+    "readonly property var classicConnectivityHitbox:",
+    "readonly property var classicStatusHitbox:",
 ]);
+const expectedMaskItems = [
+    "root.connectedLeftHitbox",
+    "root.connectedRightHitbox",
+    "root.classicArchHitbox",
+    "root.classicWorkspaceHitbox",
+    "root.classicActiveWindowHitbox",
+    "root.classicCenterHitbox",
+    "root.classicNotificationHitbox",
+    "root.classicPinHitbox",
+    "root.classicConnectivityHitbox",
+    "root.classicStatusHitbox",
+];
+for (const item of expectedMaskItems)
+    assert.match(surface, new RegExp(`Region \\{ item: ${item.replaceAll(".", "\\.")} \\}`),
+        `BarSurface mask must own the exact disjoint ${item} rectangle`);
+assert.doesNotMatch(surface, /Region \{ item: root\.(leftHitbox|rightHitbox) \}/,
+    "Classic row-group bounds must not swallow the click-through gaps between pills");
 requireFragments("Titonium/Bar/BarHost.qml", [
     "styleActive: RightPillCoordinator.presentedStyle === \"connected\"",
+    "ClassicCenterNotchWindow {",
+    "styleActive: RightPillCoordinator.presentedStyle === \"classic\"",
 ]);
+
+const barHost = read("Titonium/Bar/BarHost.qml");
+assert.equal((barHost.match(/CenterPillWindow\s*\{/g) || []).length, 1,
+    "only the Connected owner may instantiate CenterPillWindow");
+assert.equal((barHost.match(/ClassicCenterNotchWindow\s*\{/g) || []).length, 1,
+    "Classic must have one detached center owner per output variant");
+
+requireFragments("Titonium/Bar/classic/ClassicCenterNotchWindow.qml", [
+    "PanelWindow {",
+    "property bool styleActive: true",
+    "CenterNotchCoordinator.ownerScreenName === window.screenModel.name",
+    "visible: window.styleActive && (window.ownsNotch || window.dismissing)",
+    "WlrLayershell.namespace: \"titonium-classic-center-notch\"",
+    "ClassicCenterNotchSurface {",
+    "CenterNotchCoordinator.finishClose(window.screenModel.name)",
+]);
+requireFragments("Titonium/Bar/classic/ClassicCenterNotchSurface.qml", [
+    "Shared.Panel {",
+    "CenterNotch {",
+    "readonly property real panelTop: Metrics.barHeight + Metrics.barSpacing",
+    "anchors.horizontalCenter: parent.horizontalCenter",
+    "onFinished: root.closeAnimationFinished()",
+    "CenterNotchCoordinator.collapse()",
+]);
+for (const forbidden of ["NotificationNative", "MprisNative", "WeatherNative", "FileView", "Process"])
+    assert.equal(read("Titonium/Bar/classic/ClassicCenterNotchSurface.qml").includes(forbidden), false,
+        `Classic center must not restore retired service ownership: ${forbidden}`);
+assert.match(read("Titonium/Bar/islands/ActiveWindowPill.qml"),
+    /if \(RightPillCoordinator\.toggleApp\([\s\S]*?return;[\s\S]*?CenterNotchCoordinator\.openExpanded\(root\.screen\.name\)/,
+    "Active Window without a tray menu must open the shared coordinator for the Classic owner");
+assert.match(read("Titonium/Bar/widgets/NotificationBell.qml"),
+    /CenterNotchCoordinator\.openBanner\(root\.screen\.name,/,
+    "the Classic notification bell must route its banner through the shared coordinator");
+assert.match(read("Titonium/Bar/notch/CenterPillWindow.qml"),
+    /readonly property bool ownsIsland: window\.styleActive[\s\S]*?CenterNotchCoordinator\.ownerScreenName/,
+    "a disabled Connected Center window can never become the Classic visual owner");
+assert.match(read("Titonium/Bar/classic/ClassicCenterNotchWindow.qml"),
+    /readonly property bool ownsNotch: window\.styleActive[\s\S]*?CenterNotchCoordinator\.ownerScreenName/,
+    "the detached Classic window must be the only active Classic center owner");
 
 for (const relative of [
     "Titonium/Bar/notch/CenterPillWindow.qml",

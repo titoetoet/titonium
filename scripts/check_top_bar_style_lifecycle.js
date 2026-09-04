@@ -32,6 +32,12 @@ assert.equal(routing.existingOpenAction("audio:DP-1", "audio:DP-1",
 assert.equal(routing.existingOpenAction("audio:DP-1", "audio:DP-1",
     true, "audio:DP-1", true), "reverse",
 "a same-owner IPC open during Connected close must reverse the retained generation");
+assert.equal(routing.existingOpenAction("network:DP-1", "network:DP-1",
+    false, "", false, false), "preserve",
+"an ordinary same-owner Classic IPC open must retain its exact descriptor and invoker");
+assert.equal(routing.existingOpenAction("network:DP-1", "network:DP-1",
+    false, "", false, true), "replace",
+"a same-owner Classic IPC open during exit must replace the closing descriptor");
 
 const styleEvents = [];
 let presentedStyle = "connected";
@@ -110,6 +116,29 @@ for (const [feature, relative] of Object.entries(coordinatorFiles)) {
         `${feature} must report a reversing Connected surface as closed`);
     assert.match(source, /BarPopupRouting\.existingOpenAction\(/,
         `${feature} open must preserve or reverse an exact same-owner presentation`);
+    assert.match(source, /SurfaceManager\.isClosing\(owner,[\s\S]*?SurfaceManager\.descriptor,[\s\S]*?SurfaceManager\.screen\)/,
+        `${feature} coordinator must distinguish an ordinary Classic open from a closing owner`);
+}
+
+for (const relative of [
+    "Titonium/Overlays/Network/ClassicNetworkPopupSurface.qml",
+    "Titonium/Overlays/Bluetooth/ClassicBluetoothPopupSurface.qml",
+    "Titonium/Overlays/Audio/ClassicAudioPopupSurface.qml",
+    "Titonium/Overlays/SystemTray/ClassicSystemTrayPopupSurface.qml",
+]) {
+    const source = read(relative);
+    for (const fragment of [
+        "property var closingDescriptor: null",
+        "property var closingScreen: null",
+        "SurfaceManager.beginClose(root.ownerId, root.descriptor, root.screen)",
+        "SurfaceManager.closeOwned(root.ownerId, root.closingDescriptor, root.closingScreen)",
+        "onDescriptorChanged: root.reopenIfReplaced()",
+        "panelExit.stop()",
+        "panelEntrance.restart()",
+    ]) assert.equal(source.includes(fragment), true,
+        `${relative} must provide identity-guarded Classic reopen contract: ${fragment}`);
+    assert.doesNotMatch(source, /SurfaceManager\.close\(root\.ownerId\)/,
+        `${relative} stale animation completion must never close by owner string alone`);
 }
 
 const audioCoordinator = read(coordinatorFiles.audio);

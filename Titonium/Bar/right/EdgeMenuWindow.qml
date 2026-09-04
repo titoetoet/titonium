@@ -66,4 +66,14 @@ PanelWindow {
         if (RightPillCoordinator.exitingScreenName === window.screenModel.name)
             RightPillCoordinator.finishClose(window.screenModel.name);
     }
+
+    Component.onDestruction: {
+        if (RightPillCoordinator.connectedSurfacePresented
+                && RightPillCoordinator.connectedScreen === window.screenModel)
+            RightPillCoordinator.releaseConnectedSurface(
+                RightPillCoordinator.connectedOwnerId,
+                RightPillCoordinator.connectedGeneration,
+                RightPillCoordinator.connectedDescriptor,
+                RightPillCoordinator.connectedScreen);
+    }
 }

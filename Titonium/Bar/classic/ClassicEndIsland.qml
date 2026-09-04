@@ -9,6 +9,9 @@ Item {
     id: root
 
     required property var screen
+    readonly property alias pinHitbox: pinSurface
+    readonly property alias connectivityHitbox: connectivitySurface
+    readonly property alias statusHitbox: statusSurface
     property bool showConnectivityDiagnostics: true
     readonly property int preferredWidth: endRow.implicitWidth
     implicitWidth: endRow.implicitWidth

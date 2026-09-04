@@ -255,6 +255,33 @@ FocusScope {
 
         Loader {
             id: connectedLoader
+            property string loadOwnerId: ""
+            property int loadGeneration: 0
+            property var loadDescriptor: null
+            property var loadScreen: null
+
+            function captureSnapshot(): void {
+                if (!root.ownsConnectedSurface)
+                    return;
+                loadOwnerId = RightPillCoordinator.connectedOwnerId;
+                loadGeneration = RightPillCoordinator.connectedGeneration;
+                loadDescriptor = RightPillCoordinator.connectedDescriptor;
+                loadScreen = RightPillCoordinator.connectedScreen;
+            }
+
+            function clearSnapshot(): void {
+                loadOwnerId = "";
+                loadGeneration = 0;
+                loadDescriptor = null;
+                loadScreen = null;
+            }
+
+            function releaseSnapshot(): void {
+                RightPillCoordinator.releaseConnectedSurface(loadOwnerId, loadGeneration,
+                    loadDescriptor, loadScreen);
+                clearSnapshot();
+            }
+
             anchors.fill: parent
             active: root.ownsConnectedSurface
             source: active ? RightPillCoordinator.connectedDescriptor.source : ""
@@ -264,8 +291,16 @@ FocusScope {
             transform: Translate { y: (1 - connectedLoader.opacity) * 8 }
 
             onStatusChanged: {
-                if (status === Loader.Error && root.ownsConnectedSurface)
-                    RightPillCoordinator.closeConnectedSurface();
+                if (status === Loader.Loading)
+                    captureSnapshot();
+                else if (status === Loader.Error)
+                    releaseSnapshot();
+            }
+            onActiveChanged: {
+                if (active)
+                    captureSnapshot();
+                else
+                    clearSnapshot();
             }
         }
 

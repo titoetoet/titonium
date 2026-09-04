@@ -2,4 +2,6 @@ module qs.Titonium.Bar.classic
 ClassicBar 1.0 ClassicBar.qml
 ClassicStartIsland 1.0 ClassicStartIsland.qml
 ClassicCenterGroup 1.0 ClassicCenterGroup.qml
+ClassicCenterNotchWindow 1.0 ClassicCenterNotchWindow.qml
+ClassicCenterNotchSurface 1.0 ClassicCenterNotchSurface.qml
 ClassicEndIsland 1.0 ClassicEndIsland.qml

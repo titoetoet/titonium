@@ -9,6 +9,7 @@ import qs.Titonium.Core.Surfaces
 import qs.Titonium.Services.SystemTray
 import qs.Titonium.Theme
 import "BarPopupRouting.js" as BarPopupRouting
+import "EdgeMenuGeometry.js" as EdgeMenuGeometry
 import "RightPillState.js" as RightPillState
 
 QtObject {
@@ -77,6 +78,19 @@ QtObject {
         return context;
     }
 
+    function invokerAnchorSnapshot(invoker: var, edge: string, screen: var): var {
+        if (!invoker || !screen)
+            return null;
+        let origin = null;
+        try {
+            origin = invoker.mapToItem(null, 0, 0);
+        } catch (error) {
+            return null;
+        }
+        return EdgeMenuGeometry.anchorSnapshot(edge, screen.name,
+            origin.x, origin.y, invoker.width, invoker.height);
+    }
+
     function openPrepared(screenName: string, edge: string, feature: string,
             source: string, screen: var, invoker: var): bool {
         const routedScreen = ScreenRouter.screenForName(screen?.name || screenName);
@@ -97,6 +111,9 @@ QtObject {
             "barConnected": route.owner === "edge",
             "anchor": route.anchor,
             "invoker": invoker,
+            "anchorRect": root.invokerAnchorSnapshot(invoker, edge, routedScreen),
+            "anchorEdge": edge,
+            "anchorScreenName": routedScreen.name,
         };
         return SurfaceManager.open(owner, descriptor, routedScreen);
     }
@@ -261,6 +278,25 @@ QtObject {
         if (SurfaceManager.ownerId === ownerId
                 && SurfaceManager.descriptor?.barConnected === true)
             SurfaceManager.close(ownerId);
+        return true;
+    }
+
+    function releaseConnectedSurface(ownerId: string, generation: int,
+            descriptor: var, screen: var): bool {
+        if (!RightPillState.matchesConnectedSnapshot(root.connectedState,
+                ownerId, generation, descriptor, screen))
+            return false;
+        const managerDescriptor = SurfaceManager.descriptor;
+        const managerOwnsSnapshot = SurfaceManager.matches(
+            ownerId, managerDescriptor, screen)
+            && managerDescriptor?.barConnected === true;
+        const previousState = root.connectedState;
+        root.connectedState = RightPillState.connectedClear(
+            previousState, ownerId, generation);
+        if (root.connectedState === previousState)
+            return false;
+        if (managerOwnsSnapshot)
+            SurfaceManager.closeOwned(ownerId, managerDescriptor, screen);
         return true;
     }
 

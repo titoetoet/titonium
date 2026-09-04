@@ -11,6 +11,10 @@ SURFACES = CORE_ROOT / "Surfaces"
 REGISTRY = SURFACES / "SurfaceInputRegions.qml"
 QMLDIR = SURFACES / "qmldir"
 OVERLAY = SURFACES / "OverlayHost.qml"
+MANAGER = SURFACES / "SurfaceManager.qml"
+EDGE_SURFACE = ROOT / "Titonium/Bar/right/EdgeMenuSurface.qml"
+EDGE_WINDOW = ROOT / "Titonium/Bar/right/EdgeMenuWindow.qml"
+RIGHT_COORDINATOR = ROOT / "Titonium/Bar/right/RightPillCoordinator.qml"
 DOCK_WINDOW = ROOT / "Titonium/Dock/DockWindow.qml"
 DOCK_SURFACE = ROOT / "Titonium/Dock/DockSurface.qml"
 DOCK_BUTTON = ROOT / "Titonium/Dock/DockAppButton.qml"
@@ -83,6 +87,14 @@ def main() -> int:
         "overlayInputRegions.body",
         "overlayInputRegions.edge",
         "SurfaceManager.descriptor.barConnected !== true",
+        "property string loadOwnerId: \"\"",
+        "property var loadDescriptor: null",
+        "property var loadScreen: null",
+        "onStatusChanged:",
+        "status === Loader.Error",
+        "SurfaceManager.closeOwned(loadOwnerId, loadDescriptor, loadScreen)",
+        "Component.onDestruction:",
+        "overlayLoader.releaseSnapshot()",
     ), errors)
     if "active: window.ownsSurface && Boolean(SurfaceManager.descriptor.source)\n" \
             "                    && SurfaceManager.descriptor.barConnected !== true" not in overlay:
@@ -94,6 +106,38 @@ def main() -> int:
     if "width: window.ownsOverlaySurface ? window.modelData.width : 0" not in overlay \
             or "height: window.ownsOverlaySurface ? window.modelData.height : 0" not in overlay:
         errors.append("OverlayHost mask must be empty for connected Bar descriptors")
+
+    require_fragments(MANAGER, (
+        "property string closingOwnerId: \"\"",
+        "property var closingDescriptor: null",
+        "property var closingScreen: null",
+        "function matches(requestOwnerId: string, requestDescriptor: var,",
+        "function beginClose(requestOwnerId: string, requestDescriptor: var,",
+        "function isClosing(requestOwnerId: string, requestDescriptor: var,",
+        "function closeOwned(requestOwnerId: string, requestDescriptor: var,",
+        "SurfaceIdentity.matches(root.ownerId, root.descriptor, root.screen,",
+    ), errors)
+
+    require_fragments(EDGE_SURFACE, (
+        "property string loadOwnerId: \"\"",
+        "property int loadGeneration: 0",
+        "property var loadDescriptor: null",
+        "property var loadScreen: null",
+        "status === Loader.Error",
+        "RightPillCoordinator.releaseConnectedSurface(loadOwnerId, loadGeneration,",
+    ), errors)
+    require_fragments(EDGE_WINDOW, (
+        "Component.onDestruction:",
+        "RightPillCoordinator.releaseConnectedSurface(",
+        "RightPillCoordinator.connectedGeneration",
+        "RightPillCoordinator.connectedDescriptor",
+        "RightPillCoordinator.connectedScreen",
+    ), errors)
+    require_fragments(RIGHT_COORDINATOR, (
+        "function releaseConnectedSurface(ownerId: string, generation: int,",
+        "RightPillState.matchesConnectedSnapshot(root.connectedState,",
+        "SurfaceManager.closeOwned(ownerId, managerDescriptor, screen)",
+    ), errors)
 
     require_fragments(DOCK_WINDOW, (
         "import qs.Titonium.Core.Surfaces",

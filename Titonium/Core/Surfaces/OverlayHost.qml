@@ -58,6 +58,29 @@ Scope {
 
             Loader {
                 id: overlayLoader
+                property string loadOwnerId: ""
+                property var loadDescriptor: null
+                property var loadScreen: null
+
+                function captureSnapshot(): void {
+                    if (!window.ownsOverlaySurface)
+                        return;
+                    loadOwnerId = SurfaceManager.ownerId;
+                    loadDescriptor = SurfaceManager.descriptor;
+                    loadScreen = SurfaceManager.screen;
+                }
+
+                function clearSnapshot(): void {
+                    loadOwnerId = "";
+                    loadDescriptor = null;
+                    loadScreen = null;
+                }
+
+                function releaseSnapshot(): void {
+                    SurfaceManager.closeOwned(loadOwnerId, loadDescriptor, loadScreen);
+                    clearSnapshot();
+                }
+
                 anchors.fill: parent
                 active: window.ownsSurface && Boolean(SurfaceManager.descriptor.source)
                     && SurfaceManager.descriptor.barConnected !== true
@@ -68,6 +91,18 @@ Scope {
                         item.descriptor = SurfaceManager.descriptor;
                     if (item && item.hasOwnProperty("screen"))
                         item.screen = window.modelData;
+                }
+                onStatusChanged: {
+                    if (status === Loader.Loading)
+                        captureSnapshot();
+                    else if (status === Loader.Error)
+                        releaseSnapshot();
+                }
+                onActiveChanged: {
+                    if (active)
+                        captureSnapshot();
+                    else
+                        clearSnapshot();
                 }
             }
 
@@ -95,6 +130,16 @@ Scope {
                     if (focusedName.length > 0 && focusedName !== window.modelData.name)
                         SurfaceManager.close(SurfaceManager.ownerId);
                 }
+            }
+
+            Component.onDestruction: {
+                const ownerId = SurfaceManager.ownerId;
+                const descriptor = SurfaceManager.descriptor;
+                const screen = SurfaceManager.screen;
+                overlayLoader.releaseSnapshot();
+                if (screen === window.modelData
+                        && descriptor?.barConnected !== true)
+                    SurfaceManager.closeOwned(ownerId, descriptor, screen);
             }
         }
     }

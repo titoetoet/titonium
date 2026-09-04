@@ -144,7 +144,7 @@ def presentation_errors() -> list[str]:
         if forbidden in popup:
             errors.append(f"forbidden Wi-Fi popup dependency: {forbidden}")
     for fragment in (
-        "property var descriptor:", "property var screen:", "Shared.Panel", "SurfaceManager.close",
+        "property var descriptor:", "property var screen:", "Shared.Panel", "SurfaceManager.closeOwned",
         "Keys.onEscapePressed", "TapHandler {", "anchors.fill: parent",
         "readonly property real panelTop: Metrics.barHeight + Metrics.barSpacing",
         "anchors.rightMargin: Metrics.barPadding", "width: 380", "WifiNetworkRow",
@@ -157,8 +157,8 @@ def presentation_errors() -> list[str]:
     ):
         if fragment not in classic_popup:
             errors.append(f"missing Classic Wi-Fi popup contract: {fragment}")
-    if classic_popup.count("SurfaceManager.close(root.ownerId)") != 1:
-        errors.append("Classic Wi-Fi popup must close SurfaceManager exactly once through teardown")
+    if classic_popup.count("SurfaceManager.closeOwned(") != 1:
+        errors.append("Classic Wi-Fi popup must close exactly its frozen SurfaceManager identity")
     for forbidden in ("Quickshell.Networking", "Networking.", "Process", "FileView"):
         if forbidden in classic_popup:
             errors.append(f"forbidden Classic Wi-Fi popup dependency: {forbidden}")

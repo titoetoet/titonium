@@ -51,7 +51,9 @@ QtObject {
             SurfaceManager.ownerId,
             SurfaceManager.descriptor?.barConnected === true,
             RightPillCoordinator.connectedOwnerId,
-            RightPillCoordinator.connectedClosing);
+            RightPillCoordinator.connectedClosing,
+            SurfaceManager.isClosing(owner, SurfaceManager.descriptor,
+                SurfaceManager.screen));
         if (action === "reverse")
             return RightPillCoordinator.toggleConnectedSurface(owner);
         if (action === "preserve")

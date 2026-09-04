@@ -43,6 +43,7 @@ for (const fragment of [
     "function toggleConnectedSurface(ownerId: string): bool",
     "function forceCloseConnectedSurface(): bool",
     "function finishConnectedClose(ownerId: string, generation: int): bool",
+    "function releaseConnectedSurface(ownerId: string, generation: int,",
     "function returnConnectedFocus(ownerId: string, generation: int,",
     "RightPillState.connectedOpen",
     "RightPillState.connectedRequestClose",
@@ -80,6 +81,15 @@ assert.match(source,
 assert.match(source,
     /function forceCloseConnectedSurface[\s\S]*?RightPillState\.connectedClear[\s\S]*?SurfaceManager\.close\(ownerId\)/,
     "style shutdown must synchronously clear the frozen snapshot and matching SurfaceManager owner");
+assert.match(source,
+    /function invokerAnchorSnapshot\(invoker: var, edge: string, screen: var\): var[\s\S]*?mapToItem\(null, 0, 0\)[\s\S]*?EdgeMenuGeometry\.anchorSnapshot/,
+    "Classic System Tray descriptors must freeze screen-local invoker geometry");
+for (const fragment of [
+    '"anchorRect": root.invokerAnchorSnapshot(invoker, edge, routedScreen)',
+    '"anchorEdge": edge',
+    '"anchorScreenName": routedScreen.name',
+]) assert.equal(source.includes(fragment), true,
+    `Classic System Tray descriptor missing frozen anchor fact ${fragment}`);
 
 for (const forbidden of ["Loader {", "QsMenuOpener", "Quickshell.Services.SystemTray", "repeat: true", "ChatGPT"])
     assert.equal(source.includes(forbidden), false, `RightPillCoordinator owns forbidden ${forbidden}`);
@@ -247,22 +257,26 @@ const classicPopupPath = path.join(root, "Titonium", "Overlays", "SystemTray",
 assert.equal(fs.existsSync(classicPopupPath), true, "Classic System Tray popup must exist");
 const classicPopupSource = fs.readFileSync(classicPopupPath, "utf8");
 for (const fragment of [
-    "property var descriptor:", "property var screen:", "Shared.Panel", "SurfaceManager.close",
+    "property var descriptor:", "property var screen:", "Shared.Panel", "SurfaceManager.closeOwned",
     "Keys.onEscapePressed", "TapHandler {", "anchors.fill: parent",
     "readonly property real panelTop: Metrics.barHeight + Metrics.barSpacing",
-    "anchors.rightMargin: Metrics.barPadding", "width: 380", "SystemTrayMenuView {",
+    "readonly property var anchorRect: root.descriptor?.anchorRect || null",
+    "EdgeMenuGeometry.detachedPopupX(root.anchorRect, root.descriptor?.anchorScreenName",
+    "width: Math.min(380", "SystemTrayMenuView {",
     "SystemTrayService.popupEntries", "SystemTrayService.resetPopupNavigation()",
     "property bool closing: false", "property bool navigationReset: false",
     "function resetNavigation(): void", "function finishClose(): void", "if (root.closing)",
-    "if (Motion.reduced)", "panelExit.restart()", "transformOrigin: Item.Top",
+    "if (Motion.reduced)", "panelExit.restart()", "transformOrigin: root.descriptor?.anchorEdge",
     "opacity: Motion.reduced ? 1 : 0", "scale: Motion.reduced ? 1 : 0.94",
     "transform: Translate {", "id: panelEntranceOffset", "id: panelEntrance",
     "running: !Motion.reduced", "id: panelExit", "onFinished: root.finishClose()",
     "Component.onDestruction: root.resetNavigation()",
 ]) assert.equal(classicPopupSource.includes(fragment), true,
     `Classic System Tray popup missing ${fragment}`);
-assert.equal((classicPopupSource.match(/SurfaceManager\.close\(root\.ownerId\)/g) || []).length, 1,
-    "Classic System Tray popup must close SurfaceManager exactly once through teardown");
+assert.equal((classicPopupSource.match(/SurfaceManager\.closeOwned\(/g) || []).length, 1,
+    "Classic System Tray popup must close exactly its frozen SurfaceManager identity");
+assert.doesNotMatch(classicPopupSource, /anchors\.right:\s*parent\.right/,
+    "Classic System Tray popup must not ignore the invoking Active Window or Input control");
 assert.equal((classicPopupSource.match(/SystemTrayService\.resetPopupNavigation\(\)/g) || []).length, 1,
     "Classic System Tray navigation must reset exactly once through guarded teardown");
 for (const forbidden of ["QsMenuOpener", "Quickshell.Services.SystemTray", "Process", "FileView"])

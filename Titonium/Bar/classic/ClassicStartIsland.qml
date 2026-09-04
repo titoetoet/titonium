@@ -10,6 +10,9 @@ Item {
     id: root
 
     required property var screen
+    readonly property alias archHitbox: archSurface
+    readonly property alias workspaceHitbox: workspaceSurface
+    readonly property alias activeWindowHitbox: activeWindowSurface
     implicitWidth: startRow.implicitWidth
     implicitHeight: Metrics.widgetHeight
 
