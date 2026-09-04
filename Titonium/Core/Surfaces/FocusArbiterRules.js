@@ -6,7 +6,7 @@ function normalizeOwner(value) {
 
 function normalizeGeneration(value) {
     const generation = Number(value);
-    return Number.isFinite(generation) && generation >= 0 ? Math.floor(generation) : 0;
+    return Number.isSafeInteger(generation) && generation >= 0 ? generation : 0;
 }
 
 function snapshot(owner, pendingOwner, generation, phase, shouldSchedule, violation) {
@@ -64,7 +64,8 @@ function withdraw(current, ownerId) {
 
 function grantPending(current, generation) {
     const state = stateOrInitial(current);
-    if (normalizeGeneration(generation) !== normalizeGeneration(state.generation))
+    if (typeof generation !== "number" || !Number.isSafeInteger(generation)
+            || generation < 0 || generation !== state.generation)
         return state;
     if (state.phase !== "releasing" || state.owner || !state.pendingOwner)
         return state;

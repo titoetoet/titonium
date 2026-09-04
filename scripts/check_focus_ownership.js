@@ -11,13 +11,37 @@ function loadRules(relative) {
     const rulesPath = path.join(root, relative);
     const source = fs.readFileSync(rulesPath, "utf8")
         .replace(/^\.pragma library\s*\n/, "");
-    const context = vm.createContext({ Object, String, Number });
+    const context = vm.createContext({ Object, String, Number, Math });
     vm.runInContext(source, context, { filename: rulesPath });
     return context;
 }
 
 const arbiter = loadRules("Titonium/Core/Surfaces/FocusArbiterRules.js");
+const diagnostics = loadRules("Titonium/Core/Surfaces/FocusOwnershipRules.js");
 const plain = value => JSON.parse(JSON.stringify(value));
+
+let diagnosticState = diagnostics.initial();
+diagnosticState = diagnostics.transition(diagnosticState, "overlay:spotlight", true, 100);
+assert.deepEqual(plain(diagnosticState), {
+    owner: "overlay:spotlight", acquiredAt: 100, releasedAt: 0, violation: "",
+});
+const diagnosticConflict = diagnostics.transition(
+    diagnosticState, "center:expanded", true, 120);
+assert.equal(diagnosticConflict.owner, "overlay:spotlight");
+assert.equal(diagnosticConflict.violation,
+    "exclusive-focus-conflict:overlay:spotlight:center:expanded");
+diagnosticState = diagnostics.transition(
+    diagnosticState, "overlay:spotlight", false, 150);
+assert.deepEqual(plain(diagnosticState), {
+    owner: "", acquiredAt: 0, releasedAt: 150, violation: "",
+});
+
+for (const relative of ["Core/Surfaces/OverlayHost.qml",
+        "Core/Surfaces/Center/CenterOverlayWindow.qml", "Settings/SettingsWindow.qml",
+        "Bar/right/EdgeMenuWindow.qml"]) {
+    const text = fs.readFileSync(path.join(root, "Titonium", relative), "utf8");
+    assert.ok(text.includes("FocusDiagnostics.observe("), `${relative} lacks focus diagnostics`);
+}
 
 let state = arbiter.initial();
 assert.deepEqual(plain(state), {
@@ -50,8 +74,13 @@ assert.equal(state.pendingOwner, "overlay:spotlight:DP-1");
 assert.equal(state.generation, centerGeneration + 1);
 assert.equal(state.phase, "releasing");
 assert.equal(state.shouldSchedule, true);
-assert.equal(arbiter.grantPending(state, centerGeneration).owner, "",
-    "a stale generation must not grant the replaced pending owner");
+assert.strictEqual(arbiter.grantPending(state, centerGeneration), state,
+    "a stale generation must return the exact releasing state unchanged");
+for (const staleToken of [state.generation + 0.5, Number.NaN,
+        Number.POSITIVE_INFINITY, Number.MAX_SAFE_INTEGER + 1, "" + state.generation]) {
+    assert.strictEqual(arbiter.grantPending(state, staleToken), state,
+        "non-exact callback generations must fail closed unchanged");
+}
 state = arbiter.grantPending(state, state.generation);
 assert.equal(state.owner, "overlay:spotlight:DP-1");
 assert.equal(state.pendingOwner, "");
@@ -83,8 +112,8 @@ replacement = arbiter.request(replacement, "settings:DP-1");
 const settingsGeneration = replacement.generation;
 assert.equal(replacement.pendingOwner, "settings:DP-1",
     "the newest pending request must replace Spotlight");
-assert.equal(arbiter.grantPending(replacement, spotlightGeneration).owner, "",
-    "Spotlight's stale generation cannot reclaim focus");
+assert.strictEqual(arbiter.grantPending(replacement, spotlightGeneration), replacement,
+    "Spotlight's stale generation must return the exact state unchanged");
 replacement = arbiter.grantPending(replacement, settingsGeneration);
 assert.equal(replacement.owner, "settings:DP-1");
 assert.equal(arbiter.withdraw(replacement, "overlay:spotlight:DP-1").owner,
