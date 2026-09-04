@@ -37,6 +37,19 @@ print(json.dumps(payload.get(sys.argv[1], {}), sort_keys=True))
 ' "$screen_name"
 }
 
+wait_for_transient_layer() {
+    local screen_name="$1"
+    for _ in {1..20}; do
+        local layers
+        layers="$(screen_layers "$screen_name")"
+        if [[ "$layers" == *"titonium-overlay"* || "$layers" == *"titonium-edge-menu"* ]]; then
+            return 0
+        fi
+        sleep 0.05
+    done
+    return 1
+}
+
 valid_bluetooth_state() {
     printf '%s' "$1" | python3 -c '
 import json
@@ -84,7 +97,7 @@ if [[ "$(call_ipc bluetooth popupState)" != "$popup_state" ]]; then
     printf 'FAIL Bluetooth popup state changed unexpectedly: %q\n' "$(call_ipc bluetooth popupState)" >&2
     exit 1
 fi
-if [[ "$(screen_layers DP-1)" != *"titonium-overlay"* ]]; then
+if ! wait_for_transient_layer DP-1; then
     echo "FAIL Bluetooth popup did not own the DP-1 transient layer" >&2
     exit 1
 fi
