@@ -21,7 +21,7 @@ QtObject {
         id: "notification:unread",
         icon: "notifications",
         accessibleName: I18n.tr(NotificationCoordinator.hasUnread
-            ? "notification.bell.unread" : "notification.bell.none", {
+            ? "notification.center.unread" : "notification.center.none", {
                 "count": NotificationCoordinator.unreadCount,
             }),
         tone: "normal",

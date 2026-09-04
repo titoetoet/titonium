@@ -38,6 +38,15 @@ def function_block(source: str, name: str) -> str:
     return ""
 
 
+def obsolete_bell_copy_consumers(errors: list[str]) -> None:
+    for path in (ROOT / "Titonium").rglob("*"):
+        if path.suffix not in (".js", ".qml"):
+            continue
+        if "notification.bell." in path.read_text(encoding="utf-8"):
+            errors.append(
+                f"production consumer retains removed bell copy: {path.relative_to(ROOT)}")
+
+
 def main() -> int:
     errors: list[str] = []
     bell = read("Titonium/Bar/widgets/NotificationBell.qml", errors)
@@ -222,6 +231,8 @@ def main() -> int:
         for key in keys:
             if not isinstance(catalog.get(key), str) or not catalog[key]:
                 errors.append(f"{locale} catalog missing Notification panel key: {key}")
+
+    obsolete_bell_copy_consumers(errors)
 
     if errors:
         print("FAIL notification panel, bell and route contract")
