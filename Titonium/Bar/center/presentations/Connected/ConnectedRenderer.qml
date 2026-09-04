@@ -16,23 +16,35 @@ FocusScope {
         item => item.id === root.viewState.selectedContextId) || root.snapshot.primary
     readonly property var contextActions: root.snapshot.capabilities.actions.filter(
         item => root.context && item.contextId === root.context.id)
-    readonly property rect visualBounds: Qt.rect(body.x, body.y, body.width, body.height)
+    readonly property real shoulderSize: 18
+    readonly property real visualWidth: root.viewState.mode === "expanded"
+        ? Math.min(720, parent.width - 40)
+        : (root.viewState.mode === "banner" ? Math.min(480, parent.width - 24) : 220)
+    readonly property real bodyWidth: Math.max(1, root.visualWidth - root.shoulderSize * 2)
+    readonly property real bodyHeight: root.viewState.mode === "expanded" ? 440
+        : (root.viewState.mode === "banner" ? 72 : root.profile.compact.height)
+    readonly property real bodyRadius: root.viewState.mode === "expanded"
+        ? root.profile.expanded.radius : (root.viewState.mode === "banner"
+        ? root.profile.banner.radius : root.profile.compact.radius)
+    readonly property rect visualBounds: Qt.rect(shape.x, shape.y, shape.width, shape.height)
     readonly property rect interactiveBounds: root.visualBounds
 
-    Rectangle {
-        id: body
+    Shared.ConnectedPillShape {
+        id: shape
         anchors.top: parent.top
         anchors.horizontalCenter: parent.horizontalCenter
-        width: root.viewState.mode === "expanded" ? Math.min(720, parent.width - 40)
-            : (root.viewState.mode === "banner" ? Math.min(480, parent.width - 24) : 220)
-        height: root.viewState.mode === "expanded" ? 440
-            : (root.viewState.mode === "banner" ? 72 : root.profile.compact.height)
-        radius: root.viewState.mode === "expanded" ? root.profile.expanded.radius
-            : (root.viewState.mode === "banner" ? root.profile.banner.radius
-            : root.profile.compact.radius)
+        bodyWidth: root.bodyWidth
+        bodyHeight: root.bodyHeight
+        shoulderSize: root.shoulderSize
+        bottomRadius: root.bodyRadius
         color: Theme.light ? "#ffffff" : "#000000"
 
-        ColumnLayout {
+        Item {
+            x: shape.bodyLeft
+            width: shape.bodyWidth
+            height: shape.bodyHeight
+
+            ColumnLayout {
             anchors.centerIn: parent
             width: Math.max(0, parent.width - 32)
             spacing: Metrics.spacingSmall
@@ -74,13 +86,14 @@ FocusScope {
                     }
                 }
             }
+            }
         }
         TapHandler {
             onTapped: root.intentRequested({ type: "request-mode",
                 mode: root.viewState.mode === "expanded" ? "compact" : "expanded" })
         }
-        Behavior on width { NumberAnimation { duration: Motion.reduced ? 0 : 240 } }
-        Behavior on height {
+        Behavior on bodyWidth { NumberAnimation { duration: Motion.reduced ? 0 : 240 } }
+        Behavior on bodyHeight {
             NumberAnimation {
                 duration: Motion.reduced ? 0 : 240
                 onFinished: root.transitionFinished(root.viewState.generation)

@@ -57,6 +57,11 @@ for (const file of ["CenterRenderer.qml", ...["Pill", "Notch", "Connected", "Cla
     assert.equal(fs.existsSync(path.join(path.dirname(rulesPath), file)), true, `missing ${file}`);
 const renderer = fs.readFileSync(path.join(path.dirname(rulesPath),
     "presentations/Connected/ConnectedRenderer.qml"), "utf8");
+assert.match(renderer, /Shared\.ConnectedPillShape\s*\{/,
+    "Center must render the shared symmetric top-connected shoulder contour");
+for (const fragment of ["bodyWidth: root.bodyWidth", "shoulderSize: root.shoulderSize",
+        "readonly property rect visualBounds: Qt.rect(shape.x, shape.y, shape.width, shape.height)"])
+    assert.ok(renderer.includes(fragment), `Center contour contract missing: ${fragment}`);
 for (const fragment of ["required property var snapshot", "required property var viewState",
     "required property var profile", "signal intentRequested(var intent)",
     "signal transitionFinished(int generation)", "readonly property rect visualBounds",
