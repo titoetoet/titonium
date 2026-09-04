@@ -47,29 +47,23 @@ def main() -> int:
         "function dismiss(key: string): bool",
         "function dismissAll(): int",
         "function action(key: string, actionId: string): bool",
-        "function pauseCritical(): bool",
-        "function resumeCritical(): bool",
         "function completeCritical(key: string): bool",
         "function setCriticalPresentationEligible(eligible: bool): bool",
         "function reclassify(): bool",
         "function retire(key: string, reason: string): bool",
-        "function handleCriticalDeadline(key: string, generation: int,",
-        "deadline: double, now: double): bool",
-        "property string scheduledCriticalKey:",
-        "property int scheduledCriticalGeneration:",
-        "property double scheduledCriticalDeadline:",
-        "property int deadlineGeneration:",
         "NotificationRules.resolvePolicy",
         "CoordinatorRules.reclassify",
-        "CoordinatorRules.deadlineMatches",
-        "if (root.currentCritical && !root.coordinatorState.paused)",
-        "root.syncDeadlineTimer();",
         "NotificationService.dismiss(key)",
         "NotificationService.invokeAction(key, actionId)",
-        "repeat: false",
     ))
-    if coordinator.count("Timer {") != 1:
-        errors.append("NotificationCoordinator must own exactly one non-repeating deadline Timer")
+    if coordinator.count("Timer {") != 0:
+        errors.append("NotificationCoordinator must not own a presentation deadline Timer")
+    for forbidden_countdown in ("deadlineGeneration", "scheduledCriticalKey",
+                                "scheduledCriticalDeadline", "pauseCritical",
+                                "resumeCritical", "deadlineMatches"):
+        if forbidden_countdown in coordinator:
+            errors.append(
+                f"NotificationCoordinator owns forbidden presentation clock state: {forbidden_countdown}")
     for forbidden in ("NotificationServer {", "Process {", "FileView {"):
         if forbidden in coordinator:
             errors.append(f"NotificationCoordinator owns forbidden native behavior: {forbidden}")

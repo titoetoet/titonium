@@ -18,18 +18,33 @@ assert.match(controller, /readonly property string mode:/);
 assert.match(controller, /readonly property string selectedContextId:/);
 assert.match(controller, /readonly property string presentationOwner:/);
 assert.match(controller, /readonly property var viewState: Object\.freeze\(/);
+assert.match(controller, /deadlineToken: root\.internalState\.deadlineToken/);
 assert.match(controller, /property bool automaticPresentationAvailable:/);
-assert.match(controller, /readonly property bool criticalPresentationEligible:/);
+assert.match(controller, /readonly property bool automaticPresentationEligible:/);
 assert.match(controller, /CenterSurfaceState\.automaticPresentationEligible/);
 assert.match(controller, /intent\.type === "set-presentation-available"/);
 assert.match(controller, /CenterDomain\.setPresentationEligible/);
 assert.match(controller, /CenterSurfaceState\.pauseDeadline/);
 assert.match(controller, /CenterSurfaceState\.resumeDeadline/);
-assert.match(controller, /CenterDomain\.pausePresentation/);
-assert.match(controller, /CenterDomain\.resumePresentation/);
 assert.match(controller, /CenterDomain\.completePresentation/);
 assert.match(controller, /CenterSurfaceState\.applyPresentationResult/);
+for (const scheduledField of ["scheduledDeadlineGeneration",
+    "scheduledDeadlineContextId", "scheduledDeadline"])
+    assert.match(controller, new RegExp(`property .* ${scheduledField}:`));
+assert.match(controller,
+    /root\.scheduledDeadlineGeneration = root\.internalState\.generation/);
+assert.match(controller,
+    /root\.scheduledDeadlineContextId = root\.internalState\.selectedContextId/);
+assert.match(controller, /root\.scheduledDeadline = root\.internalState\.deadline/);
+assert.match(controller, /function scheduledDeadlineIntent\(\): var/);
+assert.doesNotMatch(controller,
+    /onTriggered:[^\n]*generation: root\.generation|Qt\.callLater\(\(\) => root\.dispatch\(\{ type: "timeout", generation: root\.generation/,
+    "deadline callbacks must dispatch the identity captured when the timer was scheduled");
 assert.match(controller, /function onPresentationEnded\(request: var\): void/);
+assert.match(controller, /request\.acquisitionPolicy === "non-preemptive"/);
+assert.match(controller, /acquisitionPolicy: request\.acquisitionPolicy/);
+assert.doesNotMatch(controller, /["']notification["']|criticalPresentationEligible/,
+    "Core Center controller must not branch on notification source identity");
 assert.match(host, /CenterCompactWindow\s*\{/);
 assert.match(host, /CenterOverlayWindow\s*\{/);
 assert.match(host, /snapshot: CenterDomain\.snapshot/);
@@ -55,9 +70,13 @@ assert.match(connected, /type: "invoke-action"/);
 const router = read("Titonium/Orchestration/SurfaceRouter.qml");
 assert.match(router, /function automaticCenterPresentationAvailable\(\): bool/);
 assert.match(router, /function syncAutomaticCenterPresentation\(\): void/);
-assert.match(router, /presentationOwner === "notification"/);
-assert.match(router, /CenterSurfaceController\.criticalPresentationEligible/);
-assert.doesNotMatch(router, /\bNotificationService\b|\bNotificationCoordinator\b/,
+assert.match(router, /request\.acquisitionPolicy === "non-preemptive"/);
+assert.match(router, /CenterSurfaceController\.automaticPresentationEligible/);
+assert.match(router,
+    /target: ScreenPolicy[\s\S]*?function onScreensChanged\(\): void[\s\S]*?root\.syncAutomaticCenterPresentation\(\)/,
+    "automatic presentation availability must resynchronize with screen lifecycle");
+assert.doesNotMatch(router,
+    /\bNotificationService\b|\bNotificationCoordinator\b|["']notification["']/,
     "surface arbitration must stay behind the neutral controller/domain adapter boundary");
 
 for (const legacy of [

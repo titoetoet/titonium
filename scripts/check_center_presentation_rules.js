@@ -83,8 +83,15 @@ for (const fragment of ["required property var snapshot", "required property var
     assert.ok(renderer.includes(fragment), `Connected renderer missing ${fragment}`);
 for (const fragment of ["property var displayedContext", "id: contentStage",
     "SequentialAnimation", "PresentationRules.contextTransition",
-    "HoverHandler", 'type: "pause-timeout"', 'type: "resume-timeout"'])
+    "HoverHandler", '"pause-timeout"', '"resume-timeout"',
+    "function deadlineIntent(type: string): var", "generation: root.viewState.generation",
+    "contextId: root.viewState.selectedContextId",
+    "deadline: root.viewState.deadlineToken", "id: activationArea", "id: actionRow",
+    "parent: activationArea", "gesturePolicy: TapHandler.ReleaseWithinBounds",
+    'I18n.tr("menubar.center.title")'])
     assert.ok(renderer.includes(fragment), `Connected renderer missing FIFO presentation: ${fragment}`);
+assert.doesNotMatch(renderer, /\|\| "Center"/,
+    "Center fallback labels must use the locale service");
 assert.doesNotMatch(renderer, /Loader\s*\{/,
     "FIFO content replacement must not replace the mounted banner owner");
 assert.doesNotMatch(renderer, /Services\.(Capture|Mpris|Notifications|AgentApproval|Center)/);

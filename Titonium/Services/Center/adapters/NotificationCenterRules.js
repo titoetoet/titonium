@@ -10,6 +10,10 @@ function key(value) {
     return typeof value === "string" ? value.trim() : "";
 }
 
+function label(labels, name) {
+    return text(labels && labels[name]);
+}
+
 function contextId(descriptor) {
     var notificationKey = key(descriptor && descriptor.key);
     return notificationKey ? "notification:" + notificationKey : "";
@@ -20,12 +24,12 @@ function actionCapabilityId(actionId) {
     return id ? "notification.action:" + encodeURIComponent(id) : "";
 }
 
-function context(descriptor) {
+function context(descriptor, labels) {
     var id = contextId(descriptor);
     if (!id)
         return null;
     var title = text(descriptor.summary) || text(descriptor.body)
-        || text(descriptor.appName) || "Notification";
+        || text(descriptor.appName) || label(labels, "fallbackTitle");
     var actionIds = [];
     var sourceActions = Array.isArray(descriptor.actions) ? descriptor.actions : [];
     for (var index = 0; index < sourceActions.length; index++) {
@@ -56,7 +60,7 @@ function context(descriptor) {
     });
 }
 
-function capabilities(descriptor, id) {
+function capabilities(descriptor, id, labels) {
     var contextValue = id || contextId(descriptor);
     if (!contextValue)
         return Object.freeze([]);
@@ -74,7 +78,7 @@ function capabilities(descriptor, id) {
             id: actionId,
             contextId: contextValue,
             role: "primary",
-            label: text(source.label) || "Open",
+            label: text(source.label) || label(labels, "actionFallback"),
             icon: "open_in_new",
             enabled: true,
         }));
@@ -83,7 +87,7 @@ function capabilities(descriptor, id) {
         id: "notification.dismiss",
         contextId: contextValue,
         role: "destructive",
-        label: "Dismiss",
+        label: label(labels, "dismiss"),
         icon: "close",
         enabled: true,
     }));
@@ -96,13 +100,18 @@ function presentation(descriptor) {
         return null;
     return Object.freeze({
         id: id + ":presentation",
-        source: "notification",
+        ownerId: "notification-critical",
+        acquisitionPolicy: "non-preemptive",
         contextId: id,
         requestedMode: "banner",
         attention: "transient",
         timeoutMs: READABLE_MS,
         focusPolicy: "none",
     });
+}
+
+function closePolicy(accepted, hasCurrent) {
+    return accepted === true && hasCurrent !== true ? "compact" : "keep";
 }
 
 function actionIntent(actionId, selectedContextId) {

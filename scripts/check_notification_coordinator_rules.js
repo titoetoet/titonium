@@ -16,6 +16,13 @@ const source = fs.readFileSync(rulesPath, "utf8").replace(/^\.pragma library\s*\
 const rules = vm.createContext({});
 vm.runInContext(source, rules, { filename: rulesPath });
 
+const centerRulesPath = path.join(root, "Titonium", "Services", "Center", "adapters",
+    "NotificationCenterRules.js");
+const centerRules = vm.createContext({ encodeURIComponent, decodeURIComponent });
+vm.runInContext(fs.readFileSync(centerRulesPath, "utf8")
+    .replace(/^\.pragma library\s*\n/, ""), centerRules,
+{ filename: centerRulesPath });
+
 const plain = value => JSON.parse(JSON.stringify(value));
 
 function item(key, route, receivedAt, overrides = {}) {
@@ -83,7 +90,9 @@ state = rules.publish(state, item("internal:timer_finished:tea", "center", 400),
 assert.equal(state.currentCritical.key, "native:3");
 assert.deepEqual(plain(state.criticalQueue.map(entry => entry.key)),
     ["native:3", "internal:timer_finished:tea"]);
-assert.equal(state.deadlineAt, 4300);
+assert.equal("deadlineAt" in state, false);
+assert.equal("remainingMs" in state, false);
+assert.equal("paused" in state, false);
 assert.deepEqual(plain(state.toastKeys), ["native:1"]);
 
 const replacement = item("internal:timer_finished:tea", "center", 450,
@@ -92,23 +101,21 @@ state = rules.publish(state, replacement, 450, true, true);
 assert.deepEqual(plain(state.criticalQueue.map(entry => entry.key)),
     ["native:3", "internal:timer_finished:tea"]);
 assert.equal(state.criticalQueue[1], replacement);
-assert.equal(state.deadlineAt, 4300);
 console.log("PASS critical routing is FIFO, deduplicated, and never creates a duplicate toast");
 
-const paused = rules.pause(state, 1300);
-assert.equal(paused.paused, true);
-assert.equal(paused.remainingMs, 3000);
-assert.equal(paused.deadlineAt, 0);
-const resumed = rules.resume(paused, 5000);
-assert.equal(resumed.paused, false);
-assert.equal(resumed.remainingMs, 3000);
-assert.equal(resumed.deadlineAt, 8000);
-const completed = rules.complete(resumed, "native:3", 8000, true);
+const completed = rules.complete(state, "native:3", 8000, true);
 assert.equal(completed.currentCritical.key, "internal:timer_finished:tea");
-assert.equal(completed.deadlineAt, 12000);
 assert.deepEqual(plain(completed.criticalQueue.map(entry => entry.key)),
     ["internal:timer_finished:tea"]);
-console.log("PASS pause/resume preserves remaining readable time and completion advances FIFO");
+assert.equal(centerRules.closePolicy(true, !!completed.currentCritical), "keep");
+const actionExhausted = rules.complete(
+    completed, "internal:timer_finished:tea", 12000, true);
+assert.equal(actionExhausted.currentCritical, null);
+assert.equal(centerRules.closePolicy(true, !!actionExhausted.currentCritical), "compact");
+assert.equal(typeof rules.pause, "undefined");
+assert.equal(typeof rules.resume, "undefined");
+assert.equal(typeof rules.deadlineMatches, "undefined");
+console.log("PASS coordinator completion advances FIFO without owning a presentation clock");
 
 let gated = rules.setPresentationEligible(rules.initialState(), false, 0);
 gated = rules.publish(gated, item("native:critical", "center", 10), 10, false, true);
@@ -116,10 +123,8 @@ assert.equal(gated.currentCritical, null);
 assert.deepEqual(plain(gated.criticalQueue.map(entry => entry.key)), ["native:critical"]);
 gated = rules.setPresentationEligible(gated, true, 100);
 assert.equal(gated.currentCritical.key, "native:critical");
-assert.equal(gated.deadlineAt, 4100);
 const stillVisible = rules.setPresentationEligible(gated, false, 200);
 assert.equal(stillVisible.currentCritical, gated.currentCritical);
-assert.equal(stillVisible.deadlineAt, gated.deadlineAt);
 console.log("PASS ineligible Center state queues without preemption and preserves a visible item");
 
 let capped = rules.initialState();
@@ -181,7 +186,6 @@ const quiet = item("native:quiet", "toast", 300);
 let reclassified = rules.publish(rules.initialState(), current, 100, true, true);
 reclassified = rules.publish(reclassified, pending, 200, true, true);
 reclassified = rules.publish(reclassified, quiet, 300, true, true);
-const oldDeadline = reclassified.deadlineAt;
 const resolver = descriptor => {
     if (descriptor.key === "native:current")
         return Object.freeze(Object.assign({}, descriptor, { route: "history" }));
@@ -191,7 +195,6 @@ const resolver = descriptor => {
 };
 reclassified = rules.reclassify(reclassified, {}, 900, resolver, true);
 assert.equal(reclassified.currentCritical, current);
-assert.equal(reclassified.deadlineAt, oldDeadline);
 assert.deepEqual(plain(reclassified.criticalQueue.map(entry => entry.key)), ["native:current"]);
 assert.deepEqual(plain(reclassified.history.map(entry => entry.key)),
     ["native:pending", "native:current"]);
@@ -209,7 +212,6 @@ assert.equal(promoted.currentCritical.key, "native:normal-old");
 assert.deepEqual(plain(promoted.criticalQueue.map(entry => entry.key)),
     ["native:normal-old", "native:normal-new"]);
 assert.deepEqual(plain(promoted.toastKeys), []);
-assert.equal(promoted.deadlineAt, 4500);
 console.log("PASS normal toast reclassification promotes critical items in FIFO order");
 
 let replacementOrder = rules.setPresentationEligible(rules.initialState(), false, 0);
@@ -277,17 +279,3 @@ assert.deepEqual(plain(explicitlyDismissed.history), []);
 assert.deepEqual(plain(explicitlyDismissed.unreadKeys), []);
 assert.deepEqual(plain(explicitlyDismissed.toastKeys), []);
 console.log("PASS explicit native dismissal removes coordinator history and unread state");
-
-assert.equal(rules.deadlineMatches(resumed,
-    "native:3", 7, 7, 8000, 8000), true);
-assert.equal(rules.deadlineMatches(resumed,
-    "native:3", 6, 7, 8000, 8000), false);
-assert.equal(rules.deadlineMatches(resumed,
-    "internal:timer_finished:tea", 7, 7, 8000, 8000), false);
-assert.equal(rules.deadlineMatches(resumed,
-    "native:3", 7, 7, 7000, 8000), false);
-assert.equal(rules.deadlineMatches(resumed,
-    "native:3", 7, 7, 8000, 7999), false);
-assert.equal(rules.deadlineMatches(paused,
-    "native:3", 7, 7, 0, 8000), false);
-console.log("PASS deadline validation rejects stale generation, key, deadline, early, and paused callbacks");

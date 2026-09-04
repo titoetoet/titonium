@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
+import qs.Titonium.Core.Runtime
 import qs.Titonium.Shared as Shared
 import qs.Titonium.Theme
 import "../../CenterPresentationRules.js" as PresentationRules
@@ -34,6 +35,15 @@ FocusScope {
     readonly property rect visualBounds: Qt.rect(shape.x, shape.y, shape.width, shape.height)
     readonly property rect interactiveBounds: root.visualBounds
 
+    function deadlineIntent(type: string): var {
+        return {
+            type: type,
+            generation: root.viewState.generation,
+            contextId: root.viewState.selectedContextId,
+            deadline: root.viewState.deadlineToken,
+        };
+    }
+
     function replaceDisplayedContext(nextContext: var): void {
         root.pendingContext = nextContext;
         if (!root.displayedContext || root.viewState.mode !== "banner"
@@ -45,7 +55,7 @@ FocusScope {
             contextTransition.restart();
         }
         if (root.viewState.mode === "banner" && bannerHover.hovered)
-            root.intentRequested({ type: "pause-timeout" });
+            root.intentRequested(root.deadlineIntent("pause-timeout"));
     }
 
     function commitPendingContext(): void {
@@ -76,51 +86,71 @@ FocusScope {
             height: shape.bodyHeight
 
             ColumnLayout {
-            anchors.centerIn: parent
-            width: Math.max(0, parent.width - 32)
-            spacing: Metrics.spacingSmall
-
-            RowLayout {
-                Layout.fillWidth: true
-                Shared.Icon { name: root.displayedContext?.icon || "center_focus_strong"; size: 18 }
-                Shared.TextLabel {
-                    Layout.fillWidth: true
-                    text: root.displayedContext?.title || "Center"
-                    elide: Text.ElideRight
-                    horizontalAlignment: Text.AlignHCenter
-                }
-            }
-            Shared.TextLabel {
-                Layout.fillWidth: true
-                visible: root.viewState.mode !== "compact"
-                    && (root.displayedContext?.subtitle || "").length > 0
-                text: root.displayedContext?.subtitle || ""
-                variant: "caption"
-                tone: "secondary"
-                horizontalAlignment: Text.AlignHCenter
-                elide: Text.ElideRight
-            }
-            RowLayout {
-                Layout.alignment: Qt.AlignHCenter
-                visible: root.viewState.mode !== "compact" && root.contextActions.length > 0
+                anchors.centerIn: parent
+                width: Math.max(0, parent.width - 32)
                 spacing: Metrics.spacingSmall
-                Repeater {
-                    model: root.contextActions
-                    Shared.Button {
-                        required property var modelData
-                        size: "small"
-                        variant: modelData.role === "primary" ? "primary" : "quiet"
-                        iconName: modelData.icon
-                        accessibleName: modelData.label
-                        enabled: modelData.enabled
-                        onTriggered: root.intentRequested({ type: "invoke-action",
-                            actionId: modelData.id, contextId: modelData.contextId })
+
+                Item {
+                    id: activationArea
+                    Layout.fillWidth: true
+                    implicitHeight: headingColumn.implicitHeight
+
+                    ColumnLayout {
+                        id: headingColumn
+                        anchors.fill: parent
+                        spacing: Metrics.spacingSmall
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Shared.Icon {
+                                name: root.displayedContext?.icon || "center_focus_strong"
+                                size: 18
+                            }
+                            Shared.TextLabel {
+                                Layout.fillWidth: true
+                                text: root.displayedContext?.title
+                                    || I18n.tr("menubar.center.title")
+                                elide: Text.ElideRight
+                                horizontalAlignment: Text.AlignHCenter
+                            }
+                        }
+                        Shared.TextLabel {
+                            Layout.fillWidth: true
+                            visible: root.viewState.mode !== "compact"
+                                && (root.displayedContext?.subtitle || "").length > 0
+                            text: root.displayedContext?.subtitle || ""
+                            variant: "caption"
+                            tone: "secondary"
+                            horizontalAlignment: Text.AlignHCenter
+                            elide: Text.ElideRight
+                        }
+                    }
+                }
+
+                RowLayout {
+                    id: actionRow
+                    Layout.alignment: Qt.AlignHCenter
+                    visible: root.viewState.mode !== "compact" && root.contextActions.length > 0
+                    spacing: Metrics.spacingSmall
+                    Repeater {
+                        model: root.contextActions
+                        Shared.Button {
+                            required property var modelData
+                            size: "small"
+                            variant: modelData.role === "primary" ? "primary" : "quiet"
+                            iconName: modelData.icon
+                            accessibleName: modelData.label
+                            enabled: modelData.enabled
+                            onTriggered: root.intentRequested({ type: "invoke-action",
+                                actionId: modelData.id, contextId: modelData.contextId })
+                        }
                     }
                 }
             }
-            }
         }
         TapHandler {
+            parent: activationArea
+            gesturePolicy: TapHandler.ReleaseWithinBounds
             onTapped: root.intentRequested({ type: "request-mode",
                 mode: root.viewState.mode === "expanded" ? "compact" : "expanded" })
         }
@@ -131,9 +161,9 @@ FocusScope {
                 if (root.viewState.mode !== "banner")
                     return;
                 if (bannerHover.hovered)
-                    root.intentRequested({ type: "pause-timeout" });
+                    root.intentRequested(root.deadlineIntent("pause-timeout"));
                 else
-                    root.intentRequested({ type: "resume-timeout" });
+                    root.intentRequested(root.deadlineIntent("resume-timeout"));
             }
         }
         Behavior on bodyWidth { NumberAnimation { duration: Motion.reduced ? 0 : 240 } }

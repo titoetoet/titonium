@@ -65,6 +65,7 @@ QtObject {
             type: "present", contextId: contextId, requestedMode: "banner",
             timeoutMs: timeoutMs, focusPolicy: policy?.focusPolicy || "none",
             presentationOwner: policy?.presentationOwner || "user",
+            acquisitionPolicy: policy?.acquisitionPolicy || "preemptive",
         });
         return "open:" + screen.name + ";mode=banner";
     }
@@ -190,9 +191,9 @@ QtObject {
             if (request.type !== "acquire-surface")
                 return;
             const screen = root.centerScreen(request.screenName);
-            if (request.presentationOwner === "notification") {
+            if (request.acquisitionPolicy === "non-preemptive") {
                 root.syncAutomaticCenterPresentation();
-                if (!screen || !CenterSurfaceController.criticalPresentationEligible) {
+                if (!screen || !CenterSurfaceController.automaticPresentationEligible) {
                     CenterSurfaceController.dispatch({
                         type: "surface-denied", reason: "busy",
                     });
@@ -213,6 +214,7 @@ QtObject {
                     timeoutMs: request.timeoutMs,
                     focusPolicy: request.focusPolicy,
                     presentationOwner: request.presentationOwner,
+                    acquisitionPolicy: request.acquisitionPolicy,
                 });
                 return;
             }
@@ -227,7 +229,8 @@ QtObject {
                 CenterSurfaceController.dispatch({ type: "present",
                     contextId: request.contextId, requestedMode: "banner",
                     timeoutMs: request.timeoutMs, focusPolicy: request.focusPolicy,
-                    presentationOwner: request.presentationOwner });
+                    presentationOwner: request.presentationOwner,
+                    acquisitionPolicy: request.acquisitionPolicy });
             else
                 CenterSurfaceController.dispatch({ type: "request-mode", mode: request.mode });
         }
@@ -243,6 +246,13 @@ QtObject {
     property Connections preferencesConnection: Connections {
         target: Preferences
         function onSavePendingChanged(): void {
+            root.syncAutomaticCenterPresentation();
+        }
+    }
+
+    property Connections screenConnection: Connections {
+        target: ScreenPolicy
+        function onScreensChanged(): void {
             root.syncAutomaticCenterPresentation();
         }
     }

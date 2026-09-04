@@ -8,12 +8,15 @@ function stateValue(values) {
         selectedContextId: values.selectedContextId || "",
         presentationOwner: typeof values.presentationOwner === "string"
             ? values.presentationOwner.trim() : "",
+        acquisitionPolicy: values.acquisitionPolicy === "non-preemptive"
+            ? "non-preemptive" : "preemptive",
         destination: values.destination || "overview",
         dragProgress: Math.max(0, Math.min(1, Number(values.dragProgress) || 0)),
         focusPolicy: values.focusPolicy === "exclusive" ? "exclusive" : "none",
         dismissalPolicy: ["outside", "timed"].indexOf(values.dismissalPolicy) >= 0
             ? values.dismissalPolicy : "none",
         deadline: Math.max(0, Number(values.deadline) || 0),
+        deadlineToken: Math.max(0, Number(values.deadlineToken) || 0),
         remainingMs: Math.max(0, Number(values.remainingMs) || 0),
         generation: Math.max(0, Number(values.generation) || 0)
     });
@@ -48,12 +51,13 @@ function nextState(current, changes, incrementGeneration) {
     return JSON.stringify(candidate) === JSON.stringify(current) ? current : candidate;
 }
 
-function automaticPresentationEligible(state) {
+function automaticPresentationEligible(state, snapshot) {
     if (!state || !state.ownerScreenName)
         return false;
-    if (state.mode === "compact" || state.mode === "satellite")
-        return true;
-    return state.mode === "banner" && state.presentationOwner === "notification";
+    if (state.mode === "compact")
+        return !!(contextById(snapshot, snapshot && snapshot.primary && snapshot.primary.id)
+            || contextById(snapshot, snapshot && snapshot.secondary && snapshot.secondary.id));
+    return state.mode === "banner" && state.acquisitionPolicy === "non-preemptive";
 }
 
 function applyPresentationResult(state, snapshot, result, now) {
@@ -79,7 +83,8 @@ function transition(state, snapshot, intent, now) {
             ownerScreenName: screenName, exitingScreenName: "", mode: "compact",
             selectedContextId: current.selectedContextId || fallbackId(snapshot),
             presentationOwner: "",
-            focusPolicy: "none", dismissalPolicy: "none", deadline: 0, remainingMs: 0
+            acquisitionPolicy: "preemptive", focusPolicy: "none",
+            dismissalPolicy: "none", deadline: 0, deadlineToken: 0, remainingMs: 0
         }, current.ownerScreenName !== screenName || current.mode === "closed");
     }
     if (type === "surface-denied")
@@ -96,7 +101,8 @@ function transition(state, snapshot, intent, now) {
         return nextState(current, {
             exitingScreenName: current.ownerScreenName, ownerScreenName: "", mode: "closed",
             presentationOwner: "",
-            focusPolicy: "none", dismissalPolicy: "none", deadline: 0,
+            acquisitionPolicy: "preemptive", focusPolicy: "none",
+            dismissalPolicy: "none", deadline: 0, deadlineToken: 0,
             remainingMs: 0, dragProgress: 0
         }, true);
     }
@@ -114,9 +120,11 @@ function transition(state, snapshot, intent, now) {
         return nextState(current, {
             mode: "banner", selectedContextId: context.id,
             presentationOwner: presentationOwner,
+            acquisitionPolicy: intent.acquisitionPolicy,
             focusPolicy: exclusive ? "exclusive" : "none",
             dismissalPolicy: timeout > 0 ? "timed" : "outside",
             deadline: timeout > 0 ? Number(now) + timeout : 0,
+            deadlineToken: timeout > 0 ? Number(now) + timeout : 0,
             remainingMs: 0, dragProgress: 0
         }, current.mode !== "banner" || current.selectedContextId !== context.id);
     }
@@ -128,9 +136,13 @@ function transition(state, snapshot, intent, now) {
             mode: mode,
             presentationOwner: mode === "compact" ? ""
                 : (mode === "expanded" ? "user" : current.presentationOwner),
+            acquisitionPolicy: mode === "banner"
+                ? current.acquisitionPolicy : "preemptive",
             focusPolicy: mode === "expanded" ? "exclusive" : "none",
             dismissalPolicy: mode === "compact" ? "none" : current.dismissalPolicy,
             deadline: mode === "compact" || mode === "expanded" ? 0 : current.deadline,
+            deadlineToken: mode === "compact" || mode === "expanded"
+                ? 0 : current.deadlineToken,
             remainingMs: mode === "compact" || mode === "expanded" ? 0 : current.remainingMs,
             dragProgress: 0
         }, mode !== current.mode);
@@ -150,32 +162,63 @@ function transition(state, snapshot, intent, now) {
         var plan = dragSettlePlan(current.dragProgress, intent.offset, intent.velocity);
         return nextState(current, { dragProgress: plan.targetProgress,
             mode: plan.targetState, focusPolicy: plan.targetState === "expanded"
-                ? "exclusive" : current.focusPolicy }, plan.targetState !== current.mode);
+                ? "exclusive" : current.focusPolicy,
+            presentationOwner: plan.targetState === "expanded"
+                ? "user" : current.presentationOwner,
+            acquisitionPolicy: plan.targetState === "expanded"
+                ? "preemptive" : current.acquisitionPolicy,
+            dismissalPolicy: plan.targetState === "expanded"
+                ? "outside" : current.dismissalPolicy,
+            deadline: plan.targetState === "expanded" ? 0 : current.deadline,
+            deadlineToken: plan.targetState === "expanded" ? 0 : current.deadlineToken,
+            remainingMs: plan.targetState === "expanded" ? 0 : current.remainingMs,
+        }, plan.targetState !== current.mode);
     }
     if (type === "timeout") {
-        if (current.mode !== "banner" || current.deadline <= 0
-                || Number(now) < current.deadline)
+        if (!deadlineMatches(current, intent, now))
             return current;
         return nextState(current, { mode: "compact", focusPolicy: "none",
             presentationOwner: "",
-            dismissalPolicy: "none", deadline: 0, remainingMs: 0 }, true);
+            acquisitionPolicy: "preemptive", dismissalPolicy: "none",
+            deadline: 0, deadlineToken: 0, remainingMs: 0 }, true);
     }
     if (type === "transition-finished")
         return Number(intent.generation) === current.generation ? current : current;
     return current;
 }
 
-function pauseDeadline(state, now) {
-    if (!state || state.mode !== "banner" || state.deadline <= 0)
+function deadlineIdentityMatches(state, intent) {
+    return !!state && !!intent
+        && Number(intent.generation) === state.generation
+        && String(intent.contextId || "") === state.selectedContextId
+        && Number(intent.deadline) > 0
+        && Number(intent.deadline) === state.deadlineToken;
+}
+
+function deadlineMatches(state, intent, now) {
+    return deadlineIdentityMatches(state, intent)
+        && state.mode === "banner"
+        && state.deadline > 0
+        && state.deadline === state.deadlineToken
+        && Number.isFinite(now)
+        && Number(now) >= state.deadline;
+}
+
+function pauseDeadline(state, intent, now) {
+    if (!deadlineIdentityMatches(state, intent) || state.mode !== "banner"
+            || state.deadline <= 0)
         return state;
     return nextState(state, { remainingMs: Math.max(0, state.deadline - Number(now)),
         deadline: 0 }, false);
 }
 
-function resumeDeadline(state, now) {
-    if (!state || state.mode !== "banner" || state.remainingMs <= 0)
+function resumeDeadline(state, intent, now) {
+    if (!deadlineIdentityMatches(state, intent) || state.mode !== "banner"
+            || state.deadline > 0 || state.remainingMs <= 0)
         return state;
-    return nextState(state, { deadline: Number(now) + state.remainingMs, remainingMs: 0 }, false);
+    var nextDeadline = Number(now) + state.remainingMs;
+    return nextState(state, { deadline: nextDeadline, deadlineToken: nextDeadline,
+        remainingMs: 0 }, false);
 }
 
 function dragSettlePlan(progress, offset, velocity) {

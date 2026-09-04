@@ -11,10 +11,6 @@ QtObject {
 
     property var coordinatorState: CoordinatorRules.setPresentationEligible(
         CoordinatorRules.initialState(), false, 0)
-    property int deadlineGeneration: 0
-    property string scheduledCriticalKey: ""
-    property int scheduledCriticalGeneration: 0
-    property double scheduledCriticalDeadline: 0
 
     readonly property var history: root.coordinatorState.history
     readonly property var toasts: root.valuesForKeys(root.coordinatorState.toastKeys)
@@ -38,39 +34,10 @@ QtObject {
         return Object.freeze(result);
     }
 
-    function syncDeadlineTimer(): void {
-        criticalDeadline.stop();
-        root.deadlineGeneration += 1;
-        root.scheduledCriticalKey = "";
-        root.scheduledCriticalGeneration = root.deadlineGeneration;
-        root.scheduledCriticalDeadline = 0;
-        if (!root.currentCritical || root.coordinatorState.paused
-                || root.coordinatorState.deadlineAt <= 0)
-            return;
-        root.scheduledCriticalKey = root.currentCritical.key;
-        root.scheduledCriticalGeneration = root.deadlineGeneration;
-        root.scheduledCriticalDeadline = root.coordinatorState.deadlineAt;
-        criticalDeadline.interval = Math.max(1,
-            root.scheduledCriticalDeadline - Date.now());
-        criticalDeadline.start();
-    }
-
-    function handleCriticalDeadline(key: string, generation: int,
-            deadline: double, now: double): bool {
-        if (!CoordinatorRules.deadlineMatches(root.coordinatorState,
-                key, generation, root.deadlineGeneration, deadline, now)) {
-            if (root.currentCritical && !root.coordinatorState.paused)
-                root.syncDeadlineTimer();
-            return false;
-        }
-        return root.completeCritical(key);
-    }
-
     function applyState(next: var): bool {
         if (next === root.coordinatorState)
             return false;
         root.coordinatorState = next;
-        root.syncDeadlineTimer();
         return true;
     }
 
@@ -171,16 +138,6 @@ QtObject {
         return root.applyState(next);
     }
 
-    function pauseCritical(): bool {
-        return root.applyState(CoordinatorRules.pause(
-            root.coordinatorState, Date.now()));
-    }
-
-    function resumeCritical(): bool {
-        return root.applyState(CoordinatorRules.resume(
-            root.coordinatorState, Date.now()));
-    }
-
     function completeCritical(key: string): bool {
         return root.applyState(CoordinatorRules.complete(
             root.coordinatorState, key, Date.now(),
@@ -198,17 +155,6 @@ QtObject {
         return root.applyState(CoordinatorRules.reclassify(
             root.coordinatorState, Preferences.effectiveState, Date.now(), resolver,
             Preferences.notifications.toastsEnabled !== false));
-    }
-
-    property Timer criticalDeadline: Timer {
-        id: criticalDeadline
-        repeat: false
-        onTriggered: {
-            const key = root.scheduledCriticalKey;
-            const generation = root.scheduledCriticalGeneration;
-            const deadline = root.scheduledCriticalDeadline;
-            root.handleCriticalDeadline(key, generation, deadline, Date.now());
-        }
     }
 
     property Connections preferencesConnection: Connections {

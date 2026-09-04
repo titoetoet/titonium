@@ -20,9 +20,9 @@ const notificationRulesPath = path.join(path.dirname(rulesPath), "adapters",
     "NotificationCenterRules.js");
 assert.equal(fs.existsSync(notificationRulesPath), true,
     "Notification Center projection rules must normalize coordinator values");
+const notificationRulesSource = fs.readFileSync(notificationRulesPath, "utf8");
 const notificationRules = vm.createContext({ encodeURIComponent, decodeURIComponent });
-vm.runInContext(fs.readFileSync(notificationRulesPath, "utf8")
-    .replace(/^\.pragma library\s*\n/, ""), notificationRules,
+vm.runInContext(notificationRulesSource.replace(/^\.pragma library\s*\n/, ""), notificationRules,
 { filename: notificationRulesPath });
 
 function plain(value) {
@@ -59,7 +59,12 @@ const criticalDescriptor = Object.freeze({
     actions: Object.freeze([Object.freeze({ id: "open.reply", label: "Open" })]),
     receivedAt: 700,
 });
-const criticalContext = notificationRules.context(criticalDescriptor);
+const labels = Object.freeze({
+    fallbackTitle: "Thông báo",
+    actionFallback: "Mở",
+    dismiss: "Bỏ thông báo",
+});
+const criticalContext = notificationRules.context(criticalDescriptor, labels);
 assert.deepEqual(plain(criticalContext), {
     id: "notification:native:7",
     source: "notification",
@@ -83,7 +88,8 @@ assert.deepEqual(plain(criticalContext), {
 assert.equal(Object.isFrozen(criticalContext), true);
 assert.equal(Object.isFrozen(criticalContext.details), true);
 assert.equal(Object.isFrozen(criticalContext.actionIds), true);
-assert.deepEqual(plain(notificationRules.capabilities(criticalDescriptor, criticalContext.id)), [{
+assert.deepEqual(plain(notificationRules.capabilities(
+    criticalDescriptor, criticalContext.id, labels)), [{
     id: "notification.action:open.reply",
     contextId: "notification:native:7",
     role: "primary",
@@ -94,13 +100,14 @@ assert.deepEqual(plain(notificationRules.capabilities(criticalDescriptor, critic
     id: "notification.dismiss",
     contextId: "notification:native:7",
     role: "destructive",
-    label: "Dismiss",
+    label: "Bỏ thông báo",
     icon: "close",
     enabled: true,
 }]);
 assert.deepEqual(plain(notificationRules.presentation(criticalDescriptor)), {
     id: "notification:native:7:presentation",
-    source: "notification",
+    ownerId: "notification-critical",
+    acquisitionPolicy: "non-preemptive",
     contextId: "notification:native:7",
     requestedMode: "banner",
     attention: "transient",
@@ -115,6 +122,10 @@ assert.deepEqual(plain(notificationRules.actionIntent(
     "notification.dismiss", "notification:native:7")), {
     kind: "dismiss", key: "native:7", actionId: "",
 });
+assert.equal(notificationRules.closePolicy(true, true), "keep");
+assert.equal(notificationRules.closePolicy(true, false), "compact");
+assert.equal(notificationRules.closePolicy(false, false), "keep");
+console.log("PASS accepted action keeps the next FIFO item and collapses only after exhaustion");
 console.log("PASS coordinator critical values normalize into one Center presentation context");
 
 const allSources = ["capture", "media", "notification", "agent", "focus", "timer", "job"];
@@ -209,25 +220,28 @@ const notificationAdapter = fs.readFileSync(path.join(centerRoot, "adapters",
     "NotificationCenterAdapter.qml"), "utf8");
 for (const fragment of [
     "NotificationCoordinator.currentCritical",
-    "NotificationCenterRules.context(root.currentCritical)",
-    "NotificationCenterRules.capabilities(root.currentCritical, root.context.id)",
+    "NotificationCenterRules.context(root.currentCritical, root.labels)",
+    "NotificationCenterRules.capabilities(",
+    "root.currentCritical, root.context.id, root.labels)",
     "NotificationCenterRules.presentation(root.currentCritical)",
     "function setPresentationEligible(eligible: bool): bool",
-    "function pausePresentation(contextId: string): bool",
-    "function resumePresentation(contextId: string): bool",
     "function completePresentation(contextId: string): var",
     "NotificationCoordinator.setCriticalPresentationEligible(eligible)",
-    "NotificationCoordinator.pauseCritical()",
-    "NotificationCoordinator.resumeCritical()",
     "NotificationCoordinator.completeCritical(intent.key)",
+    'I18n.tr("notification.toast.fallback_app")',
+    'I18n.tr("notification.panel.action")',
+    'I18n.tr("notification.center.dismiss")',
+    'I18n.tr(NotificationCoordinator.hasUnread',
 ])
     assert.ok(notificationAdapter.includes(fragment),
         `Notification adapter missing coordinator contract: ${fragment}`);
 assert.doesNotMatch(notificationAdapter, /\bNotificationService\b|\+ item\.id|notificationId: item\.id/,
     "Notification adapter must consume only coordinator-resolved values");
-assert.match(notificationAdapter,
-    /function setPresentationEligible\(eligible: bool\): bool \{[\s\S]*?if \(!eligible\)[\s\S]*?NotificationCoordinator\.pauseCritical\(\)[\s\S]*?NotificationCoordinator\.setCriticalPresentationEligible\(eligible\)[\s\S]*?if \(eligible\)[\s\S]*?NotificationCoordinator\.resumeCritical\(\)/,
-    "ineligible user interaction must suspend, then resume, the coordinator deadline");
+assert.doesNotMatch(notificationAdapter,
+    /pauseCritical|resumeCritical|"Unread notifications"|label: "(?:Open|Dismiss)"/,
+    "the adapter must not own a deadline or untranslated shell labels");
+assert.doesNotMatch(notificationRulesSource, /"(?:Notification|Open|Dismiss)"/,
+    "notification projection rules must receive every shell label from I18n");
 console.log("PASS Notification Center adapter preserves coordinator authority and stable keys");
 
 for (const file of ["CenterDomain.qml", "CenterActionDispatcher.qml"])
@@ -242,13 +256,24 @@ assert.match(domainSource, /signal presentationEnded\(var request\)/);
 assert.match(domainSource, /function dispatch\(intent: var\): var/);
 for (const fragment of [
     "function setPresentationEligible(eligible: bool): bool",
-    "function pausePresentation(contextId: string): bool",
-    "function resumePresentation(contextId: string): bool",
     "function completePresentation(contextId: string): var",
-    "root.notifications.presentation",
+    "function adapterForContext(contextId: string): var",
+    "dispatcher.routes[context.source]",
+    "adapter?.presentation",
 ])
     assert.ok(domainSource.includes(fragment), `Center Domain missing ${fragment}`);
+assert.doesNotMatch(domainSource,
+    /activeNotification|context\.source === "notification"|pausePresentation|resumePresentation/,
+    "Center Domain lifecycle contracts must stay source-neutral");
 assert.match(domainSource,
-    /const previousPresentationId = String\([\s\n]*root\.notifications\.presentation\?\.id \|\| ""\);[\s\S]*?const resumedPresentationId = String\([\s\n]*root\.notifications\.presentation\?\.id \|\| ""\);[\s\S]*?root\.syncNotificationPresentation\([\s\n]*previousPresentationId === resumedPresentationId\)/,
-    "first eligibility must emit once while a resumed paused item is re-presented");
+    /const previousPresentationId = String\(adapter\.presentation\?\.id \|\| ""\);[\s\S]*?const resumedPresentationId = String\(adapter\.presentation\?\.id \|\| ""\);[\s\S]*?root\.syncAdapterPresentation\(adapter,[\s\n]*previousPresentationId === resumedPresentationId\)/,
+    "first eligibility must emit once while the retained current item is re-presented");
+
+const repoRoot = path.join(__dirname, "..");
+const en = JSON.parse(fs.readFileSync(path.join(repoRoot, "config/i18n/en.json"), "utf8"));
+const vi = JSON.parse(fs.readFileSync(path.join(repoRoot, "config/i18n/vi.json"), "utf8"));
+assert.equal(en.strings["notification.center.dismiss"], "Dismiss");
+assert.equal(vi.strings["notification.center.dismiss"], "Bỏ thông báo");
+assert.equal(en.strings["menubar.center.title"], "Center");
+assert.equal(vi.strings["menubar.center.title"], "Trung tâm");
 console.log("PASS Center Domain owns seven narrow listener-free adapters and dispatch boundary");

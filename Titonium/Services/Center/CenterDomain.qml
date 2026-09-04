@@ -12,8 +12,9 @@ QtObject {
     signal presentationEnded(var request)
 
     property var storedSnapshot: null
-    property string activeNotificationPresentationId: ""
-    property string activeNotificationContextId: ""
+    property string activePresentationId: ""
+    property string activePresentationOwnerId: ""
+    property string activePresentationContextId: ""
     readonly property var rawProjection: ({
         contexts: capture.contexts.concat(media.contexts, notifications.contexts,
             approval.contexts, focus.contexts, timers.contexts, jobs.contexts),
@@ -35,37 +36,32 @@ QtObject {
     }
 
     function setPresentationEligible(eligible: bool): bool {
-        const previousPresentationId = String(
-            root.notifications.presentation?.id || "");
-        const changed = root.notifications.setPresentationEligible(eligible);
-        if (changed && eligible) {
-            root.rebuild();
-            const resumedPresentationId = String(
-                root.notifications.presentation?.id || "");
-            root.syncNotificationPresentation(
-                previousPresentationId === resumedPresentationId);
+        let changed = false;
+        const adapters = [root.notifications];
+        for (let index = 0; index < adapters.length; index++) {
+            const adapter = adapters[index];
+            const previousPresentationId = String(adapter.presentation?.id || "");
+            const adapterChanged = adapter.setPresentationEligible(eligible);
+            changed = adapterChanged || changed;
+            if (adapterChanged && eligible) {
+                root.rebuild();
+                const resumedPresentationId = String(adapter.presentation?.id || "");
+                root.syncAdapterPresentation(adapter,
+                    previousPresentationId === resumedPresentationId);
+            }
         }
         return changed;
     }
 
-    function adapterForPresentation(contextId: string): var {
+    function adapterForContext(contextId: string): var {
         const context = root.snapshot.contexts.find(item => item.id === contextId);
-        return context && context.source === "notification" ? root.notifications : null;
-    }
-
-    function pausePresentation(contextId: string): bool {
-        const adapter = root.adapterForPresentation(contextId);
-        return adapter ? adapter.pausePresentation(contextId) : false;
-    }
-
-    function resumePresentation(contextId: string): bool {
-        const adapter = root.adapterForPresentation(contextId);
-        return adapter ? adapter.resumePresentation(contextId) : false;
+        return context ? dispatcher.routes[context.source] : null;
     }
 
     function completePresentation(contextId: string): var {
-        const adapter = root.adapterForPresentation(contextId);
-        return adapter ? adapter.completePresentation(contextId) : Object.freeze({
+        const adapter = root.adapterForContext(contextId);
+        return adapter && typeof adapter.completePresentation === "function"
+            ? adapter.completePresentation(contextId) : Object.freeze({
             accepted: false,
             status: "stale",
             reason: "missing-presentation",
@@ -73,15 +69,17 @@ QtObject {
         });
     }
 
-    function syncNotificationPresentation(force: bool): void {
-        const presentation = root.notifications.presentation;
+    function syncAdapterPresentation(adapter: var, force: bool): void {
+        const presentation = adapter?.presentation || null;
         const nextId = String(presentation?.id || "");
-        if (!force && nextId === root.activeNotificationPresentationId)
+        if (!force && nextId === root.activePresentationId)
             return;
-        const previousId = root.activeNotificationPresentationId;
-        const previousContextId = root.activeNotificationContextId;
-        root.activeNotificationPresentationId = nextId;
-        root.activeNotificationContextId = String(presentation?.contextId || "");
+        const previousId = root.activePresentationId;
+        const previousOwnerId = root.activePresentationOwnerId;
+        const previousContextId = root.activePresentationContextId;
+        root.activePresentationId = nextId;
+        root.activePresentationOwnerId = String(presentation?.ownerId || "");
+        root.activePresentationContextId = String(presentation?.contextId || "");
         if (presentation) {
             root.presentationRequested(presentation);
             return;
@@ -89,7 +87,7 @@ QtObject {
         if (previousId)
             root.presentationEnded(Object.freeze({
                 id: previousId,
-                source: "notification",
+                ownerId: previousOwnerId,
                 contextId: previousContextId,
             }));
     }
@@ -112,7 +110,8 @@ QtObject {
             return;
         root.presentationRequested(Object.freeze({
             id: String(presentation.id || contextId) + ":presentation",
-            source: String(presentation.source || "attention"),
+            ownerId: String(presentation.source || "attention"),
+            acquisitionPolicy: "preemptive",
             contextId: contextId,
             requestedMode: "banner",
             attention: presentation.source === "agent" ? "blocking" : "transient",
@@ -146,17 +145,17 @@ QtObject {
         }
     }
 
-    property Connections notificationConnection: Connections {
+    property Connections automaticPresentationConnection: Connections {
         target: root.notifications
         function onPresentationChanged(): void {
             root.rebuild();
-            root.syncNotificationPresentation(false);
+            root.syncAdapterPresentation(root.notifications, false);
         }
     }
 
     onRawProjectionChanged: root.rebuild()
     Component.onCompleted: {
         root.rebuild();
-        root.syncNotificationPresentation(false);
+        root.syncAdapterPresentation(root.notifications, false);
     }
 }

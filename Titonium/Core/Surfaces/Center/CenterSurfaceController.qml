@@ -13,6 +13,9 @@ QtObject {
 
     property var internalState: CenterSurfaceState.initialState()
     property bool automaticPresentationAvailable: false
+    property int scheduledDeadlineGeneration: 0
+    property string scheduledDeadlineContextId: ""
+    property double scheduledDeadline: 0
     readonly property string ownerScreenName: root.internalState.ownerScreenName
     readonly property string exitingScreenName: root.internalState.exitingScreenName
     readonly property string mode: root.internalState.mode
@@ -21,9 +24,10 @@ QtObject {
     readonly property string destination: root.internalState.destination
     readonly property real dragProgress: root.internalState.dragProgress
     readonly property bool active: root.mode === "banner" || root.mode === "expanded"
-    readonly property bool criticalPresentationEligible:
+    readonly property bool automaticPresentationEligible:
         root.automaticPresentationAvailable
-        && CenterSurfaceState.automaticPresentationEligible(root.internalState)
+        && CenterSurfaceState.automaticPresentationEligible(
+            root.internalState, CenterDomain.snapshot)
     readonly property int generation: root.internalState.generation
     readonly property var viewState: Object.freeze({
         generation: root.generation,
@@ -36,7 +40,8 @@ QtObject {
         dragProgress: root.dragProgress,
         focusPolicy: root.internalState.focusPolicy,
         dismissalPolicy: root.internalState.dismissalPolicy,
-        deadline: root.internalState.deadline
+        deadline: root.internalState.deadline,
+        deadlineToken: root.internalState.deadlineToken,
     })
 
     function replaceState(next: var): bool {
@@ -48,7 +53,7 @@ QtObject {
     }
 
     function syncPresentationEligibility(): bool {
-        return CenterDomain.setPresentationEligible(root.criticalPresentationEligible);
+        return CenterDomain.setPresentationEligible(root.automaticPresentationEligible);
     }
 
     function dispatch(intent: var): var {
@@ -88,24 +93,25 @@ QtObject {
             return result;
         }
         if (intent.type === "pause-timeout") {
-            const domainChanged = CenterDomain.pausePresentation(root.selectedContextId);
-            const stateChanged = root.replaceState(CenterSurfaceState.pauseDeadline(
-                root.internalState, Date.now()));
-            return domainChanged || stateChanged;
+            return root.replaceState(CenterSurfaceState.pauseDeadline(
+                root.internalState, intent, Date.now()));
         }
         if (intent.type === "resume-timeout") {
-            const domainChanged = CenterDomain.resumePresentation(root.selectedContextId);
-            const stateChanged = root.replaceState(CenterSurfaceState.resumeDeadline(
-                root.internalState, Date.now()));
-            return domainChanged || stateChanged;
+            return root.replaceState(CenterSurfaceState.resumeDeadline(
+                root.internalState, intent, Date.now()));
         }
-        if (intent.type === "timeout" && root.presentationOwner === "notification"
-                && root.mode === "banner" && root.internalState.deadline > 0
-                && Date.now() >= root.internalState.deadline) {
+        if (intent.type === "timeout") {
+            const now = Date.now();
+            if (!CenterSurfaceState.deadlineMatches(root.internalState, intent, now))
+                return false;
             const result = CenterDomain.completePresentation(root.selectedContextId);
-            root.replaceState(CenterSurfaceState.applyPresentationResult(
-                root.internalState, CenterDomain.snapshot, result, Date.now()));
-            return result;
+            if (result.accepted) {
+                root.replaceState(CenterSurfaceState.applyPresentationResult(
+                    root.internalState, CenterDomain.snapshot, result, now));
+                return result;
+            }
+            return root.replaceState(CenterSurfaceState.transition(
+                root.internalState, CenterDomain.snapshot, intent, now));
         }
         return root.replaceState(CenterSurfaceState.transition(
             root.internalState, CenterDomain.snapshot, intent, Date.now()));
@@ -118,20 +124,36 @@ QtObject {
 
     function rescheduleDeadline(): void {
         deadlineTimer.stop();
+        root.scheduledDeadlineGeneration = 0;
+        root.scheduledDeadlineContextId = "";
+        root.scheduledDeadline = 0;
         if (root.internalState.deadline <= 0)
             return;
+        root.scheduledDeadlineGeneration = root.internalState.generation;
+        root.scheduledDeadlineContextId = root.internalState.selectedContextId;
+        root.scheduledDeadline = root.internalState.deadline;
         const remaining = root.internalState.deadline - Date.now();
         if (remaining <= 0) {
-            Qt.callLater(() => root.dispatch({ type: "timeout", generation: root.generation }));
+            const intent = root.scheduledDeadlineIntent();
+            Qt.callLater(() => root.dispatch(intent));
             return;
         }
         deadlineTimer.interval = Math.max(1, Math.min(2147483647, remaining));
         deadlineTimer.start();
     }
 
+    function scheduledDeadlineIntent(): var {
+        return Object.freeze({
+            type: "timeout",
+            generation: root.scheduledDeadlineGeneration,
+            contextId: root.scheduledDeadlineContextId,
+            deadline: root.scheduledDeadline,
+        });
+    }
+
     property Timer deadlineTimer: Timer {
         repeat: false
-        onTriggered: root.dispatch({ type: "timeout", generation: root.generation })
+        onTriggered: root.dispatch(root.scheduledDeadlineIntent())
     }
 
     property Connections domainConnection: Connections {
@@ -140,11 +162,11 @@ QtObject {
             root.dispatch({ type: "snapshot-changed" });
         }
         function onPresentationRequested(request: var): void {
-            const presentationOwner = String(request.source || "attention");
-            if (presentationOwner === "notification") {
-                if (!root.criticalPresentationEligible)
+            const presentationOwner = String(request.ownerId || request.id || "attention");
+            if (request.acquisitionPolicy === "non-preemptive") {
+                if (!root.automaticPresentationEligible)
                     return;
-                if (root.mode === "banner" && root.presentationOwner === "notification"
+                if (root.mode === "banner" && root.presentationOwner === presentationOwner
                         && root.ownerScreenName) {
                     root.dispatch({
                         type: "present",
@@ -153,6 +175,7 @@ QtObject {
                         timeoutMs: request.timeoutMs,
                         focusPolicy: request.focusPolicy,
                         presentationOwner: presentationOwner,
+                        acquisitionPolicy: request.acquisitionPolicy,
                     });
                     return;
                 }
@@ -163,10 +186,11 @@ QtObject {
                 contextId: request.contextId, destination: "overview",
                 timeoutMs: request.timeoutMs,
                 presentationOwner: presentationOwner,
+                acquisitionPolicy: request.acquisitionPolicy,
             }));
         }
         function onPresentationEnded(request: var): void {
-            if (request.source !== root.presentationOwner || root.mode !== "banner")
+            if (request.ownerId !== root.presentationOwner || root.mode !== "banner")
                 return;
             root.replaceState(CenterSurfaceState.transition(root.internalState,
                 CenterDomain.snapshot, { type: "request-mode", mode: "compact" },
@@ -174,6 +198,6 @@ QtObject {
         }
     }
 
-    onCriticalPresentationEligibleChanged: root.syncPresentationEligibility()
+    onAutomaticPresentationEligibleChanged: root.syncPresentationEligibility()
     Component.onCompleted: root.syncPresentationEligibility()
 }
