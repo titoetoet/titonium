@@ -17,6 +17,7 @@ Scope {
 
     ServiceBootstrap { id: serviceBootstrap }
     BluetoothAudioBridge {}
+    NotificationBridge {}
 
     SurfaceRouter {
         id: router

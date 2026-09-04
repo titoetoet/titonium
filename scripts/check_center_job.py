@@ -34,6 +34,7 @@ def main() -> int:
             "function clear(id: string): string",
             "function snapshot(): string",
             "function activate(): void",
+            "signal notificationPublished(var notification)",
             "CenterJobRules.start",
             "CenterJobRules.progress",
             "CenterJobRules.complete",
@@ -48,6 +49,9 @@ def main() -> int:
             "function removeActivity(id: string): void",
             "CenterActivityService.upsert({",
             "CenterActivityService.remove(\"job:\" + id.trim())",
+            'result.event.kind === "job_failed"',
+            'result.event.kind === "job_requires_action"',
+            "root.notificationPublished(result.event)",
             '"id": "job:" + job.id',
             '"source": "job"',
             '"label": job.label',
@@ -70,6 +74,7 @@ def main() -> int:
             "hyprctl",
             "ps ",
             "/proc",
+            "import qs.Titonium.Services.Notifications",
         ):
             if forbidden in source:
                 errors.append(f"CenterJobService has forbidden ownership: {forbidden}")

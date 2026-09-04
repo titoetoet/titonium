@@ -8,6 +8,8 @@ import "CenterJobRules.js" as CenterJobRules
 QtObject {
     id: root
 
+    signal notificationPublished(var notification)
+
     property var jobState: CenterJobRules.initialState()
 
     readonly property var jobs: root.jobState
@@ -55,8 +57,13 @@ QtObject {
             return result.error;
         root.jobState = result.next;
         root.syncIndicator(result.next.length > 0);
-        if (result.event !== null)
-            CenterAttentionService.publish(result.event);
+        if (result.event !== null) {
+            if (result.event.kind === "job_failed"
+                    || result.event.kind === "job_requires_action")
+                root.notificationPublished(result.event);
+            else
+                CenterAttentionService.publish(result.event);
+        }
         return "ok";
     }
 

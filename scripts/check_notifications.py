@@ -281,9 +281,10 @@ def main() -> int:
         errors.append("missing Notifications qmldir")
     elif QMLDIR.read_text(encoding="utf-8") != (
         "module Titonium.Services.Notifications\n"
+        "singleton NotificationCoordinator 1.0 NotificationCoordinator.qml\n"
         "singleton NotificationService 1.0 NotificationService.qml\n"
     ):
-        errors.append("Notifications qmldir must export only its singleton")
+        errors.append("Notifications qmldir must export only its coordinator and native singleton")
     validate_service(errors)
     validate_ownership(errors)
     validate_presentation(errors)

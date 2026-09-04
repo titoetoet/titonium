@@ -10,6 +10,9 @@ import "NotificationRules.js" as NotificationRules
 Singleton {
     id: root
 
+    signal descriptorPublished(var descriptor)
+    signal descriptorRemoved(string key)
+
     property var projectedNotifications: Object.freeze([])
     property var toastKeys: Object.freeze([])
     property var unreadKeys: Object.freeze([])
@@ -179,6 +182,7 @@ Singleton {
         root.unreadKeys = state.unreadKeys;
         root.toastKeys = state.toastKeys;
         root.retainNativeTarget(item.key, notification);
+        root.descriptorPublished(item);
     }
 
     function watchNativeNotification(key: string, notification: var): void {
@@ -195,6 +199,7 @@ Singleton {
                 return;
             root.removeLocalNotification(key);
             root.removeNativeTarget(key);
+            root.descriptorRemoved(key);
         });
     }
 
