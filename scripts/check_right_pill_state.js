@@ -12,6 +12,13 @@ assert.equal(fs.existsSync(rulesPath), true, "RightPillState rules must exist");
 const source = fs.readFileSync(rulesPath, "utf8").replace(/^\.pragma library\s*\n/, "");
 const state = vm.createContext({ Math, Number });
 vm.runInContext(source, state, { filename: rulesPath });
+const lifecyclePath = path.join(root, "Titonium", "Notifications",
+    "NotificationPanelLifecycle.js");
+const lifecycleSource = fs.readFileSync(lifecyclePath, "utf8")
+    .replace(/^\.pragma library\s*\n/, "");
+const lifecycle = vm.createContext({ Object, String });
+vm.runInContext(lifecycleSource, lifecycle, { filename: lifecyclePath });
+const plain = value => JSON.parse(JSON.stringify(value));
 
 assert.equal(state.normalizeState(false), "compact");
 assert.equal(state.normalizeState(true), "menu");
@@ -55,6 +62,39 @@ assert.deepEqual(JSON.parse(JSON.stringify(initialConnected)), {
     closingGeneration: 0,
     focusReturned: false,
 });
+const notificationOpen = state.connectedOpen(initialConnected,
+    "notification-panel:DP-1", {
+        ownerId: "notification-panel:DP-1",
+        feature: "notifications",
+        barConnected: true,
+        anchor: "notifications",
+        source: "ConnectedNotificationPanelContent.qml",
+        invoker: "notification-button",
+    }, "DP-1");
+assert.equal(notificationOpen.descriptor.feature, "notifications",
+    "the connected snapshot must preserve the normalized notification feature");
+const notificationMount = lifecycle.transition("",
+    notificationOpen.descriptor.feature === "notifications"
+        ? notificationOpen.ownerId : "");
+assert.deepEqual(plain(notificationMount), {
+    mountedOwnerId: "notification-panel:DP-1",
+    unmountOwnerId: "",
+    mountOwnerId: "notification-panel:DP-1",
+    markRead: true,
+}, "the adopted notification snapshot must enable the shared mount/read transition");
+
+for (const [feature, anchor, popupSource] of [
+    ["network", "network", "ConnectedNetworkPopupContent.qml"],
+    ["bluetooth", "bluetooth", "ConnectedBluetoothPopupContent.qml"],
+    ["audio", "audio", "ConnectedAudioPopupContent.qml"],
+]) {
+    const opened = state.connectedOpen(initialConnected, `${feature}:DP-1`, {
+        ownerId: `${feature}:DP-1`, feature, barConnected: true, anchor,
+        source: popupSource, invoker: `${feature}-button`,
+    }, "DP-1");
+    assert.equal(opened.descriptor.feature, feature,
+        `${feature} must remain valid through the normalized connected snapshot`);
+}
 const firstConnected = state.connectedOpen(initialConnected, "network:DP-1", {
     barConnected: true,
     anchor: "network",

@@ -60,6 +60,7 @@ function connectedDescriptorSnapshot(descriptor) {
         return null;
     return Object.freeze({
         ownerId: String(descriptor.ownerId || ""),
+        feature: String(descriptor.feature || ""),
         source: descriptor.source || "",
         anchor: String(descriptor.anchor || ""),
         invoker: descriptor.invoker || null,
