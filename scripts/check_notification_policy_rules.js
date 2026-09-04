@@ -64,7 +64,7 @@ const actionsDescriptor = rules.descriptor({
     appId: "org.example.Actions",
     actions: [{ id: " reply ", label: " Reply " }],
 }, 1235);
-assert.deepEqual(plain(actionsDescriptor.actions), [{ id: "reply", label: "Reply" }]);
+assert.deepEqual(plain(actionsDescriptor.actions), [{ id: " reply ", label: "Reply" }]);
 assert.equal(Object.isFrozen(actionsDescriptor.actions), true);
 assert.equal(Object.isFrozen(actionsDescriptor.actions[0]), true);
 

@@ -41,10 +41,11 @@ Singleton {
     }
 
     function warnOperation(category: string, message: string): void {
-        const count = root.operationWarningCounts[category] || 0;
-        if (count >= root.operationWarningLimit)
+        const state = NotificationRules.warningState(root.operationWarningCounts,
+            category, root.operationWarningLimit);
+        root.operationWarningCounts = state.counts;
+        if (!state.warn)
             return;
-        root.operationWarningCounts[category] = count + 1;
         Logger.warn("notifications", message);
     }
 
@@ -62,28 +63,28 @@ Singleton {
 
     function dismiss(key: string): bool {
         const nativeNotification = nativeTargets.byKey[key];
+        let dismissed = false;
         if (!nativeNotification) {
             root.warnOperation("dismiss.stale", "ignored dismissal for stale notification");
-            return false;
+        } else {
+            try {
+                nativeNotification.dismiss();
+                dismissed = true;
+            } catch (failure) {
+                root.warnOperation("dismiss.failure", "native notification dismissal failed");
+            }
         }
-        try {
-            nativeNotification.dismiss();
-        } catch (failure) {
-            root.warnOperation("dismiss.failure", "native notification dismissal failed");
-            return false;
-        }
-        root.projectedNotifications = NotificationRules.removeKey(
-            root.projectedNotifications, key);
-        root.toastKeys = NotificationRules.removeKey(root.toastKeys, key);
-        root.unreadKeys = NotificationRules.removeKey(root.unreadKeys, key);
+        root.removeLocalNotification(key);
         root.removeNativeTarget(key);
-        return true;
+        return dismissed;
     }
 
     function dismissAll(): int {
         const keys = root.projectedNotifications.map(item => item.key);
         for (let index = 0; index < keys.length; index++)
             root.dismiss(keys[index]);
+        root.clearLocalNotifications();
+        nativeTargets.byKey = Object.freeze({});
         return keys.length;
     }
 
@@ -96,7 +97,7 @@ Singleton {
         const source = nativeNotification.actions || [];
         let nativeAction = null;
         for (let index = 0; index < source.length; index++) {
-            if (String(source[index]?.identifier || "") === actionId) {
+            if (NotificationRules.actionIdentifier(source[index]) === actionId) {
                 nativeAction = source[index];
                 break;
             }
@@ -115,9 +116,12 @@ Singleton {
     }
 
     function retainNativeTarget(key: string, notification: var): void {
+        if (nativeTargets.byKey[key] === notification)
+            return;
         const next = Object.assign({}, nativeTargets.byKey);
         next[key] = notification;
         nativeTargets.byKey = Object.freeze(next);
+        root.watchNativeNotification(key, notification);
     }
 
     function removeNativeTarget(key: string): void {
@@ -126,6 +130,72 @@ Singleton {
         const next = Object.assign({}, nativeTargets.byKey);
         delete next[key];
         nativeTargets.byKey = Object.freeze(next);
+    }
+
+    function nativeTargetSuperseded(key: string, notification: var): bool {
+        return nativeTargets.byKey[key] && nativeTargets.byKey[key] !== notification;
+    }
+
+    function removeLocalNotification(key: string): void {
+        const state = NotificationRules.dismissState({
+            notifications: root.projectedNotifications,
+            unreadKeys: root.unreadKeys,
+            toastKeys: root.toastKeys,
+        }, key);
+        root.projectedNotifications = state.notifications;
+        root.unreadKeys = state.unreadKeys;
+        root.toastKeys = state.toastKeys;
+    }
+
+    function clearLocalNotifications(): void {
+        const state = NotificationRules.clearState();
+        root.projectedNotifications = state.notifications;
+        root.unreadKeys = state.unreadKeys;
+        root.toastKeys = state.toastKeys;
+    }
+
+    function refreshNativeNotification(notification: var): void {
+        const now = Date.now();
+        const item = NotificationRules.descriptor({
+            id: notification.id,
+            appName: notification.appName,
+            appIcon: notification.appIcon,
+            appId: notification.desktopEntry,
+            summary: notification.summary,
+            body: notification.body,
+            urgency: Number(notification.urgency),
+            actions: NotificationRules.nativeActions(notification),
+        }, now);
+        if (!item) {
+            root.warnOperation("projection.invalid", "ignored notification with invalid id");
+            return;
+        }
+        const state = NotificationRules.refreshState({
+            notifications: root.projectedNotifications,
+            unreadKeys: root.unreadKeys,
+            toastKeys: root.toastKeys,
+        }, item, root.toastsEnabled);
+        root.projectedNotifications = state.notifications;
+        root.unreadKeys = state.unreadKeys;
+        root.toastKeys = state.toastKeys;
+        root.retainNativeTarget(item.key, notification);
+    }
+
+    function watchNativeNotification(key: string, notification: var): void {
+        const refresh = () => root.refreshNativeNotification(notification);
+        notification.appNameChanged.connect(refresh);
+        notification.appIconChanged.connect(refresh);
+        notification.summaryChanged.connect(refresh);
+        notification.bodyChanged.connect(refresh);
+        notification.urgencyChanged.connect(refresh);
+        notification.desktopEntryChanged.connect(refresh);
+        notification.actionsChanged.connect(refresh);
+        notification.closed.connect(() => {
+            if (root.nativeTargetSuperseded(key, notification))
+                return;
+            root.removeLocalNotification(key);
+            root.removeNativeTarget(key);
+        });
     }
 
     QtObject {
@@ -148,31 +218,7 @@ Singleton {
 
         onNotification: notification => {
             notification.tracked = true;
-            const now = Date.now();
-            const item = NotificationRules.descriptor({
-                id: notification.id,
-                appName: notification.appName,
-                appIcon: notification.appIcon,
-                appId: notification.desktopEntry,
-                summary: notification.summary,
-                body: notification.body,
-                urgency: Number(notification.urgency),
-                actions: NotificationRules.nativeActions(notification),
-            }, now);
-            if (!item) {
-                root.warnOperation("projection.invalid", "ignored notification with invalid id");
-                return;
-            }
-            root.projectedNotifications = NotificationRules.upsert(
-                root.projectedNotifications, item, 100);
-            root.unreadKeys = NotificationRules.markUnread(root.unreadKeys, item.key);
-            if (item.route === "toast" && root.toastsEnabled)
-                root.toastKeys = NotificationRules.addToast(root.toastKeys, item.key, 3);
-            root.retainNativeTarget(item.key, notification);
-            notification.closed.connect(() => {
-                root.expireToast(item.key);
-                root.removeNativeTarget(item.key);
-            });
+            root.refreshNativeNotification(notification);
         }
     }
 }

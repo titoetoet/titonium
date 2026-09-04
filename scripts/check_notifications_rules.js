@@ -65,6 +65,48 @@ const inserted = rules.upsert(history, Object.freeze({ key: "native:101" }), 100
 assert.equal(inserted.length, 100);
 assert.equal(inserted.some(item => item.key === "native:100"), false);
 
+const replacementState = rules.refreshState({
+    notifications: [Object.freeze({ key: "native:7", summary: "Unchanged" }),
+        Object.freeze({ key: "native:8", summary: "Earlier" })],
+    unreadKeys: ["native:7"],
+    toastKeys: ["native:8", "native:7"],
+}, Object.freeze({ key: "native:8", summary: "Replacement", route: "center" }), true);
+assert.deepEqual(plain(replacementState), {
+    notifications: [
+        { key: "native:8", summary: "Replacement", route: "center" },
+        { key: "native:7", summary: "Unchanged" },
+    ],
+    unreadKeys: ["native:8", "native:7"],
+    toastKeys: ["native:7"],
+});
+assert.ok(Object.isFrozen(replacementState));
+assert.ok(Object.isFrozen(replacementState.notifications));
+
+const dismissedState = rules.dismissState({
+    notifications: [{ key: "native:8" }, { key: "native:7" }],
+    unreadKeys: ["native:8", "native:7"],
+    toastKeys: ["native:8"],
+}, "native:8");
+assert.deepEqual(plain(dismissedState), {
+    notifications: [{ key: "native:7" }],
+    unreadKeys: ["native:7"],
+    toastKeys: [],
+});
+assert.deepEqual(plain(rules.clearState({
+    notifications: [{ key: "native:8" }], unreadKeys: ["native:8"], toastKeys: ["native:8"],
+})), { notifications: [], unreadKeys: [], toastKeys: [] });
+
+let warningCounts = Object.freeze({});
+for (let attempt = 0; attempt < 3; attempt++) {
+    const next = rules.warningState(warningCounts, "dismiss.stale", 3);
+    assert.equal(next.warn, true);
+    warningCounts = next.counts;
+}
+const cappedWarning = rules.warningState(warningCounts, "dismiss.stale", 3);
+assert.equal(cappedWarning.warn, false);
+assert.equal(cappedWarning.counts["dismiss.stale"], 3);
+console.log("PASS notification replacement, stale cleanup, clear-all and warning-cap state fixtures");
+
 assert.deepEqual(plain(rules.addToast(["native:3", "native:2", "native:1"], "native:4", 3)),
     ["native:4", "native:3", "native:2"]);
 assert.deepEqual(plain(rules.addToast(["native:4", "native:3", "native:2"], "native:3", 3)),
@@ -93,14 +135,18 @@ const actionDescriptor = rules.descriptor({
     actions: [
         { identifier: "open", text: "Open" },
         { id: "archive", label: "Archive" },
+        { identifier: "  opaque\t action  ", text: "Opaque" },
         { identifier: "", text: "Ignored" },
     ],
 }, 1300);
 assert.deepEqual(plain(actionDescriptor.actions), [
     { id: "open", label: "Open" },
     { id: "archive", label: "Archive" },
+    { id: "  opaque\t action  ", label: "Opaque" },
 ]);
 assert.equal(Object.isFrozen(actionDescriptor.actions[0]), true);
+assert.equal(rules.actionIdentifier({ identifier: "  opaque\t action  " }),
+    "  opaque\t action  ");
 assert.deepEqual(plain(rules.nativeActions({ actions: [
     { identifier: "open", text: "Open" },
 ] })), [{ id: "open", label: "Open" }]);

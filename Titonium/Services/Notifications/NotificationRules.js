@@ -48,7 +48,7 @@ function actions(value) {
         const candidate = source[index];
         if (!candidate || typeof candidate !== "object")
             continue;
-        const id = text(candidate.id) || text(candidate.identifier);
+        const id = actionIdentifier(candidate);
         if (!id)
             continue;
         result.push(Object.freeze({
@@ -57,6 +57,17 @@ function actions(value) {
         }));
     }
     return Object.freeze(result);
+}
+
+function actionIdentifier(candidate) {
+    if (!candidate || typeof candidate !== "object")
+        return "";
+    const values = [candidate.id, candidate.identifier];
+    for (let index = 0; index < values.length; index++) {
+        if (typeof values[index] === "string" && values[index].length > 0)
+            return values[index];
+    }
+    return "";
 }
 
 function nativeActions(notification) {
@@ -216,6 +227,54 @@ function removeKeys(values, keys) {
 
 function markUnread(keys, key) {
     return addToast(keys, key, Number.MAX_SAFE_INTEGER);
+}
+
+function refreshState(state, item, toastsEnabled) {
+    const source = state && typeof state === "object" ? state : {};
+    if (!item || !stableKey(item.key))
+        return Object.freeze({
+            notifications: Object.freeze(Array.isArray(source.notifications)
+                ? source.notifications.slice() : []),
+            unreadKeys: Object.freeze(Array.isArray(source.unreadKeys)
+                ? source.unreadKeys.slice() : []),
+            toastKeys: Object.freeze(Array.isArray(source.toastKeys)
+                ? source.toastKeys.slice() : []),
+        });
+    const notifications = upsert(source.notifications, item, historyLimit());
+    const unreadKeys = markUnread(source.unreadKeys, item.key);
+    const toastKeys = item.route === "toast" && toastsEnabled === true
+        ? addToast(source.toastKeys, item.key, toastLimit())
+        : removeKey(source.toastKeys, item.key);
+    return Object.freeze({ notifications, unreadKeys, toastKeys });
+}
+
+function dismissState(state, key) {
+    const source = state && typeof state === "object" ? state : {};
+    return Object.freeze({
+        notifications: removeKey(source.notifications, key),
+        unreadKeys: removeKey(source.unreadKeys, key),
+        toastKeys: removeKey(source.toastKeys, key),
+    });
+}
+
+function clearState() {
+    return Object.freeze({
+        notifications: Object.freeze([]),
+        unreadKeys: Object.freeze([]),
+        toastKeys: Object.freeze([]),
+    });
+}
+
+function warningState(counts, category, limit) {
+    const source = counts && typeof counts === "object" ? counts : {};
+    const key = typeof category === "string" ? category : "";
+    const maximum = Number.isInteger(limit) && limit > 0 ? limit : 1;
+    const current = Number.isInteger(source[key]) && source[key] >= 0 ? source[key] : 0;
+    if (!key || current >= maximum)
+        return Object.freeze({ counts: Object.freeze(Object.assign({}, source)), warn: false });
+    const next = Object.assign({}, source);
+    next[key] = current + 1;
+    return Object.freeze({ counts: Object.freeze(next), warn: true });
 }
 
 function unreadIndicator(count, label) {
