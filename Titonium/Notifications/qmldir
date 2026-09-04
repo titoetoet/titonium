@@ -4,4 +4,6 @@ ToastWindow 1.0 ToastWindow.qml
 ToastStack 1.0 ToastStack.qml
 ToastCard 1.0 ToastCard.qml
 NotificationPanel 1.0 NotificationPanel.qml
+ClassicNotificationPanel 1.0 ClassicNotificationPanel.qml
+NotificationHistoryContent 1.0 NotificationHistoryContent.qml
 NotificationHistoryRow 1.0 NotificationHistoryRow.qml

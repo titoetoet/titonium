@@ -16,6 +16,20 @@ const lifecycle = vm.createContext({});
 vm.runInContext(source, lifecycle, { filename: rulesPath });
 const plain = value => JSON.parse(JSON.stringify(value));
 
+const classicPanelPath = path.join(root, "Titonium", "Notifications",
+    "ClassicNotificationPanel.qml");
+assert.equal(fs.existsSync(classicPanelPath), true,
+    "ClassicNotificationPanel.qml must own detached notification lifecycle");
+const classicPanel = fs.readFileSync(classicPanelPath, "utf8");
+assert.match(classicPanel, /function\s+finishClose\s*\([\s\S]*?SurfaceManager\.matches\(/,
+    "Classic shell must identity-guard close completion");
+assert.match(classicPanel, /function\s+reopenIfReplaced\s*\([\s\S]*?panelExit\.stop\(\)/,
+    "Classic shell must cancel stale close animation when its descriptor is replaced");
+assert.match(classicPanel, /function\s+syncPanelMount\s*\([\s\S]*?NotificationCoordinator\.markAllRead\(\)/,
+    "Classic shell must preserve mount-time mark-as-read");
+assert.match(classicPanel, /function\s+teardownPanelMount\s*\([\s\S]*?NotificationCoordinator\.panelUnmounted\(/,
+    "Classic shell must preserve exact coordinator teardown");
+
 const coordinatorPath = path.join(root, "Titonium", "Services", "Notifications",
     "NotificationCoordinatorRules.js");
 const coordinatorSource = fs.readFileSync(coordinatorPath, "utf8")

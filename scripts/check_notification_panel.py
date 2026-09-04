@@ -60,6 +60,8 @@ def main() -> int:
     coordinator = read("Titonium/Services/Notifications/NotificationCoordinator.qml", errors)
     overlay_host = read("Titonium/Core/Surfaces/OverlayHost.qml", errors)
     panel = read("Titonium/Notifications/NotificationPanel.qml", errors)
+    classic_panel = read("Titonium/Notifications/ClassicNotificationPanel.qml", errors)
+    content = read("Titonium/Notifications/NotificationHistoryContent.qml", errors)
     lifecycle = read("Titonium/Notifications/NotificationPanelLifecycle.js", errors)
     row = read("Titonium/Notifications/NotificationHistoryRow.qml", errors)
     qmldir = read("Titonium/Notifications/qmldir", errors)
@@ -155,7 +157,7 @@ def main() -> int:
         "CoordinatorRules.unmountPanel(root.coordinatorState, ownerId)",
     ), errors)
 
-    require(panel, "NotificationPanel", (
+    require(classic_panel, "ClassicNotificationPanel", (
         "FocusScope {", "property var descriptor:", "property var screen:",
         'import "NotificationPanelLifecycle.js" as NotificationPanelLifecycle',
         'property string mountedOwnerId: ""',
@@ -166,33 +168,29 @@ def main() -> int:
         "onOwnerIdChanged: root.syncPanelMount()",
         "SurfaceManager.beginClose", "SurfaceManager.closeOwned",
         "Metrics.barHeight + Metrics.barSpacing", "anchors.right: parent.right",
-        "model: NotificationCoordinator.history", "NotificationHistoryRow {",
-        "visible: NotificationCoordinator.history.length === 0",
-        'I18n.tr("notification.panel.empty")',
-        'I18n.tr("notification.panel.title")',
-        'I18n.tr("notification.panel.clear_all")',
-        "NotificationCoordinator.dismissAll()", "Qt.Key_Escape",
+        "NotificationHistoryContent {", "onDismissRequested: root.close()",
+        "Qt.Key_Escape",
         "Component.onCompleted:",
         "root.syncPanelMount()",
         "Component.onDestruction:",
         "root.teardownPanelMount()",
     ), errors)
     completed = re.search(r"Component\.onCompleted\s*:\s*\{(?P<body>.*?)\n\s*\}",
-        panel, re.DOTALL)
+        classic_panel, re.DOTALL)
     if not completed or "root.syncPanelMount()" not in completed.group("body"):
-        errors.append("NotificationPanel must defer mount until its descriptor owner is assigned")
+        errors.append("ClassicNotificationPanel must defer mount until its descriptor owner is assigned")
     elif "NotificationCoordinator.panelMounted" in completed.group("body") \
             or "NotificationCoordinator.markAllRead" in completed.group("body"):
-        errors.append("NotificationPanel completion must not mark an empty pre-assignment owner")
-    sync_mount = function_block(panel, "syncPanelMount")
+        errors.append("ClassicNotificationPanel completion must not mark an empty pre-assignment owner")
+    sync_mount = function_block(classic_panel, "syncPanelMount")
     for fragment in ("NotificationCoordinator.panelUnmounted(plan.unmountOwnerId)",
             "NotificationCoordinator.panelMounted(plan.mountOwnerId)",
             "NotificationCoordinator.markAllRead()"):
         if fragment not in sync_mount:
-            errors.append(f"NotificationPanel late-mount path missing: {fragment}")
-    teardown_mount = function_block(panel, "teardownPanelMount")
+            errors.append(f"ClassicNotificationPanel late-mount path missing: {fragment}")
+    teardown_mount = function_block(classic_panel, "teardownPanelMount")
     if "NotificationCoordinator.panelUnmounted(plan.unmountOwnerId)" not in teardown_mount:
-        errors.append("NotificationPanel teardown must unmount its cached owner")
+        errors.append("ClassicNotificationPanel teardown must unmount its cached owner")
     error_handler = re.search(r"else if \(status === Loader\.Error\)(?P<body>[^}]*)",
         overlay_host, re.DOTALL)
     if not error_handler or "releaseSnapshot()" not in error_handler.group("body"):
@@ -209,11 +207,35 @@ def main() -> int:
         "NotificationCoordinator.dismiss(root.notification.key)",
         'I18n.tr("notification.panel.dismiss")',
     ), errors)
-    presentation = panel + row
+    require(content, "NotificationHistoryContent", (
+        "readonly property real implicitContentWidth:",
+        "readonly property real implicitContentHeight:",
+        "signal dismissRequested()",
+        "model: NotificationCoordinator.history", "NotificationHistoryRow {",
+        "visible: NotificationCoordinator.history.length === 0",
+        'I18n.tr("notification.panel.empty")',
+        'I18n.tr("notification.panel.title")',
+        'I18n.tr("notification.panel.clear_all")',
+        "NotificationCoordinator.dismissAll()", "root.dismissRequested()",
+    ), errors)
+    for forbidden in ("SurfaceManager", "PanelWindow", "property var descriptor",
+            "property var screen", "NotificationService"):
+        if forbidden in content:
+            errors.append(f"NotificationHistoryContent must not own shell or native API: {forbidden}")
+    require(panel, "NotificationPanel compatibility wrapper", (
+        "ClassicNotificationPanel {",
+    ), errors)
+    for forbidden in ("NotificationPanelLifecycle", "SurfaceManager", "NotificationCoordinator",
+            "property var descriptor", "property var screen"):
+        if forbidden in panel:
+            errors.append(f"NotificationPanel compatibility wrapper must delegate lifecycle: {forbidden}")
+    presentation = content + row
     if "NotificationService" in presentation:
         errors.append("Notification panel presentation must not consume NotificationService")
     require(qmldir, "Notifications qmldir", (
         "NotificationPanel 1.0 NotificationPanel.qml",
+        "ClassicNotificationPanel 1.0 ClassicNotificationPanel.qml",
+        "NotificationHistoryContent 1.0 NotificationHistoryContent.qml",
         "NotificationHistoryRow 1.0 NotificationHistoryRow.qml",
     ), errors)
     if "NotificationPanel {" in app:
