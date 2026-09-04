@@ -70,6 +70,7 @@ REQUIRED = (
     "NotificationRules.descriptor",
     "NotificationRules.upsert",
     "NotificationRules.markUnread",
+    "root.toastIds = NotificationRules.addToast(root.toastIds, item.id, 3)",
     "NotificationRules.removeId",
     "NotificationServer {",
     "keepOnReload: true",

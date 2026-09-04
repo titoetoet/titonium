@@ -10,11 +10,9 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-04-center-surface-architecture-design.md`
 
-**Execution status (2026-09-04):** Tasks 1–9 implemented. Task 10 verification is in progress;
-static checks, foreground smoke, focused Center acceptance, and `hyprctl configerrors` pass. The
-aggregate protected gate reaches Notifications but cannot inject its fixture while the user's
-existing notification daemon owns `org.freedesktop.Notifications`; that user-owned process has not
-been stopped.
+**Execution status (2026-09-04):** Tasks 1–9 implemented. Task 10 verification passes the static
+suite, foreground smoke, protected acceptance, focused Center acceptance, and
+`hyprctl configerrors`.
 
 ## Global Constraints
 
