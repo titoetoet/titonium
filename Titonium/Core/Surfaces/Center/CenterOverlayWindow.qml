@@ -15,12 +15,17 @@ PanelWindow {
     readonly property bool ownsOverlay: window.viewState.ownerScreenName === window.screenModel.name
         && (window.viewState.mode === "banner" || window.viewState.mode === "expanded")
     readonly property bool dismissing: window.viewState.exitingScreenName === window.screenModel.name
+    readonly property rect visualBounds: renderer.visualBounds
     readonly property string focusOwnerId: "center:" + window.screenModel.name
     property string focusLease: ""
     readonly property bool wantsInteractiveFocus: window.ownsOverlay
         && window.viewState.focusPolicy === "exclusive"
     readonly property bool effectiveInteractiveFocus: window.wantsInteractiveFocus
         && FocusArbiter.granted(window.focusOwnerId, window.focusLease)
+
+    function refreshInputMask(): void {
+        inputMask.changed();
+    }
 
     onWantsInteractiveFocusChanged: {
         if (window.focusLease)
@@ -51,9 +56,14 @@ PanelWindow {
         ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     anchors { top: true; bottom: true; left: true; right: true }
     mask: Region {
+        id: inputMask
         Region { item: overlayInput }
         Region { item: dismissingInput }
     }
+
+    onOwnsOverlayChanged: window.refreshInputMask()
+    onDismissingChanged: window.refreshInputMask()
+    onVisualBoundsChanged: window.refreshInputMask()
 
     Item {
         id: overlayInput

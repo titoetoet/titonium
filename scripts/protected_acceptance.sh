@@ -114,6 +114,18 @@ run_focus_handoff_acceptance() {
         return 1
     fi
 
+    local bluetooth_cursor="$(focus_log_cursor)"
+    if [[ "$(focus_ipc bluetooth popup)" != "open:DP-1" ]]; then
+        echo "FAIL focus handoff acceptance did not open Bluetooth" >&2
+        return 1
+    fi
+    wait_for_focus_trace "Bluetooth acquisition" event "$bluetooth_cursor" acquired \
+        "edge-menu:DP-1:surface:bluetooth:DP-1"
+    local bluetooth_close_cursor="$(focus_log_cursor)"
+    focus_ipc bluetooth closePopup >/dev/null
+    wait_for_focus_trace "Bluetooth direct release" event "$bluetooth_close_cursor" released \
+        "edge-menu:DP-1:surface:bluetooth:DP-1"
+
     local center_cursor="$(focus_log_cursor)"
     if [[ "$(focus_ipc centerNotch open overview)" != "open:DP-1;mode=expanded" ]]; then
         echo "FAIL focus handoff acceptance did not open Center" >&2

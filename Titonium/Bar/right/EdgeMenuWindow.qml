@@ -39,6 +39,9 @@ PanelWindow {
             FocusArbiter.request(window.focusOwnerId, window.focusLease,
                 window.wantsInteractiveFocus);
     }
+    function refreshInputMask(): void {
+        inputMask.changed();
+    }
     readonly property bool dismissing: window.styleActive
         && RightPillCoordinator.exitingScreenName === window.screenModel.name
     readonly property real compactY: BarVisibilityState.revealed || window.ownsMenu
@@ -57,6 +60,7 @@ PanelWindow {
         ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     anchors { top: true; bottom: true; left: true; right: true }
     mask: Region {
+        id: inputMask
         Region { item: activeInputRegion }
         Region { item: dismissingInputRegion }
     }
@@ -91,6 +95,8 @@ PanelWindow {
 
     onWantsInteractiveFocusChanged: window.syncInteractiveFocus()
     onLogicalFocusOwnerIdChanged: window.syncInteractiveFocus()
+    onOwnsMenuChanged: window.refreshInputMask()
+    onDismissingChanged: window.refreshInputMask()
     onEffectiveInteractiveFocusChanged: {
         if (window.effectiveInteractiveFocus) {
             window.diagnosticFocusOwnerId = window.focusOwnerId;

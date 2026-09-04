@@ -35,6 +35,9 @@ Scope {
                     FocusArbiter.request(window.focusOwnerId, window.focusLease,
                         window.wantsInteractiveFocus);
             }
+            function refreshInputMask(): void {
+                inputMask.changed();
+            }
 
             onWantsInteractiveFocusChanged: window.syncInteractiveFocus()
             onLogicalFocusOwnerIdChanged: window.syncInteractiveFocus()
@@ -73,6 +76,7 @@ Scope {
             readonly property var overlayInputRegions:
                 SurfaceInputRegions.regionsFor(window.modelData)
             mask: Region {
+                id: inputMask
                 width: window.ownsOverlaySurface ? window.modelData.width : 0
                 height: window.ownsOverlaySurface ? window.modelData.height : 0
 
@@ -92,6 +96,8 @@ Scope {
                     intersection: Intersection.Subtract
                 }
             }
+            onOwnsOverlaySurfaceChanged: window.refreshInputMask()
+            onOverlayInputRegionsChanged: window.refreshInputMask()
 
             Loader {
                 id: overlayLoader

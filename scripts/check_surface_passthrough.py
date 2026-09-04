@@ -14,6 +14,8 @@ OVERLAY = SURFACES / "OverlayHost.qml"
 MANAGER = SURFACES / "SurfaceManager.qml"
 EDGE_SURFACE = ROOT / "Titonium/Bar/right/EdgeMenuSurface.qml"
 EDGE_WINDOW = ROOT / "Titonium/Bar/right/EdgeMenuWindow.qml"
+CENTER_COMPACT = SURFACES / "Center/CenterCompactWindow.qml"
+CENTER_OVERLAY = SURFACES / "Center/CenterOverlayWindow.qml"
 RIGHT_COORDINATOR = ROOT / "Titonium/Bar/right/RightPillCoordinator.qml"
 DOCK_WINDOW = ROOT / "Titonium/Dock/DockWindow.qml"
 DOCK_SURFACE = ROOT / "Titonium/Dock/DockSurface.qml"
@@ -127,11 +129,38 @@ def main() -> int:
         "RightPillCoordinator.releaseConnectedSurface(loadOwnerId, loadGeneration,",
     ), errors)
     require_fragments(EDGE_WINDOW, (
+        "id: inputMask",
+        "function refreshInputMask(): void",
+        "inputMask.changed()",
+        "onOwnsMenuChanged: window.refreshInputMask()",
+        "onDismissingChanged: window.refreshInputMask()",
         "Component.onDestruction:",
         "RightPillCoordinator.releaseConnectedSurface(",
         "RightPillCoordinator.connectedGeneration",
         "RightPillCoordinator.connectedDescriptor",
         "RightPillCoordinator.connectedScreen",
+    ), errors)
+    require_fragments(CENTER_COMPACT, (
+        "id: inputMask",
+        "function refreshInputMask(): void",
+        "inputMask.changed()",
+        "onOwnsCompactChanged: window.refreshInputMask()",
+        "onInteractiveBoundsChanged: window.refreshInputMask()",
+    ), errors)
+    require_fragments(CENTER_OVERLAY, (
+        "id: inputMask",
+        "function refreshInputMask(): void",
+        "inputMask.changed()",
+        "onOwnsOverlayChanged: window.refreshInputMask()",
+        "onDismissingChanged: window.refreshInputMask()",
+        "onVisualBoundsChanged: window.refreshInputMask()",
+    ), errors)
+    require_fragments(OVERLAY, (
+        "id: inputMask",
+        "function refreshInputMask(): void",
+        "inputMask.changed()",
+        "onOwnsOverlaySurfaceChanged: window.refreshInputMask()",
+        "onOverlayInputRegionsChanged: window.refreshInputMask()",
     ), errors)
     require_fragments(RIGHT_COORDINATOR, (
         "function releaseConnectedSurface(ownerId: string, generation: int,",

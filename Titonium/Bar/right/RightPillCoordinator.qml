@@ -48,6 +48,25 @@ QtObject {
     Component.onCompleted: root.presentedStyle =
         BarPopupRouting.normalizeStyle(Preferences.barStyle)
 
+    property Timer connectedCloseWatchdogTimer: Timer {
+        id: connectedCloseWatchdog
+        property string ownerId: ""
+        property int generation: 0
+        interval: 320
+        repeat: false
+        onTriggered: {
+            const ownerId = connectedCloseWatchdog.ownerId;
+            const generation = connectedCloseWatchdog.generation;
+            root.finishConnectedClose(ownerId, generation);
+        }
+    }
+
+    function armConnectedCloseWatchdog(ownerId: string, generation: int): void {
+        connectedCloseWatchdog.ownerId = ownerId;
+        connectedCloseWatchdog.generation = generation;
+        connectedCloseWatchdog.restart();
+    }
+
     function setCompactWidth(edge: string, width: real): void {
         const value = Number(width) || 0;
         if (value <= 0)
@@ -231,6 +250,7 @@ QtObject {
         if (requested === root.connectedState)
             return false;
         root.connectedState = requested;
+        root.armConnectedCloseWatchdog(ownerId, generation);
         root.returnConnectedFocus(ownerId, generation, false);
         if (Motion.reduced)
             root.finishConnectedClose(ownerId, generation);
@@ -304,6 +324,7 @@ QtObject {
         if (!root.connectedClosing || root.connectedOwnerId !== ownerId
                 || root.connectedState.closingGeneration !== generation)
             return false;
+        connectedCloseWatchdog.stop();
         const closingState = root.connectedState;
         if (SurfaceManager.ownerId === ownerId
                 && SurfaceManager.descriptor?.barConnected === true)
@@ -401,6 +422,7 @@ QtObject {
             const generation = root.connectedGeneration;
             root.connectedState = RightPillState.connectedRequestClose(
                 root.connectedState, ownerId, generation);
+            root.armConnectedCloseWatchdog(ownerId, generation);
             root.returnConnectedFocus(ownerId, generation, true);
             if (Motion.reduced)
                 root.finishConnectedClose(ownerId, generation);

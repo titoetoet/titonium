@@ -13,6 +13,11 @@ PanelWindow {
     required property var profile
     readonly property bool ownsCompact: window.viewState.ownerScreenName === window.screenModel.name
         && window.viewState.mode === "compact"
+    readonly property rect interactiveBounds: renderer.interactiveBounds
+
+    function refreshInputMask(): void {
+        inputMask.changed();
+    }
 
     screen: window.screenModel
     visible: window.ownsCompact
@@ -24,7 +29,13 @@ PanelWindow {
     WlrLayershell.exclusionMode: ExclusionMode.Ignore
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
     anchors { top: true; bottom: true; left: true; right: true }
-    mask: Region { Region { item: inputRegion } }
+    mask: Region {
+        id: inputMask
+        Region { item: inputRegion }
+    }
+
+    onOwnsCompactChanged: window.refreshInputMask()
+    onInteractiveBoundsChanged: window.refreshInputMask()
 
     Item {
         id: inputRegion

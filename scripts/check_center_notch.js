@@ -23,7 +23,8 @@ assert.match(host, /CenterCompactWindow\s*\{/);
 assert.match(host, /CenterOverlayWindow\s*\{/);
 assert.match(host, /snapshot: CenterDomain\.snapshot/);
 assert.match(compact, /WlrLayershell\.keyboardFocus: WlrKeyboardFocus\.None/);
-assert.match(compact, /mask: Region \{ Region \{ item: inputRegion \} \}/);
+assert.match(compact,
+    /mask: Region \{[\s\S]*?id: inputMask[\s\S]*?Region \{ item: inputRegion \}[\s\S]*?\}/);
 assert.match(compact, /x: renderer\.interactiveBounds\.x/);
 assert.match(overlay,
     /window\.viewState\.focusPolicy === "exclusive"[\s\S]*?WlrKeyboardFocus\.Exclusive/);

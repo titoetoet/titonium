@@ -158,6 +158,21 @@ assert.match(surfaceSource, /onDismissRequested[\s\S]*?root\.closePresentedMenu\
 assert.match(windowSource,
     /readonly property bool ownsMenu:[\s\S]*?window\.ownsConnectedSurface/,
     "Edge window focus and full active input region must survive connected exit");
+assert.match(source,
+    /Timer\s*\{[\s\S]*?id:\s*connectedCloseWatchdog[\s\S]*?repeat:\s*false/,
+    "connected close must own a one-shot lifecycle watchdog");
+assert.match(source,
+    /function armConnectedCloseWatchdog\(ownerId: string, generation: int\)/,
+    "connected close watchdog must capture owner and generation");
+assert.match(source,
+    /connectedCloseWatchdog\.ownerId = ownerId[\s\S]*?connectedCloseWatchdog\.generation = generation[\s\S]*?connectedCloseWatchdog\.restart\(\)/,
+    "watchdog must snapshot and restart for the newest close generation");
+assert.match(source,
+    /onTriggered:[\s\S]*?root\.finishConnectedClose\(ownerId, generation\)/,
+    "watchdog completion must use the generation-safe close path");
+assert.match(source,
+    /function finishConnectedClose[\s\S]*?connectedCloseWatchdog\.stop\(\)/,
+    "normal completion must cancel its watchdog");
 assert.match(surfaceSource,
     /active:\s*root\.ownsConnectedSurface[\s\S]*?enabled:\s*!RightPillCoordinator\.connectedClosing/,
     "connected Loader must remain active but stop accepting content input during exit");
