@@ -3,7 +3,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Hyprland
-import qs.Titonium.AgentApproval
 import qs.Titonium.Bar
 import qs.Titonium.Core.Surfaces
 import qs.Titonium.Dock
@@ -43,7 +42,6 @@ Scope {
     OverlayHost {}
     AudioOsdHost {}
     ToastHost {}
-    AgentApprovalHost {}
     SettingsHost {}
 
     CoreIpc { router: router }

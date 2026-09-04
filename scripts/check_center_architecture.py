@@ -48,6 +48,10 @@ if "CenterSurfaceHost {" not in bar_host_source:
 if "CenterPillWindow {" in bar_host_source:
     errors.append("BarHost still composes legacy CenterPillWindow")
 
+app_source = (ROOT / "Titonium/App.qml").read_text()
+if "AgentApprovalHost" in app_source:
+    errors.append("App still composes a second Agent Approval native surface outside Center")
+
 production_files = list((ROOT / "Titonium").rglob("*.qml"))
 legacy_consumers = []
 legacy_name = "Center" + "NotchCoordinator"
