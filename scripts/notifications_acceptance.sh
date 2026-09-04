@@ -14,6 +14,10 @@ before_git="$(git -C "$project_root" status --porcelain=v1)"
 before_live="$(sha256sum -- "$live_hypr")"
 before_dotfiles="$(sha256sum -- "$dotfiles_hypr")"
 
+# Validate the style-aware, read-only presentation contract before deciding
+# whether this session may start an isolated native-notification fixture.
+node "$project_root/scripts/check_notification_theme_contract.js"
+
 cleanup() {
     if [[ -n "$shell_pid" ]] && kill -0 "$shell_pid" 2>/dev/null; then
         kill "$shell_pid" 2>/dev/null || true

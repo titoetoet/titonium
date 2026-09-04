@@ -51,10 +51,13 @@ Independent non-focus surfaces such as OSD and notification toasts use their own
 critical FIFO queue and lazy-panel ownership. Neither notification view nor Center presentation may
 import native Notifications objects, own a native listener, or retain one.
 
-The Notification Bell is always present in both Bar styles and routes only an open/close request to
-the screen-local history panel. The panel is loaded through `SurfaceManager`, marks read only after
-its owner is mounted, and releases only its matching owner on close or screen loss. Standard actions,
-dismissal and clear-all are local user intents revalidated by the coordinator/service boundary.
+The rightmost Topbar `NotificationCenter` control is always present in both Bar styles. It keeps the
+fixed non-bell `history` glyph as unread state changes; its unread badge may change. It routes only an
+open/close request to the screen-local history panel. Connected attaches that history content to the
+existing right-pill chassis at the exact Notification Center control; Classic loads its detached
+overlay shell. The panel marks read only after its owner is mounted, and releases only its matching
+owner on close or screen loss. Standard actions, dismissal and clear-all are local user intents
+revalidated by the coordinator/service boundary.
 
 The public `notifications` IPC target has exactly `state()` and `markRead()`. Its state is limited to
 counts plus read-only panel, queue and policy metadata. It must never expose notification injection,

@@ -20,8 +20,10 @@ The notification gates enforce one native `NotificationServer`, exact immutable 
 100-history/three-toast/16-critical bounds, session-only unread transitions, policy precedence,
 standard-action value projection, DP-1-only toast ownership and lazy stack/panel lifecycle. Pure
 fixtures cover passive versus critical routing, FIFO completion, hover deadline pause/resume,
-custom overrides and stale/lost-screen panel cleanup. No view imports the native Notifications
-module, and the public IPC surface remains `notifications state|markRead` with read-only metadata.
+custom overrides, stale/lost-screen panel cleanup, Connected right-pill history presentation,
+Classic detached history presentation, the fixed Topbar history glyph/order, Center-only bell
+wobble, and shoulder-free Classic Center. No view imports the native Notifications module, and the
+public IPC surface remains `notifications state|markRead` with read-only metadata.
 
 The only allowlisted QML warning is Quickshell 0.3.x metadata marking documented `PanelWindow` as
 uncreatable. New warnings are failures. UI code is rejected when it owns `Process`, `FileView` or
@@ -63,6 +65,7 @@ node scripts/check_connected_popup_content.js
 node scripts/check_edge_menu_geometry.js
 node scripts/check_right_pill.js
 node scripts/check_top_bar_style_lifecycle.js
+node scripts/check_notification_theme_contract.js
 python3 scripts/check_wifi.py
 python3 scripts/check_bluetooth.py
 python3 scripts/check_audio.py
@@ -76,6 +79,17 @@ System Tray popups. Return to Connected and verify Wi-Fi, Bluetooth, and Audio g
 right-pill anchors. In both modes check Escape, outside-click, control switching, a style switch
 while a popup is open, and scales 1.0 and 1.5. This is a visual checkpoint; do not record it as
 passed until someone has performed the review.
+
+For the themed Notification Center review, verify in Classic that compact, banner, and expanded
+Center never show shoulders. In both styles, verify the rightmost Topbar control remains the fixed
+non-bell history glyph across unread changes, and that a new unread notification presents the bell
+and any wobble only in the non-interactive Center secondary pill. The primary pill must remain
+behaviorally unchanged and Center must not gain a satellite mode. In Connected, open history from
+that exact control and verify one continuous right-pill chassis; in Classic, verify the detached
+overlay. Check same-control, outside-click, and Escape close paths; switch styles while it is open
+to confirm no ghost surface or stale input mask remains; then enable Reduced Motion and confirm state
+remains unchanged while transition motion is removed. The critical FIFO Center-banner path is
+unchanged.
 
 ## Native Dock + Bluetooth handoff (Task 8)
 
@@ -219,8 +233,8 @@ write clipboard content.
 Center acceptance verifies the `CenterSurfaceHost` namespaces and compact/banner/expanded lifecycle,
 proves that Spotlight compacts Center, and closes both surfaces again. It rejects runtime
 type/load errors, repository writes and changes to either Hyprland configuration hash. Notification
-history remains coordinator domain data; the independent Bell-owned panel consumes it, while Center
-has no history page. The historical `centerNotch` IPC target is retained for acceptance compatibility;
+history remains coordinator domain data; the Topbar Notification Center owns its history entry point,
+while Center has no history page. The historical `centerNotch` IPC target is retained for acceptance compatibility;
 its state/result vocabulary is neutral mode state rather than a theme or page contract.
 
 Audio acceptance launches one foreground shell and calls only `audio.state`, `audio.popup`,
@@ -267,9 +281,13 @@ Notification acceptance never stops a resident Titonium shell: because
 running. With the name free, it starts one foreground shell and sends controlled normal and critical
 `notify-send` fixtures. It verifies DP-1-only passive toast ownership, history/unread preservation,
 the read-only panel/queue/policy state seam, the four-second critical FIFO route and the same
-`markRead()` boundary as the Bell. It rejects runtime errors, repository writes and changes to either
-Hyprland configuration. It has no injection, action, dismissal or policy-patch IPC; standard-action
-and custom-policy behavior remain deterministic pure/static coverage.
+`markRead()` boundary as the Topbar Notification Center. Before a live fixture (or a safe D-Bus
+ownership skip), it also runs the read-only themed contract: Connected reports the exact edge/right-
+pill history presentation, Classic reports the detached overlay presentation, the Topbar history glyph
+stays fixed and rightmost, Center alone owns the bell wobble, and Classic Center has no shoulders.
+It rejects runtime errors, repository writes and changes to either Hyprland configuration. It has no
+injection, action, dismissal or policy-patch IPC; standard-action and custom-policy behavior remain
+deterministic pure/static coverage.
 
 After the focused fixture (or its safe skip), manually verify the assigned Titonium output:
 
@@ -285,8 +303,9 @@ After the focused fixture (or its safe skip), manually verify the assigned Titon
 - secondary-click Center and confirm non-AI contextual banners morph from the compact pill geometry;
 - submit an AI approval and confirm Center opens directly to Expanded, advances queued requests
   in place, and collapses after the final decision;
-- with unread notifications, confirm the satellite pill springs out independently and the Center
-  state reports `satellite` while no popup is open;
+- with unread notifications, confirm the non-interactive Center secondary compact pill alone presents
+  the bell and bounded wobble; the primary pill remains behaviorally unchanged and Center state does
+  not gain a satellite mode;
 - click the media banner body (outside its buttons) and confirm it morphs to the expanded canvas;
 - request a retired page over IPC and confirm it normalizes safely to the expanded canvas.
 
@@ -360,9 +379,10 @@ Manual review: change focus between apps and confirm Center renders the real ico
 `App · title`, elides cleanly up to 520px, and opens its four-rounded-corner popup at the shared
 52px top offset. Send low/normal and critical notifications: inspect newest-first passive stacking,
 icon fallback, three-line body cap, close control and configured toast expiry; confirm critical
-items use the FIFO Center banner with hover pause. The always-present Bell opens one top-right
-history panel on the clicked screen, marks it read after it opens, and exposes standard actions,
-per-item dismissal and clear-all. Persisted history remains deliberately out of scope.
+items use the FIFO Center banner with hover pause. The rightmost fixed-glyph Topbar Notification
+Center control opens history on the clicked screen, marks it read after it opens, and exposes
+standard actions, per-item dismissal and clear-all. In Connected it is one continuous right-pill
+chassis; in Classic it is detached. Persisted history remains deliberately out of scope.
 
 ## Daily Focus Center checkpoint
 
@@ -404,18 +424,21 @@ policy priorities, and `clear` must remove only the matching active job or termi
 
 Run `./scripts/notifications_acceptance.sh` only when no resident Titonium instance owns the session
 notification D-Bus name; a `SKIP` is the safe result otherwise. The script covers passive toast and
-critical FIFO routing without synthetic notification IPC. Static fixtures cover action values,
-custom policy, hover pause/resume, panel owner replacement, stale teardown and monitor-loss cleanup.
-Manually verify the Bell-owned history panel rather than the retired Center history viewport.
+critical FIFO routing without synthetic notification IPC. Its read-only static companion covers
+Connected right-pill versus Classic detached history routing, the fixed non-bell rightmost Topbar
+control, Center-only bell wobble, and a shoulder-free Classic Center. Static fixtures also cover
+action values, custom policy, hover pause/resume, panel owner replacement, stale teardown and
+monitor-loss cleanup. Manually verify the Notification Center history panel rather than the retired
+Center history viewport.
 
-## Dynamic Island four-state checkpoint
+## Center presentation checkpoint
 
-`scripts/check_center_notch.js` verifies the compact/satellite/banner/expanded state machine,
-top-two activity ranking, urgent-event policy, drag thresholds and the single visual-owner
-contract. `scripts/center_notch_acceptance.sh` exercises IPC compatibility and the live state loop.
-Manual scaled-output review must cover 1.0 and 1.5 scale, both satellite click targets, successful
-and cancelled drags, AI persistence, four-second notification dismissal, Settings/Spotlight mutual
-exclusion, outside/Escape collapse and exact input-mask alignment. See `DYNAMIC_ISLAND.md`.
+`scripts/check_center_notch.js` verifies the compact/banner/expanded state machine, top-two activity
+ranking, urgent-event policy, drag thresholds and the single visual-owner contract.
+`scripts/center_notch_acceptance.sh` exercises IPC compatibility and the live state loop. Manual
+scaled-output review must cover 1.0 and 1.5 scale, the non-interactive secondary notification pill,
+successful and cancelled drags, AI persistence, four-second notification dismissal,
+Settings/Spotlight mutual exclusion, outside/Escape collapse and exact input-mask alignment.
 
 ## Center System Monitoring checkpoint
 

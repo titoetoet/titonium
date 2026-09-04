@@ -23,10 +23,15 @@ resting card backgrounds. Hover and pressed feedback may remain local to a contr
 side's base silhouette stays continuous.
 
 Right-pill controls use uniform 28dp interaction cells. Connectivity icons have 4dp internal gaps
-and the Pin, Connectivity, Input Method and conditional Notification groups have 8dp gaps. The Pin
-has no resting, hover or selected background; state is communicated through its glyph and color.
-The always-present Notification Bell retains its interaction cell in both Bar styles; only its unread
-badge is conditional, and it runs at most three wobble cycles when the unread count increases.
+and the Pin, Connectivity, Input Method and Notification Center groups have 8dp gaps. The Pin has no
+resting, hover or selected background; state is communicated through its glyph and color. The
+rightmost Notification Center control is always present in both Bar styles and retains its fixed
+non-bell `history` glyph; only its unread badge is conditional. It never wobbles.
+
+The non-interactive Center secondary compact pill is the only notification bell presentation. When
+unread count increases it may run at most three wobble cycles; Reduced Motion suppresses that motion
+without changing the unread presentation. This is a compact presentation detail, not a satellite
+lifecycle mode, and it does not redesign or change the behavior of the current primary pill.
 
 Both edge pills animate their displayed width toward the latest content-derived implicit width in
 220ms with `Motion.springDamped`. Rapid Window Title or unread changes retarget the same animation

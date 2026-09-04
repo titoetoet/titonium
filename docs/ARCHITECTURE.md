@@ -89,9 +89,10 @@ platform menu; without a menu it retains the centered four-corner popup fallback
 compositor window titles, omits the separator when no matching context exists and falls back to
 Titonium. The full Bar input mask is composed from the left, center and right pill hitboxes, preserving
 click-through elsewhere. The End island orders native Wi-Fi, Bluetooth and Audio controls before
-the protected Input Method. The always-present `NotificationBell` opens the independent,
-top-right Notification Panel on the clicked screen; its badge reflects session unread state.
-Clock remains temporarily disabled.
+the protected Input Method. The rightmost always-present Notification Center control keeps its fixed
+non-bell `history` glyph while its badge reflects session unread state. It opens history from the
+clicked screen: Connected attaches content to that exact right-pill control, while Classic uses a
+detached panel shell. Clock remains temporarily disabled.
 
 ### Edge-connected application menus
 
@@ -127,8 +128,8 @@ a prepared menu requests expanded Center instead. The frozen descriptor selects 
 anchor for the expanding right-pill branch until its exit animation completes. Classic restores
 detached `Shared.Surface` trees for launcher, Workspaces and Active Window on the left, plus
 separate pin, connectivity, and status surfaces on the right. Its centered reservation feeds the
-shared neutral Center owner; the same always-present Notification Bell routes to the independent
-panel. Classic Network, Bluetooth, Audio, and System Tray
+shared neutral Center owner; its rightmost fixed-glyph Notification Center control routes history to
+the detached panel. Classic Network, Bluetooth, Audio, and System Tray
 popups use their existing OverlayHost surfaces rather than the Connected Edge window.
 
 ## State and presentation
@@ -261,10 +262,11 @@ PipeWire-node binding without selecting a device.
 
 The logical Center uses `closed`, `compact`, `banner`, and `expanded` modes. The domain may expose
 primary and secondary Live Activities without adding a lifecycle mode. AI approval requests
-expanded exclusive focus through the same controller. Notification unread state remains a passive
-Bell badge; critical notification banners use the same neutral Center lifecycle, while the history
-panel remains an independent surface. System Monitor remains detached. The complete canonical
-contract is in `docs/DYNAMIC_ISLAND.md`.
+expanded exclusive focus through the same controller. Notification unread state is presented by the
+non-interactive Center secondary compact pill; it never creates a satellite lifecycle state or
+redesigns the current primary pill. Critical notification banners use the same neutral Center
+lifecycle, while history remains an independent surface. System Monitor remains detached. The
+canonical Center contract is defined here and in `MODULE_CONTRACT.md`.
 
 ## Protected feature flow
 
@@ -290,7 +292,7 @@ restore or apply preferences remotely.
 
 Center's primary activation opens the expanded canvas, while secondary activation opens the
 banner. The expanded canvas has no Settings or Daily Focus action; notification history is opened
-only through the Notification Bell and its global shortcut.
+only through the rightmost Topbar Notification Center control and its global shortcut.
 Titonium Settings is exposed as a
 desktop entry in the application launcher and opens the standalone Settings surface through its
 lifecycle-only IPC. The Topbar Pin remains an independent Bar control rather than a Center action.
@@ -322,10 +324,12 @@ are explicit user intents.
 
 `ToastHost` follows `ScreenPolicy.screens`, so DP-3 receives no Titonium toast surface. Its heavy
 stack loads only while toast IDs exist, takes no keyboard focus or exclusive zone, and masks input
-to the 360px stack. Each card owns one non-repeating timer. The always-present Bell opens one lazy,
-top-right history panel on its clicked screen and marks entries read only after that panel mounts;
-per-item dismissal, clear-all and standard actions stay inside the panel. Stale or lost-screen
-teardown releases only its matching panel owner. All notification state is session-only.
+to the 360px stack. Each card owns one non-repeating timer. The rightmost Topbar Notification Center
+control opens one lazy history panel on its clicked screen and marks entries read only after that
+panel mounts. Connected history is one continuous right-pill chassis anchored at that exact control;
+Classic history is a detached overlay shell. Per-item dismissal, clear-all and standard actions stay
+inside the panel. Stale or lost-screen teardown releases only its matching panel owner. All
+notification state is session-only.
 
 `org.freedesktop.Notifications` is a session-global D-Bus name, so one daemon owns it at a time.
 `notifications_acceptance.sh` never stops a resident Titonium instance: it reports a skip when one
