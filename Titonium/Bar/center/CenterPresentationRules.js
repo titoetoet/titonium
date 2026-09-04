@@ -56,3 +56,25 @@ function contextTransition(profileValue, reducedMotion) {
         return Object.freeze({ kind: "replace", exitMs: 0, enterMs: 0 });
     return Object.freeze({ kind: "crossfade", exitMs: 80, enterMs: 120 });
 }
+
+function secondaryIndicatorTransition(previous, indicator) {
+    var previousValue = previous && typeof previous === "object" ? previous : {};
+    var nextValue = indicator && typeof indicator === "object" ? indicator : {};
+    var previousCount = Number.isInteger(previousValue.count) && previousValue.count >= 0
+        ? previousValue.count : 0;
+    var previousRevision = Number.isInteger(previousValue.revision)
+        && previousValue.revision >= 0 ? previousValue.revision : 0;
+    var nextCount = nextValue.active === true && Number.isInteger(nextValue.count)
+        && nextValue.count >= 0 ? nextValue.count : 0;
+    var nextRevision = Number.isInteger(nextValue.revision) && nextValue.revision >= 0
+        ? nextValue.revision : previousRevision;
+    if (previous && nextRevision < previousRevision)
+        return Object.freeze({ observation: Object.freeze({
+            count: previousCount,
+            revision: previousRevision,
+        }), wobble: false });
+    return Object.freeze({ observation: Object.freeze({
+        count: nextCount,
+        revision: nextRevision,
+    }), wobble: nextValue.active === true && nextCount > previousCount });
+}

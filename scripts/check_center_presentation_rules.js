@@ -65,6 +65,33 @@ assert.deepEqual(plain(rules.contextTransition(connected, true)), {
 });
 console.log("PASS FIFO content changes preserve banner geometry and honor Reduced Motion");
 
+const secondaryFailures = [];
+function checkSecondaryTransition(name, previous, indicator, expected) {
+    const actual = typeof rules.secondaryIndicatorTransition === "function"
+        ? rules.secondaryIndicatorTransition(previous, indicator) : null;
+    try {
+        assert.deepEqual(plain(actual), expected);
+    } catch (error) {
+        secondaryFailures.push(`${name}: ${error.message}`);
+    }
+    return actual;
+}
+checkSecondaryTransition("first 0-to-1 activation wobbles", null, {
+    active: true, count: 1, revision: 1,
+}, { observation: { count: 1, revision: 1 }, wobble: true });
+const clearedSecondary = checkSecondaryTransition("5-to-0 clear does not wobble", {
+    count: 5, revision: 5,
+}, { active: false, count: 0, revision: 6 }, {
+    observation: { count: 0, revision: 6 }, wobble: false,
+});
+checkSecondaryTransition("0-to-1 reactivation during exit wobbles",
+    clearedSecondary?.observation || null,
+    { active: true, count: 1, revision: 7 }, {
+        observation: { count: 1, revision: 7 }, wobble: true,
+    });
+assert.deepEqual(secondaryFailures, [], secondaryFailures.join("\n"));
+console.log("PASS secondary indicator motion observes first activation and exit reactivation");
+
 for (const file of ["CenterRenderer.qml", ...["Pill", "Notch", "Connected", "Classic"]
     .flatMap(name => [`presentations/${name}/${name}Renderer.qml`,
         `presentations/${name}/${name}Profile.js`])])
@@ -88,7 +115,8 @@ for (const fragment of [
     "loops: 3",
     "Motion.reduced",
     "wobble.stop()",
-    "nextCount > previousCount",
+    "PresentationRules.secondaryIndicatorTransition",
+    "property var indicatorObservation",
 ])
     assert.ok(secondaryPill.includes(fragment),
         `Center secondary pill missing bounded presentation behavior: ${fragment}`);

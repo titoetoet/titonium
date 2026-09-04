@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Layouts
 import qs.Titonium.Shared as Shared
 import qs.Titonium.Theme
+import "CenterPresentationRules.js" as PresentationRules
 
 Item {
     id: root
@@ -15,6 +16,7 @@ Item {
     property int topRightRadius: Metrics.radiusLarge
     property int bottomLeftRadius: Metrics.radiusLarge
     property int bottomRightRadius: Metrics.radiusLarge
+    property var indicatorObservation: null
     property var displayedIndicator: null
     property bool presented: false
     readonly property bool requestedVisible: root.rendererVisible
@@ -41,6 +43,9 @@ Item {
     }
 
     function syncIndicator(): void {
+        const transition = PresentationRules.secondaryIndicatorTransition(
+            root.indicatorObservation, root.indicator);
+        root.indicatorObservation = transition.observation;
         if (!root.requestedVisible) {
             root.stopMotion();
             if (!root.presented)
@@ -52,14 +57,11 @@ Item {
             return;
         }
 
-        const previousCount = Number(root.displayedIndicator?.count || 0);
-        const nextCount = Number(root.indicator.count || 0);
-        const hadIndicator = root.displayedIndicator !== null;
         exitAnimation.stop();
         root.displayedIndicator = root.indicator;
         root.presented = true;
         root.opacity = 1;
-        if (hadIndicator && nextCount > previousCount && !Motion.reduced)
+        if (transition.wobble && !Motion.reduced)
             wobble.restart();
     }
 

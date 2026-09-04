@@ -353,7 +353,8 @@ def validate_presentation(errors: list[str]) -> None:
             "root.displayedIndicator.count",
             "loops: 3",
             "wobble.stop()",
-            "nextCount > previousCount",
+            "PresentationRules.secondaryIndicatorTransition",
+            "property var indicatorObservation",
         ):
             if fragment not in secondary:
                 errors.append(f"Center notification pill missing contract: {fragment}")
