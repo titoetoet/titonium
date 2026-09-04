@@ -37,12 +37,6 @@ Item {
         anchors.rightMargin: Metrics.spacingXSmall
         spacing: Metrics.spacingSmall
 
-        NotificationBell {
-            screen: root.screen
-            onToggleRequested: (screen, invoker) =>
-                root.notificationsRequested(screen, invoker)
-        }
-
         StatusPill {
             id: status
             screen: root.screen
@@ -57,6 +51,12 @@ Item {
             id: connectivity
             screen: root.screen
             showDiagnostics: root.showConnectivityDiagnostics
+        }
+
+        NotificationBell {
+            screen: root.screen
+            onToggleRequested: (screen, invoker) =>
+                root.notificationsRequested(screen, invoker)
         }
     }
 }

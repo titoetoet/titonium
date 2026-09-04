@@ -11,30 +11,13 @@ Item {
 
     required property var screen
     signal toggleRequested(var screen, var invoker)
+    readonly property string iconName: "history"
 
     implicitWidth: 28
     implicitHeight: Metrics.widgetHeight
 
     function activate(): void {
         root.toggleRequested(root.screen, root);
-    }
-
-    Connections {
-        target: NotificationCoordinator
-        function onUnreadCountChanged(): void {
-            if (NotificationCoordinator.unreadCount > 0 && !Motion.reduced)
-                wobble.restart();
-        }
-    }
-
-    Connections {
-        target: Motion
-        function onReducedChanged(): void {
-            if (Motion.reduced) {
-                wobble.stop();
-                bellIcon.rotation = 0;
-            }
-        }
     }
 
     Rectangle {
@@ -50,9 +33,9 @@ Item {
     }
 
     Shared.Icon {
-        id: bellIcon
+        id: centerIcon
         anchors.centerIn: parent
-        name: "notifications"
+        name: root.iconName
         size: 19
         tone: "primary"
         scale: Motion.reduced ? 1 : (bellTap.pressed ? 0.96
@@ -71,8 +54,8 @@ Item {
 
     Rectangle {
         visible: NotificationCoordinator.hasUnread
-        anchors.top: bellIcon.top
-        anchors.right: bellIcon.right
+        anchors.top: centerIcon.top
+        anchors.right: centerIcon.right
         anchors.topMargin: -4
         anchors.rightMargin: -6
         width: 14
@@ -90,15 +73,6 @@ Item {
         }
     }
 
-    SequentialAnimation {
-        id: wobble
-        loops: 3
-
-        NumberAnimation { target: bellIcon; property: "rotation"; from: 0; to: -12; duration: 55 }
-        NumberAnimation { target: bellIcon; property: "rotation"; from: -12; to: 12; duration: 90 }
-        NumberAnimation { target: bellIcon; property: "rotation"; from: 12; to: 0; duration: 55 }
-    }
-
     HoverHandler { id: bellHover; cursorShape: Qt.PointingHandCursor }
     TapHandler {
         id: bellTap
@@ -107,7 +81,7 @@ Item {
 
     Accessible.role: Accessible.Button
     Accessible.name: I18n.tr(NotificationCoordinator.hasUnread
-        ? "notification.bell.unread" : "notification.bell.none", {
+        ? "notification.center.unread" : "notification.center.none", {
         count: NotificationCoordinator.unreadCount
     })
     Accessible.focusable: true

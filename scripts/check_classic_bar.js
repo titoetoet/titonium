@@ -60,6 +60,9 @@ requireFragments("Titonium/Bar/classic/ClassicEndIsland.qml", [
     "StatusPill {",
 ]);
 requireSurfaceCount("Titonium/Bar/classic/ClassicEndIsland.qml", 4);
+assert.ok(read("Titonium/Bar/classic/ClassicEndIsland.qml").lastIndexOf("NotificationBell {")
+    > read("Titonium/Bar/classic/ClassicEndIsland.qml").lastIndexOf("StatusPill {"),
+    "Classic Notification Center must be the rightmost surface");
 requireFragments("Titonium/Bar/classic/ClassicBar.qml", [
     "readonly property alias archHitbox: startIsland.archHitbox",
     "readonly property alias workspaceHitbox: startIsland.workspaceHitbox",

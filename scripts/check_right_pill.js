@@ -225,6 +225,8 @@ assert.match(endIsland, /function connectivityAnchorRect\(name: string\): rect/)
 assert.match(endIsland, /connectivity\.anchorRect\(name\)/);
 assert.match(endIsland, /connectivity\.mapToItem\(root,/,
     "EndIsland must convert connectivity anchors into its own coordinates");
+assert.ok(endIsland.lastIndexOf("NotificationBell {") > endIsland.lastIndexOf("ConnectivityPill {"),
+    "Connected Notification Center must be the rightmost control");
 assert.match(bar, /EndIsland\s*\{/);
 assert.match(bar, /StartIsland\s*\{/);
 assert.match(bar, /readonly property alias leftHitbox:/);

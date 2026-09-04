@@ -59,13 +59,15 @@ def main() -> int:
     require(bell, "NotificationBell", (
         "required property var screen",
         "signal toggleRequested(var screen, var invoker)",
+        'readonly property string iconName: "history"',
+        "name: root.iconName",
         "NotificationCoordinator.unreadCount",
         "NotificationCoordinator.hasUnread",
         "visible: NotificationCoordinator.hasUnread",
         "root.toggleRequested(root.screen, root)",
         'I18n.tr(NotificationCoordinator.hasUnread',
-        '"notification.bell.none"',
-        '"notification.bell.unread"',
+        '"notification.center.none"',
+        '"notification.center.unread"',
         "function activate(): void",
         "Accessible.focusable: true",
         "Accessible.onPressAction: root.activate()",
@@ -76,6 +78,12 @@ def main() -> int:
         errors.append("NotificationBell must request routing and consume only NotificationCoordinator")
     if "activeFocusOnTab: true" in bell or "Keys.onPressed:" in bell:
         errors.append("passive Bar bell must not advertise an unreachable keyboard-focus route")
+    if "SequentialAnimation" in bell or 'property: "rotation"' in bell:
+        errors.append("Topbar Notification Center must not own bell motion")
+    if connected_end.rfind("NotificationBell {") < connected_end.rfind("ConnectivityPill {"):
+        errors.append("Connected Notification Center must be the rightmost control")
+    if classic_end.rfind("NotificationBell {") < classic_end.rfind("StatusPill {"):
+        errors.append("Classic Notification Center must be the rightmost surface")
 
     for source, label in ((connected_end, "EndIsland"),
             (classic_end, "ClassicEndIsland")):
@@ -203,6 +211,7 @@ def main() -> int:
         errors.append("App must not eagerly compose NotificationPanel; SurfaceManager loads it lazily")
 
     keys = (
+        "notification.center.none", "notification.center.unread",
         "notification.panel.title", "notification.panel.empty",
         "notification.panel.clear_all", "notification.panel.dismiss",
         "shortcut.notifications.description",
