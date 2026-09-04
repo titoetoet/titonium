@@ -36,11 +36,16 @@ focus_log_cursor() {
 
 wait_for_focus_trace() {
     local context="$1"
-    shift
+    local command="$2"
+    local start_cursor="$3"
+    shift 3
     local result=""
     local status=0
+    local end_cursor=""
     for _ in {1..80}; do
-        if result="$(python3 "$focus_trace_checker" "$@" 2>&1)"; then
+        end_cursor="$(focus_log_cursor)"
+        if result="$(python3 "$focus_trace_checker" "$command" "$focus_log_file" \
+            "$start_cursor" "$end_cursor" "$@" 2>&1)"; then
             return 0
         else
             status=$?
@@ -60,8 +65,44 @@ require_focus_handoff() {
     local old_owner="$1"
     local new_owner="$2"
     local cursor="$3"
-    wait_for_focus_trace "focus handoff $old_owner to $new_owner" handoff \
-        "$focus_log_file" "$cursor" "$old_owner" "$new_owner"
+    wait_for_focus_trace "focus handoff $old_owner to $new_owner" handoff "$cursor" \
+        "$old_owner" "$new_owner"
+}
+
+validate_focus_trace() {
+    local context="$1"
+    local command="$2"
+    local start_cursor="$3"
+    local end_cursor="$4"
+    shift 4
+    local result=""
+    if ! result="$(python3 "$focus_trace_checker" "$command" "$focus_log_file" \
+        "$start_cursor" "$end_cursor" "$@" 2>&1)"; then
+        printf 'FAIL %s: %s\n' "$context" "$result" >&2
+        return 1
+    fi
+}
+
+wait_for_focus_log_settle() {
+    local previous_cursor=""
+    local current_cursor=""
+    local unchanged_samples=0
+    for _ in {1..80}; do
+        current_cursor="$(focus_log_cursor)"
+        if [[ "$current_cursor" == "$previous_cursor" ]]; then
+            ((unchanged_samples += 1))
+        else
+            previous_cursor="$current_cursor"
+            unchanged_samples=0
+        fi
+        if [[ $unchanged_samples -ge 4 ]]; then
+            printf '%s\n' "$current_cursor"
+            return 0
+        fi
+        sleep 0.05
+    done
+    echo "FAIL focus handoff log did not settle" >&2
+    return 1
 }
 
 run_focus_handoff_acceptance() {
@@ -91,8 +132,7 @@ run_focus_handoff_acceptance() {
         echo "FAIL focus handoff acceptance did not open Center" >&2
         return 1
     fi
-    wait_for_focus_trace "Center acquisition" event "$focus_log_file" "$center_cursor" \
-        acquired "center:DP-1"
+    wait_for_focus_trace "Center acquisition" event "$center_cursor" acquired "center:DP-1"
 
     local spotlight_cursor="$(focus_log_cursor)"
     local spotlight_state="$(focus_ipc spotlight toggle)"
@@ -112,8 +152,17 @@ run_focus_handoff_acceptance() {
 
     local settings_close_cursor="$(focus_log_cursor)"
     focus_ipc settings cancel >/dev/null
-    wait_for_focus_trace "Settings release" event "$focus_log_file" "$settings_close_cursor" \
-        released "settings:DP-1"
+    wait_for_focus_trace "Settings release" event "$settings_close_cursor" released "settings:DP-1"
+
+    local final_focus_cursor="$(wait_for_focus_log_settle)"
+    validate_focus_trace "final Center acquisition range" event "$center_cursor" \
+        "$spotlight_cursor" acquired "center:DP-1"
+    validate_focus_trace "final Center to Spotlight range" handoff "$spotlight_cursor" \
+        "$settings_cursor" "center:DP-1" "overlay:spotlight:DP-1"
+    validate_focus_trace "final Spotlight to Settings range" handoff "$settings_cursor" \
+        "$settings_close_cursor" "overlay:spotlight:DP-1" "settings:DP-1"
+    validate_focus_trace "final Settings release range" event "$settings_close_cursor" \
+        "$final_focus_cursor" released "settings:DP-1"
 
     if rg -q 'exclusive-focus-conflict|missing-focus-owner' "$focus_log_file"; then
         rg -n 'exclusive-focus-conflict|missing-focus-owner' "$focus_log_file" >&2

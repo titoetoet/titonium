@@ -29,65 +29,66 @@ def pending(message: str) -> int:
     return 2
 
 
-def events_after(log_file: Path, cursor: int) -> list[FocusEvent]:
+def events_between(log_file: Path, start_cursor: int, end_cursor: int) -> list[FocusEvent]:
     lines = log_file.read_text(encoding="utf-8").splitlines()
-    if cursor < 0 or cursor > len(lines):
-        raise ValueError(f"cursor {cursor} is outside 0..{len(lines)}")
+    if start_cursor < 0 or end_cursor < start_cursor or end_cursor > len(lines):
+        raise ValueError(f"cursor range {start_cursor}..{end_cursor} is outside 0..{len(lines)}")
     events: list[FocusEvent] = []
-    for line_number, line in enumerate(lines[cursor:], start=cursor + 1):
+    for line_number, line in enumerate(lines[start_cursor:end_cursor], start=start_cursor + 1):
         match = CANONICAL_EVENT.fullmatch(line)
         if match:
             events.append(FocusEvent(line_number, match.group(1), match.group(2)))
     return events
 
 
-def require_event(events: list[FocusEvent], action: str, owner: str) -> int:
-    if any(event.action == action and event.owner == owner for event in events):
-        return 0
-    return pending(f"waiting for exact {action} {owner}")
+def events_after(log_file: Path, cursor: int) -> list[FocusEvent]:
+    return events_between(log_file, cursor, len(log_file.read_text(encoding="utf-8").splitlines()))
 
 
-def require_handoff(events: list[FocusEvent], old_owner: str, new_owner: str) -> int:
-    releases = [event for event in events
-                if event.action == "released" and event.owner == old_owner]
-    acquisitions = [event for event in events
-                    if event.action == "acquired" and event.owner == new_owner]
-
-    if not acquisitions:
-        if releases:
-            return pending(f"waiting for exact acquired {new_owner} after line {releases[0].line}")
-        return pending(f"waiting for exact released {old_owner}")
-    if not releases:
-        return fail(f"missing exact release {old_owner} before acquired {new_owner}")
-
-    first_release = releases[0]
-    first_acquisition = acquisitions[0]
-    if first_acquisition.line <= first_release.line:
-        return fail(f"acquired {new_owner} on line {first_acquisition.line} before exact release "
-                    f"{old_owner} on line {first_release.line}")
-    if len(acquisitions) > 1:
-        return fail(f"duplicate acquired {new_owner} after cursor at lines "
-                    + ", ".join(str(event.line) for event in acquisitions))
+def require_sequence(events: list[FocusEvent], expected: list[tuple[str, str]]) -> int:
+    for index, event in enumerate(events):
+        if index >= len(expected):
+            return fail(f"duplicate expected transition event {event.action} {event.owner} "
+                        f"on line {event.line}")
+        expected_action, expected_owner = expected[index]
+        if (event.action, event.owner) != (expected_action, expected_owner):
+            if (event.action, event.owner) in expected[:index]:
+                return fail(f"duplicate expected transition event {event.action} {event.owner} "
+                            f"on line {event.line}")
+            return fail(f"unexpected canonical event {event.action} {event.owner} on line "
+                        f"{event.line}; expected {expected_action} {expected_owner}")
+    if len(events) < len(expected):
+        action, owner = expected[len(events)]
+        return pending(f"waiting for exact {action} {owner}")
     return 0
 
 
+def require_event(events: list[FocusEvent], action: str, owner: str) -> int:
+    return require_sequence(events, [(action, owner)])
+
+
+def require_handoff(events: list[FocusEvent], old_owner: str, new_owner: str) -> int:
+    return require_sequence(events, [("released", old_owner), ("acquired", new_owner)])
+
+
 def main(argv: list[str]) -> int:
-    if len(argv) < 5:
-        print("usage: check_focus_handoff_trace.py EVENT|handoff LOG CURSOR ACTION OWNER "
-              "| handoff LOG CURSOR OLD_OWNER NEW_OWNER", file=sys.stderr)
+    if len(argv) != 6:
+        print("usage: check_focus_handoff_trace.py EVENT|handoff LOG START_CURSOR END_CURSOR "
+              "ACTION OWNER", file=sys.stderr)
         return 64
-    command, raw_log_file, raw_cursor = argv[:3]
+    command, raw_log_file, raw_start_cursor, raw_end_cursor, first_owner, second_owner = argv
     log_file = Path(raw_log_file)
     try:
-        cursor = int(raw_cursor)
-        events = events_after(log_file, cursor)
+        start_cursor = int(raw_start_cursor)
+        end_cursor = int(raw_end_cursor)
+        events = events_between(log_file, start_cursor, end_cursor)
     except (OSError, ValueError) as error:
         return fail(str(error))
 
-    if command == "event" and len(argv) == 5:
-        return require_event(events, argv[3], argv[4])
-    if command == "handoff" and len(argv) == 5:
-        return require_handoff(events, argv[3], argv[4])
+    if command == "event":
+        return require_event(events, first_owner, second_owner)
+    if command == "handoff":
+        return require_handoff(events, first_owner, second_owner)
     print("invalid focus handoff trace arguments", file=sys.stderr)
     return 64
 
