@@ -1,4 +1,6 @@
 module qs.Titonium.Core.Surfaces
 singleton SurfaceManager 1.0 SurfaceManager.qml
 singleton SurfaceInputRegions 1.0 SurfaceInputRegions.qml
+singleton FocusDiagnostics 1.0 FocusDiagnostics.qml
+singleton FocusArbiter 1.0 FocusArbiter.qml
 OverlayHost 1.0 OverlayHost.qml

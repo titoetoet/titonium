@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import qs.Titonium.Core.Surfaces
 import qs.Titonium.Services.AgentApproval
 import qs.Titonium.Theme
 
@@ -14,6 +15,18 @@ PanelWindow {
         && AgentApprovalService.popupScreenName === window.screenModel.name
 
     readonly property bool isFileChange: AgentApprovalService.currentIsFileChange
+    readonly property string focusOwnerId: "agent-approval:" + window.screenModel.name
+    readonly property bool wantsInteractiveFocus: !window.isFileChange && window.ownsApproval
+    readonly property bool effectiveInteractiveFocus: window.wantsInteractiveFocus
+        && FocusArbiter.granted(window.focusOwnerId)
+
+    onWantsInteractiveFocusChanged:
+        FocusArbiter.request(window.focusOwnerId, window.wantsInteractiveFocus)
+    onEffectiveInteractiveFocusChanged: FocusDiagnostics.observe(
+        window.focusOwnerId, window.effectiveInteractiveFocus,
+        { mode: window.isFileChange ? "file-change" : "approval", focusPolicy: "on-demand" })
+    Component.onCompleted:
+        FocusArbiter.request(window.focusOwnerId, window.wantsInteractiveFocus)
 
     screen: window.screenModel
     visible: window.ownsApproval
@@ -25,7 +38,8 @@ PanelWindow {
     WlrLayershell.namespace: "titonium-agent-approval"
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.exclusionMode: ExclusionMode.Ignore
-    WlrLayershell.keyboardFocus: (!window.isFileChange && window.ownsApproval)
+    WlrLayershell.keyboardFocus: window.wantsInteractiveFocus
+        && FocusArbiter.granted(window.focusOwnerId)
         ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
     anchors {
         top: true
@@ -56,5 +70,10 @@ PanelWindow {
     Component {
         id: modalComponent
         AgentApprovalCard {}
+    }
+
+    Component.onDestruction: {
+        FocusArbiter.withdraw(window.focusOwnerId);
+        FocusDiagnostics.observe(window.focusOwnerId, false, { mode: "destroyed" });
     }
 }

@@ -36,13 +36,6 @@ assert.deepEqual(plain(diagnosticState), {
     owner: "", acquiredAt: 0, releasedAt: 150, violation: "",
 });
 
-for (const relative of ["Core/Surfaces/OverlayHost.qml",
-        "Core/Surfaces/Center/CenterOverlayWindow.qml", "Settings/SettingsWindow.qml",
-        "Bar/right/EdgeMenuWindow.qml"]) {
-    const text = fs.readFileSync(path.join(root, "Titonium", relative), "utf8");
-    assert.ok(text.includes("FocusDiagnostics.observe("), `${relative} lacks focus diagnostics`);
-}
-
 let state = arbiter.initial();
 assert.deepEqual(plain(state), {
     owner: "", pendingOwner: "", generation: 0,
@@ -134,4 +127,113 @@ assert.deepEqual(plain(pending), {
 }, "withdrawing the pending owner cancels the handoff");
 assert.equal(arbiter.grantPending(pending, 2).phase, "idle");
 
-console.log("PASS exclusive focus arbiter state machine");
+const arbiterPath = path.join(root, "Titonium/Core/Surfaces/FocusArbiter.qml");
+assert.equal(fs.existsSync(arbiterPath), true, "FocusArbiter.qml must exist");
+const arbiterQml = fs.readFileSync(arbiterPath, "utf8");
+assert.match(arbiterQml, /pragma Singleton/,
+    "FocusArbiter must be a singleton");
+assert.match(arbiterQml,
+    /import\s+"FocusArbiterRules\.js"\s+as\s+FocusArbiterRules/,
+    "FocusArbiter must consume the pure rules module");
+for (const projection of ["owner", "pendingOwner", "phase", "generation"])
+    assert.match(arbiterQml, new RegExp(`readonly property \\w+ ${projection}:`),
+        `FocusArbiter must project readonly ${projection}`);
+for (const method of ["request", "withdraw", "granted"])
+    assert.match(arbiterQml, new RegExp(`function ${method}\\(`),
+        `FocusArbiter must expose ${method}()`);
+assert.equal((arbiterQml.match(/Qt\.callLater/g) || []).length, 1,
+    "FocusArbiter must own exactly one event-loop handoff");
+assert.match(arbiterQml, /scheduledGeneration/,
+    "FocusArbiter must guard duplicate scheduling by generation");
+
+const interactiveWindows = [
+    {
+        relative: "Core/Surfaces/OverlayHost.qml",
+        ownerPrefix: "overlay:",
+        wants: /ownsOverlaySurface[\s\S]*descriptor\.keyboardFocus === "exclusive"/,
+        focusMode: "Exclusive",
+    },
+    {
+        relative: "Core/Surfaces/Center/CenterOverlayWindow.qml",
+        ownerPrefix: "center:",
+        wants: /ownsOverlay[\s\S]*viewState\.focusPolicy === "exclusive"/,
+        focusMode: "Exclusive",
+    },
+    {
+        relative: "Bar/right/EdgeMenuWindow.qml",
+        ownerPrefix: "edge-menu:",
+        wants: /wantsInteractiveFocus:\s*window\.ownsMenu/,
+        focusMode: "Exclusive",
+    },
+    {
+        relative: "Settings/SettingsWindow.qml",
+        ownerPrefix: "settings:",
+        wants: /wantsInteractiveFocus:\s*window\.ownsSettings/,
+        focusMode: "Exclusive",
+    },
+    {
+        relative: "AgentApproval/AgentApprovalWindow.qml",
+        ownerPrefix: "agent-approval:",
+        wants: /!window\.isFileChange\s*&&\s*window\.ownsApproval/,
+        focusMode: "OnDemand",
+    },
+];
+
+for (const contract of interactiveWindows) {
+    const text = fs.readFileSync(path.join(root, "Titonium", contract.relative), "utf8");
+    assert.match(text, /property string focusOwnerId:/,
+        `${contract.relative} lacks a stable focusOwnerId`);
+    assert.ok(text.includes(contract.ownerPrefix),
+        `${contract.relative} focusOwnerId lacks its stable family prefix`);
+    assert.match(text, /readonly property bool wantsInteractiveFocus:/,
+        `${contract.relative} lacks wantsInteractiveFocus`);
+    assert.match(text, contract.wants,
+        `${contract.relative} changed its logical focus condition`);
+    assert.match(text,
+        /FocusArbiter\.request\(window\.focusOwnerId, window\.wantsInteractiveFocus\)/,
+        `${contract.relative} does not submit focus desire to FocusArbiter`);
+    assert.match(text, /Component\.onDestruction:[\s\S]*FocusArbiter\.withdraw\(window\.focusOwnerId\)/,
+        `${contract.relative} does not withdraw focus on destruction`);
+    assert.match(text,
+        /WlrLayershell\.keyboardFocus:[\s\S]{0,180}FocusArbiter\.granted\(window\.focusOwnerId\)[\s\S]{0,180}WlrKeyboardFocus\./,
+        `${contract.relative} does not gate layer-shell focus through FocusArbiter`);
+    assert.ok(text.includes(`WlrKeyboardFocus.${contract.focusMode}`),
+        `${contract.relative} must preserve ${contract.focusMode} focus semantics`);
+    assert.match(text, /readonly property bool effectiveInteractiveFocus:/,
+        `${contract.relative} lacks an effective grant projection`);
+    assert.match(text,
+        /onEffectiveInteractiveFocusChanged:[\s\S]{0,260}FocusDiagnostics\.observe\(/,
+        `${contract.relative} diagnostics must observe effective grant changes`);
+}
+
+const qmldir = fs.readFileSync(
+    path.join(root, "Titonium/Core/Surfaces/qmldir"), "utf8");
+assert.ok(qmldir.includes("singleton FocusArbiter 1.0 FocusArbiter.qml"),
+    "Core Surfaces qmldir must export FocusArbiter");
+
+for (const relative of ["Titonium/Orchestration/SurfaceRouter.qml",
+        "Titonium/Bar/right/RightPillCoordinator.qml"]) {
+    const text = fs.readFileSync(path.join(root, relative), "utf8");
+    assert.equal(text.includes("Qt.callLater"), false,
+        `${relative} must not schedule a focus handoff`);
+}
+
+const serviceRoot = path.join(root, "Titonium/Services");
+const serviceFiles = [];
+function collectQml(directory) {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+        const absolute = path.join(directory, entry.name);
+        if (entry.isDirectory())
+            collectQml(absolute);
+        else if (entry.name.endsWith(".qml"))
+            serviceFiles.push(absolute);
+    }
+}
+collectQml(serviceRoot);
+for (const absolute of serviceFiles) {
+    const text = fs.readFileSync(absolute, "utf8");
+    assert.equal(/FocusArbiter|grantPending|focusHandoff/.test(text), false,
+        `${path.relative(root, absolute)} must not own focus handoff scheduling`);
+}
+
+console.log("PASS exclusive focus arbiter state and QML integration contracts");

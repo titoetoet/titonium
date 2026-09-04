@@ -18,6 +18,20 @@ Scope {
                 && SurfaceManager.screen === window.modelData
             readonly property bool ownsOverlaySurface: window.ownsSurface
                 && SurfaceManager.descriptor.barConnected !== true
+            readonly property string focusOwnerId: "overlay:" + window.modelData.name
+            readonly property bool wantsInteractiveFocus: window.ownsOverlaySurface
+                && SurfaceManager.descriptor.keyboardFocus === "exclusive"
+            readonly property bool effectiveInteractiveFocus: window.wantsInteractiveFocus
+                && FocusArbiter.granted(window.focusOwnerId)
+
+            onWantsInteractiveFocusChanged:
+                FocusArbiter.request(window.focusOwnerId, window.wantsInteractiveFocus)
+            onEffectiveInteractiveFocusChanged: FocusDiagnostics.observe(
+                window.focusOwnerId, window.effectiveInteractiveFocus,
+                { mode: window.ownsOverlaySurface ? "overlay" : "closed",
+                    focusPolicy: "exclusive" })
+            Component.onCompleted:
+                FocusArbiter.request(window.focusOwnerId, window.wantsInteractiveFocus)
 
             screen: window.modelData
             visible: window.ownsOverlaySurface
@@ -30,8 +44,8 @@ Scope {
             WlrLayershell.exclusionMode: ExclusionMode.Ignore
             WlrLayershell.keyboardFocus: window.ownsOverlaySurface
                 && SurfaceManager.descriptor.keyboardFocus === "exclusive"
+                && FocusArbiter.granted(window.focusOwnerId)
                 ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
-
             anchors { top: true; bottom: true; left: true; right: true }
             readonly property var overlayInputRegions:
                 SurfaceInputRegions.regionsFor(window.modelData)
@@ -133,6 +147,8 @@ Scope {
             }
 
             Component.onDestruction: {
+                FocusArbiter.withdraw(window.focusOwnerId);
+                FocusDiagnostics.observe(window.focusOwnerId, false, { mode: "destroyed" });
                 const ownerId = SurfaceManager.ownerId;
                 const descriptor = SurfaceManager.descriptor;
                 const screen = SurfaceManager.screen;

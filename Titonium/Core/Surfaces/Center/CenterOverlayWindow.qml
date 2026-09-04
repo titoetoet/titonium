@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import qs.Titonium.Bar.center
+import qs.Titonium.Core.Surfaces
 
 PanelWindow {
     id: window
@@ -14,6 +15,21 @@ PanelWindow {
     readonly property bool ownsOverlay: window.viewState.ownerScreenName === window.screenModel.name
         && (window.viewState.mode === "banner" || window.viewState.mode === "expanded")
     readonly property bool dismissing: window.viewState.exitingScreenName === window.screenModel.name
+    readonly property string focusOwnerId: "center:" + window.screenModel.name
+    readonly property bool wantsInteractiveFocus: window.ownsOverlay
+        && window.viewState.focusPolicy === "exclusive"
+    readonly property bool effectiveInteractiveFocus: window.wantsInteractiveFocus
+        && FocusArbiter.granted(window.focusOwnerId)
+
+    onWantsInteractiveFocusChanged:
+        FocusArbiter.request(window.focusOwnerId, window.wantsInteractiveFocus)
+    onEffectiveInteractiveFocusChanged: FocusDiagnostics.observe(
+        window.focusOwnerId, window.effectiveInteractiveFocus, {
+            mode: window.viewState.mode, generation: window.viewState.generation,
+            focusPolicy: window.viewState.focusPolicy
+        })
+    Component.onCompleted:
+        FocusArbiter.request(window.focusOwnerId, window.wantsInteractiveFocus)
 
     screen: window.screenModel
     visible: window.ownsOverlay || window.dismissing
@@ -23,8 +39,8 @@ PanelWindow {
     WlrLayershell.namespace: "titonium-center-overlay"
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.exclusionMode: ExclusionMode.Ignore
-    WlrLayershell.keyboardFocus: window.ownsOverlay
-        && window.viewState.focusPolicy === "exclusive"
+    WlrLayershell.keyboardFocus: window.wantsInteractiveFocus
+        && FocusArbiter.granted(window.focusOwnerId)
         ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     anchors { top: true; bottom: true; left: true; right: true }
     mask: Region {
@@ -67,5 +83,10 @@ PanelWindow {
                 CenterSurfaceController.finishClose(window.screenModel.name, generation);
         }
         Keys.onEscapePressed: CenterSurfaceController.dispatch({ type: "request-mode", mode: "compact" })
+    }
+
+    Component.onDestruction: {
+        FocusArbiter.withdraw(window.focusOwnerId);
+        FocusDiagnostics.observe(window.focusOwnerId, false, { mode: "destroyed" });
     }
 }

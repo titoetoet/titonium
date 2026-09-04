@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import qs.Titonium.Core.Runtime
+import qs.Titonium.Core.Surfaces
 import qs.Titonium.Theme
 
 PanelWindow {
@@ -18,6 +19,10 @@ PanelWindow {
     readonly property bool ownsMenu: window.styleActive && (
         RightPillCoordinator.ownerScreenName === window.screenModel.name
         || window.ownsConnectedSurface)
+    readonly property string focusOwnerId: "edge-menu:" + window.screenModel.name
+    readonly property bool wantsInteractiveFocus: window.ownsMenu
+    readonly property bool effectiveInteractiveFocus: window.wantsInteractiveFocus
+        && FocusArbiter.granted(window.focusOwnerId)
     readonly property bool dismissing: window.styleActive
         && RightPillCoordinator.exitingScreenName === window.screenModel.name
     readonly property real compactY: BarVisibilityState.revealed || window.ownsMenu
@@ -32,6 +37,7 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.exclusionMode: ExclusionMode.Ignore
     WlrLayershell.keyboardFocus: window.ownsMenu
+        && FocusArbiter.granted(window.focusOwnerId)
         ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     anchors { top: true; bottom: true; left: true; right: true }
     mask: Region {
@@ -67,7 +73,17 @@ PanelWindow {
             RightPillCoordinator.finishClose(window.screenModel.name);
     }
 
+    onWantsInteractiveFocusChanged:
+        FocusArbiter.request(window.focusOwnerId, window.wantsInteractiveFocus)
+    onEffectiveInteractiveFocusChanged: FocusDiagnostics.observe(
+        window.focusOwnerId, window.effectiveInteractiveFocus,
+        { mode: window.ownsMenu ? "open" : "closed", focusPolicy: "exclusive" })
+    Component.onCompleted:
+        FocusArbiter.request(window.focusOwnerId, window.wantsInteractiveFocus)
+
     Component.onDestruction: {
+        FocusArbiter.withdraw(window.focusOwnerId);
+        FocusDiagnostics.observe(window.focusOwnerId, false, { mode: "destroyed" });
         if (RightPillCoordinator.connectedSurfacePresented
                 && RightPillCoordinator.connectedScreen === window.screenModel)
             RightPillCoordinator.releaseConnectedSurface(
