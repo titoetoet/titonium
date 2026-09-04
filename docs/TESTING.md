@@ -206,7 +206,8 @@ acceptance uses IPC to exercise Spotlight scope/query/close transitions, confirm
 isolation and verifies both Hyprland configuration hashes. It does not launch an application or
 write clipboard content.
 
-Center Notch acceptance opens Overview and verifies legacy page requests normalize back to it,
+Dynamic Island acceptance verifies the shared owner, connected silhouette, four-state lifecycle,
+and that legacy page requests normalize to the expanded canvas,
 proves that Spotlight closes the notch, and closes both surfaces again. It rejects runtime
 type/load errors, repository writes and changes to either Hyprland configuration hash. Notification
 history remains a direct internal route rather than a general navigation rail.

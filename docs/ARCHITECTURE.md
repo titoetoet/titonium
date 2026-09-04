@@ -90,17 +90,18 @@ atomic settings write succeeds.
 time, keyed by `RightPillCoordinator.presentedStyle`. Before publishing a different style, the
 coordinator closes the old style's transient owner and finalizes its exit state; stale close
 callbacks are guarded by the retained owner/generation snapshot and cannot clear a newer owner.
-`CenterPillWindow` and `EdgeMenuWindow` are active only for Connected, while `OverlayHost` loads
-only non-Connected descriptors. Consequently an OverlayHost never loads a Connected popup and
-the two style trees cannot expose overlapping Bar hitboxes.
+`CenterPillWindow` remains active for both Top Bar styles and is the sole Dynamic Island visual
+owner. `EdgeMenuWindow` is active only for Connected, while `OverlayHost` loads only non-Connected
+descriptors. Consequently an OverlayHost never loads a Connected popup and the two style trees
+cannot expose overlapping Bar hitboxes.
 
 Connected keeps the continuous left/right pill layout and makes `EdgeMenuWindow` the sole owner
 of connected Wi-Fi, Bluetooth, Audio, and app-provided SystemTray menus. An Active Window without
 a prepared menu opens Center Notch instead. The frozen descriptor selects the correct control
 anchor for the expanding right-pill branch until its exit animation completes. Classic restores
-detached `Shared.Surface` trees: launcher, Workspaces and
-Active Window on the left; a centered Dynamic Island and notification bell; and separate pin,
-connectivity, and status surfaces on the right. Classic Network, Bluetooth, Audio, and System Tray
+detached `Shared.Surface` trees for launcher, Workspaces and Active Window on the left, plus
+separate pin, connectivity, and status surfaces on the right. Its centered reservation feeds the
+shared Dynamic Island owner; notification state is not rendered as a detached bell. Classic Network, Bluetooth, Audio, and System Tray
 popups use their existing OverlayHost surfaces rather than the Connected Edge window.
 
 ## State and presentation
@@ -155,12 +156,10 @@ uses a generation token to make its one-shot expiry timer safe against preemptio
 indicators remain a separate frozen service projection and never replace the primary text or its
 matching icon.
 
-`CenterActivityService` owns ongoing Timer, Job and playing-Media presentations. The first active
-descriptor replaces Daily Focus immediately. Up to three activities rotate every eight seconds in
-derived rank order (`Timer → Important Job → Normal Job → Media`) without inserting a Focus slot;
-Daily Focus returns only when the activity registry is empty. Attention pauses the current slot and
-restores its full dwell time. `CenterIsland` renders exactly one icon from the presentation that
-currently owns its text, with `center_focus_strong` as the Daily Focus fallback.
+`CenterActivityService` owns the ordered Timer, Job and playing-Media registry. While Focus is
+enabled, Daily Focus remains Primary and the first activity becomes the single Secondary chip.
+Disabling Focus promotes Media, then the first ordered activity, to Primary. A bounded current
+notification temporarily replaces Secondary without using unread count as activity state.
 
 `CenterFocusStore` owns `daily-focus.md` and `focus-prompts.txt` beneath
 `Quickshell.dataPath("center/")`. It watches both files, checks the explicit file mtime only at
