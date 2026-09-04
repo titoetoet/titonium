@@ -29,17 +29,27 @@ const descriptor = rules.descriptor({
 }, 1234);
 assert.deepEqual(plain(descriptor), {
     id: 7,
+    key: "native:7",
+    source: "native",
+    appId: "Mail",
     appName: "Mail",
     appIcon: "mail-client",
     summary: "Hello",
     body: "one two three",
     urgency: 1,
+    nativeUrgency: "normal",
+    severity: "normal",
+    route: "toast",
+    category: "notification",
+    actions: [],
     receivedAt: 1234,
 });
 assert.deepEqual(Object.keys(descriptor), [
-    "id", "appName", "appIcon", "summary", "body", "urgency", "receivedAt",
+    "id", "key", "source", "appId", "appName", "appIcon", "summary", "body",
+    "urgency", "nativeUrgency", "severity", "route", "category", "actions", "receivedAt",
 ]);
 assert.equal(Object.isFrozen(descriptor), true);
+assert.equal(Object.isFrozen(descriptor.actions), true);
 assert.equal(rules.descriptor({ id: 0 }, 1), null);
 assert.equal(rules.descriptor({ id: -1 }, 1), null);
 assert.equal(rules.descriptor({ id: "7" }, 1), null);

@@ -63,6 +63,11 @@ def validate(value: Any, schema: dict[str, Any], path: str = "$") -> list[str]:
             for key in value:
                 if key not in properties:
                     errors.append(f"{path}: additional property {key!r}")
+        elif isinstance(schema.get("additionalProperties"), dict):
+            for key, child_value in value.items():
+                if key not in properties:
+                    errors.extend(validate(child_value, schema["additionalProperties"],
+                                           f"{path}.{key}"))
         for key, child_schema in properties.items():
             if key in value:
                 errors.extend(validate(value[key], child_schema, f"{path}.{key}"))
@@ -95,6 +100,21 @@ def main() -> int:
     hidden_dock["modules"]["dock"]["visibilityMode"] = "hidden"
     require_valid("hidden Dock runtime fixture", hidden_dock, schema)
 
+    custom_notifications = copy.deepcopy(defaults)
+    custom_notifications["modules"]["notifications"].update({
+        "policyMode": "custom",
+        "allowCriticalOnIsland": False,
+        "keepCriticalUnread": False,
+        "applicationOverrides": {
+            "org.example.Mail": "follow",
+            "org.example.Chat": "quiet",
+            "org.example.Calendar": "normal",
+            "org.example.Build": "critical",
+            "org.example.Spam": "block",
+        },
+    })
+    require_valid("custom notification policy fixture", custom_notifications, schema)
+
     schema_modes = set(schema["properties"]["modules"]["properties"]["dock"]
                        ["properties"]["visibilityMode"]["enum"])
     validator_source = VALIDATOR_PATH.read_text(encoding="utf-8")
@@ -112,7 +132,20 @@ def main() -> int:
     errors = validate(invalid_style, schema)
     if not any(error.startswith("$.modules.bar.style:") for error in errors):
         raise AssertionError("invalid bar style was accepted by the JSON Schema")
-    print("PASS settings v7 JSON Schema defaults, hidden-Dock parity, fixture, and invalid-style rejection")
+    invalid_policy = copy.deepcopy(defaults)
+    invalid_policy["modules"]["notifications"]["policyMode"] = "unsafe"
+    errors = validate(invalid_policy, schema)
+    if not any(error.startswith("$.modules.notifications.policyMode:") for error in errors):
+        raise AssertionError("invalid notification policy mode was accepted by the JSON Schema")
+    invalid_override = copy.deepcopy(defaults)
+    invalid_override["modules"]["notifications"]["applicationOverrides"] = {
+        "org.example.Mail": "unsafe",
+    }
+    errors = validate(invalid_override, schema)
+    if not any(error.startswith("$.modules.notifications.applicationOverrides.org.example.Mail:")
+               for error in errors):
+        raise AssertionError("invalid notification override was accepted by the JSON Schema")
+    print("PASS settings v7 JSON Schema defaults, notification policy, hidden-Dock parity, fixture, and invalid-style rejection")
     return 0
 
 

@@ -8,27 +8,149 @@ function positiveId(value) {
     return Number.isInteger(value) && value > 0 ? value : 0;
 }
 
+function nativeUrgency(value) {
+    const urgency = Number(value);
+    if (!Number.isInteger(urgency))
+        return "normal";
+    if (urgency <= 0)
+        return "low";
+    return urgency >= 2 ? "critical" : "normal";
+}
+
+function historyLimit() {
+    return 100;
+}
+
+function toastLimit() {
+    return 3;
+}
+
+function criticalQueueLimit() {
+    return 16;
+}
+
+function nativeSeverity(urgency) {
+    return urgency === "critical" ? "critical" : "normal";
+}
+
+function routeForSeverity(severity) {
+    return severity === "critical" ? "center" : "toast";
+}
+
+function actions(value) {
+    const source = Array.isArray(value) ? value : [];
+    const result = [];
+    for (let index = 0; index < source.length; index++) {
+        const candidate = source[index];
+        if (!candidate || typeof candidate !== "object")
+            continue;
+        const id = text(candidate.id);
+        if (!id)
+            continue;
+        result.push(Object.freeze({ id: id, label: text(candidate.label) }));
+    }
+    return Object.freeze(result);
+}
+
 function descriptor(raw, receivedAt) {
     const source = raw && typeof raw === "object" ? raw : {};
-    const id = positiveId(source.id);
-    if (!id)
+    const internal = source.source === "internal";
+    const id = internal ? 0 : positiveId(source.id);
+    const key = internal ? text(source.key) : (id ? "native:" + id : "");
+    if (!key || (internal && key.indexOf("internal:") !== 0))
         return null;
     const timestamp = Number(receivedAt);
-    const urgency = Number(source.urgency);
-    return Object.freeze({
+    const urgency = Number.isInteger(Number(source.urgency))
+        ? Math.max(0, Math.min(2, Number(source.urgency))) : 1;
+    const normalizedUrgency = nativeUrgency(urgency);
+    const category = text(source.category) || (internal
+        ? (text(source.kind).indexOf("timer_") === 0 ? "timer" : "job")
+        : "notification");
+    const severity = nativeSeverity(normalizedUrgency);
+    const result = {
         id: id,
+        key: key,
+        source: internal ? "internal" : "native",
+        appId: text(source.appId) || (internal ? "" : text(source.appName)),
         appName: text(source.appName),
         appIcon: text(source.appIcon),
         summary: text(source.summary),
         body: text(source.body),
-        urgency: Number.isInteger(urgency) ? Math.max(0, Math.min(2, urgency)) : 1,
+        urgency: urgency,
+        nativeUrgency: normalizedUrgency,
+        severity: severity,
+        route: routeForSeverity(severity),
+        category: category,
+        actions: actions(source.actions),
         receivedAt: Number.isFinite(timestamp) ? timestamp : 0,
-    });
+    };
+    if (!id)
+        delete result.id;
+    return Object.freeze(result);
+}
+
+function notificationPreferences(preferences) {
+    const modules = preferences && typeof preferences === "object"
+        && preferences.modules && typeof preferences.modules === "object"
+        ? preferences.modules : {};
+    return modules.notifications && typeof modules.notifications === "object"
+        ? modules.notifications : {};
+}
+
+function overrideFor(descriptor, preferences) {
+    const settings = notificationPreferences(preferences);
+    if (settings.policyMode !== "custom" || descriptor.source !== "native" || !descriptor.appId)
+        return "follow";
+    const overrides = settings.applicationOverrides && typeof settings.applicationOverrides === "object"
+        ? settings.applicationOverrides : {};
+    const value = overrides[descriptor.appId];
+    return ["follow", "quiet", "normal", "critical", "block"].indexOf(value) >= 0
+        ? value : "follow";
+}
+
+function policyResult(descriptor, severity, route) {
+    const result = {};
+    for (const key in descriptor)
+        result[key] = descriptor[key];
+    result.severity = severity;
+    result.route = route;
+    return Object.freeze(result);
+}
+
+function routeForPolicySeverity(severity, preferences) {
+    const settings = notificationPreferences(preferences);
+    if (severity === "critical" && settings.allowCriticalOnIsland === false)
+        return "history";
+    return routeForSeverity(severity);
+}
+
+function resolvePolicy(value, preferences) {
+    if (!value || typeof value !== "object")
+        return null;
+    const descriptorValue = value;
+    const override = overrideFor(descriptorValue, preferences);
+    if (override === "block")
+        return policyResult(descriptorValue, "normal", "block");
+    if (override === "quiet")
+        return policyResult(descriptorValue, "normal", "history");
+    if (override === "normal")
+        return policyResult(descriptorValue, "normal", "toast");
+    if (override === "critical")
+        return policyResult(descriptorValue, "critical",
+            routeForPolicySeverity("critical", preferences));
+
+    const internalCritical = descriptorValue.source === "internal"
+        && /^(?:internal:job_failed:|internal:job_requires_action:|internal:timer_finished:)/
+            .test(descriptorValue.key);
+    const severity = internalCritical ? "critical"
+        : nativeSeverity(descriptorValue.nativeUrgency);
+    const route = routeForPolicySeverity(severity, preferences);
+    return policyResult(descriptorValue, severity, route);
 }
 
 function upsert(list, item, limit) {
     const source = Array.isArray(list) ? list : [];
-    const maximum = Number.isInteger(limit) && limit > 0 ? limit : 100;
+    const maximum = Number.isInteger(limit) && limit > 0 ? limit : historyLimit();
     if (!item || !positiveId(item.id))
         return Object.freeze(source.slice(0, maximum));
     const result = [item];
@@ -42,7 +164,7 @@ function upsert(list, item, limit) {
 function addToast(ids, id, limit) {
     const source = Array.isArray(ids) ? ids : [];
     const targetId = positiveId(id);
-    const maximum = Number.isInteger(limit) && limit > 0 ? limit : 3;
+    const maximum = Number.isInteger(limit) && limit > 0 ? limit : toastLimit();
     if (!targetId)
         return Object.freeze(source.slice(0, maximum));
     const result = [targetId];

@@ -72,11 +72,18 @@
         },
         "notifications": {
           "type": "object",
-          "required": ["toastsEnabled", "toastDuration"],
+          "required": ["toastsEnabled", "toastDuration", "policyMode", "allowCriticalOnIsland", "keepCriticalUnread", "applicationOverrides"],
           "additionalProperties": false,
           "properties": {
             "toastsEnabled": { "type": "boolean" },
-            "toastDuration": { "type": "integer", "minimum": 2000, "maximum": 10000 }
+            "toastDuration": { "type": "integer", "minimum": 2000, "maximum": 10000 },
+            "policyMode": { "enum": ["automatic", "custom"] },
+            "allowCriticalOnIsland": { "type": "boolean" },
+            "keepCriticalUnread": { "type": "boolean" },
+            "applicationOverrides": {
+              "type": "object",
+              "additionalProperties": { "enum": ["follow", "quiet", "normal", "critical", "block"] }
+            }
           }
         },
         "clock": {

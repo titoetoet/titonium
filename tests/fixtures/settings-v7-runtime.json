@@ -17,7 +17,14 @@
       "visibilityMode": "always-visible",
       "pinnedIds": ["org.mozilla.firefox.desktop"]
     },
-    "notifications": { "toastsEnabled": false, "toastDuration": 9000 },
+    "notifications": {
+      "toastsEnabled": false,
+      "toastDuration": 9000,
+      "policyMode": "automatic",
+      "allowCriticalOnIsland": true,
+      "keepCriticalUnread": true,
+      "applicationOverrides": {}
+    },
     "clock": { "use24Hour": true },
     "audio": { "allowAmplification": false }
   }

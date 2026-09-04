@@ -71,6 +71,20 @@ function boolean(value, fallback) {
     return typeof value === "boolean" ? value : fallback;
 }
 
+function normalizeNotificationOverrides(value) {
+    const source = record(value);
+    const result = {};
+    const allowed = ["follow", "quiet", "normal", "critical", "block"];
+    const forbidden = ["__proto__", "prototype", "constructor"];
+    for (const key of Object.keys(source)) {
+        const appId = key.trim();
+        if (!appId || forbidden.indexOf(appId) >= 0 || allowed.indexOf(source[key]) < 0)
+            continue;
+        result[appId] = source[key];
+    }
+    return result;
+}
+
 function project(document, defaults, legacyDock) {
     const source = record(document);
     const fallback = record(defaults);
@@ -151,6 +165,15 @@ function project(document, defaults, legacyDock) {
                 toastDuration: integer(notifications.toastDuration,
                     integer(fallbackNotifications.toastDuration, 5000, 2000, 10000),
                     2000, 10000),
+                policyMode: oneOf(notifications.policyMode, ["automatic", "custom"],
+                    oneOf(fallbackNotifications.policyMode, ["automatic", "custom"], "automatic")),
+                allowCriticalOnIsland: boolean(notifications.allowCriticalOnIsland,
+                    boolean(fallbackNotifications.allowCriticalOnIsland, true)),
+                keepCriticalUnread: boolean(notifications.keepCriticalUnread,
+                    boolean(fallbackNotifications.keepCriticalUnread, true)),
+                applicationOverrides: normalizeNotificationOverrides(
+                    Object.prototype.hasOwnProperty.call(notifications, "applicationOverrides")
+                        ? notifications.applicationOverrides : fallbackNotifications.applicationOverrides),
             },
             clock: {
                 use24Hour: boolean(clock.use24Hour,
