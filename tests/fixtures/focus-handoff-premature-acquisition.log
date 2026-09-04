@@ -1,0 +1,4 @@
+INFO qml: [titonium][focus] acquired center:DP-1 {"mode":"expanded"}
+INFO qml: [titonium][focus] acquired overlay:spotlight:DP-1 {"mode":"overlay"}
+INFO qml: [titonium][focus] released center:DP-1 {"mode":"compact"}
+INFO qml: [titonium][focus] acquired overlay:spotlight:DP-1 {"mode":"overlay"}

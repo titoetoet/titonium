@@ -8,6 +8,7 @@ test_approval_sock="$(mktemp -u --tmpdir titonium-protected-test-approval.XXXXXX
 focus_test_dir="$(mktemp -d --tmpdir titonium-focus-handoff-acceptance.XXXXXX)"
 focus_log_file="$focus_test_dir/shell.log"
 focus_shell_pid=""
+focus_trace_checker="$project_root/scripts/check_focus_handoff_trace.py"
 export TITONIUM_AGENT_APPROVAL_SOCKET="$test_approval_sock"
 
 cleanup() {
@@ -29,38 +30,38 @@ focus_ipc() {
     qs -p "$project_root" ipc --pid "$focus_shell_pid" call "$@"
 }
 
-wait_for_focus_event() {
-    local event="$1"
-    local context="$2"
+focus_log_cursor() {
+    wc -l < "$focus_log_file" | tr -d '[:space:]'
+}
+
+wait_for_focus_trace() {
+    local context="$1"
+    shift
+    local result=""
+    local status=0
     for _ in {1..80}; do
-        if rg -Fq "$event" "$focus_log_file"; then
+        if result="$(python3 "$focus_trace_checker" "$@" 2>&1)"; then
             return 0
+        else
+            status=$?
+        fi
+        if [[ $status -ne 2 ]]; then
+            printf 'FAIL %s: %s\n' "$context" "$result" >&2
+            return 1
         fi
         sleep 0.05
     done
     sed -n '1,260p' "$focus_log_file" >&2
-    printf 'FAIL %s: missing focus event %q\n' "$context" "$event" >&2
+    printf 'FAIL %s: %s\n' "$context" "$result" >&2
     return 1
 }
 
 require_focus_handoff() {
     local old_owner="$1"
     local new_owner="$2"
-    local release_line=""
-    local acquire_line=""
-    local release_event="released $old_owner"
-    local acquire_event="acquired $new_owner"
-
-    wait_for_focus_event "$release_event" "focus handoff release"
-    wait_for_focus_event "$acquire_event" "focus handoff acquisition"
-    release_line="$(rg -n -F "$release_event" "$focus_log_file" | tail -n 1 | cut -d: -f1)"
-    acquire_line="$(rg -n -F "$acquire_event" "$focus_log_file" | tail -n 1 | cut -d: -f1)"
-    if [[ -z "$release_line" || -z "$acquire_line" || "$release_line" -ge "$acquire_line" ]]; then
-        sed -n '1,260p' "$focus_log_file" >&2
-        printf 'FAIL focus handoff order: expected %q before %q\n' \
-            "$release_event" "$acquire_event" >&2
-        return 1
-    fi
+    local cursor="$3"
+    wait_for_focus_trace "focus handoff $old_owner to $new_owner" handoff \
+        "$focus_log_file" "$cursor" "$old_owner" "$new_owner"
 }
 
 run_focus_handoff_acceptance() {
@@ -85,28 +86,34 @@ run_focus_handoff_acceptance() {
         return 1
     fi
 
+    local center_cursor="$(focus_log_cursor)"
     if [[ "$(focus_ipc centerNotch open overview)" != "open:DP-1;mode=expanded" ]]; then
         echo "FAIL focus handoff acceptance did not open Center" >&2
         return 1
     fi
-    wait_for_focus_event "acquired center:DP-1" "Center acquisition"
+    wait_for_focus_trace "Center acquisition" event "$focus_log_file" "$center_cursor" \
+        acquired "center:DP-1"
 
+    local spotlight_cursor="$(focus_log_cursor)"
     local spotlight_state="$(focus_ipc spotlight toggle)"
     if [[ "$spotlight_state" != open:applications:DP-1* ]]; then
         printf 'FAIL focus handoff acceptance did not open Spotlight: %q\n' \
             "$spotlight_state" >&2
         return 1
     fi
-    require_focus_handoff "center:DP-1" "overlay:spotlight:DP-1"
+    require_focus_handoff "center:DP-1" "overlay:spotlight:DP-1" "$spotlight_cursor"
 
+    local settings_cursor="$(focus_log_cursor)"
     if [[ "$(focus_ipc settings open general)" != "open:DP-1;page=general" ]]; then
         echo "FAIL focus handoff acceptance did not open Settings" >&2
         return 1
     fi
-    require_focus_handoff "overlay:spotlight:DP-1" "settings:DP-1"
+    require_focus_handoff "overlay:spotlight:DP-1" "settings:DP-1" "$settings_cursor"
 
+    local settings_close_cursor="$(focus_log_cursor)"
     focus_ipc settings cancel >/dev/null
-    wait_for_focus_event "released settings:DP-1" "Settings release"
+    wait_for_focus_trace "Settings release" event "$focus_log_file" "$settings_close_cursor" \
+        released "settings:DP-1"
 
     if rg -q 'exclusive-focus-conflict|missing-focus-owner' "$focus_log_file"; then
         rg -n 'exclusive-focus-conflict|missing-focus-owner' "$focus_log_file" >&2
