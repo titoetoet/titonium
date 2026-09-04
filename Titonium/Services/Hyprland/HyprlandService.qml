@@ -106,14 +106,21 @@ Singleton {
         const nativeRecords = [];
         for (let index = 0; index < source.length; index++) {
             const toplevel = source[index];
-            const appId = root.nativeAppId(toplevel);
+            const identity = ApplicationService.descriptorForWindowIdentity({
+                appId: toplevel?.wayland?.appId || "",
+                ipcClass: toplevel?.lastIpcObject?.class || "",
+                initialClass: toplevel?.lastIpcObject?.initialClass || "",
+                title: toplevel?.title || toplevel?.wayland?.title || ""
+            });
             const window = WindowRules.descriptor({
                 id: root.nativeWindowId(toplevel),
                 appId: toplevel?.wayland?.appId || "",
                 ipcClass: toplevel?.lastIpcObject?.class || "",
                 initialClass: toplevel?.lastIpcObject?.initialClass || "",
                 title: toplevel?.title || toplevel?.wayland?.title || "",
-                icon: ApplicationService.iconForAppId(appId),
+                resolvedAppId: identity.appId,
+                icon: identity.icon,
+                fallbackIcon: identity.fallbackIcon,
                 urgent: toplevel?.urgent === true,
                 minimized: toplevel?.wayland?.minimized === true,
                 workspaceId: root.workspaceIdFor(toplevel),

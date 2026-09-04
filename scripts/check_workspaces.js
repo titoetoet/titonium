@@ -7,6 +7,7 @@ const vm = require("node:vm");
 
 const root = path.join(__dirname, "..");
 const helperPath = path.join(root, "Titonium", "Services", "Hyprland", "WorkspaceRules.js");
+const identityPath = path.join(root, "Titonium", "Services", "Applications", "AppIdentityRules.js");
 const visualPath = path.join(root, "Titonium", "Bar", "widgets", "WorkspaceVisualRules.js");
 if (!fs.existsSync(helperPath)) {
     console.error("FAIL Workspace rules are missing");
@@ -24,6 +25,9 @@ const visualSource = fs.readFileSync(visualPath, "utf8").replace(/^\.pragma libr
 const visual = vm.createContext({ Math, Number, Array });
 vm.runInContext(visualSource, visual, { filename: visualPath });
 const plain = value => JSON.parse(JSON.stringify(value));
+const identitySource = fs.readFileSync(identityPath, "utf8").replace(/^\.pragma library\s*\n/, "");
+const identity = vm.createContext({ Object, Array, String });
+vm.runInContext(identitySource, identity, { filename: identityPath });
 
 assert.equal(context.groupStart(1, 5), 1);
 assert.equal(context.groupStart(5, 5), 1);
@@ -50,14 +54,14 @@ const projected = context.project(7, 5, [
 assert.deepEqual(plain(projected.map(item => item.id)), [6, 7, 8, 9, 10]);
 assert.deepEqual(plain(projected[0]), {
     id: 6, active: false, occupied: true, urgent: false,
-    apps: [{ appId: "Code", icon: "editor" }], colorIndex: 5,
+    apps: [{ appId: "Code", icon: "editor", fallbackIcon: "apps" }], colorIndex: 5,
     rangeStart: 6, rangeEnd: 7,
 });
 assert.deepEqual(plain(projected[1]), {
     id: 7, active: true, occupied: true, urgent: false,
     apps: [
-        { appId: "Firefox", icon: "firefox" },
-        { appId: "kitty", icon: "terminal" },
+        { appId: "Firefox", icon: "firefox", fallbackIcon: "apps" },
+        { appId: "kitty", icon: "terminal", fallbackIcon: "apps" },
     ],
     colorIndex: 6, rangeStart: 6, rangeEnd: 7,
 });
@@ -69,7 +73,15 @@ assert.equal(projected[3].rangeStart, 9);
 assert.equal(projected[3].rangeEnd, 10);
 assert.equal(projected[3].urgent, true);
 assert.equal(projected[4].occupied, true);
-assert.deepEqual(plain(projected[4].apps), [{ appId: "Notes", icon: "notes" }]);
+assert.deepEqual(plain(projected[4].apps), [{ appId: "Notes", icon: "notes", fallbackIcon: "apps" }]);
+const chatGpt = identity.resolve({
+    appId: "", ipcClass: "chatgpt", initialClass: "ChatGPT", title: "ChatGPT"
+}, candidate => candidate.toLocaleLowerCase() === "chatgpt"
+    ? { id: "chatgpt.desktop", icon: "chatgpt" } : null,
+icon => icon === "chatgpt" ? "" : "resolved:" + icon);
+assert.deepEqual(plain(chatGpt), {
+    appId: "chatgpt", desktopEntryId: "chatgpt.desktop", icon: "", fallbackIcon: "smart_toy"
+}, "a ChatGPT-only workspace must retain a semantic fallback when its theme icon is absent");
 assert.equal(Object.isFrozen(projected), true);
 assert.equal(projected.every(Object.isFrozen), true);
 assert.equal(projected.every(item => Object.isFrozen(item.apps)), true);

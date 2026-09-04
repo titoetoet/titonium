@@ -6,6 +6,7 @@ import Quickshell
 import qs.Titonium.Core.Runtime
 import "ApplicationLaunch.js" as ApplicationLaunch
 import "ApplicationProjection.js" as ApplicationProjection
+import "AppIdentityRules.js" as AppIdentityRules
 import "Visibility.js" as Visibility
 
 QtObject {
@@ -52,6 +53,12 @@ QtObject {
                 return Quickshell.iconPath(candidates[index]);
         }
         return "";
+    }
+
+    function descriptorForWindowIdentity(identity: var): var {
+        return AppIdentityRules.resolve(identity,
+            candidate => root.desktopEntryForAppId(candidate),
+            iconName => root.iconFor(iconName));
     }
 
     function nameForAppId(appId: string): string {

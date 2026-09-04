@@ -10,7 +10,7 @@ function descriptor(raw, activeId) {
     const hasAuthoritativeActive = arguments.length > 1;
     if (!id)
         return null;
-    const appId = text(source.appId) || text(source.ipcClass)
+    const appId = text(source.resolvedAppId) || text(source.appId) || text(source.ipcClass)
         || text(source.initialClass) || text(source.title);
     const title = text(source.title) || appId || "Application";
     const workspaceId = Number.isInteger(source.workspaceId) && source.workspaceId > 0
@@ -20,6 +20,7 @@ function descriptor(raw, activeId) {
         appId: appId,
         title: title,
         icon: text(source.icon),
+        fallbackIcon: text(source.fallbackIcon) || "apps",
         active: hasAuthoritativeActive
             ? id === text(activeId) : Boolean(source.active),
         urgent: Boolean(source.urgent),

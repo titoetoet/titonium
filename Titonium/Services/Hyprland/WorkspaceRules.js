@@ -46,7 +46,8 @@ function project(activeId, count, nativeStates, windows) {
         if (appKeysByWorkspace[workspaceId][appKey])
             continue;
         appKeysByWorkspace[workspaceId][appKey] = true;
-        appsByWorkspace[workspaceId].push(Object.freeze({ appId: appId, icon: icon }));
+        appsByWorkspace[workspaceId].push(Object.freeze({ appId: appId, icon: icon,
+            fallbackIcon: text(window.fallbackIcon) || "apps" }));
     }
 
     for (let offset = 0; offset < size; offset++) {

@@ -45,13 +45,14 @@ assert.deepEqual(plain(first), {
     appId: "org.mozilla.firefox",
     title: "Documentation",
     icon: "firefox",
+    fallbackIcon: "apps",
     active: true,
     urgent: false,
     minimized: false,
     workspaceId: 7,
     monitorName: "DP-1",
 });
-assert.deepEqual(Object.keys(first), ["id", "appId", "title", "icon", "active", "urgent", "minimized", "workspaceId", "monitorName"]);
+assert.deepEqual(Object.keys(first), ["id", "appId", "title", "icon", "fallbackIcon", "active", "urgent", "minimized", "workspaceId", "monitorName"]);
 assert.equal(Object.isFrozen(first), true);
 assert.equal("wayland" in first, false);
 assert.equal("workspace" in first, false);

@@ -211,7 +211,7 @@ Item {
                         Shared.SystemIcon {
                             required property var modelData
                             sourceName: modelData.icon
-                            fallbackName: "apps"
+                            fallbackName: modelData.fallbackIcon || "apps"
                             size: root.appIconSize
                             tone: "primary"
                             accessibleName: ""
