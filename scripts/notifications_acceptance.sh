@@ -5,6 +5,7 @@ project_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 live_hypr="/home/cole/.config/hypr/hyprland.lua"
 dotfiles_hypr="/home/cole/Projects/titonium-hyprland/config/hypr/hyprland.lua"
 test_dir="$(mktemp -d --tmpdir titonium-notifications-acceptance.XXXXXX)"
+runtime_dir="$test_dir/data/titonium"
 log_file="$test_dir/shell.log"
 export TITONIUM_AGENT_APPROVAL_SOCKET="$test_dir/approval.sock"
 shell_pid=""
@@ -18,21 +19,31 @@ cleanup() {
         kill "$shell_pid" 2>/dev/null || true
         wait "$shell_pid" 2>/dev/null || true
     fi
-    rm -f -- "$log_file" "$test_dir/approval.sock"
-    rmdir -- "$test_dir"
+    case "$test_dir" in
+        /tmp/titonium-notifications-acceptance.*) rm -rf -- "$test_dir" ;;
+    esac
 }
 trap cleanup EXIT
 
 # org.freedesktop.Notifications is owned once per session. This focused fixture
 # must never replace a shell the user is already running.
-if qs -p "$project_root" ipc call app status >/dev/null 2>&1; then
-    echo "SKIP notifications acceptance: existing Titonium instance owns the notification D-Bus name" >&2
+notification_name_owner="$(busctl --user call org.freedesktop.DBus /org/freedesktop/DBus org.freedesktop.DBus NameHasOwner s org.freedesktop.Notifications 2>&1)" || {
+    printf 'SKIP notifications acceptance: cannot determine notification D-Bus owner: %s\n' \
+        "$notification_name_owner" >&2
     exit 0
-fi
-if busctl --user status org.freedesktop.Notifications >/dev/null 2>&1; then
-    echo "SKIP notifications acceptance: session notification D-Bus name is already owned" >&2
-    exit 0
-fi
+}
+case "$notification_name_owner" in
+    "b true")
+        echo "SKIP notifications acceptance: session notification D-Bus name is already owned" >&2
+        exit 0
+        ;;
+    "b false") ;;
+    *)
+        printf 'SKIP notifications acceptance: NameHasOwner did not return an explicit boolean: %s\n' \
+            "$notification_name_owner" >&2
+        exit 0
+        ;;
+esac
 
 call_ipc() {
     qs -p "$project_root" ipc --pid "$shell_pid" call "$@"
@@ -60,9 +71,9 @@ contract = (
     and isinstance(panel.get("ownerId"), str)
     and isinstance(queue, dict) and isinstance(queue.get("count"), int)
     and queue["count"] >= 0 and isinstance(queue.get("currentKey"), str)
-    and isinstance(policy, dict) and policy.get("mode") in ("automatic", "custom")
-    and isinstance(policy.get("allowCriticalOnIsland"), bool)
-    and isinstance(policy.get("keepCriticalUnread"), bool)
+    and isinstance(policy, dict) and policy.get("mode") == "automatic"
+    and policy.get("allowCriticalOnIsland") is True
+    and policy.get("keepCriticalUnread") is True
 )
 raise SystemExit(0 if actual == expected and contract else 1)
 ' "$state" "$expected_descriptors" "$expected_toasts" "$expected_unread"
@@ -85,11 +96,29 @@ raise SystemExit(0 if (
     and isinstance(panel.get("ownerId"), str)
     and isinstance(queue, dict) and isinstance(queue.get("count"), int)
     and queue["count"] >= 0 and isinstance(queue.get("currentKey"), str)
-    and isinstance(policy, dict) and policy.get("mode") in ("automatic", "custom")
-    and isinstance(policy.get("allowCriticalOnIsland"), bool)
-    and isinstance(policy.get("keepCriticalUnread"), bool)
+    and isinstance(policy, dict) and policy.get("mode") == "automatic"
+    and policy.get("allowCriticalOnIsland") is True
+    and policy.get("keepCriticalUnread") is True
 ) else 1)
 ' "$state"
+}
+
+queue_matches() {
+    local expected_count="$1"
+    local expected_key="$2"
+    local state
+    state="$(call_ipc notifications state 2>/dev/null || true)"
+    python3 -c '
+import json, sys
+try:
+    state = json.loads(sys.argv[1])
+except Exception:
+    raise SystemExit(1)
+queue = state.get("queue")
+raise SystemExit(0 if isinstance(queue, dict)
+    and queue.get("count") == int(sys.argv[2])
+    and queue.get("currentKey") == sys.argv[3] else 1)
+' "$state" "$expected_count" "$expected_key"
 }
 
 screen_layers() {
@@ -106,7 +135,13 @@ print("\n".join(names))
 ' "$monitor"
 }
 
-qs -n -p "$project_root" --no-color >"$log_file" 2>&1 &
+mkdir -p -- "$runtime_dir" "$test_dir/state" "$test_dir/cache"
+cp -- "$project_root/config/defaults/settings.json" "$runtime_dir/settings.json"
+
+XDG_DATA_HOME="$test_dir/data" \
+XDG_STATE_HOME="$test_dir/state" \
+XDG_CACHE_HOME="$test_dir/cache" \
+    qs -n -p "$project_root" --no-color >"$log_file" 2>&1 &
 shell_pid=$!
 
 ready=false
@@ -180,39 +215,55 @@ if [[ "$received_second" != true ]]; then
     exit 1
 fi
 
-notify-send --urgency=critical --app-name="Titonium Acceptance" --icon=dialog-warning \
-    "Titonium critical fixture" "Center FIFO acceptance"
+first_critical_id="$(notify-send -p --urgency=critical --app-name="Titonium Acceptance" \
+    --icon=dialog-warning "Titonium critical first" "Center FIFO first")"
+second_critical_id="$(notify-send -p --urgency=critical --app-name="Titonium Acceptance" \
+    --icon=dialog-warning "Titonium critical second" "Center FIFO second")"
+case "$first_critical_id:$second_critical_id" in
+    *[!0-9:]*|:*|*:) echo "FAIL critical fixtures did not return native notification IDs" >&2; exit 1 ;;
+esac
+first_critical_key="native:$first_critical_id"
+second_critical_key="native:$second_critical_id"
 
-critical_routed=false
+first_current=false
 for _ in {1..30}; do
-    state="$(call_ipc notifications state 2>/dev/null || true)"
-    if python3 -c '
-import json, sys
-try:
-    state = json.loads(sys.argv[1])
-except Exception:
-    raise SystemExit(1)
-queue = state.get("queue", {})
-raise SystemExit(0 if state.get("descriptorCount") == 3
-    and state.get("toastCount") == 1 and state.get("unreadCount") == 2
-    and queue.get("count") == 1 and str(queue.get("currentKey", "")).startswith("native:")
-    else 1)
-' "$state"; then
-        critical_routed=true
+    if state_matches 4 1 3 && queue_matches 2 "$first_critical_key"; then
+        first_current=true
         break
     fi
     sleep 0.1
 done
-if [[ "$critical_routed" != true ]]; then
+if [[ "$first_current" != true ]]; then
     call_ipc notifications state >&2 || true
-    echo "FAIL critical fixture was not routed to the Center FIFO queue" >&2
+    echo "FAIL first critical fixture was not the FIFO current item" >&2
     exit 1
 fi
 
-sleep 5
-if ! state_matches 3 0 2; then
+second_current=false
+for _ in {1..70}; do
+    if queue_matches 1 "$second_critical_key"; then
+        second_current=true
+        break
+    fi
+    sleep 0.1
+done
+if [[ "$second_current" != true ]]; then
     call_ipc notifications state >&2 || true
-    echo "FAIL critical queue did not expire after its readable interval" >&2
+    echo "FAIL second critical fixture did not advance after first expiry" >&2
+    exit 1
+fi
+
+queue_drained=false
+for _ in {1..70}; do
+    if state_matches 4 0 3 && queue_matches 0 ""; then
+        queue_drained=true
+        break
+    fi
+    sleep 0.1
+done
+if [[ "$queue_drained" != true ]]; then
+    call_ipc notifications state >&2 || true
+    echo "FAIL critical FIFO queue did not drain after final expiry" >&2
     exit 1
 fi
 

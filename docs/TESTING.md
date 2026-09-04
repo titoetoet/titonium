@@ -219,9 +219,9 @@ write clipboard content.
 Center acceptance verifies the `CenterSurfaceHost` namespaces and compact/banner/expanded lifecycle,
 proves that Spotlight compacts Center, and closes both surfaces again. It rejects runtime
 type/load errors, repository writes and changes to either Hyprland configuration hash. Notification
-history remains domain data rather than a presentation-owned route. The historical `centerNotch`
-IPC target is retained for acceptance compatibility; its state/result vocabulary is neutral mode
-state rather than a theme or page contract.
+history remains coordinator domain data; the independent Bell-owned panel consumes it, while Center
+has no history page. The historical `centerNotch` IPC target is retained for acceptance compatibility;
+its state/result vocabulary is neutral mode state rather than a theme or page contract.
 
 Audio acceptance launches one foreground shell and calls only `audio.state`, `audio.popup`,
 `audio.closePopup`, `audio.popupState`, `audio.osdState`, Center and Spotlight lifecycle IPC.

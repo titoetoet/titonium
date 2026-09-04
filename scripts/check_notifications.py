@@ -190,18 +190,57 @@ def validate_gate_fixtures(errors: list[str]) -> None:
     acceptance_path = ROOT / "scripts/notifications_acceptance.sh"
     acceptance = acceptance_path.read_text(encoding="utf-8") if acceptance_path.is_file() else ""
     for fragment in (
-        "existing Titonium instance owns the notification D-Bus name",
-        "session notification D-Bus name is already owned",
+        'runtime_dir="$test_dir/data/titonium"',
+        'cp -- "$project_root/config/defaults/settings.json" "$runtime_dir/settings.json"',
+        'XDG_DATA_HOME="$test_dir/data"',
+        'XDG_STATE_HOME="$test_dir/state"',
+        'XDG_CACHE_HOME="$test_dir/cache"',
+        "org.freedesktop.DBus NameHasOwner s org.freedesktop.Notifications",
+        '"b true"', '"b false"',
         "snapshot_contract()",
-        'notify-send --urgency=critical',
-        "critical fixture was not routed to the Center FIFO queue",
-        "critical queue did not expire after its readable interval",
+        "policy.get(\"mode\") == \"automatic\"",
+        "first_critical_id=",
+        "second_critical_id=",
+        "first critical fixture was not the FIFO current item",
+        "second critical fixture did not advance after first expiry",
+        "critical FIFO queue did not drain after final expiry",
         "notifications state", "notifications markRead",
     ):
         if fragment not in acceptance:
             errors.append(f"notifications acceptance missing safe routing coverage: {fragment}")
     if 'qs -p "$project_root" kill' in acceptance:
         errors.append("notifications acceptance must not stop a resident Titonium instance")
+    if 'busctl --user status org.freedesktop.Notifications' in acceptance:
+        errors.append("notifications acceptance must use NameHasOwner, not an implicit busctl status probe")
+    if 'qs -p "$project_root" ipc call app status' in acceptance:
+        errors.append("notifications acceptance must not infer notification D-Bus ownership from IPC readiness")
+    documents = {
+        "README.md": (
+            "always-present Notification Bell",
+            "independent top-right history panel",
+        ),
+        "docs/CURRENT_AUDIT.md": (
+            "independent Bell-owned history panel",
+            "critical FIFO",
+        ),
+        "docs/ROADMAP.md": (
+            "Independent Notification Center — complete",
+            "persisted history remains a separately scoped storage decision",
+        ),
+    }
+    forbidden_document_phrases = (
+        "direct Notification history route",
+        "Notification Center will be rebuilt later",
+        "Add Notification Center/actions as a separate Service-contract extension",
+    )
+    for relative, fragments in documents.items():
+        document = (ROOT / relative).read_text(encoding="utf-8")
+        for fragment in fragments:
+            if fragment not in document:
+                errors.append(f"{relative} missing current notification contract: {fragment}")
+        for fragment in forbidden_document_phrases:
+            if fragment in document:
+                errors.append(f"{relative} retains retired notification contract: {fragment}")
 
 
 def validate_service(errors: list[str]) -> None:

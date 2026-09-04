@@ -34,8 +34,9 @@ The previous feature roadmap is retired. Work now advances by researched capabil
    Preview/Apply/Cancel, legacy Dock projection and DP-1-only lifecycle. The remaining checkpoint
    is manual visual review plus persistence/rollback verification against backed-up live data.
 
-Deferred notification work is persisted history and any future producer-specific policy. The retired
-Center history view is not part of the independent Bell-owned panel.
+Notification persistence: persisted history remains a separately scoped storage decision; the
+completed panel, action and policy contracts are session-only. The retired Center history view is
+not part of the independent Bell-owned panel.
 
 ## Continuing reference-repository research
 
@@ -45,7 +46,8 @@ code. The first research set should cover:
 
 1. Hyprland Workspaces and System Tray.
 2. Audio and reusable slider/OSD behavior.
-3. Notification Center and action lifecycle, building on the completed toast service.
+3. Notification persistence and producer-specific reliability, building on the completed independent
+   panel, action and FIFO contracts.
 4. Further Network/Bluetooth reliability and device-detail patterns.
 
 ## Integration order
@@ -53,8 +55,8 @@ code. The first research set should cover:
 1. Replace one temporary bar widget using the selected reference pattern.
 2. Add System Tray as a bounded bar module.
 3. Establish animation and theme-input policy (static JSON or matugen) without coupling features.
-4. Add Notification Center/actions as a separate Service-contract extension → lazy View → live
-   acceptance milestone; do not expand the ToastHost into a god surface.
+4. Evaluate persisted notification storage only as a separately scoped Service-contract extension;
+   preserve the existing independent panel and never expand `ToastHost` into a god surface.
 5. Extend Settings only when another real module exposes a stable preference; keep mutation in the
    existing v7 transaction instead of adding per-page stores.
 
