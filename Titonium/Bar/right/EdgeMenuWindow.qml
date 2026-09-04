@@ -27,15 +27,17 @@ PanelWindow {
             : "edge-menu:" + window.screenModel.name + ":surface:"
                 + RightPillCoordinator.connectedOwnerId
     property string focusOwnerId: ""
+    property string focusLease: ""
     property string diagnosticFocusOwnerId: ""
     readonly property bool effectiveInteractiveFocus: window.wantsInteractiveFocus
-        && FocusArbiter.granted(window.focusOwnerId)
+        && FocusArbiter.granted(window.focusOwnerId, window.focusLease)
 
     function syncInteractiveFocus(): void {
         if (window.wantsInteractiveFocus && window.logicalFocusOwnerId)
             window.focusOwnerId = window.logicalFocusOwnerId;
-        if (window.focusOwnerId)
-            FocusArbiter.request(window.focusOwnerId, window.wantsInteractiveFocus);
+        if (window.focusOwnerId && window.focusLease)
+            FocusArbiter.request(window.focusOwnerId, window.focusLease,
+                window.wantsInteractiveFocus);
     }
     readonly property bool dismissing: window.styleActive
         && RightPillCoordinator.exitingScreenName === window.screenModel.name
@@ -51,7 +53,7 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.exclusionMode: ExclusionMode.Ignore
     WlrLayershell.keyboardFocus: window.ownsMenu
-        && FocusArbiter.granted(window.focusOwnerId)
+        && FocusArbiter.granted(window.focusOwnerId, window.focusLease)
         ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     anchors { top: true; bottom: true; left: true; right: true }
     mask: Region {
@@ -100,11 +102,14 @@ PanelWindow {
             window.diagnosticFocusOwnerId = "";
         }
     }
-    Component.onCompleted: window.syncInteractiveFocus()
+    Component.onCompleted: {
+        window.focusLease = FocusArbiter.newLease("edge-menu");
+        window.syncInteractiveFocus();
+    }
 
     Component.onDestruction: {
         if (window.focusOwnerId) {
-            FocusArbiter.withdraw(window.focusOwnerId);
+            FocusArbiter.withdraw(window.focusOwnerId, window.focusLease);
             if (window.diagnosticFocusOwnerId)
                 FocusDiagnostics.observe(window.diagnosticFocusOwnerId, false,
                     { mode: "destroyed" });

@@ -16,17 +16,24 @@ PanelWindow {
 
     readonly property bool isFileChange: AgentApprovalService.currentIsFileChange
     readonly property string focusOwnerId: "agent-approval:" + window.screenModel.name
+    property string focusLease: ""
     readonly property bool wantsInteractiveFocus: !window.isFileChange && window.ownsApproval
     readonly property bool effectiveInteractiveFocus: window.wantsInteractiveFocus
-        && FocusArbiter.granted(window.focusOwnerId)
+        && FocusArbiter.granted(window.focusOwnerId, window.focusLease)
 
-    onWantsInteractiveFocusChanged:
-        FocusArbiter.request(window.focusOwnerId, window.wantsInteractiveFocus)
+    onWantsInteractiveFocusChanged: {
+        if (window.focusLease)
+            FocusArbiter.request(window.focusOwnerId, window.focusLease,
+                window.wantsInteractiveFocus);
+    }
     onEffectiveInteractiveFocusChanged: FocusDiagnostics.observe(
         window.focusOwnerId, window.effectiveInteractiveFocus,
         { mode: window.isFileChange ? "file-change" : "approval", focusPolicy: "on-demand" })
-    Component.onCompleted:
-        FocusArbiter.request(window.focusOwnerId, window.wantsInteractiveFocus)
+    Component.onCompleted: {
+        window.focusLease = FocusArbiter.newLease("agent-approval");
+        FocusArbiter.request(window.focusOwnerId, window.focusLease,
+            window.wantsInteractiveFocus);
+    }
 
     screen: window.screenModel
     visible: window.ownsApproval
@@ -39,7 +46,7 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.exclusionMode: ExclusionMode.Ignore
     WlrLayershell.keyboardFocus: window.wantsInteractiveFocus
-        && FocusArbiter.granted(window.focusOwnerId)
+        && FocusArbiter.granted(window.focusOwnerId, window.focusLease)
         ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
     anchors {
         top: true
@@ -73,7 +80,7 @@ PanelWindow {
     }
 
     Component.onDestruction: {
-        FocusArbiter.withdraw(window.focusOwnerId);
+        FocusArbiter.withdraw(window.focusOwnerId, window.focusLease);
         FocusDiagnostics.observe(window.focusOwnerId, false, { mode: "destroyed" });
     }
 }

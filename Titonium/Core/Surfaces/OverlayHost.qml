@@ -23,15 +23,17 @@ Scope {
             readonly property string logicalFocusOwnerId: window.wantsInteractiveFocus
                 ? "overlay:" + SurfaceManager.ownerId : ""
             property string focusOwnerId: ""
+            property string focusLease: ""
             property string diagnosticFocusOwnerId: ""
             readonly property bool effectiveInteractiveFocus: window.wantsInteractiveFocus
-                && FocusArbiter.granted(window.focusOwnerId)
+                && FocusArbiter.granted(window.focusOwnerId, window.focusLease)
 
             function syncInteractiveFocus(): void {
                 if (window.wantsInteractiveFocus && window.logicalFocusOwnerId)
                     window.focusOwnerId = window.logicalFocusOwnerId;
-                if (window.focusOwnerId)
-                    FocusArbiter.request(window.focusOwnerId, window.wantsInteractiveFocus);
+                if (window.focusOwnerId && window.focusLease)
+                    FocusArbiter.request(window.focusOwnerId, window.focusLease,
+                        window.wantsInteractiveFocus);
             }
 
             onWantsInteractiveFocusChanged: window.syncInteractiveFocus()
@@ -47,7 +49,10 @@ Scope {
                     window.diagnosticFocusOwnerId = "";
                 }
             }
-            Component.onCompleted: window.syncInteractiveFocus()
+            Component.onCompleted: {
+                window.focusLease = FocusArbiter.newLease("overlay");
+                window.syncInteractiveFocus();
+            }
 
             screen: window.modelData
             visible: window.ownsOverlaySurface
@@ -60,7 +65,7 @@ Scope {
             WlrLayershell.exclusionMode: ExclusionMode.Ignore
             WlrLayershell.keyboardFocus: window.ownsOverlaySurface
                 && SurfaceManager.descriptor.keyboardFocus === "exclusive"
-                && FocusArbiter.granted(window.focusOwnerId)
+                && FocusArbiter.granted(window.focusOwnerId, window.focusLease)
                 ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
             anchors { top: true; bottom: true; left: true; right: true }
             readonly property var overlayInputRegions:
@@ -164,7 +169,7 @@ Scope {
 
             Component.onDestruction: {
                 if (window.focusOwnerId) {
-                    FocusArbiter.withdraw(window.focusOwnerId);
+                    FocusArbiter.withdraw(window.focusOwnerId, window.focusLease);
                     if (window.diagnosticFocusOwnerId)
                         FocusDiagnostics.observe(window.diagnosticFocusOwnerId, false,
                             { mode: "destroyed" });

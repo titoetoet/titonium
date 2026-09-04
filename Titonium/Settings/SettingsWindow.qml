@@ -12,17 +12,24 @@ PanelWindow {
     readonly property bool ownsSettings:
         SettingsCoordinator.ownerScreenName === window.screenModel.name
     readonly property string focusOwnerId: "settings:" + window.screenModel.name
+    property string focusLease: ""
     readonly property bool wantsInteractiveFocus: window.ownsSettings
     readonly property bool effectiveInteractiveFocus: window.wantsInteractiveFocus
-        && FocusArbiter.granted(window.focusOwnerId)
+        && FocusArbiter.granted(window.focusOwnerId, window.focusLease)
 
-    onWantsInteractiveFocusChanged:
-        FocusArbiter.request(window.focusOwnerId, window.wantsInteractiveFocus)
+    onWantsInteractiveFocusChanged: {
+        if (window.focusLease)
+            FocusArbiter.request(window.focusOwnerId, window.focusLease,
+                window.wantsInteractiveFocus);
+    }
     onEffectiveInteractiveFocusChanged: FocusDiagnostics.observe(
         window.focusOwnerId, window.effectiveInteractiveFocus,
         { mode: window.ownsSettings ? "open" : "closed", focusPolicy: "exclusive" })
-    Component.onCompleted:
-        FocusArbiter.request(window.focusOwnerId, window.wantsInteractiveFocus)
+    Component.onCompleted: {
+        window.focusLease = FocusArbiter.newLease("settings");
+        FocusArbiter.request(window.focusOwnerId, window.focusLease,
+            window.wantsInteractiveFocus);
+    }
 
     screen: window.screenModel
     visible: window.ownsSettings
@@ -35,7 +42,7 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.exclusionMode: ExclusionMode.Ignore
     WlrLayershell.keyboardFocus: window.wantsInteractiveFocus
-        && FocusArbiter.granted(window.focusOwnerId)
+        && FocusArbiter.granted(window.focusOwnerId, window.focusLease)
         ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     mask: Region { item: settingsLoader }
 
@@ -47,7 +54,7 @@ PanelWindow {
     }
 
     Component.onDestruction: {
-        FocusArbiter.withdraw(window.focusOwnerId);
+        FocusArbiter.withdraw(window.focusOwnerId, window.focusLease);
         FocusDiagnostics.observe(window.focusOwnerId, false, { mode: "destroyed" });
         if (window.ownsSettings)
             SettingsCoordinator.forceCancelAndClose();

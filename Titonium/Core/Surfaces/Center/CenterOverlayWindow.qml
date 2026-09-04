@@ -16,20 +16,27 @@ PanelWindow {
         && (window.viewState.mode === "banner" || window.viewState.mode === "expanded")
     readonly property bool dismissing: window.viewState.exitingScreenName === window.screenModel.name
     readonly property string focusOwnerId: "center:" + window.screenModel.name
+    property string focusLease: ""
     readonly property bool wantsInteractiveFocus: window.ownsOverlay
         && window.viewState.focusPolicy === "exclusive"
     readonly property bool effectiveInteractiveFocus: window.wantsInteractiveFocus
-        && FocusArbiter.granted(window.focusOwnerId)
+        && FocusArbiter.granted(window.focusOwnerId, window.focusLease)
 
-    onWantsInteractiveFocusChanged:
-        FocusArbiter.request(window.focusOwnerId, window.wantsInteractiveFocus)
+    onWantsInteractiveFocusChanged: {
+        if (window.focusLease)
+            FocusArbiter.request(window.focusOwnerId, window.focusLease,
+                window.wantsInteractiveFocus);
+    }
     onEffectiveInteractiveFocusChanged: FocusDiagnostics.observe(
         window.focusOwnerId, window.effectiveInteractiveFocus, {
             mode: window.viewState.mode, generation: window.viewState.generation,
             focusPolicy: window.viewState.focusPolicy
         })
-    Component.onCompleted:
-        FocusArbiter.request(window.focusOwnerId, window.wantsInteractiveFocus)
+    Component.onCompleted: {
+        window.focusLease = FocusArbiter.newLease("center");
+        FocusArbiter.request(window.focusOwnerId, window.focusLease,
+            window.wantsInteractiveFocus);
+    }
 
     screen: window.screenModel
     visible: window.ownsOverlay || window.dismissing
@@ -40,7 +47,7 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.exclusionMode: ExclusionMode.Ignore
     WlrLayershell.keyboardFocus: window.wantsInteractiveFocus
-        && FocusArbiter.granted(window.focusOwnerId)
+        && FocusArbiter.granted(window.focusOwnerId, window.focusLease)
         ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     anchors { top: true; bottom: true; left: true; right: true }
     mask: Region {
@@ -86,7 +93,7 @@ PanelWindow {
     }
 
     Component.onDestruction: {
-        FocusArbiter.withdraw(window.focusOwnerId);
+        FocusArbiter.withdraw(window.focusOwnerId, window.focusLease);
         FocusDiagnostics.observe(window.focusOwnerId, false, { mode: "destroyed" });
     }
 }

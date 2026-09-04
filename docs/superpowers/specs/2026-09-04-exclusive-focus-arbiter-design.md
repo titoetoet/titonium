@@ -43,13 +43,16 @@ possible for any transition among Center, Edge Menu, Spotlight or another
 `FocusArbiter` is a Core singleton and is the only source of truth for which
 Titonium owner may project exclusive keyboard focus. Presentation coordinators
 continue to decide whether their surfaces are logically open. Each exclusive
-window derives a stable owner ID and submits its desired-focus state to the
-arbiter.
+window derives a stable logical owner ID and allocates a unique requester lease
+for that delegate incarnation. It submits both the logical ID and lease with
+its desired-focus state to the arbiter. Logical IDs remain stable in diagnostics
+and logs; leases are internal instance identity and are never used as log IDs.
 
 The arbiter exposes immutable state containing:
 
 - `owner`: the owner currently allowed to project exclusive focus;
 - `pendingOwner`: the newest owner waiting for handoff;
+- `ownerLease` and `pendingLease`: the requester leases paired with those IDs;
 - `generation`: a monotonically increasing request token;
 - `phase`: `idle`, `owned`, or `releasing`.
 
@@ -62,16 +65,21 @@ An owner ID includes the surface family and screen, for example
 When no owner exists, a valid request is granted immediately. Repeating a
 request from the current owner is idempotent.
 
-When another owner requests focus, the arbiter records only the newest request,
-increments the generation, clears the current grant, and enters `releasing`.
+When another owner or a newer requester lease requests focus, the arbiter records
+only the newest request, increments the generation, clears the current grant,
+and enters `releasing`. A request is idempotent only when both its logical owner
+ID and requester lease match the current owner (or current pending request).
 Clearing the grant makes every window bind `WlrKeyboardFocus.None`. The arbiter
 then schedules a single `Qt.callLater` callback. That callback grants the
-pending owner only if its generation is still current and it still desires
-focus.
+pending owner only if its generation and requester lease are still current and
+it still desires focus. A current-owner withdrawal also enters this ownerless
+`releasing` cooldown; the callback settles to `idle` when no successor remains.
 
-If a pending owner withdraws, it is removed. If the current owner withdraws
-without a successor, the arbiter returns to `idle`. A stale release affects
-only the matching owner; it cannot clear a newer grant.
+If a pending owner withdraws, it is removed while preserving the ownerless
+cooldown. A release is accepted only when both logical owner ID and requester
+lease match the current or pending request. A stale release—including a
+destruction from an older window incarnation with the same logical ID—cannot
+clear a newer grant.
 
 This event-loop barrier is centralized in the arbiter. Routers and feature
 services must not add their own focus delays.
@@ -80,8 +88,10 @@ services must not add their own focus delays.
 
 Each exclusive surface retains its existing logical ownership expression, but
 uses that expression only as its `wantsExclusiveFocus` input. The effective
-binding is true only when `FocusArbiter.owner` matches the window's stable owner
-ID.
+binding is true only when both `FocusArbiter.owner` and `FocusArbiter.ownerLease`
+match the window's stable logical owner ID and unique requester lease.
+Overlapping delegates with the same logical ID therefore cannot both project
+exclusive focus.
 
 The following windows participate:
 
@@ -105,9 +115,10 @@ withdrawal, and stale generations can be tested without a compositor. The QML
 singleton owns the one-shot `Qt.callLater` scheduling boundary and projects the
 pure state.
 
-The pure module must freeze every returned snapshot and reject blank owners.
-It must not import feature-specific code or encode Bluetooth, Center content,
-or presentation policy.
+The pure module must freeze every returned snapshot and reject blank owners or
+leases. Request, withdraw, and grant callbacks must carry the requester lease;
+stale leases and non-canonical input snapshots fail closed. It must not import
+feature-specific code or encode Bluetooth, Center content, or presentation policy.
 
 ## Testing
 
@@ -140,4 +151,3 @@ again, but it cannot lock input away from normal applications.
 The arbiter does not attempt to recover external compositor state. It logs
 invalid owner requests, rejected stale callbacks, and ownership replacement so
 runtime traces remain actionable.
-

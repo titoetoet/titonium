@@ -43,127 +43,172 @@ assert.deepEqual(plain(state), {
 });
 assert.equal(Object.isFrozen(state), true, "initial snapshots must be frozen");
 
-state = arbiter.request(state, "edge-menu:DP-1");
+state = arbiter.request(state, "edge-menu:DP-1", "edge-instance-a");
 assert.deepEqual(plain(state), {
     owner: "edge-menu:DP-1", pendingOwner: "", generation: 1,
     phase: "owned", shouldSchedule: false, violation: "",
 });
 assert.equal(Object.isFrozen(state), true, "granted snapshots must be frozen");
+assert.equal(state.ownerLease, "edge-instance-a");
 
-const sameOwner = arbiter.request(state, " edge-menu:DP-1 ");
+const sameOwner = arbiter.request(state, " edge-menu:DP-1 ", "edge-instance-a");
 assert.deepEqual(plain(sameOwner), plain(state),
     "a current-owner request is idempotent after owner normalization");
 
-state = arbiter.request(state, "center:DP-1");
+state = arbiter.request(state, "center:DP-1", "center-instance-a");
 assert.equal(state.owner, "");
 assert.equal(state.pendingOwner, "center:DP-1");
+assert.equal(state.pendingLease, "center-instance-a");
 assert.equal(state.phase, "releasing");
 assert.equal(state.shouldSchedule, true);
 const centerGeneration = state.generation;
 
-state = arbiter.request(state, "overlay:spotlight:DP-1");
+state = arbiter.request(state, "overlay:spotlight:DP-1", "spotlight-instance-a");
 assert.equal(state.owner, "");
 assert.equal(state.pendingOwner, "overlay:spotlight:DP-1");
+assert.equal(state.pendingLease, "spotlight-instance-a");
 assert.equal(state.generation, centerGeneration + 1);
 assert.equal(state.phase, "releasing");
 assert.equal(state.shouldSchedule, true);
-assert.strictEqual(arbiter.grantPending(state, centerGeneration), state,
+assert.strictEqual(arbiter.grantPending(state, centerGeneration, "center-instance-a"), state,
     "a stale generation must return the exact releasing state unchanged");
 for (const staleToken of [state.generation + 0.5, Number.NaN,
         Number.POSITIVE_INFINITY, Number.MAX_SAFE_INTEGER + 1, "" + state.generation]) {
-    assert.strictEqual(arbiter.grantPending(state, staleToken), state,
+    assert.strictEqual(arbiter.grantPending(state, staleToken, "spotlight-instance-a"), state,
         "non-exact callback generations must fail closed unchanged");
 }
-state = arbiter.grantPending(state, state.generation);
+state = arbiter.grantPending(state, state.generation, "spotlight-instance-a");
 assert.equal(state.owner, "overlay:spotlight:DP-1");
+assert.equal(state.ownerLease, "spotlight-instance-a");
 assert.equal(state.pendingOwner, "");
 assert.equal(state.phase, "owned");
 assert.equal(state.shouldSchedule, false);
 
-const staleRelease = arbiter.withdraw(state, "center:DP-1");
+const staleRelease = arbiter.withdraw(state, "center:DP-1", "center-instance-a");
 assert.equal(staleRelease.owner, "overlay:spotlight:DP-1",
     "a stale release cannot clear a newer owner");
-const currentWithdrawal = arbiter.withdraw(state, "overlay:spotlight:DP-1");
+const currentWithdrawal = arbiter.withdraw(state, "overlay:spotlight:DP-1", "spotlight-instance-a");
 assert.equal(currentWithdrawal.phase, "releasing");
 assert.equal(arbiter.grantPending(
-    currentWithdrawal, currentWithdrawal.generation).phase, "idle");
+    currentWithdrawal, currentWithdrawal.generation, "").phase, "idle");
+
+let duplicate = arbiter.initial();
+duplicate = arbiter.request(duplicate, "center:DP-1", "center-instance-old");
+duplicate = arbiter.request(duplicate, "center:DP-1", "center-instance-new");
+const duplicateGeneration = duplicate.generation;
+assert.equal(duplicate.owner, "",
+    "a newer duplicate logical owner must revoke the old instance before grant");
+assert.equal(duplicate.pendingOwner, "center:DP-1");
+assert.equal(duplicate.pendingLease, "center-instance-new");
+assert.strictEqual(arbiter.withdraw(
+    duplicate, "center:DP-1", "center-instance-old"), duplicate,
+    "an old same-logical-ID instance cannot withdraw the newer pending instance");
+duplicate = arbiter.grantPending(duplicate, duplicateGeneration, "center-instance-new");
+assert.equal(duplicate.owner, "center:DP-1");
+assert.equal(duplicate.ownerLease, "center-instance-new");
+assert.strictEqual(arbiter.withdraw(
+    duplicate, "center:DP-1", "center-instance-old"), duplicate,
+    "an old same-logical-ID instance cannot withdraw the newer grant");
+
+const nonCanonicalState = {
+    owner: "center:DP-1", ownerLease: "center-instance-new",
+    pendingOwner: "", pendingLease: "", generation: 1,
+    phase: "owned", shouldSchedule: false, violation: "",
+};
+const canonicalPassThrough = arbiter.withdraw(
+    nonCanonicalState, "other:DP-1", "other-instance");
+assert.notStrictEqual(canonicalPassThrough, nonCanonicalState,
+    "external state must be copied into the canonical snapshot boundary");
+assert.equal(Object.isFrozen(canonicalPassThrough), true);
+assert.strictEqual(arbiter.withdraw(
+    canonicalPassThrough, "other:DP-1", "other-instance"), canonicalPassThrough,
+    "canonical pass-through state may preserve identity");
+assert.strictEqual(arbiter.grantPending(
+    canonicalPassThrough, 0, "center-instance-new"), canonicalPassThrough,
+    "a stale grant must preserve the complete canonical state");
 
 let closeThenOpen = arbiter.initial();
-closeThenOpen = arbiter.request(closeThenOpen, "edge-menu:DP-1:input");
-closeThenOpen = arbiter.withdraw(closeThenOpen, "edge-menu:DP-1:input");
+closeThenOpen = arbiter.request(closeThenOpen, "edge-menu:DP-1:input", "edge-instance-b");
+closeThenOpen = arbiter.withdraw(closeThenOpen, "edge-menu:DP-1:input", "edge-instance-b");
 assert.deepEqual(plain(closeThenOpen), {
     owner: "", pendingOwner: "", generation: 2,
     phase: "releasing", shouldSchedule: true, violation: "",
 }, "withdrawing the current owner must enter an ownerless cooldown");
 const releaseGeneration = closeThenOpen.generation;
-closeThenOpen = arbiter.request(closeThenOpen, "center:DP-1");
+closeThenOpen = arbiter.request(closeThenOpen, "center:DP-1", "center-instance-b");
 assert.deepEqual(plain(closeThenOpen), {
     owner: "", pendingOwner: "center:DP-1", generation: releaseGeneration,
     phase: "releasing", shouldSchedule: true, violation: "",
 }, "a request during cooldown must remain ownerless until the scheduled grant");
-closeThenOpen = arbiter.grantPending(closeThenOpen, releaseGeneration);
+closeThenOpen = arbiter.grantPending(closeThenOpen, releaseGeneration, "center-instance-b");
 assert.equal(closeThenOpen.owner, "center:DP-1");
 assert.equal(closeThenOpen.phase, "owned");
 
 let noSuccessor = arbiter.initial();
-noSuccessor = arbiter.request(noSuccessor, "settings:DP-1");
-noSuccessor = arbiter.withdraw(noSuccessor, "settings:DP-1");
+noSuccessor = arbiter.request(noSuccessor, "settings:DP-1", "settings-instance-a");
+noSuccessor = arbiter.withdraw(noSuccessor, "settings:DP-1", "settings-instance-a");
 assert.equal(noSuccessor.phase, "releasing",
     "a release without a known successor must still fail closed for one tick");
-noSuccessor = arbiter.grantPending(noSuccessor, noSuccessor.generation);
+noSuccessor = arbiter.grantPending(noSuccessor, noSuccessor.generation, "");
 assert.deepEqual(plain(noSuccessor), {
     owner: "", pendingOwner: "", generation: 2,
     phase: "idle", shouldSchedule: false, violation: "",
 }, "a no-successor release must settle to idle after its barrier");
 
-const blankRequest = arbiter.request(state, "  ");
+const blankRequest = arbiter.request(state, "  ", "spotlight-instance-a");
 assert.equal(blankRequest.owner, state.owner, "blank requests cannot replace an owner");
 assert.equal(blankRequest.pendingOwner, state.pendingOwner);
 assert.equal(blankRequest.generation, state.generation);
 assert.equal(blankRequest.violation, "missing-focus-owner");
 assert.equal(Object.isFrozen(blankRequest), true);
 
-const blankWithdrawal = arbiter.withdraw(state, "\t");
+const blankWithdrawal = arbiter.withdraw(state, "\t", "spotlight-instance-a");
 assert.equal(blankWithdrawal.owner, state.owner, "blank withdrawals cannot release an owner");
 assert.equal(blankWithdrawal.generation, state.generation);
 assert.equal(blankWithdrawal.violation, "missing-focus-owner");
+const blankLeaseRequest = arbiter.request(arbiter.initial(), "center:DP-1", " ");
+assert.equal(blankLeaseRequest.owner, "");
+assert.equal(blankLeaseRequest.generation, 0);
+assert.equal(blankLeaseRequest.violation, "missing-focus-lease");
 
 let replacement = arbiter.initial();
-replacement = arbiter.request(replacement, "center:DP-1");
-replacement = arbiter.request(replacement, "overlay:spotlight:DP-1");
+replacement = arbiter.request(replacement, "center:DP-1", "center-instance-c");
+replacement = arbiter.request(replacement, "overlay:spotlight:DP-1", "spotlight-instance-b");
 const spotlightGeneration = replacement.generation;
-replacement = arbiter.request(replacement, "settings:DP-1");
+replacement = arbiter.request(replacement, "settings:DP-1", "settings-instance-b");
 const settingsGeneration = replacement.generation;
 assert.equal(replacement.pendingOwner, "settings:DP-1",
     "the newest pending request must replace Spotlight");
-assert.strictEqual(arbiter.grantPending(replacement, spotlightGeneration), replacement,
+assert.strictEqual(arbiter.grantPending(
+    replacement, spotlightGeneration, "spotlight-instance-b"), replacement,
     "Spotlight's stale generation must return the exact state unchanged");
-replacement = arbiter.grantPending(replacement, settingsGeneration);
+replacement = arbiter.grantPending(replacement, settingsGeneration, "settings-instance-b");
 assert.equal(replacement.owner, "settings:DP-1");
-assert.equal(arbiter.withdraw(replacement, "overlay:spotlight:DP-1").owner,
+assert.equal(arbiter.withdraw(replacement, "overlay:spotlight:DP-1", "spotlight-instance-b").owner,
     "settings:DP-1");
-replacement = arbiter.withdraw(replacement, "settings:DP-1");
+replacement = arbiter.withdraw(replacement, "settings:DP-1", "settings-instance-b");
 assert.deepEqual(plain(replacement), {
     owner: "", pendingOwner: "", generation: settingsGeneration + 1,
     phase: "releasing", shouldSchedule: true, violation: "",
 });
-replacement = arbiter.grantPending(replacement, replacement.generation);
+replacement = arbiter.grantPending(replacement, replacement.generation, "");
 assert.equal(replacement.phase, "idle");
 
 let pending = arbiter.initial();
-pending = arbiter.request(pending, "center:DP-1");
-pending = arbiter.request(pending, "overlay:spotlight:DP-1");
-pending = arbiter.withdraw(pending, "overlay:spotlight:DP-1");
+pending = arbiter.request(pending, "center:DP-1", "center-instance-d");
+pending = arbiter.request(pending, "overlay:spotlight:DP-1", "spotlight-instance-c");
+pending = arbiter.withdraw(pending, "overlay:spotlight:DP-1", "spotlight-instance-c");
 assert.deepEqual(plain(pending), {
     owner: "", pendingOwner: "", generation: 2,
     phase: "releasing", shouldSchedule: true, violation: "",
 }, "withdrawing the pending owner retains the ownerless handoff barrier");
-assert.equal(arbiter.grantPending(pending, 2).phase, "idle");
+assert.equal(arbiter.grantPending(pending, 2, "").phase, "idle");
 
 let samePending = arbiter.initial();
-samePending = arbiter.request(samePending, "center:DP-1");
-samePending = arbiter.request(samePending, "overlay:spotlight:DP-1");
-const unchangedPending = arbiter.request(samePending, "overlay:spotlight:DP-1");
+samePending = arbiter.request(samePending, "center:DP-1", "center-instance-e");
+samePending = arbiter.request(samePending, "overlay:spotlight:DP-1", "spotlight-instance-d");
+const unchangedPending = arbiter.request(
+    samePending, "overlay:spotlight:DP-1", "spotlight-instance-d");
 assert.strictEqual(unchangedPending, samePending,
     "an unchanged pending request must be idempotent and preserve its generation");
 
@@ -179,17 +224,17 @@ function applyScheduled(next) {
         scheduledCallbacks.push(next.generation);
     }
 }
-applyScheduled(arbiter.request(scheduledState, "center:DP-1"));
-applyScheduled(arbiter.request(scheduledState, "overlay:spotlight:DP-1"));
-applyScheduled(arbiter.request(scheduledState, "overlay:spotlight:DP-1"));
+applyScheduled(arbiter.request(scheduledState, "center:DP-1", "center-instance-f"));
+applyScheduled(arbiter.request(scheduledState, "overlay:spotlight:DP-1", "spotlight-instance-e"));
+applyScheduled(arbiter.request(scheduledState, "overlay:spotlight:DP-1", "spotlight-instance-e"));
 assert.deepEqual(scheduledCallbacks, [2],
     "one unchanged pending request must leave exactly one callback outstanding");
 
 let overlayReplacement = arbiter.initial();
 overlayReplacement = arbiter.request(
-    overlayReplacement, "overlay:spotlight:DP-1");
+    overlayReplacement, "overlay:spotlight:DP-1", "overlay-instance-a");
 overlayReplacement = arbiter.request(
-    overlayReplacement, "overlay:window-switcher:DP-1");
+    overlayReplacement, "overlay:window-switcher:DP-1", "overlay-instance-a");
 assert.equal(overlayReplacement.owner, "",
     "same-window overlay replacement must revoke the previous logical grant");
 assert.equal(overlayReplacement.pendingOwner, "overlay:window-switcher:DP-1");
@@ -197,9 +242,9 @@ assert.equal(overlayReplacement.phase, "releasing");
 
 let edgeReplacement = arbiter.initial();
 edgeReplacement = arbiter.request(
-    edgeReplacement, "edge-menu:DP-1:menu:input");
+    edgeReplacement, "edge-menu:DP-1:menu:input", "edge-instance-c");
 edgeReplacement = arbiter.request(
-    edgeReplacement, "edge-menu:DP-1:surface:system-tray:DP-1:audio");
+    edgeReplacement, "edge-menu:DP-1:surface:system-tray:DP-1:audio", "edge-instance-c");
 assert.equal(edgeReplacement.owner, "",
     "same-window Edge Menu replacement must revoke the previous logical grant");
 assert.equal(edgeReplacement.pendingOwner,
@@ -220,6 +265,20 @@ for (const projection of ["owner", "pendingOwner", "phase", "generation"])
 for (const method of ["request", "withdraw", "granted"])
     assert.match(arbiterQml, new RegExp(`function ${method}\\(`),
         `FocusArbiter must expose ${method}()`);
+assert.match(arbiterQml, /function newLease\(/,
+    "FocusArbiter must issue unique requester leases");
+assert.match(arbiterQml,
+    /FocusArbiterRules\.request\(root\.state, ownerId, lease\)/,
+    "FocusArbiter must pass requester leases into request rules");
+assert.match(arbiterQml,
+    /FocusArbiterRules\.withdraw\(root\.state, ownerId, lease\)/,
+    "FocusArbiter must pass requester leases into withdraw rules");
+assert.match(arbiterQml,
+    /FocusArbiterRules\.grantPending\([\s\S]{0,100}root\.state, generation, root\.state\.pendingLease\)/,
+    "FocusArbiter must pass requester leases into grant rules");
+assert.match(arbiterQml,
+    /function granted\(ownerId: string, lease: string\)/,
+    "FocusArbiter granted checks must include requester leases");
 assert.equal((arbiterQml.match(/Qt\.callLater/g) || []).length, 1,
     "FocusArbiter must own exactly one event-loop handoff");
 assert.match(arbiterQml, /scheduledGeneration/,
@@ -267,6 +326,10 @@ for (const contract of interactiveWindows) {
     const text = fs.readFileSync(path.join(root, "Titonium", contract.relative), "utf8");
     assert.match(text, /property string focusOwnerId:/,
         `${contract.relative} lacks a stable focusOwnerId`);
+    assert.match(text, /property string focusLease:/,
+        `${contract.relative} lacks a unique requester lease`);
+    assert.match(text, /FocusArbiter\.newLease\(/,
+        `${contract.relative} must allocate its requester lease from FocusArbiter`);
     assert.ok(text.includes(contract.ownerPrefix),
         `${contract.relative} focusOwnerId lacks its stable family prefix`);
     assert.match(text, /readonly property bool wantsInteractiveFocus:/,
@@ -274,12 +337,12 @@ for (const contract of interactiveWindows) {
     assert.match(text, contract.wants,
         `${contract.relative} changed its logical focus condition`);
     assert.match(text,
-        /FocusArbiter\.request\(window\.focusOwnerId, window\.wantsInteractiveFocus\)/,
+        /FocusArbiter\.request\(window\.focusOwnerId,\s*window\.focusLease,\s*window\.wantsInteractiveFocus\)/,
         `${contract.relative} does not submit focus desire to FocusArbiter`);
-    assert.match(text, /Component\.onDestruction:[\s\S]*FocusArbiter\.withdraw\(window\.focusOwnerId\)/,
+    assert.match(text, /Component\.onDestruction:[\s\S]*FocusArbiter\.withdraw\(window\.focusOwnerId,\s*window\.focusLease\)/,
         `${contract.relative} does not withdraw focus on destruction`);
     assert.match(text,
-        /WlrLayershell\.keyboardFocus:[\s\S]{0,180}FocusArbiter\.granted\(window\.focusOwnerId\)[\s\S]{0,180}WlrKeyboardFocus\./,
+        /WlrLayershell\.keyboardFocus:[\s\S]{0,180}FocusArbiter\.granted\(window\.focusOwnerId,\s*window\.focusLease\)[\s\S]{0,180}WlrKeyboardFocus\./,
         `${contract.relative} does not gate layer-shell focus through FocusArbiter`);
     assert.ok(text.includes(`WlrKeyboardFocus.${contract.focusMode}`),
         `${contract.relative} must preserve ${contract.focusMode} focus semantics`);
@@ -288,6 +351,8 @@ for (const contract of interactiveWindows) {
     assert.match(text,
         /onEffectiveInteractiveFocusChanged:[\s\S]{0,260}FocusDiagnostics\.observe\(/,
         `${contract.relative} diagnostics must observe effective grant changes`);
+    assert.equal(text.includes("FocusDiagnostics.observe(window.focusLease"), false,
+        `${contract.relative} diagnostics must retain stable logical owner IDs`);
 }
 
 const overlayHost = fs.readFileSync(
