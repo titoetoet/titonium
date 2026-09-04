@@ -145,6 +145,16 @@ assert.match(sources["CenterNotch.qml"], /id:\s*expandedAgentApproval/,
     "State 4 must own the expanded AI approval presentation");
 assert.match(sources["CenterNotch.qml"], /AgentApprovalCard\s*\{/,
     "State 4 reuses the complete approval action surface");
+for (const fallback of ["context?.trackTitle", "context?.trackArtist",
+    "context?.summary", "context?.body"]) {
+    assert.ok(sources["CenterNotch.qml"].includes(fallback),
+        `Banner retains frozen fallback field ${fallback}`);
+}
+for (const key of ["center_island.media.previous", "center_island.media.play",
+    "center_island.media.pause", "center_island.media.next", "center_island.expand"]) {
+    assert.ok(sources["CenterNotch.qml"].includes(key),
+        `Banner control must use translated accessible name ${key}`);
+}
 assert.match(sources["CenterNotchSurface.qml"],
     /CenterNotchCoordinator\.openAgentApproval\(/,
     "incoming AI approval must route directly to State 4");
@@ -167,6 +177,13 @@ assert.doesNotMatch(centerIslandSource, /sizeMorphEnabled|syncIslandGeometry/,
     "legacy per-frame geometry synchronization must stay removed");
 assert.match(centerIslandSource, /CenterNotchCoordinator\.setCompactWidth\(root\.implicitWidth\)/,
     "compact content publishes only its width target to the visual owner");
+assert.match(centerIslandSource,
+    /id:\s*focusToggle[\s\S]*?CenterNotchCoordinator\.toggleFocus\(\)/,
+    "the compact Focus icon toggles session mode without opening Banner");
+for (const key of ["center_island.focus.enable", "center_island.focus.disable"]) {
+    assert.ok(centerIslandSource.includes(key),
+        `compact Focus target uses translated accessibility key ${key}`);
+}
 assert.equal((sources["CenterNotchSurface.qml"].match(/Shared\.ConnectedPillShape\s*\{/g) || []).length, 1,
     "popup must render one connected silhouette");
 assert.match(sources["CenterPillWindow.qml"], /visible: true/,

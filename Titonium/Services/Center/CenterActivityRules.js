@@ -13,6 +13,13 @@ var ALLOWED_FIELDS = Object.freeze({
     updatedAt: true,
     trackLength: true,
     trackPosition: true,
+    identity: true,
+    trackTitle: true,
+    trackArtist: true,
+    trackArtUrl: true,
+    canTogglePlaying: true,
+    canGoPrevious: true,
+    canGoNext: true,
 });
 
 function text(value) {
@@ -119,6 +126,13 @@ function normalize(raw, now) {
     if (source === "media") {
         descriptor.trackLength = trackLength;
         descriptor.trackPosition = trackPosition;
+        descriptor.identity = text(raw.identity);
+        descriptor.trackTitle = text(raw.trackTitle);
+        descriptor.trackArtist = text(raw.trackArtist);
+        descriptor.trackArtUrl = text(raw.trackArtUrl);
+        descriptor.canTogglePlaying = raw.canTogglePlaying === true;
+        descriptor.canGoPrevious = raw.canGoPrevious === true;
+        descriptor.canGoNext = raw.canGoNext === true;
     }
     return Object.freeze(descriptor);
 }

@@ -160,6 +160,8 @@ FocusScope {
     readonly property bool isTimerOrJob: (root.activityPresentation?.source === "timer"
         || root.activityPresentation?.source === "job") && !root.recording
     readonly property bool isAgentAttention: root.primaryPresentation?.source === "agent" && !root.recording
+    readonly property bool isFocus: root.activityPresentation?.source === "focus"
+        && !root.eventPresentation && !root.recording
 
     Rectangle {
         anchors.fill: parent
@@ -245,6 +247,18 @@ FocusScope {
                     easing.bezierCurve: Motion.springDamped
                 }
             }
+
+            TapHandler {
+                id: focusToggle
+                enabled: root.isFocus
+                onTapped: CenterNotchCoordinator.toggleFocus()
+            }
+
+            Accessible.role: root.isFocus ? Accessible.Button : Accessible.NoRole
+            Accessible.name: root.isFocus
+                ? I18n.tr(CenterNotchCoordinator.focusEnabled
+                    ? "center_island.focus.disable" : "center_island.focus.enable") : ""
+            Accessible.focusable: root.isFocus
 
             Item {
                 id: aiBeacon

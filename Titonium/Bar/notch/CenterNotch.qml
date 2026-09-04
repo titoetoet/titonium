@@ -28,6 +28,8 @@ FocusScope {
     readonly property bool mediaContext: root.contextSource === "media"
     readonly property bool focusContext: root.contextSource === "focus"
     readonly property bool notificationContext: root.contextSource === "notification"
+    readonly property var resolvedPlayer: MprisService.selectedPlayer?.identity === root.context?.identity
+        ? MprisService.selectedPlayer : null
     property real canvasContentProgress: root.isBanner
         ? CenterNotchCoordinator.dragProgress : 1
     readonly property var notification: {
@@ -81,7 +83,7 @@ FocusScope {
                     Image {
                         id: artwork
                         anchors.fill: parent
-                        source: MprisService.selectedPlayer?.trackArtUrl || ""
+                        source: root.resolvedPlayer?.trackArtUrl || root.context?.trackArtUrl || ""
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true
                         cache: true
@@ -101,7 +103,7 @@ FocusScope {
                     spacing: 1
                     Shared.TextLabel {
                         Layout.fillWidth: true
-                        text: MprisService.selectedPlayer?.trackTitle
+                        text: root.resolvedPlayer?.trackTitle || root.context?.trackTitle
                             || root.context?.title || I18n.tr("menubar.center.media_unknown")
                         variant: "label"
                         strong: true
@@ -109,7 +111,7 @@ FocusScope {
                     }
                     Shared.TextLabel {
                         Layout.fillWidth: true
-                        text: MprisService.selectedPlayer?.trackArtist || ""
+                        text: root.resolvedPlayer?.trackArtist || root.context?.trackArtist || ""
                         visible: text.length > 0
                         variant: "caption"
                         tone: "secondary"
@@ -120,9 +122,9 @@ FocusScope {
 
                 RowLayout {
                     spacing: 4
-                    Shared.Button { size: "small"; variant: "quiet"; iconName: "skip_previous"; showFocusRing: false; onTriggered: MprisService.previous() }
-                    Shared.Button { size: "small"; variant: "primary"; iconName: MprisService.playing ? "pause" : "play_arrow"; showFocusRing: false; onTriggered: MprisService.togglePlaying() }
-                    Shared.Button { size: "small"; variant: "quiet"; iconName: "skip_next"; showFocusRing: false; onTriggered: MprisService.next() }
+                    Shared.Button { size: "small"; variant: "quiet"; iconName: "skip_previous"; showFocusRing: false; enabled: root.resolvedPlayer?.canGoPrevious === true; accessibleName: I18n.tr("center_island.media.previous"); onTriggered: MprisService.previous() }
+                    Shared.Button { size: "small"; variant: "primary"; iconName: MprisService.playing ? "pause" : "play_arrow"; showFocusRing: false; enabled: root.resolvedPlayer?.canTogglePlaying === true; accessibleName: I18n.tr(MprisService.playing ? "center_island.media.pause" : "center_island.media.play"); onTriggered: MprisService.togglePlaying() }
+                    Shared.Button { size: "small"; variant: "quiet"; iconName: "skip_next"; showFocusRing: false; enabled: root.resolvedPlayer?.canGoNext === true; accessibleName: I18n.tr("center_island.media.next"); onTriggered: MprisService.next() }
                 }
             }
 
@@ -137,7 +139,7 @@ FocusScope {
                     height: parent.height
                     color: Theme.accent
                     width: {
-                        const player = MprisService.selectedPlayer;
+                        const player = root.resolvedPlayer || root.context;
                         if (!player || !player.trackLength)
                             return 0;
                         return parent.width * Math.min(1, Math.max(0,
@@ -158,14 +160,14 @@ FocusScope {
                     spacing: 1
                     Shared.TextLabel {
                         Layout.fillWidth: true
-                        text: root.notification?.summary || root.context?.title || I18n.tr("menubar.center.notification_new")
+                        text: root.notification?.summary || root.context?.summary || root.context?.title || I18n.tr("menubar.center.notification_new")
                         variant: "label"
                         strong: true
                         elide: Text.ElideRight
                     }
                     Shared.TextLabel {
                         Layout.fillWidth: true
-                        text: root.notification?.body || ""
+                        text: root.notification?.body || root.context?.body || ""
                         visible: text.length > 0
                         variant: "caption"
                         tone: "secondary"
@@ -211,7 +213,7 @@ FocusScope {
                 size: "small"
                 variant: "quiet"
                 iconName: "open_in_full"
-                accessibleName: I18n.tr("menubar.center_notch.accessible")
+                accessibleName: I18n.tr("center_island.expand")
                 onTriggered: root.expandedRequested()
             }
 

@@ -84,6 +84,23 @@ assert.equal(state.showingFocus, false);
 assert.equal(state.generation, 1);
 console.log("PASS activity descriptors normalize into frozen value state");
 
+let mediaState = rules.upsert(rules.initialState(), {
+    id: "media:current", source: "media", label: "Tycho · Awake",
+    icon: "music_note", importance: "normal", progress: 50,
+    deadline: 0, updatedAt: 2000, trackLength: 200, trackPosition: 100,
+    identity: "player.a", trackTitle: "Awake", trackArtist: "Tycho",
+    trackArtUrl: "file:///cover.jpg", canTogglePlaying: true,
+    canGoPrevious: false, canGoNext: true,
+}, 2000);
+assert.deepEqual(plain(mediaState.activities[0]), {
+    id: "media:current", source: "media", label: "Tycho · Awake",
+    icon: "music_note", importance: "normal", progress: 50,
+    deadline: 0, updatedAt: 2000, trackLength: 200, trackPosition: 100,
+    identity: "player.a", trackTitle: "Awake", trackArtist: "Tycho",
+    trackArtUrl: "file:///cover.jpg", canTogglePlaying: true,
+    canGoPrevious: false, canGoNext: true,
+});
+
 const unchanged = state;
 for (const invalid of [
     null,

@@ -92,6 +92,13 @@ function activity(player, now) {
         updatedAt: Number.isFinite(now) ? now : 0,
         trackLength: value.trackLength,
         trackPosition: value.trackPosition,
+        identity: value.identity,
+        trackTitle: value.trackTitle,
+        trackArtist: value.trackArtist,
+        trackArtUrl: value.trackArtUrl,
+        canTogglePlaying: value.canTogglePlaying,
+        canGoPrevious: value.canGoPrevious,
+        canGoNext: value.canGoNext,
     });
 }
 

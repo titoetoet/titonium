@@ -102,6 +102,13 @@ assert.deepEqual(plain(rules.activity(playing, 2000)), {
     updatedAt: 2000,
     trackLength: 0,
     trackPosition: 0,
+    identity: "player.a",
+    trackTitle: "Awake",
+    trackArtist: "Tycho",
+    trackArtUrl: "",
+    canTogglePlaying: false,
+    canGoPrevious: false,
+    canGoNext: false,
 });
 assert.equal(rules.activity(paused, 3000), null);
 assert.equal(rules.activity({ ...playing, trackTitle: "" }, 4000), null);
