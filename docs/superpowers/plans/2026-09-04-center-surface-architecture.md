@@ -10,6 +10,12 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-04-center-surface-architecture-design.md`
 
+**Execution status (2026-09-04):** Tasks 1–9 implemented. Task 10 verification is in progress;
+static checks, foreground smoke, focused Center acceptance, and `hyprctl configerrors` pass. The
+aggregate protected gate reaches Notifications but cannot inject its fixture while the user's
+existing notification daemon owns `org.freedesktop.Notifications`; that user-owned process has not
+been stopped.
+
 ## Global Constraints
 
 - Work only in `/home/cole/Projects/titonium/.worktrees/center-surface-architecture` on branch `refactor/center-surface-architecture`; do not modify, stash, reset, or clean the user's `main` checkout.
