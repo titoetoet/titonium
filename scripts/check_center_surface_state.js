@@ -84,4 +84,9 @@ const closed = rules.transition(selected, withoutNotification,
 assert.equal(closed.mode, "closed");
 assert.equal(closed.ownerScreenName, "");
 assert.ok(closed.generation > selected.generation);
+const finished = rules.transition(closed, withoutNotification, {
+    type: "finish-close", screenName: closed.exitingScreenName,
+    generation: closed.generation,
+}, 4100);
+assert.equal(finished.exitingScreenName, "");
 console.log("PASS surface revocation closes ownership generation-safely");

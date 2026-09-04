@@ -63,6 +63,12 @@ function transition(state, snapshot, intent, now) {
     }
     if (type === "surface-denied")
         return current;
+    if (type === "finish-close") {
+        if (Number(intent.generation) !== current.generation
+                || String(intent.screenName || "") !== current.exitingScreenName)
+            return current;
+        return nextState(current, { exitingScreenName: "" }, false);
+    }
     if (type === "surface-revoked" || type === "dismiss") {
         if (current.mode === "closed")
             return current;
