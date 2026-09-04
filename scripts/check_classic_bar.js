@@ -3,9 +3,11 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
+const vm = require("node:vm");
 
 const root = path.resolve(__dirname, "..");
 const read = relative => fs.readFileSync(path.join(root, relative), "utf8");
+const classicRenderer = read("Titonium/Bar/center/presentations/Classic/ClassicRenderer.qml");
 const required = [
     "Titonium/Bar/classic/ClassicBar.qml",
     "Titonium/Bar/classic/ClassicStartIsland.qml",
@@ -68,6 +70,18 @@ requireFragments("Titonium/Bar/classic/ClassicBar.qml", [
     "readonly property alias statusHitbox: endIsland.statusHitbox",
 ]);
 requireSurfaceCount("Titonium/Bar/classic/ClassicBar.qml", 0);
+
+const rulesPath = path.join(root, "Titonium", "Bar", "center", "CenterPresentationRules.js");
+const rules = vm.createContext({});
+vm.runInContext(fs.readFileSync(rulesPath, "utf8").replace(/^\.pragma library\s*\n/, ""), rules,
+    { filename: rulesPath });
+assert.deepEqual(JSON.parse(JSON.stringify(rules.geometry(rules.profile("classic"),
+    { width: 1920, height: 1080 }, "compact"))), {
+    x: 880, y: 8, width: 160, height: 36, radius: 16,
+}, "Classic compact Center geometry must be inset from the top edge");
+assert.doesNotMatch(classicRenderer,
+    /Connected\.ConnectedRenderer|shoulderSize|bodyWidth\s*:[^\n]*shoulder/,
+    "Classic compact Center geometry must not reserve Connected shoulder width");
 
 const surface = read("Titonium/Bar/BarSurface.qml");
 assert.match(surface, /active:\s*RightPillCoordinator\.presentedStyle\s*===\s*"connected"/,

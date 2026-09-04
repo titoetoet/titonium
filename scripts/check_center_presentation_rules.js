@@ -101,6 +101,23 @@ assert.doesNotMatch(renderer, /Services\.(Capture|Mpris|Notifications|AgentAppro
 assert.doesNotMatch(renderer, /\b(Process|FileView|Timer)\s*\{/);
 console.log("PASS Connected renderer exposes neutral state and intent contract");
 
+const classicRenderer = fs.readFileSync(path.join(path.dirname(rulesPath),
+    "presentations/Classic/ClassicRenderer.qml"), "utf8");
+assert.doesNotMatch(classicRenderer,
+    /Connected\.ConnectedRenderer|ConnectedPillShape|shoulderSize/,
+    "Classic renderer must not reuse Connected shoulder geometry");
+assert.match(classicRenderer, /Shared\.Surface\s*\{/,
+    "Classic renderer must render its own rounded surface");
+assert.match(classicRenderer,
+    /readonly property rect visualBounds:[\s\S]*?classicBody/,
+    "Classic renderer must expose bounds from its own body");
+for (const fragment of ["required property var snapshot", "required property var viewState",
+    "required property var profile", "signal intentRequested(var intent)",
+    "signal transitionFinished(int generation)", "readonly property rect visualBounds",
+    "readonly property rect interactiveBounds"])
+    assert.ok(classicRenderer.includes(fragment), `Classic renderer missing ${fragment}`);
+console.log("PASS Classic renderer keeps the neutral contract without Connected shoulders");
+
 for (const legacy of ["CenterNotchCoordinator.qml", "CenterNotchSurface.qml",
     "CenterNotch.qml", "CenterPillWindow.qml"]) {
     assert.equal(fs.existsSync(path.join(root, "Titonium", "Bar", "notch", legacy)), false,
