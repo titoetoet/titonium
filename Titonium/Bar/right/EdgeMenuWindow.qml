@@ -94,10 +94,12 @@ PanelWindow {
     onEffectiveInteractiveFocusChanged: {
         if (window.effectiveInteractiveFocus) {
             window.diagnosticFocusOwnerId = window.focusOwnerId;
-            FocusDiagnostics.observe(window.diagnosticFocusOwnerId, true,
+            FocusDiagnostics.observe(window.diagnosticFocusOwnerId,
+                window.focusLease, true,
                 { mode: "open", focusPolicy: "exclusive" });
         } else if (window.diagnosticFocusOwnerId) {
-            FocusDiagnostics.observe(window.diagnosticFocusOwnerId, false,
+            FocusDiagnostics.observe(window.diagnosticFocusOwnerId,
+                window.focusLease, false,
                 { mode: "closed", focusPolicy: "exclusive" });
             window.diagnosticFocusOwnerId = "";
         }
@@ -111,7 +113,8 @@ PanelWindow {
         if (window.focusOwnerId) {
             FocusArbiter.withdraw(window.focusOwnerId, window.focusLease);
             if (window.diagnosticFocusOwnerId)
-                FocusDiagnostics.observe(window.diagnosticFocusOwnerId, false,
+                FocusDiagnostics.observe(window.diagnosticFocusOwnerId,
+                    window.focusLease, false,
                     { mode: "destroyed" });
         }
         if (RightPillCoordinator.connectedSurfacePresented

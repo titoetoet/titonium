@@ -27,7 +27,7 @@ PanelWindow {
                 window.wantsInteractiveFocus);
     }
     onEffectiveInteractiveFocusChanged: FocusDiagnostics.observe(
-        window.focusOwnerId, window.effectiveInteractiveFocus,
+        window.focusOwnerId, window.focusLease, window.effectiveInteractiveFocus,
         { mode: window.isFileChange ? "file-change" : "approval", focusPolicy: "on-demand" })
     Component.onCompleted: {
         window.focusLease = FocusArbiter.newLease("agent-approval");
@@ -81,6 +81,7 @@ PanelWindow {
 
     Component.onDestruction: {
         FocusArbiter.withdraw(window.focusOwnerId, window.focusLease);
-        FocusDiagnostics.observe(window.focusOwnerId, false, { mode: "destroyed" });
+        FocusDiagnostics.observe(window.focusOwnerId, window.focusLease, false,
+            { mode: "destroyed" });
     }
 }

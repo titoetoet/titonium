@@ -36,6 +36,28 @@ assert.deepEqual(plain(diagnosticState), {
     owner: "", acquiredAt: 0, releasedAt: 150, violation: "",
 });
 
+let diagnosticLeaseState = diagnostics.initial();
+diagnosticLeaseState = diagnostics.transition(
+    diagnosticLeaseState, "center:DP-1", true, 100, "center-instance-old");
+diagnosticLeaseState = diagnostics.transition(
+    diagnosticLeaseState, "center:DP-1", false, 110, "center-instance-old");
+diagnosticLeaseState = diagnostics.transition(
+    diagnosticLeaseState, "center:DP-1", true, 120, "center-instance-new");
+const diagnosticNewInstance = diagnosticLeaseState;
+assert.equal(diagnosticLeaseState.owner, "center:DP-1");
+assert.equal(diagnosticLeaseState.lease, "center-instance-new");
+assert.strictEqual(diagnostics.transition(
+    diagnosticLeaseState, "center:DP-1", false, 130, "center-instance-old"),
+    diagnosticNewInstance,
+    "stale same-ID destruction cannot clear the newer diagnostic lease holder");
+const diagnosticDuplicate = diagnostics.transition(
+    diagnosticLeaseState, "center:DP-1", true, 140, "center-instance-duplicate");
+assert.equal(diagnosticDuplicate.owner, "center:DP-1");
+assert.equal(diagnosticDuplicate.lease, "center-instance-new");
+assert.equal(diagnosticDuplicate.violation,
+    "exclusive-focus-conflict:center:DP-1:center:DP-1",
+    "overlapping same-ID diagnostic leases must remain conflict-visible");
+
 let state = arbiter.initial();
 assert.deepEqual(plain(state), {
     owner: "", pendingOwner: "", generation: 0,
@@ -351,6 +373,9 @@ for (const contract of interactiveWindows) {
     assert.match(text,
         /onEffectiveInteractiveFocusChanged:[\s\S]{0,260}FocusDiagnostics\.observe\(/,
         `${contract.relative} diagnostics must observe effective grant changes`);
+    assert.match(text,
+        /FocusDiagnostics\.observe\([\s\S]{0,180}window\.focusLease/,
+        `${contract.relative} diagnostics must pass its matching requester lease`);
     assert.equal(text.includes("FocusDiagnostics.observe(window.focusLease"), false,
         `${contract.relative} diagnostics must retain stable logical owner IDs`);
 }
@@ -385,6 +410,17 @@ assert.match(edgeMenu, /property string diagnosticFocusOwnerId:/,
 assert.match(edgeMenu,
     /onEffectiveInteractiveFocusChanged:[\s\S]{0,700}FocusDiagnostics\.observe\(window\.diagnosticFocusOwnerId/,
     "EdgeMenuWindow must release the identity that actually held its effective grant");
+
+const diagnosticsQml = fs.readFileSync(
+    path.join(root, "Titonium/Core/Surfaces/FocusDiagnostics.qml"), "utf8");
+assert.match(diagnosticsQml, /property string holderLease:/,
+    "FocusDiagnostics must retain the lease of its current diagnostic holder");
+assert.match(diagnosticsQml,
+    /function observe\(ownerId: string, lease: string, active: bool, metadata: var\)/,
+    "FocusDiagnostics observe must accept a requester lease");
+assert.match(diagnosticsQml,
+    /holderOwnerId[\s\S]{0,500}holderLease[\s\S]{0,500}return;/,
+    "FocusDiagnostics must ignore stale lease cleanup");
 
 const qmldir = fs.readFileSync(
     path.join(root, "Titonium/Core/Surfaces/qmldir"), "utf8");

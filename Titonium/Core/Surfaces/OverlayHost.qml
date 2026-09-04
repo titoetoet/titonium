@@ -41,10 +41,12 @@ Scope {
             onEffectiveInteractiveFocusChanged: {
                 if (window.effectiveInteractiveFocus) {
                     window.diagnosticFocusOwnerId = window.focusOwnerId;
-                    FocusDiagnostics.observe(window.diagnosticFocusOwnerId, true,
+                    FocusDiagnostics.observe(window.diagnosticFocusOwnerId,
+                        window.focusLease, true,
                         { mode: "overlay", focusPolicy: "exclusive" });
                 } else if (window.diagnosticFocusOwnerId) {
-                    FocusDiagnostics.observe(window.diagnosticFocusOwnerId, false,
+                    FocusDiagnostics.observe(window.diagnosticFocusOwnerId,
+                        window.focusLease, false,
                         { mode: "closed", focusPolicy: "exclusive" });
                     window.diagnosticFocusOwnerId = "";
                 }
@@ -171,7 +173,8 @@ Scope {
                 if (window.focusOwnerId) {
                     FocusArbiter.withdraw(window.focusOwnerId, window.focusLease);
                     if (window.diagnosticFocusOwnerId)
-                        FocusDiagnostics.observe(window.diagnosticFocusOwnerId, false,
+                        FocusDiagnostics.observe(window.diagnosticFocusOwnerId,
+                            window.focusLease, false,
                             { mode: "destroyed" });
                 }
                 const ownerId = SurfaceManager.ownerId;

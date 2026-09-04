@@ -28,7 +28,7 @@ PanelWindow {
                 window.wantsInteractiveFocus);
     }
     onEffectiveInteractiveFocusChanged: FocusDiagnostics.observe(
-        window.focusOwnerId, window.effectiveInteractiveFocus, {
+        window.focusOwnerId, window.focusLease, window.effectiveInteractiveFocus, {
             mode: window.viewState.mode, generation: window.viewState.generation,
             focusPolicy: window.viewState.focusPolicy
         })
@@ -94,6 +94,7 @@ PanelWindow {
 
     Component.onDestruction: {
         FocusArbiter.withdraw(window.focusOwnerId, window.focusLease);
-        FocusDiagnostics.observe(window.focusOwnerId, false, { mode: "destroyed" });
+        FocusDiagnostics.observe(window.focusOwnerId, window.focusLease, false,
+            { mode: "destroyed" });
     }
 }

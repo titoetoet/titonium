@@ -23,7 +23,7 @@ PanelWindow {
                 window.wantsInteractiveFocus);
     }
     onEffectiveInteractiveFocusChanged: FocusDiagnostics.observe(
-        window.focusOwnerId, window.effectiveInteractiveFocus,
+        window.focusOwnerId, window.focusLease, window.effectiveInteractiveFocus,
         { mode: window.ownsSettings ? "open" : "closed", focusPolicy: "exclusive" })
     Component.onCompleted: {
         window.focusLease = FocusArbiter.newLease("settings");
@@ -55,7 +55,8 @@ PanelWindow {
 
     Component.onDestruction: {
         FocusArbiter.withdraw(window.focusOwnerId, window.focusLease);
-        FocusDiagnostics.observe(window.focusOwnerId, false, { mode: "destroyed" });
+        FocusDiagnostics.observe(window.focusOwnerId, window.focusLease, false,
+            { mode: "destroyed" });
         if (window.ownsSettings)
             SettingsCoordinator.forceCancelAndClose();
     }
