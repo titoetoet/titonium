@@ -94,14 +94,14 @@ QtObject {
         target: "notifications"
         function state(): string {
             return JSON.stringify({
-                descriptorCount: NotificationService.notifications.length,
-                toastCount: NotificationService.toastNotifications.length,
-                unreadCount: NotificationService.unreadCount,
+                descriptorCount: NotificationCoordinator.history.length,
+                toastCount: NotificationCoordinator.toasts.length,
+                unreadCount: NotificationCoordinator.unreadCount,
             });
         }
         function markRead(): string {
-            NotificationService.markAllRead();
-            return String(NotificationService.unreadCount);
+            NotificationCoordinator.markAllRead();
+            return String(NotificationCoordinator.unreadCount);
         }
     }
 

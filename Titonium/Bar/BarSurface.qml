@@ -13,6 +13,7 @@ import "BarVisibilityRules.js" as BarVisibilityRules
 PanelWindow {
     id: root
     required property ShellScreen screenModel
+    signal notificationsRequested(var screen, var invoker)
     readonly property int barHeight: Metrics.barHeight
     readonly property int edgeRevealHeight: 2
     readonly property bool revealRequested: BarVisibilityRules.shouldReveal(
@@ -43,6 +44,8 @@ PanelWindow {
         root.hitbox(classicBarLoader.item, "activeWindowHitbox")
     readonly property var classicPinHitbox:
         root.hitbox(classicBarLoader.item, "pinHitbox")
+    readonly property var classicNotificationHitbox:
+        root.hitbox(classicBarLoader.item, "notificationHitbox")
     readonly property var classicConnectivityHitbox:
         root.hitbox(classicBarLoader.item, "connectivityHitbox")
     readonly property var classicStatusHitbox:
@@ -60,6 +63,7 @@ PanelWindow {
         Region { item: root.classicWorkspaceHitbox }
         Region { item: root.classicActiveWindowHitbox }
         Region { item: root.classicPinHitbox }
+        Region { item: root.classicNotificationHitbox }
         Region { item: root.classicConnectivityHitbox }
         Region { item: root.classicStatusHitbox }
     }
@@ -71,6 +75,8 @@ PanelWindow {
             width: parent.width
             height: parent.height
             screen: root.screenModel
+            onNotificationsRequested: (screen, invoker) =>
+                root.notificationsRequested(screen, invoker)
         }
     }
 
@@ -81,6 +87,8 @@ PanelWindow {
             width: parent.width
             height: parent.height
             screen: root.screenModel
+            onNotificationsRequested: (screen, invoker) =>
+                root.notificationsRequested(screen, invoker)
         }
     }
 

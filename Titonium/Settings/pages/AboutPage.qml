@@ -30,8 +30,8 @@ Item {
         { label: I18n.tr("settings.about.network"), value: root.stateText(NetworkService.available) },
         { label: I18n.tr("settings.about.bluetooth"), value: root.stateText(BluetoothService.available) },
         { label: I18n.tr("settings.about.notifications"),
-            value: NotificationService.notifications.length + " · "
-                + NotificationService.unreadCount },
+            value: NotificationCoordinator.history.length + " · "
+                + NotificationCoordinator.unreadCount },
     ]
 
     ColumnLayout {

@@ -9,6 +9,7 @@ import "notch/BarLayout.js" as BarLayout
 Item {
     id: root
     required property var screen
+    signal notificationsRequested(var screen, var invoker)
     readonly property bool hovered: barHover.hovered
     readonly property alias leftHitbox: leftReservation
     readonly property alias rightHitbox: rightReservation
@@ -58,6 +59,8 @@ Item {
             width: Math.max(0, parent.width - 16)
             height: Metrics.widgetHeight
             screen: root.screen
+            onNotificationsRequested: (screen, invoker) =>
+                root.notificationsRequested(screen, invoker)
         }
     }
 

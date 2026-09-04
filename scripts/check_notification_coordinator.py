@@ -43,6 +43,7 @@ def main() -> int:
         "function publishInternal(event: var): bool",
         "function read(key: string): bool",
         "function dismiss(key: string): bool",
+        "function dismissAll(): int",
         "function action(key: string, actionId: string): bool",
         "function pauseCritical(): bool",
         "function resumeCritical(): bool",

@@ -1,7 +1,6 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import qs.Titonium.Core.Surfaces.Center
 import qs.Titonium.Core.Runtime
 import qs.Titonium.Services.Notifications
 import qs.Titonium.Shared as Shared
@@ -11,24 +10,15 @@ Item {
     id: root
 
     required property var screen
-    readonly property var latestNotification: NotificationService.notifications.length > 0
-        ? NotificationService.notifications[0] : null
+    signal toggleRequested(var screen, var invoker)
 
-    visible: NotificationService.hasUnread
     implicitWidth: 28
     implicitHeight: Metrics.widgetHeight
 
-    onVisibleChanged: {
-        if (!root.visible) {
-            wobble.stop();
-            bellIcon.rotation = 0;
-        }
-    }
-
     Connections {
-        target: NotificationService
+        target: NotificationCoordinator
         function onUnreadCountChanged(): void {
-            if (NotificationService.unreadCount > 0 && !Motion.reduced)
+            if (NotificationCoordinator.unreadCount > 0 && !Motion.reduced)
                 wobble.restart();
         }
     }
@@ -64,6 +54,7 @@ Item {
     }
 
     Rectangle {
+        visible: NotificationCoordinator.hasUnread
         anchors.top: bellIcon.top
         anchors.right: bellIcon.right
         anchors.topMargin: -4
@@ -75,8 +66,8 @@ Item {
 
         Text {
             anchors.centerIn: parent
-            text: NotificationService.unreadCount > 9
-                ? "9+" : String(NotificationService.unreadCount)
+            text: NotificationCoordinator.unreadCount > 9
+                ? "9+" : String(NotificationCoordinator.unreadCount)
             color: "#ffffff"
             font.pixelSize: 8
             font.bold: true
@@ -95,17 +86,12 @@ Item {
     HoverHandler { id: bellHover; cursorShape: Qt.PointingHandCursor }
     TapHandler {
         id: bellTap
-        onTapped: {
-            const item = root.latestNotification;
-            CenterSurfaceController.dispatch({ type: "request-open",
-                screenName: root.screen.name, mode: "banner",
-                contextId: item ? "notification:" + item.id : "",
-                timeoutMs: 0, focusPolicy: "none" });
-        }
+        onTapped: root.toggleRequested(root.screen, root)
     }
 
     Accessible.role: Accessible.Button
-    Accessible.name: I18n.tr("notification.bell.unread", {
-        count: NotificationService.unreadCount
+    Accessible.name: I18n.tr(NotificationCoordinator.hasUnread
+        ? "notification.bell.unread" : "notification.bell.none", {
+        count: NotificationCoordinator.unreadCount
     })
 }

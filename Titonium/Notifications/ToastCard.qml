@@ -99,7 +99,7 @@ Item {
             return;
         root.dismissing = true;
         if (Motion.reduced) {
-            NotificationService.dismiss(root.notification.key);
+            NotificationCoordinator.dismiss(root.notification.key);
         } else {
             toastExit.start();
         }
@@ -124,7 +124,7 @@ Item {
             duration: 130
             easing.type: Easing.InCubic
         }
-        onFinished: NotificationService.dismiss(root.notification.key)
+        onFinished: NotificationCoordinator.dismiss(root.notification.key)
     }
 
     Behavior on opacity {
@@ -136,7 +136,7 @@ Item {
         interval: Preferences.notifications.toastDuration
         repeat: false
         running: true
-        onTriggered: NotificationService.expireToast(root.notification.key)
+        onTriggered: NotificationCoordinator.expireToast(root.notification.key)
     }
 
     ParallelAnimation {

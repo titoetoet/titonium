@@ -7,8 +7,10 @@ import qs.Titonium.Core.Screens
 import qs.Titonium.Core.Surfaces
 import qs.Titonium.Core.Surfaces.Center
 import qs.Titonium.Services.Hyprland
+import qs.Titonium.Services.Notifications
 import qs.Titonium.Settings
 import "../Settings/SettingsLifecycleRules.js" as SettingsLifecycleRules
+import "NotificationPanelRouting.js" as NotificationPanelRouting
 
 QtObject {
     id: root
@@ -55,6 +57,35 @@ QtObject {
     function closeCenter(reason: string): bool {
         return CenterSurfaceController.dispatch({ type: "request-mode", mode: "compact",
             reason: reason });
+    }
+
+    function toggleNotificationPanel(requestedScreen: var, invoker: var): string {
+        const screen = root.centerScreen(requestedScreen);
+        if (!screen)
+            return "unavailable:no-screen";
+        const owner = NotificationPanelRouting.ownerId(screen.name);
+        const action = NotificationPanelRouting.toggleAction(SurfaceManager.ownerId, owner);
+        if (action === "close") {
+            SurfaceManager.close(owner);
+            return "closed:" + screen.name;
+        }
+        if (action === "reject")
+            return "unavailable:no-screen";
+        if (!SettingsLifecycleRules.canYield(SettingsCoordinator.active, Preferences.savePending)
+                || !SettingsCoordinator.forceCancelAndClose())
+            return "unavailable:busy";
+        root.closeCenter("notifications-opened");
+        RightPillCoordinator.close();
+        const opened = SurfaceManager.open(owner, {
+            "source": Qt.resolvedUrl("../Notifications/NotificationPanel.qml"),
+            "keyboardFocus": "exclusive",
+            "closeOnMonitorChange": true,
+            "ownerId": owner,
+            "invoker": invoker
+        }, screen);
+        if (opened)
+            NotificationCoordinator.markAllRead();
+        return opened ? "open:" + screen.name : "unavailable:no-screen";
     }
 
     function openSpotlight(scope: string, query: string, stateMode: string, requestedScreen: var): string {

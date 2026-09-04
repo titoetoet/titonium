@@ -125,6 +125,16 @@ QtObject {
         return known || nativeAccepted || changed;
     }
 
+    function dismissAll(): int {
+        const keys = root.history.map(item => item.key);
+        let dismissed = 0;
+        for (let index = 0; index < keys.length; index++) {
+            if (root.dismiss(keys[index]))
+                dismissed += 1;
+        }
+        return dismissed;
+    }
+
     function retire(key: string, reason: string): bool {
         return root.applyState(CoordinatorRules.retire(
             root.coordinatorState, key, reason, Date.now()));

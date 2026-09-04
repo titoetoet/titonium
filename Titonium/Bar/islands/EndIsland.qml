@@ -8,6 +8,7 @@ import qs.Titonium.Theme
 Item {
     id: root
     required property var screen
+    signal notificationsRequested(var screen, var invoker)
     property bool showConnectivityDiagnostics: true
     property real menuAnchorOffset: 0
     readonly property int preferredWidth: endRow.implicitWidth
@@ -38,6 +39,8 @@ Item {
 
         NotificationBell {
             screen: root.screen
+            onToggleRequested: (screen, invoker) =>
+                root.notificationsRequested(screen, invoker)
         }
 
         StatusPill {

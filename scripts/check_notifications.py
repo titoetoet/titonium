@@ -24,13 +24,13 @@ PRESENTATION_FILES = {
         "WlrLayershell.keyboardFocus: WlrKeyboardFocus.None",
         "anchors { top: true; right: true",
         "Metrics.barHeight + Metrics.barSpacing",
-        "active: NotificationService.toastNotifications.length > 0",
+        "active: NotificationCoordinator.toasts.length > 0",
         "Region { item: stackLoader }",
     ),
     "ToastStack.qml": (
         "width: 360",
         "Repeater {",
-        "model: NotificationService.toastNotifications",
+        "model: NotificationCoordinator.toasts",
         "ToastCard {",
     ),
     "ToastCard.qml": (
@@ -38,8 +38,8 @@ PRESENTATION_FILES = {
         "Shared.SystemIcon",
         "maximumLineCount: 1",
         "maximumLineCount: 3",
-        "NotificationService.expireToast(root.notification.key)",
-        "NotificationService.dismiss(root.notification.key)",
+        "NotificationCoordinator.expireToast(root.notification.key)",
+        "NotificationCoordinator.dismiss(root.notification.key)",
         "Timer {",
         "interval: Preferences.notifications.toastDuration",
         "repeat: false",
@@ -247,6 +247,8 @@ def validate_presentation(errors: list[str]) -> None:
             if fragment not in source:
                 errors.append(f"{filename} missing toast contract: {fragment}")
     feature = "\n".join(sources)
+    if "NotificationService" in feature:
+        errors.append("notification presentation must consume NotificationCoordinator, not NotificationService")
     for fragment in (
         "import Quickshell.Services.Notifications", "Process", "FileView",
         "execDetached", "MultiEffect", "ShaderEffect", "Animation.Infinite",
@@ -285,13 +287,15 @@ def validate_composition(errors: list[str]) -> None:
             if re.search(rf"\b{forbidden}\w*\s*\(", ipc, re.IGNORECASE):
                 errors.append(f"notifications IPC exposes forbidden mutation: {forbidden}")
         for fragment in (
-            "NotificationService.notifications.length",
-            "NotificationService.toastNotifications.length",
-            "NotificationService.unreadCount",
-            "NotificationService.markAllRead()",
+            "NotificationCoordinator.history.length",
+            "NotificationCoordinator.toasts.length",
+            "NotificationCoordinator.unreadCount",
+            "NotificationCoordinator.markAllRead()",
         ):
             if fragment not in ipc:
                 errors.append(f"notifications IPC missing narrow state contract: {fragment}")
+        if "NotificationService" in ipc:
+            errors.append("notifications IPC must project NotificationCoordinator state")
 
 
 def main() -> int:

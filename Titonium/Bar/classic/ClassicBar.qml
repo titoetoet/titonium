@@ -8,10 +8,12 @@ Item {
     id: root
 
     required property var screen
+    signal notificationsRequested(var screen, var invoker)
     readonly property alias archHitbox: startIsland.archHitbox
     readonly property alias workspaceHitbox: startIsland.workspaceHitbox
     readonly property alias activeWindowHitbox: startIsland.activeWindowHitbox
     readonly property alias pinHitbox: endIsland.pinHitbox
+    readonly property alias notificationHitbox: endIsland.notificationHitbox
     readonly property alias connectivityHitbox: endIsland.connectivityHitbox
     readonly property alias statusHitbox: endIsland.statusHitbox
     readonly property bool hovered: barHover.hovered
@@ -42,6 +44,8 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         screen: root.screen
         showConnectivityDiagnostics: root.optionalPlan.showConnectivityDiagnostics
+        onNotificationsRequested: (screen, invoker) =>
+            root.notificationsRequested(screen, invoker)
     }
 
     HoverHandler { id: barHover }

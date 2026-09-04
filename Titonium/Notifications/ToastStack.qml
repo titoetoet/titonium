@@ -18,7 +18,7 @@ Item {
         spacing: Metrics.spacingSmall
 
         Repeater {
-            model: NotificationService.toastNotifications
+            model: NotificationCoordinator.toasts
 
             delegate: ToastCard {
                 required property var modelData

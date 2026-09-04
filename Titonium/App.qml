@@ -27,6 +27,8 @@ Scope {
 
     BarHost {
         onSettingsRequested: screen => router.openSettings(screen, "bar")
+        onNotificationsRequested: (screen, invoker) =>
+            router.toggleNotificationPanel(screen, invoker)
     }
 
     GlobalShortcut {

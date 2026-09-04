@@ -44,21 +44,25 @@ assert.doesNotMatch(read("Titonium/Bar/classic/ClassicCenterGroup.qml"),
     /CenterIsland|Shared\.Surface|TapHandler|HoverHandler/,
     "Classic Center group is a passive reservation, not another visual owner");
 requireFragments("Titonium/Bar/classic/ClassicEndIsland.qml", [
+    "readonly property alias notificationHitbox: notificationSurface",
     "readonly property alias pinHitbox: pinSurface",
     "readonly property alias connectivityHitbox: connectivitySurface",
     "readonly property alias statusHitbox: statusSurface",
+    "id: notificationSurface",
     "id: pinSurface",
     "id: connectivitySurface",
     "id: statusSurface",
+    "NotificationBell {",
     "TopbarPin {",
     "ConnectivityPill {",
     "StatusPill {",
 ]);
-requireSurfaceCount("Titonium/Bar/classic/ClassicEndIsland.qml", 3);
+requireSurfaceCount("Titonium/Bar/classic/ClassicEndIsland.qml", 4);
 requireFragments("Titonium/Bar/classic/ClassicBar.qml", [
     "readonly property alias archHitbox: startIsland.archHitbox",
     "readonly property alias workspaceHitbox: startIsland.workspaceHitbox",
     "readonly property alias activeWindowHitbox: startIsland.activeWindowHitbox",
+    "readonly property alias notificationHitbox: endIsland.notificationHitbox",
     "readonly property alias pinHitbox: endIsland.pinHitbox",
     "readonly property alias connectivityHitbox: endIsland.connectivityHitbox",
     "readonly property alias statusHitbox: endIsland.statusHitbox",
@@ -77,6 +81,7 @@ requireFragments("Titonium/Bar/BarSurface.qml", [
     "readonly property var classicArchHitbox:",
     "readonly property var classicWorkspaceHitbox:",
     "readonly property var classicActiveWindowHitbox:",
+    "readonly property var classicNotificationHitbox:",
     "readonly property var classicPinHitbox:",
     "readonly property var classicConnectivityHitbox:",
     "readonly property var classicStatusHitbox:",
@@ -87,6 +92,7 @@ const expectedMaskItems = [
     "root.classicArchHitbox",
     "root.classicWorkspaceHitbox",
     "root.classicActiveWindowHitbox",
+    "root.classicNotificationHitbox",
     "root.classicPinHitbox",
     "root.classicConnectivityHitbox",
     "root.classicStatusHitbox",

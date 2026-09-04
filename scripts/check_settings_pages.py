@@ -87,6 +87,15 @@ def main() -> int:
         "Shared.Toggle", "Shared.Slider", "from: 2000", "to: 10000", "stepSize: 500",
         'Preferences.patch("modules.notifications.toastsEnabled"',
         'Preferences.patch("modules.notifications.toastDuration"',
+        'Preferences.patch("modules.notifications.policyMode"',
+        'Preferences.patch("modules.notifications.allowCriticalOnIsland"',
+        'Preferences.patch("modules.notifications.keepCriticalUnread"',
+        'Preferences.patch("modules.notifications.applicationOverrides"',
+        '"automatic"', '"custom"', "ApplicationService.allApplications",
+        "NotificationSettingsRules.applicationRows", "NotificationSettingsRules.setOverride",
+        "NotificationSettingsRules.resetOverride", "NotificationSettingsRules.resetAll",
+        "Shared.Select", '"follow"', '"quiet"', '"normal"', '"critical"', '"block"',
+        "settings.notifications.override.reset", "settings.notifications.overrides.reset_all",
     ), errors)
     require(audio, "AudioPage", (
         "Shared.Toggle", "Preferences.allowAudioAmplification",
@@ -96,12 +105,14 @@ def main() -> int:
         "ScreenPolicy.targetScreenName", "Preferences.runtimePath",
         "ApplicationService.allApplications.length", "AudioService.ready",
         "NetworkService.available", "BluetoothService.available",
-        "NotificationService.notifications.length", "NotificationService.unreadCount",
+        "NotificationCoordinator.history.length", "NotificationCoordinator.unreadCount",
         "settings.state.ready", "settings.state.unavailable",
     ), errors)
     for forbidden in ("Preferences.patch", "Preferences.apply", "Timer {", "Process", "FileView"):
         if forbidden in about:
             errors.append(f"About page must stay read-only/event-driven: {forbidden}")
+    if "NotificationService" in about:
+        errors.append("About page must project notification diagnostics from NotificationCoordinator")
     require(applications, "ApplicationVisibilityList", (
         'property string query: ""', "ApplicationService.allApplications",
         "ListView {", "reuseItems: true", "currentIndex: -1", "Shared.SystemIcon",
@@ -157,7 +168,19 @@ def main() -> int:
         "settings.dock.move_down", "settings.dock.unavailable",
         "settings.nav.notifications", "settings.notifications.title",
         "settings.notifications.description", "settings.notifications.toasts",
-        "settings.notifications.duration", "settings.nav.audio", "settings.audio.title",
+        "settings.notifications.duration", "settings.notifications.policy_mode",
+        "settings.notifications.policy_mode.description",
+        "settings.notifications.policy.automatic", "settings.notifications.policy.custom",
+        "settings.notifications.allow_critical_on_island",
+        "settings.notifications.allow_critical_on_island.description",
+        "settings.notifications.keep_critical_unread",
+        "settings.notifications.keep_critical_unread.description",
+        "settings.notifications.overrides", "settings.notifications.overrides.description",
+        "settings.notifications.overrides.empty", "settings.notifications.overrides.reset_all",
+        "settings.notifications.override.follow", "settings.notifications.override.quiet",
+        "settings.notifications.override.normal", "settings.notifications.override.critical",
+        "settings.notifications.override.block", "settings.notifications.override.reset",
+        "settings.nav.audio", "settings.audio.title",
         "settings.audio.description", "settings.audio.amplification",
         "settings.audio.amplification.description", "settings.nav.about",
         "settings.about.title", "settings.about.description", "settings.about.schema",
