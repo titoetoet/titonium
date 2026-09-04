@@ -74,7 +74,7 @@ const renderer = fs.readFileSync(path.join(path.dirname(rulesPath),
 assert.match(renderer, /Shared\.ConnectedPillShape\s*\{/,
     "Center must render the shared symmetric top-connected shoulder contour");
 assert.match(renderer,
-    /Shared\.SystemIcon\s*\{[\s\S]*?sourceName:\s*root\.context\?\.icon\s*\|\|\s*""[\s\S]*?fallbackName:\s*root\.context\?\.icon\s*\|\|\s*"center_focus_strong"/,
+    /Shared\.SystemIcon\s*\{[\s\S]*?sourceName:\s*root\.displayedContext\?\.icon\s*\|\|\s*""[\s\S]*?fallbackName:\s*root\.displayedContext\?\.icon\s*\|\|\s*"center_focus_strong"/,
     "Center context icons must render image paths while retaining semantic glyph fallbacks");
 for (const fragment of ["bodyWidth: root.bodyWidth", "shoulderSize: root.shoulderSize",
         "readonly property rect visualBounds: Qt.rect(shape.x, shape.y, shape.width, shape.height)"])
