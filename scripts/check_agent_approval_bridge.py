@@ -62,6 +62,8 @@ assert "item/commandExecution/requestApproval" in bridge.APPROVAL_METHODS
 assert "HOOK AUTO-APPROVE" not in inspect.getsource(bridge.antigravity_hook)
 assert '"decision": "force_ask"' in inspect.getsource(bridge.antigravity_hook)
 bridge_source = path.read_text(encoding="utf-8")
+assert bridge.project_path() == str(path.resolve().parent.parent)
+assert "/home/cole/Projects/titonium" not in bridge_source
 codex_source = bridge_source.split("def codex_proxy", 1)[1].split("def main", 1)[0]
 assert "CODEX AUTO-APPROVE" not in codex_source
 assert "requires_sudo" not in codex_source

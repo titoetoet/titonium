@@ -1,7 +1,7 @@
 # Center Activity and Native Notification Toast Design
 
-**Date:** 2026-08-27  
-**Status:** Proposed for user review  
+**Date:** 2026-08-27
+**Status:** Superseded by `docs/DYNAMIC_ISLAND.md` on 2026-09-03
 **Scope:** Dock Pin diagnosis, active-window Center trigger, detached Center popup geometry,
 notification bell/unread state and notification toasts
 

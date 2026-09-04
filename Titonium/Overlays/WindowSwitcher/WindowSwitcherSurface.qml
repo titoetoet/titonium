@@ -14,8 +14,47 @@ FocusScope {
     anchors.fill: parent
     focus: true
 
+    property bool closing: false
+
     function close(): void {
-        WindowSwitcherService.cancel();
+        if (root.closing)
+            return;
+        root.closing = true;
+        if (Motion.reduced) {
+            WindowSwitcherService.cancel();
+        } else {
+            panelExit.start();
+        }
+    }
+
+    ParallelAnimation {
+        id: panelExit
+
+        NumberAnimation {
+            target: backdropScrim
+            property: "opacity"
+            from: 0.25
+            to: 0
+            duration: 100
+            easing.type: Easing.InCubic
+        }
+        NumberAnimation {
+            target: panel
+            property: "opacity"
+            from: 1
+            to: 0
+            duration: 100
+            easing.type: Easing.InCubic
+        }
+        NumberAnimation {
+            target: panel
+            property: "scale"
+            from: 1
+            to: 0.96
+            duration: 110
+            easing.type: Easing.InCubic
+        }
+        onFinished: WindowSwitcherService.cancel()
     }
 
     function pointInside(item: Item, point: point): bool {
@@ -24,14 +63,47 @@ FocusScope {
     }
 
     Rectangle {
+        id: backdropScrim
         anchors.fill: parent
-        color: "transparent"
+        color: "#000000"
+        opacity: Motion.reduced ? 0.25 : 0
 
         TapHandler {
             onTapped: eventPoint => {
                 if (!root.pointInside(panel, eventPoint.position))
                     root.close();
             }
+        }
+    }
+
+    ParallelAnimation {
+        id: panelEntrance
+        running: !Motion.reduced
+
+        NumberAnimation {
+            target: backdropScrim
+            property: "opacity"
+            from: 0
+            to: 0.25
+            duration: 120
+            easing.type: Easing.OutCubic
+        }
+        NumberAnimation {
+            target: panel
+            property: "opacity"
+            from: 0
+            to: 1
+            duration: 120
+            easing.type: Easing.OutCubic
+        }
+        NumberAnimation {
+            target: panel
+            property: "scale"
+            from: 0.96
+            to: 1
+            duration: 180
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Motion.springDamped
         }
     }
 
@@ -43,6 +115,9 @@ FocusScope {
         customColor: Theme.surface
         padding: Metrics.spacingLarge
         clipContent: true
+        transformOrigin: Item.Center
+        opacity: Motion.reduced ? 1 : 0
+        scale: Motion.reduced ? 1 : 0.96
 
         ListView {
             id: windowList

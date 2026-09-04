@@ -65,6 +65,13 @@ Item {
                     height: track.height
                     radius: height / 2
                     color: Theme.accent
+
+                    Behavior on width {
+                        NumberAnimation {
+                            duration: Motion.reduced ? 0 : 120
+                            easing.type: Easing.OutCubic
+                        }
+                    }
                 }
             }
 

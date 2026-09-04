@@ -11,5 +11,13 @@ QtObject {
         function decide(requestId: string, decision: string): bool {
             return AgentApprovalService.decide(requestId, decision);
         }
+        function activate(): bool {
+            AgentApprovalService.activate();
+            return true;
+        }
+        function clearGrants(): bool {
+            AgentApprovalService.clearSessionGrants();
+            return true;
+        }
     }
 }

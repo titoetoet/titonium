@@ -11,7 +11,7 @@ The previous feature roadmap is retired. Work now advances by researched capabil
 - Application, Clipboard and Hyprland service boundaries.
 - Static Neutral Utility tokens, i18n and focused gates.
 - Three independently positioned Bar islands with composed click-through regions.
-- Lazy, screen-owned Center Notch with Overview and a direct Notification history route.
+- Lazy, screen-owned Center pill/notch with compact-to-banner/canvas geometry morphing.
 
 ## Current — native capability slices
 
@@ -33,8 +33,8 @@ The previous feature roadmap is retired. Work now advances by researched capabil
    Preview/Apply/Cancel, legacy Dock projection and DP-1-only lifecycle. The remaining checkpoint
    is manual visual review plus persistence/rollback verification against backed-up live data.
 
-Deferred notification work is a real Notification Center, action invocation, persistence and
-per-application policy. None belongs in the completed toast slice.
+Deferred notification work is a rebuilt Notification Center, action invocation, persistence and
+per-application policy. The retired Center history view is not part of the completed toast slice.
 
 ## Continuing reference-repository research
 

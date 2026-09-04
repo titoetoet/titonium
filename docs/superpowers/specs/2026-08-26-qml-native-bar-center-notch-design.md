@@ -1,7 +1,7 @@
 # Titonium QML-Native Bar and Center Notch
 
 **Date:** 2026-08-26
-**Status:** Approved
+**Status:** Superseded by `docs/DYNAMIC_ISLAND.md` on 2026-09-03
 
 ## Purpose
 

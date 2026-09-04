@@ -12,7 +12,7 @@ historical release tag.
   Center rail/activity card and unreachable Monitoring/Tools/Session presentation trees.
 - The obsolete `Services/Keyboard` singleton remains deleted; no source reference points to it.
   Keyboard observation is owned by the protected Input Method path and focused feature handlers.
-- Four unused imports were removed from `Bar/notch/OverviewPage.qml`.
+- The superseded Overview/Notification Center view tree and its unused imports were removed.
 - An unrelated Antigravity Electron `package.json` and a one-off interactive ten-popup script were
   removed from the project root. The supported approval tests remain
   `check_agent_approval.js` and `check_agent_approval_bridge.py`.
@@ -24,15 +24,16 @@ historical release tag.
   toasts, Settings and Agent Approval. Activation, cross-surface routing, the Bluetooth–Audio
   bridge and IPC adapters live in dedicated `Orchestration` and `Ipc` modules without changing
   public IPC targets or result strings.
-- `Bar` owns Start, Center, Notification and End hitboxes. Clock is not rendered; time remains part
+- `Bar` owns Start and End hitboxes plus an inert true-center reservation; `CenterPillWindow` owns
+  the Dynamic Island visual and input geometry in every state. Clock is not rendered; time remains part
   of the Overview weather card and the `use24Hour` preference is still meaningful there.
-- Center Notch owns Overview plus a direct Notification history route in one lazy screen-owned
-  surface. System Monitor remains a detached service/diagnostic IPC without an unreachable Center
-  view; the old rail, activity card and Tools/Session mock trees are gone.
+- Dynamic Island is a top-attached, single-silhouette morph from compact/satellite into a context banner
+  or an expanded canvas. The previous Overview and Notification-history presentation is retired;
+  Notification Center will be rebuilt later. System Monitor remains detached.
 - Bluetooth uses the native Quickshell service and a narrow service/view boundary. Audio handoff is
   coordinated through semantic signals; views do not own native Bluetooth objects.
 - Clipboard formatting and preview extraction live behind the Clipboard service plus pure helper
-  rules. Notification history has a direct Center route.
+  rules. Native notification history remains service-owned, but currently has no Center route.
 - The Center pig is a user-configurable idle animation. Its drawing implementation is currently
   shared with the `demos/dancing_pig` visual fixture; this intentional dependency should be moved
   into a production-owned component if the demo is retired later.

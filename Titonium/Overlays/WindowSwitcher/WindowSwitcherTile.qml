@@ -19,8 +19,16 @@ FocusScope {
 
     width: 152
     height: 118
+    scale: root.selected && !Motion.reduced ? 1.04 : 1.0
     Accessible.role: Accessible.Button
     Accessible.name: root.window?.title || root.window?.appId || ""
+
+    Behavior on scale {
+        NumberAnimation {
+            duration: Motion.fast
+            easing.type: Easing.OutCubic
+        }
+    }
 
     Rectangle {
         anchors.fill: parent

@@ -1,2 +1,0 @@
-module qs.Titonium.Services.Weather
-singleton WeatherService 1.0 WeatherService.qml

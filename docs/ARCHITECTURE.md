@@ -10,9 +10,9 @@ shell.qml
     ├── Bar/BarHost.qml ── Variants(Quickshell.screens)
     │   ├── BarSurface → Start / Center / End islands
     │   │   ├── Start → Workspaces + ActiveWindowPill
-    │   │   └── CenterGroup → CenterIsland + independent Bar pin
-    │   └── CenterNotchWindow → Loader(active for owner screen only)
-    │       └── CenterNotch → Rail + lazy StackView viewport
+    │   │   └── inert true-center reservation (the Bar draws no Center surface)
+    │   └── CenterPillWindow (one always-mounted visual owner per screen)
+    │       └── ConnectedPillShape → compact/satellite/banner/expanded morph
     ├── Dock/DockHost.qml ── Variants(ScreenPolicy.screens)
     ├── Notifications/ToastHost.qml ── Variants(ScreenPolicy.screens)
     │   └── ToastWindow → Loader(active only while toast IDs exist)
@@ -41,6 +41,13 @@ Desktop reaches the same contract through a local Codex JSON-RPC proxy selected 
 Codex command, file-change and permission approval requests. The view receives normalized value
 descriptors and emits only `allow once`, `allow for session` or `deny` intents.
 
+For Antigravity, `allow for session` deliberately grants the whole conversation rather than one
+command binary or one file. The service records the conversation/scope key in the per-login
+runtime directory so a Quickshell reload does not silently revoke it; `clearGrants()` removes all
+such grants. `sudo` commands always require an explicit decision. File-change requests use the
+compact `AgentApprovalToastCard`, while command and general permission requests retain the modal
+`AgentApprovalCard`.
+
 The two adapters retain different failure policies. Antigravity falls back to its native review
 with an `ask` decision when Titonium is unavailable. An intercepted ChatGPT request fails closed
 with `decline`, because the Desktop client never receives that held JSON-RPC request. Neither
@@ -60,22 +67,41 @@ The eligible output owns one lightweight overlay window, but its feature tree ex
 manager allows one transient owner across the shell. Focused-monitor changes close Spotlight to
 prevent a stranded exclusive-focus window.
 
-The Bar owns a second, independent lightweight `CenterNotchWindow` on the eligible output. Only the screen
-named by `CenterNotchCoordinator.ownerScreenName` activates its heavy Loader. Opening Spotlight
+The Bar host owns one screen-local `CenterPillWindow` on the eligible output. It remains mounted
+across all four Dynamic Island states and contains no Loader boundary. Opening Spotlight
 closes the notch; opening the notch closes `SurfaceManager`, so the two exclusive-focus surfaces
 cannot overlap. An outside click, Escape, or focused-monitor change releases the notch window.
+The layer surface spans the eligible output only so Banner/Expanded can receive outside clicks;
+in Compact/Satellite its input region is clipped to the visible cluster and the transparent root
+does not paint a full-screen rectangle. Resizing the Wayland layer surface during geometry motion
+is intentionally avoided because repeated compositor reconfiguration would add frame latency.
 
-The true-center `CenterGroup` remains positioned from the full screen width and contains the
-attention `CenterIsland` followed by the independently targetable TopBar pin. The Active Window
-pill sits directly after the five-slot Workspace group, sizes naturally up to
+The true-center reservation remains positioned from the full screen width. Its screen-local Island
+is attached to the top edge and uses one `Shared.ConnectedPillShape` for the body and both concave
+shoulders. The Bar's left and right regions each render exactly one top-and-edge-attached shape
+with a single inward-facing shoulder:
+`StartIsland` groups the Arch launcher, Workspaces and Active Window content, while `EndIsland`
+groups the TopBar pin, connectivity controls and status controls. Their child controls retain
+independent hitboxes but never draw separate resting surfaces, keeping each side visually
+continuous. The Active Window content sits directly after the five-slot Workspace group, sizes naturally up to
 520 logical pixels, and projects the active descriptor as app icon plus an optional
 `Application · app-provided tray context`. For a conservatively matched tray item, a `Running`
 DBusMenu entry takes precedence over tooltip metadata and activating the pill opens that item's
 platform menu; without a menu it retains the centered four-corner popup fallback. It never uses
 compositor window titles, omits the separator when no matching context exists and falls back to
-Titonium. The full Bar input mask is composed from the three island hitboxes, preserving
-click-through elsewhere. The End island orders native Wi-Fi, Bluetooth, Audio and Notification
-Bell controls before the protected Input Method. Clock remains temporarily disabled.
+Titonium. The full Bar input mask is composed from the left, center and right pill hitboxes, preserving
+click-through elsewhere. The End island orders native Wi-Fi, Bluetooth and Audio controls before
+the protected Input Method. Notification state belongs to Dynamic Island content rather than a
+detached Bar bell. Clock remains temporarily disabled.
+
+### Edge-connected application menus
+
+One always-mounted, screen-local `EdgeMenuWindow` renders both Top Bar edge silhouettes while
+`Bar.qml` reserves their compact widths without painting duplicate backgrounds. Active Window
+DBusMenu actions select the left control anchor; Input Method selects the right anchor. One
+`AnchoredMenuPillShape` per edge draws the stationary horizontal pill and its downward branch in a
+single path, so only the pill containing the clicked control grows below the Top Bar. The projected
+`SystemTrayMenuView` has no header or nested panel and remains independent from Dynamic Island.
 
 ### Selectable Top Bar styles
 
@@ -166,44 +192,32 @@ notification temporarily replaces Secondary without using unread count as activi
 startup or a file event, and uses one non-repeating midnight timer to invalidate the local-day
 selection. `CenterFocusRules.js` chooses the first same-day non-heading Markdown line or a
 date-stable prompt fallback. Startup is read-only. The service creates the directory/file and
-invokes `xdg-open` only after explicit `openScratchpad()` intent from the view. Overview may also
-submit an explicit `saveToday(text)` intent; the service normalizes it to one line and performs the
-atomic file write, while the card owns only the transient inline-editing state.
+invokes `xdg-open` only after explicit `openScratchpad()` intent from a view. The retained legacy
+Overview page can submit `saveToday(text)`, but it is not rendered by the rewritten Center canvas.
 
-`CenterIsland` consumes only immutable Attention/Activity presentations and focus text. Its primary
-click always requests the scratchpad action, including while a transient event is visible. It owns
-no process, file watcher, timer or system listener. `ActiveWindowPill` remains a separate Start
-island concern and continues to open Center Notch.
+`CenterIsland` consumes only immutable Attention/Activity presentations and focus text. It owns no
+process, file watcher, timer or system listener. Its geometry and current icon/title are copied to
+`CenterNotchCoordinator` immediately before opening so the overlay can morph from the exact compact
+pill dimensions. A primary click opens the expanded canvas; a secondary click opens the compact
+banner for non-AI contextual controls. AI approval opens Expanded directly, while clicking the
+media body promotes its banner to the expanded canvas. `ActiveWindowPill` remains a separate Start-island
+concern.
 
 The `center` IPC target exposes only `state()` and `focusState()` snapshots. It intentionally has
 no publish, acknowledgement, timer/job mutation or scratchpad-launch endpoint.
 
 `MprisService` is the only Titonium file allowed to import `Quickshell.Services.Mpris`. It projects
 native players into frozen value facts, ranks playing before paused players and resolves ties by
-meaningful-change time then stable D-Bus identity. The Overview consumes title, artist, artwork and
-capability facts; narrow play/pause, previous, next and raise intents re-resolve the selected native
-player inside the service. `MprisRules.js` establishes discovery as a silent baseline, suppresses
+meaningful-change time then stable D-Bus identity. The Center banner consumes track and capability
+facts; narrow play/pause, previous and next intents re-resolve the selected native player inside
+the service. `MprisRules.js` establishes discovery as a silent baseline, suppresses
 unchanged normalized signatures and derives only `track_changed`, `paused` and `resumed` semantic
 events. Center owns their priorities and TTLs. Active playback also contributes an ongoing Media
 activity; playback disappearance, pause or stop removes it without publishing a new stop takeover.
 The Bar never imports native MPRIS state.
 
 The `mpris` IPC target remains read-only and exposes only `state()`. Playback controls are local
-Overview intents and are not available to remote IPC callers.
-
-## Today Overview weather
-
-`WeatherService` is an on-demand singleton acquired only by the lazy Overview page. It requests a
-compact current-condition response from wttr.in, keeps the last successful immutable snapshot and
-refreshes at a quiet thirty-minute cadence only while a consumer is visible. `WeatherRules.js`
-normalizes provider codes into Titonium-owned `clear`, `clouds`, `rain`, `fog`, `snow` and
-`thunderstorm` semantics. The view owns no process, network request or polling timer.
-
-The condition-driven weather scene and MPRIS capability routing were studied from Ambxst revision
-`65b7940cc325a425ddc443281b709db9bb7f3c6b` (AGPL-3.0), specifically
-`modules/services/WeatherService.qml`, `modules/widgets/dashboard/widgets/WeatherWidget.qml` and
-`modules/services/MprisController.qml`. Titonium retains only those interaction ideas behind its
-own service contracts and does not copy Ambxst's backend, configuration, theme or animation tree.
+Center-banner intents and are not available to remote IPC callers.
 
 `CenterTimerService` owns session-only named countdowns as absolute deadlines.
 `CenterTimerRules.js` selects the five-minute, one-minute and completion milestones, while one
@@ -239,10 +253,13 @@ the tester restores the original audio level, mute state and runtime preference 
 The state snapshot reports the number of ready output descriptors so acceptance catches delayed
 PipeWire-node binding without selecting a device.
 
-The expanded Center Notch owns the Dashboard plus a direct hidden Notification-history route. It
-has no rail, general page navigation, Settings action or System Monitoring lifecycle. Other legacy
-page requests normalize to Dashboard for a stable IPC boundary; System Monitor remains a detached
-service/diagnostic seam until it receives a standalone host.
+The rewritten Center has four presentation states: `compact` for one living activity, `satellite`
+for the two highest-ranked Live Activities, `banner` for the 480×72 non-AI context action, and
+`expanded` for AI approval or the 720×440 clean canvas. AI approval always routes directly to
+Expanded and retains that state while queued requests remain. `CenterNotchState.js` derives these names and
+`CenterNotchCoordinator.visualState` exposes the current result. Notification unread state never
+creates the satellite. Notification Center is deferred and System Monitor remains detached. The
+complete canonical contract is in `docs/DYNAMIC_ISLAND.md`.
 
 ## Protected feature flow
 
@@ -266,11 +283,11 @@ surfaces, and `apply()` promotes the preview only after the atomic `FileView` sa
 Settings IPC is deliberately lifecycle-only: `open`, `page`, `cancel` and `state`; it cannot patch,
 restore or apply preferences remotely.
 
-Center's primary click opens the Dashboard; the Notification controls may request the hidden
-history route directly. Titonium Settings is exposed as a
+Center's primary activation opens the expanded canvas, while secondary activation opens the
+banner. The new expanded canvas has no Settings, Daily Focus or Notification Center action yet.
+Titonium Settings is exposed as a
 desktop entry in the application launcher and opens the standalone Settings surface through its
-lifecycle-only IPC. Daily Focus remains an explicit Dashboard action, and the Topbar Pin is an
-independent Bar control rather than a Center action.
+lifecycle-only IPC. The Topbar Pin remains an independent Bar control rather than a Center action.
 
 ## Native notification boundary
 
@@ -290,6 +307,7 @@ notification daemon can own it at a time; Titonium acceptance starts Titonium be
 ## Center Notch acceptance seam
 
 The `centerNotch` IPC target exists for deterministic lifecycle tests: `open(page)`, `page(page)`,
-`close()` and `state()`. Every page argument normalizes to Dashboard. The acceptance test verifies
-that invariant, mutual exclusion with Spotlight, clean runtime logs, repository isolation and
-unchanged Hyprland configuration hashes.
+`close()` and `state()`. `banner` is the compact action presentation; unsupported page arguments
+normalize to the expanded `overview` canvas. Acceptance verifies that state rule, mutual exclusion
+with Spotlight, clean runtime logs, repository isolation and unchanged Hyprland configuration
+hashes.

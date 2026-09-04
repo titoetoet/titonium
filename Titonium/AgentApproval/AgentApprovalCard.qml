@@ -11,6 +11,45 @@ FocusScope {
     id: root
     focus: true
     readonly property var approval: AgentApprovalService.current
+    opacity: Motion.reduced ? 1 : 0
+    scale: Motion.reduced ? 1 : 0.97
+    transform: Translate {
+        id: cardOffset
+        y: Motion.reduced ? 0 : -8
+    }
+
+    ParallelAnimation {
+        id: cardEntrance
+        running: !Motion.reduced
+
+        NumberAnimation {
+            target: root
+            property: "opacity"
+            from: 0
+            to: 1
+            duration: 140
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Motion.springDamped
+        }
+        NumberAnimation {
+            target: root
+            property: "scale"
+            from: 0.97
+            to: 1
+            duration: 180
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Motion.springDamped
+        }
+        NumberAnimation {
+            target: cardOffset
+            property: "y"
+            from: -8
+            to: 0
+            duration: 180
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Motion.springDamped
+        }
+    }
 
     Rectangle {
         anchors.fill: parent

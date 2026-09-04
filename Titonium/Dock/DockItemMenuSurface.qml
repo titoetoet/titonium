@@ -21,6 +21,8 @@ FocusScope {
     anchors.fill: parent
     focus: true
 
+    property bool closing: false
+
     function returnFocus(): void {
         if (root.invoker && root.invoker.forceActiveFocus)
             root.invoker.forceActiveFocus(Qt.PopupFocusReason);
@@ -28,8 +30,15 @@ FocusScope {
 
     function close(): void {
         root.returnFocus();
-        if (root.ownerId)
-            SurfaceManager.close(root.ownerId);
+        if (Motion.reduced) {
+            if (root.ownerId)
+                SurfaceManager.close(root.ownerId);
+            return;
+        }
+        if (root.closing)
+            return;
+        root.closing = true;
+        menuExit.restart();
     }
 
     function pointInside(item: Item, point: point): bool {
@@ -57,6 +66,78 @@ FocusScope {
         anchors.bottom: parent.bottom
         anchors.bottomMargin: 80
         customColor: Theme.surface
+        transformOrigin: Item.Bottom
+        opacity: Motion.reduced ? 1 : 0
+        scale: Motion.reduced ? 1 : 0.94
+        transform: Translate {
+            id: menuTranslate
+            y: Motion.reduced ? 0 : 8
+        }
+
+        ParallelAnimation {
+            id: menuEntrance
+            running: !Motion.reduced
+
+            NumberAnimation {
+                target: menuPanel
+                property: "opacity"
+                from: 0
+                to: 1
+                duration: 150
+                easing.type: Easing.OutCubic
+            }
+            NumberAnimation {
+                target: menuPanel
+                property: "scale"
+                from: 0.96
+                to: 1
+                duration: 180
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Motion.springDamped
+            }
+            NumberAnimation {
+                target: menuTranslate
+                property: "y"
+                from: 6
+                to: 0
+                duration: 180
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Motion.springDamped
+            }
+        }
+
+        ParallelAnimation {
+            id: menuExit
+
+            NumberAnimation {
+                target: menuPanel
+                property: "opacity"
+                from: 1
+                to: 0
+                duration: 110
+                easing.type: Easing.InCubic
+            }
+            NumberAnimation {
+                target: menuPanel
+                property: "scale"
+                from: 1
+                to: 0.96
+                duration: 120
+                easing.type: Easing.InCubic
+            }
+            NumberAnimation {
+                target: menuTranslate
+                property: "y"
+                from: 0
+                to: 6
+                duration: 120
+                easing.type: Easing.InCubic
+            }
+            onFinished: {
+                if (root.ownerId)
+                    SurfaceManager.close(root.ownerId);
+            }
+        }
 
         ColumnLayout {
             id: menuColumn

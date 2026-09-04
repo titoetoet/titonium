@@ -29,6 +29,33 @@ def socket_path() -> str:
     )
 
 
+def project_path() -> str:
+    """Return the Titonium project containing this bridge."""
+    return str(Path(__file__).resolve().parent.parent)
+
+
+def is_quickshell_running() -> bool:
+    try:
+        out = subprocess.check_output(
+            ["pgrep", "-u", str(os.getuid()), "-x", "qs"],
+            stderr=subprocess.DEVNULL,
+        )
+        if out.strip():
+            return True
+    except Exception:
+        pass
+    try:
+        out = subprocess.check_output(
+            ["pgrep", "-u", str(os.getuid()), "-x", "quickshell"],
+            stderr=subprocess.DEVNULL,
+        )
+        if out.strip():
+            return True
+    except Exception:
+        pass
+    return False
+
+
 def exchange(payload: dict[str, Any], timeout: float = 300.0) -> dict[str, Any]:
     path = socket_path()
     encoded = (json.dumps(payload, separators=(",", ":")) + "\n").encode()
@@ -36,7 +63,10 @@ def exchange(payload: dict[str, Any], timeout: float = 300.0) -> dict[str, Any]:
         raise ValueError("approval request is too large")
 
     client: socket.socket | None = None
-    deadline = time.monotonic() + 3.0
+    retry_window = min(timeout, 15.0)
+    start_time = time.monotonic()
+    deadline = start_time + retry_window
+    grace_window = min(2.5, retry_window)
     last_error: Exception | None = None
 
     while True:
@@ -51,9 +81,23 @@ def exchange(payload: dict[str, Any], timeout: float = 300.0) -> dict[str, Any]:
             break
         except (FileNotFoundError, ConnectionRefusedError) as error:
             last_error = error
+            # If Quickshell is running, the socket file may have been unlinked by a QML reload.
+            # Ask Quickshell to reactivate the socket server via IPC.
+            if is_quickshell_running():
+                try:
+                    subprocess.run(
+                        ["qs", "-p", project_path(), "ipc", "call", "agentApproval", "activate"],
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                        timeout=1.0,
+                    )
+                except Exception:
+                    pass
+            elif (time.monotonic() - start_time) >= grace_window:
+                break
             if time.monotonic() >= deadline:
                 break
-            time.sleep(0.25)
+            time.sleep(0.2)
 
     if client is None:
         if last_error is not None:

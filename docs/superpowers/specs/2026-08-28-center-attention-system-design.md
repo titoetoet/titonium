@@ -1,7 +1,7 @@
 # Center Attention System Design
 
 **Date:** 2026-08-28
-**Status:** Approved for implementation planning
+**Status:** Superseded where conflicting by `docs/DYNAMIC_ISLAND.md` on 2026-09-03
 **Scope:** Daily Focus, passive activity indicators, priority arbitration, MPRIS media events,
 user timers and explicit external job events for the true center of the TopBar
 

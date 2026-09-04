@@ -1,7 +1,7 @@
 # Center Notifications and System Monitoring Design
 
-**Date:** 2026-08-31  
-**Status:** Approved for written-spec review  
+**Date:** 2026-08-31
+**Status:** Superseded by `docs/DYNAMIC_ISLAND.md` on 2026-09-03
 **Scope:** Add Notifications and System Monitoring pages to the existing Center Notch popup
 
 ## Objective

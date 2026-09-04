@@ -2,3 +2,4 @@ module qs.Titonium.AgentApproval
 AgentApprovalHost 1.0 AgentApprovalHost.qml
 AgentApprovalWindow 1.0 AgentApprovalWindow.qml
 AgentApprovalCard 1.0 AgentApprovalCard.qml
+AgentApprovalToastCard 1.0 AgentApprovalToastCard.qml

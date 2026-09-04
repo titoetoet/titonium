@@ -118,6 +118,8 @@ for (const token of ["sessionGrants", "sessionGrantKey", "rememberSessionGrant",
 if (!serviceSource.includes('["antigravity-ide", "antigravity ide"]')
         || !serviceSource.includes('["chatgpt"]'))
     throw new Error("AgentApprovalService must route approvals to their source app monitor");
+if (serviceSource.includes("if (!monitorValue)"))
+    throw new Error("monitor ID zero must remain a valid approval source monitor");
 const sudoCommand = context.normalize({
     source: "antigravity",
     requestId: "126",

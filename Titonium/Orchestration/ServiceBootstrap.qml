@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.Titonium.Services.AgentApproval
 import qs.Titonium.Services.Center
 import qs.Titonium.Services.Capture
 import qs.Titonium.Services.Clipboard
@@ -14,5 +15,6 @@ QtObject {
         CenterJobService.activate();
         CenterTimerService.activate();
         ScreenRecordService.activate();
+        AgentApprovalService.activate();
     }
 }

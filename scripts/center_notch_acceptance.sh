@@ -43,7 +43,7 @@ require_contains() {
     fi
 }
 
-qs -n -p "$project_root" --no-color >"$log_file" 2>&1 &
+qs -p "$project_root" --no-color >"$log_file" 2>&1 &
 shell_pid=$!
 
 ready=false
@@ -60,9 +60,30 @@ if [[ $ready != true ]]; then
     exit 1
 fi
 
+baseline_center_state="$(call_ipc centerNotch state)"
+call_ipc timer start acceptance-satellite-a 120 "Primary acceptance activity" >/dev/null
+call_ipc timer start acceptance-satellite-b 180 "Secondary acceptance activity" >/dev/null
+require_contains "$(call_ipc centerNotch state)" ";state=satellite" \
+    "two ranked activities create Satellite"
+activity_state="$(call_ipc center activityState)"
+require_contains "$activity_state" '"id":"timer:acceptance-satellite-a"' \
+    "Satellite includes its primary test activity"
+require_contains "$activity_state" '"id":"timer:acceptance-satellite-b"' \
+    "Satellite includes its secondary test activity"
+call_ipc timer cancel acceptance-satellite-a >/dev/null
+call_ipc timer cancel acceptance-satellite-b >/dev/null
+if [[ "$(call_ipc centerNotch state)" != "$baseline_center_state" ]]; then
+    echo "FAIL removing test activities did not restore the environment's baseline Center state" >&2
+    exit 1
+fi
+
 overview_state="$(call_ipc centerNotch open overview)"
 require_contains "$overview_state" "open:" "Center Notch open"
 require_contains "$overview_state" ";page=overview" "Center Notch Overview"
+require_contains "$overview_state" ";state=expanded" "Center expanded state"
+require_contains "$(call_ipc centerNotch page banner)" ";page=banner" "Center banner mode"
+require_contains "$(call_ipc centerNotch state)" ";state=banner" "Center banner stable state"
+require_contains "$(call_ipc centerNotch state)" ";context=" "Center context snapshot"
 require_contains "$(call_ipc centerNotch page tools)" ";page=overview" "Center ignores Tools"
 require_contains "$(call_ipc centerNotch page monitoring)" ";page=overview" "Monitoring detached"
 
@@ -89,11 +110,11 @@ if ! rg -q 'Configuration Loaded' "$log_file"; then
     echo "FAIL missing Configuration Loaded" >&2
     exit 1
 fi
-runtime_rejection_pattern="\\b(ERROR|TypeError|duplicate id|missing method|Illegal method name)\\b|Type .* unavailable"
+runtime_rejection_pattern="(^|[[:space:]])ERROR([[:space:]:]|$)|\\b(TypeError|duplicate id|missing method|Illegal method name)\\b|Type .* unavailable"
 if rg -i "$runtime_rejection_pattern" "$log_file"; then
     sed -n '1,240p' "$log_file" >&2
     echo "FAIL Center Notch runtime error found" >&2
     exit 1
 fi
 
-echo "PASS Dashboard-only Center Notch, Spotlight exclusion and isolation acceptance"
+echo "PASS Dynamic Island banner/expanded loop, context state, Spotlight exclusion and isolation acceptance"

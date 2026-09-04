@@ -6,7 +6,7 @@
 boundaries, preference projection, pure Application/Clipboard/Spotlight behavior and every QML file
 with `qmllint`.
 
-The Bar gate also validates true-center geometry, Center Notch navigation/transition fixtures,
+The Bar gate also validates true-center geometry, Dynamic Island state/transition fixtures,
 immutable mock catalogs, locale-key parity and idle safety. `Timer`, shaders, `MultiEffect`, infinite
 animation, executable mock boundaries and future connectivity-service imports are rejected.
 
@@ -18,8 +18,8 @@ its owner screen.
 
 The notification gates enforce one native `NotificationServer`, exact immutable descriptor fields,
 100-history/three-toast bounds, session-only unread transitions, DP-1-only Variants, lazy stack
-lifecycle and one non-repeating five-second timer per card. The Bell has one mutation only:
-`markAllRead()`. No view imports the native Notifications module.
+lifecycle and one non-repeating five-second timer per card. Urgent notification projection into
+Dynamic Island is service-mediated; no view imports the native Notifications module.
 
 The only allowlisted QML warning is Quickshell 0.3.x metadata marking documented `PanelWindow` as
 uncreatable. New warnings are failures. UI code is rejected when it owns `Process`, `FileView` or
@@ -127,6 +127,14 @@ qs -p /home/cole/Projects/titonium
 qs -d -p /home/cole/Projects/titonium
 ```
 
+### Manual edge-menu checkpoint
+
+Click an Active Window app with DBusMenu and verify the menu grows from the left pill. Open Input
+Method and verify the same menu chassis grows from the right pill. In both cases the opposite edge
+must remain compact. Check Escape, click-outside, submenu Back, normal actions, checkbox/radio,
+source disappearance, rapid reopen and scale 1.0/1.5. Center, Spotlight and Settings remain mutually
+exclusive with either edge menu.
+
 ### Manual Dock and Bluetooth checkpoint
 
 Audio checkpoint: on DP-1 (scale 1.5), verify the corrected popup's
@@ -207,10 +215,11 @@ isolation and verifies both Hyprland configuration hashes. It does not launch an
 write clipboard content.
 
 Dynamic Island acceptance verifies the shared owner, connected silhouette, four-state lifecycle,
-and that legacy page requests normalize to the expanded canvas,
-proves that Spotlight closes the notch, and closes both surfaces again. It rejects runtime
-type/load errors, repository writes and changes to either Hyprland configuration hash. Notification
-history remains a direct internal route rather than a general navigation rail.
+and that unsupported page requests normalize to the expanded `overview` canvas while `banner`
+remains a distinct valid state. It proves that Spotlight closes the Center surface and closes both
+surfaces again. It rejects runtime type/load errors, repository writes and changes to either
+Hyprland configuration hash. Notification Center is deliberately deferred; notification history
+is not exposed as a general navigation rail.
 
 Audio acceptance launches one foreground shell and calls only `audio.state`, `audio.popup`,
 `audio.closePopup`, `audio.popupState`, `audio.osdState`, Center Notch and Spotlight lifecycle IPC.
@@ -269,8 +278,13 @@ Titonium output:
 - confirm five Workspace slots and the naturally sized Active Window pill immediately after them;
 - open the Active Window pill on DP-1 scale 1.5;
 - confirm the popup remains centered, top-attached, keeps 48px rail proportions and closes on outside-click/Escape;
-- open Notification history from its Bar control, then return to Overview without a stale page;
-- request a retired page over IPC and confirm it normalizes safely to Overview.
+- secondary-click Center and confirm non-AI contextual banners morph from the compact pill geometry;
+- submit an AI approval and confirm Center opens directly to Expanded, advances queued requests
+  in place, and collapses after the final decision;
+- with unread notifications, confirm the satellite pill springs out independently and the Center
+  state reports `satellite` while no popup is open;
+- click the media banner body (outside its buttons) and confirm it morphs to the expanded canvas;
+- request a retired page over IPC and confirm it normalizes safely to the expanded canvas.
 
 Audio remains awaiting visual approval. On DP-1 (scale 1.5), verify the Audio
 icon remains visible when diagnostic glyphs collapse; click/outside-click/Escape popup lifecycle;
@@ -296,8 +310,8 @@ persistence, then restore the captured runtime files.
 
 Also verify Dock mode semantics, pin add/remove/reorder, installed-app visibility, unavailable-ID
 removal and hidden-pinned precedence. Escape and close on a dirty preview must show the internal
-discard confirmation. Center opens Notch, the rail Settings action opens the standalone surface,
-Daily Focus is available only from Overview, and Topbar Pin remains separately clickable.
+discard confirmation. Settings remains a standalone surface, and Topbar Pin remains separately
+clickable; the rewritten Center canvas currently exposes no Settings action.
 
 ## Workspace, Switcher, Dock pin and Center pin checkpoint
 
@@ -383,17 +397,19 @@ policy priorities, and `clear` must remove only the matching active job or termi
 
 ## Center Notifications page checkpoint
 
-Run `./scripts/notifications_acceptance.sh` to verify native history, toast expiry, viewed state,
-DP-1-only layer ownership and unchanged repository/Hyprland configuration hashes. Then perform the
-page interaction check:
+Notification Center is deferred while its replacement is designed. Continue running
+`./scripts/notifications_acceptance.sh` only for the native service, toast expiry, unread state,
+DP-1 layer ownership and repository/Hyprland isolation. Do not treat the retired Center history
+viewport as an acceptance requirement.
 
-1. Send two notifications with `notify-send` while Center is closed; the Notification pill shows `2`.
-2. Open Notification history from the pill; the badge clears while both newest-first rows remain.
-3. Send another notification while Notifications is visible; it appears first without leaving an
-   unread badge.
-4. Dismiss one row and confirm only that row disappears.
-5. Select Clear all and confirm the page enters its empty state.
-6. Close and reopen the surface; history is recreated lazily without duplicate rows.
+## Dynamic Island four-state checkpoint
+
+`scripts/check_center_notch.js` verifies the compact/satellite/banner/expanded state machine,
+top-two activity ranking, urgent-event policy, drag thresholds and the single visual-owner
+contract. `scripts/center_notch_acceptance.sh` exercises IPC compatibility and the live state loop.
+Manual scaled-output review must cover 1.0 and 1.5 scale, both satellite click targets, successful
+and cancelled drags, AI persistence, four-second notification dismissal, Settings/Spotlight mutual
+exclusion, outside/Escape collapse and exact input-mask alignment. See `DYNAMIC_ISLAND.md`.
 
 ## Center System Monitoring checkpoint
 

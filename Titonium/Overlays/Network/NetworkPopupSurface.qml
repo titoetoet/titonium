@@ -74,12 +74,12 @@ FocusScope {
         anchors.rightMargin: Metrics.barPadding
         customColor: Theme.surface
         clipContent: true
-        transformOrigin: Item.TopRight
+        transformOrigin: Item.Top
         opacity: Motion.reduced ? 1 : 0
-        scale: Motion.reduced ? 1 : 0.94
+        scale: Motion.reduced ? 1 : 0.98
         transform: Translate {
             id: panelEntranceOffset
-            y: Motion.reduced ? 0 : -12
+            y: Motion.reduced ? 0 : -8
         }
 
         Behavior on height { NumberAnimation { duration: Motion.normal } }
@@ -218,24 +218,27 @@ FocusScope {
             property: "opacity"
             from: 0
             to: 1
-            duration: 150
-            easing.type: Easing.OutCubic
+            duration: 140
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Motion.springDamped
         }
         NumberAnimation {
             target: panel
             property: "scale"
-            from: 0.94
+            from: 0.98
             to: 1
-            duration: 220
-            easing.bezierCurve: [0.38, 1.21, 0.22, 1, 1, 1]
+            duration: 180
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Motion.springDamped
         }
         NumberAnimation {
             target: panelEntranceOffset
             property: "y"
-            from: -12
+            from: -8
             to: 0
-            duration: 220
-            easing.bezierCurve: [0.2, 0.8, 0.2, 1, 1, 1]
+            duration: 180
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Motion.springDamped
         }
     }
 
@@ -247,23 +250,23 @@ FocusScope {
             property: "opacity"
             from: 1
             to: 0
-            duration: 120
+            duration: 100
             easing.type: Easing.InCubic
         }
         NumberAnimation {
             target: panel
             property: "scale"
             from: 1
-            to: 0.96
-            duration: 130
+            to: 0.98
+            duration: 100
             easing.type: Easing.InCubic
         }
         NumberAnimation {
             target: panelEntranceOffset
             property: "y"
             from: 0
-            to: -8
-            duration: 130
+            to: -6
+            duration: 100
             easing.type: Easing.InCubic
         }
         onFinished: {

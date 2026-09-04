@@ -20,6 +20,7 @@ QtObject {
         function closeTransient(): void { SurfaceManager.close(""); }
     }
 
+
     property IpcHandler settingsHandler: IpcHandler {
         id: settingsIpc
         target: "settings"
@@ -61,10 +62,15 @@ QtObject {
             return "closed";
         }
         function state(): string {
+            const context = CenterNotchCoordinator.selectedContext || {};
+            const contextValue = (context.source || "idle") + ":" + (context.id || "");
             if (!CenterNotchCoordinator.active)
-                return "closed";
+                return "closed;state=" + CenterNotchCoordinator.visualState
+                    + ";context=" + contextValue;
             return "open:" + CenterNotchCoordinator.ownerScreenName
-                + ";page=" + CenterNotchCoordinator.requestedPage;
+                + ";page=" + CenterNotchCoordinator.requestedPage
+                + ";state=" + CenterNotchCoordinator.visualState
+                + ";context=" + contextValue;
         }
     }
 

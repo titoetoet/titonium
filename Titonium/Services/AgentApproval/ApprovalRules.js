@@ -112,6 +112,28 @@ function buildAntigravityExecutionOverrides(descriptor) {
     return overrides;
 }
 
+function isFileChange(descriptor) {
+    if (!descriptor)
+        return false;
+    const kind = text(descriptor.kind);
+    return kind === "write_to_file"
+        || kind === "replace_file_content"
+        || kind === "multi_replace_file_content"
+        || Boolean(descriptor.targetFile);
+}
+
+function sessionScope(descriptor) {
+    if (!descriptor)
+        return "";
+    if (descriptor.conversationId)
+        return text(descriptor.conversationId);
+    if (Array.isArray(descriptor.workspacePaths) && descriptor.workspacePaths.length > 0 && descriptor.workspacePaths[0])
+        return text(descriptor.workspacePaths[0]);
+    if (descriptor.cwd)
+        return text(descriptor.cwd);
+    return "antigravity";
+}
+
 function commandBinary(descriptor) {
     if (!descriptor || !descriptor.command)
         return "";
@@ -126,6 +148,30 @@ function sessionGrantKey(descriptor) {
     if (!binary)
         return "";
     return descriptor.conversationId + "\u0000command:" + binary;
+}
+
+function sessionKeys(descriptor) {
+    if (!descriptor)
+        return [];
+    const keys = [];
+    const standardKey = sessionGrantKey(descriptor);
+    if (standardKey)
+        keys.push(standardKey);
+    if (descriptor.conversationId)
+        keys.push("conv:" + descriptor.conversationId);
+
+    const scope = sessionScope(descriptor);
+    if (scope) {
+        if (isFileChange(descriptor)) {
+            keys.push(scope + "\u0000file_edit");
+        } else {
+            const binary = commandBinary(descriptor);
+            if (binary)
+                keys.push(scope + "\u0000command:" + binary);
+        }
+        keys.push("scope:" + scope);
+    }
+    return keys;
 }
 
 function requiresExplicitApproval(descriptor) {

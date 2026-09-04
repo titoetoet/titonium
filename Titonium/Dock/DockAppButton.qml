@@ -88,6 +88,7 @@ FocusScope {
 
     HoverHandler { id: hoverHandler; cursorShape: Qt.PointingHandCursor }
     TapHandler {
+        id: leftTap
         acceptedButtons: Qt.LeftButton
         onTapped: {
             root.forceActiveFocus(Qt.MouseFocusReason);

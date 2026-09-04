@@ -30,8 +30,17 @@ FocusScope {
     anchors.fill: parent
     focus: true
 
+    property bool closing: false
+
     function close(): void {
-        SurfaceManager.close(root.ownerId);
+        if (Motion.reduced) {
+            SurfaceManager.close(root.ownerId);
+            return;
+        }
+        if (root.closing)
+            return;
+        root.closing = true;
+        panelExit.restart();
     }
 
     function pointInside(item: Item, point: point): bool {
@@ -127,8 +136,11 @@ FocusScope {
     }
 
     Rectangle {
+        id: backdropScrim
         anchors.fill: parent
-        color: Qt.rgba(0, 0, 0, 0.42)
+        color: "#000000"
+        opacity: Motion.reduced ? 0.42 : 0
+
         TapHandler {
             onTapped: eventPoint => {
                 if (!root.pointInside(panel, eventPoint.position))
@@ -147,6 +159,91 @@ FocusScope {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.topMargin: SpotlightGeometry.panelTop()
         customColor: Theme.background
+        transformOrigin: Item.Top
+        opacity: Motion.reduced ? 1 : 0
+        scale: Motion.reduced ? 1 : 0.96
+        transform: Translate {
+            id: panelTranslate
+            y: Motion.reduced ? 0 : -14
+        }
+
+        ParallelAnimation {
+            id: panelEntrance
+            running: !Motion.reduced
+
+            NumberAnimation {
+                target: backdropScrim
+                property: "opacity"
+                from: 0
+                to: 0.42
+                duration: 180
+                easing.type: Easing.OutCubic
+            }
+            NumberAnimation {
+                target: panel
+                property: "opacity"
+                from: 0
+                to: 1
+                duration: 150
+                easing.type: Easing.OutCubic
+            }
+            NumberAnimation {
+                target: panel
+                property: "scale"
+                from: 0.96
+                to: 1
+                duration: 200
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Motion.springDamped
+            }
+            NumberAnimation {
+                target: panelTranslate
+                property: "y"
+                from: -10
+                to: 0
+                duration: 200
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Motion.springDamped
+            }
+        }
+
+        ParallelAnimation {
+            id: panelExit
+
+            NumberAnimation {
+                target: backdropScrim
+                property: "opacity"
+                from: 0.42
+                to: 0
+                duration: 120
+                easing.type: Easing.InCubic
+            }
+            NumberAnimation {
+                target: panel
+                property: "opacity"
+                from: 1
+                to: 0
+                duration: 110
+                easing.type: Easing.InCubic
+            }
+            NumberAnimation {
+                target: panel
+                property: "scale"
+                from: 1
+                to: 0.97
+                duration: 130
+                easing.type: Easing.InCubic
+            }
+            NumberAnimation {
+                target: panelTranslate
+                property: "y"
+                from: 0
+                to: -8
+                duration: 130
+                easing.type: Easing.InCubic
+            }
+            onFinished: SurfaceManager.close(root.ownerId)
+        }
 
         ColumnLayout {
             anchors.fill: parent

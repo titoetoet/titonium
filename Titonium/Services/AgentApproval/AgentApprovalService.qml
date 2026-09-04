@@ -21,9 +21,40 @@ QtObject {
     property string popupScreenName: ""
     readonly property bool hasPending: root.pending.length > 0
     readonly property var current: root.hasPending ? root.pending[0] : null
+    readonly property bool currentIsFileChange: ApprovalRules.isFileChange(root.current)
     readonly property string runtimeDirectory: String(Quickshell.env("XDG_RUNTIME_DIR") || "/tmp")
     readonly property string socketPath: String(Quickshell.env("TITONIUM_AGENT_APPROVAL_SOCKET")
         || (root.runtimeDirectory + "/titonium-agent-approval.sock"))
+
+    readonly property string grantsFilePath: root.runtimeDirectory + "/titonium-agent-approval-grants.json"
+
+    function activate(): void {
+        server.active = false;
+        server.active = true;
+    }
+
+    function loadPersistedGrants(): void {
+        try {
+            const raw = grantsFile.text();
+            if (!raw || !raw.trim())
+                return;
+            const data = JSON.parse(raw);
+            if (data && typeof data.grants === "object" && Array.isArray(data.order)) {
+                root.sessionGrants = data.grants;
+                root.sessionGrantOrder = Object.freeze(data.order);
+            }
+        } catch (_) {}
+    }
+
+    function persistGrants(): void {
+        try {
+            const data = JSON.stringify({
+                grants: root.sessionGrants,
+                order: root.sessionGrantOrder
+            }, null, 2);
+            grantsFile.setText(data);
+        } catch (_) {}
+    }
 
     function screenExists(screenName: string): bool {
         if (!screenName)
@@ -36,6 +67,23 @@ QtObject {
         return false;
     }
 
+    function screenNameFromMonitor(monitorValue: var): string {
+        if (monitorValue === undefined || monitorValue === null || String(monitorValue).length === 0)
+            return "";
+        const str = String(monitorValue);
+        if (root.screenExists(str))
+            return str;
+        const monitors = Hyprland.monitors?.values || [];
+        for (let i = 0; i < monitors.length; i++) {
+            const m = monitors[i];
+            if (String(m?.id) === str || String(m?.name) === str) {
+                if (root.screenExists(m?.name || ""))
+                    return m.name;
+            }
+        }
+        return "";
+    }
+
     function sourceWindowScreenName(source: string): string {
         const normalizedSource = String(source || "").toLowerCase();
         const needles = normalizedSource === "antigravity"
@@ -43,15 +91,21 @@ QtObject {
             : normalizedSource === "chatgpt"
                 ? ["chatgpt"]
                 : [];
+        const extraNeedles = normalizedSource === "antigravity" ? ["antigravity"] : [];
+        const allNeedles = needles.concat(extraNeedles);
         const windows = HyprlandService.windows || [];
         for (let index = 0; index < windows.length; index++) {
             const window = windows[index];
             const identity = (String(window?.appId || "") + " "
-                + String(window?.title || "")).toLowerCase();
-            for (let needleIndex = 0; needleIndex < needles.length; needleIndex++) {
-                if (identity.includes(needles[needleIndex])
-                        && root.screenExists(window?.monitorName || ""))
-                    return window.monitorName;
+                + String(window?.title || "") + " "
+                + String(window?.ipcClass || "") + " "
+                + String(window?.initialClass || "")).toLowerCase();
+            for (let needleIndex = 0; needleIndex < allNeedles.length; needleIndex++) {
+                if (identity.includes(allNeedles[needleIndex])) {
+                    const resolved = root.screenNameFromMonitor(window?.monitorName);
+                    if (resolved)
+                        return resolved;
+                }
             }
         }
         return "";
@@ -106,8 +160,17 @@ QtObject {
             }
             const grantKey = ApprovalRules.sessionGrantKey(descriptor);
             const convKey = descriptor.conversationId ? ("conv:" + descriptor.conversationId) : "";
-            const isGranted = (grantKey && root.sessionGrants[grantKey] === true)
+            const keys = ApprovalRules.sessionKeys ? ApprovalRules.sessionKeys(descriptor) : [];
+            let isGranted = (grantKey && root.sessionGrants[grantKey] === true)
                 || (convKey && root.sessionGrants[convKey] === true);
+            if (!isGranted && keys.length > 0) {
+                for (let i = 0; i < keys.length; i++) {
+                    if (root.sessionGrants[keys[i]] === true) {
+                        isGranted = true;
+                        break;
+                    }
+                }
+            }
             if (isGranted && !ApprovalRules.requiresExplicitApproval(descriptor)) {
                 client.write(JSON.stringify(
                     ApprovalRules.decisionPayload(descriptor.source, "allow_session", descriptor)) + "\n");
@@ -167,7 +230,8 @@ QtObject {
     function rememberSessionGrant(descriptor: var): bool {
         const grantKey = ApprovalRules.sessionGrantKey(descriptor);
         const convKey = descriptor.conversationId ? ("conv:" + descriptor.conversationId) : "";
-        if ((!grantKey && !convKey) || ApprovalRules.requiresExplicitApproval(descriptor))
+        const keys = ApprovalRules.sessionKeys ? ApprovalRules.sessionKeys(descriptor) : [];
+        if ((!grantKey && !convKey && keys.length === 0) || ApprovalRules.requiresExplicitApproval(descriptor))
             return false;
         const nextGrants = Object.assign({}, root.sessionGrants);
         let nextOrder = root.sessionGrantOrder.slice();
@@ -179,11 +243,36 @@ QtObject {
             nextOrder = nextOrder.filter(key => key !== convKey).concat([convKey]);
             nextGrants[convKey] = true;
         }
+        for (let i = 0; i < keys.length; i++) {
+            const k = keys[i];
+            nextOrder = nextOrder.filter(key => key !== k).concat([k]);
+            nextGrants[k] = true;
+        }
         while (nextOrder.length > 128)
             delete nextGrants[nextOrder.shift()];
         root.sessionGrants = nextGrants;
         root.sessionGrantOrder = Object.freeze(nextOrder);
+        root.persistGrants();
         return true;
+    }
+
+    function clearSessionGrants(): void {
+        root.sessionGrants = ({});
+        root.sessionGrantOrder = Object.freeze([]);
+        root.persistGrants();
+    }
+
+    Component.onCompleted: root.loadPersistedGrants()
+
+    property FileView grantsFile: FileView {
+        path: root.grantsFilePath
+        preload: true
+        blockLoading: false
+        printErrors: false
+        atomicWrites: true
+        watchChanges: true
+        onLoaded: root.loadPersistedGrants()
+        onFileChanged: root.loadPersistedGrants()
     }
 
     function snapshot(): string {

@@ -15,6 +15,11 @@ Item {
     implicitHeight: 120
     opacity: 0
 
+    transform: Translate {
+        id: toastSlide
+        x: Motion.reduced ? 0 : 36
+    }
+
     Shared.Surface {
         anchors.fill: parent
         tone: "elevated"
@@ -83,11 +88,47 @@ Item {
             showFocusRing: false
             backgroundRadius: Metrics.radiusLarge
             accessibleName: I18n.tr("notification.toast.dismiss")
-            onTriggered: NotificationService.dismiss(root.notification.id)
+            onTriggered: root.dismiss()
         }
     }
 
+    property bool dismissing: false
+
+    function dismiss(): void {
+        if (root.dismissing)
+            return;
+        root.dismissing = true;
+        if (Motion.reduced) {
+            NotificationService.dismiss(root.notification.id);
+        } else {
+            toastExit.start();
+        }
+    }
+
+    ParallelAnimation {
+        id: toastExit
+
+        NumberAnimation {
+            target: toastSlide
+            property: "x"
+            from: 0
+            to: 48
+            duration: 150
+            easing.type: Easing.InCubic
+        }
+        NumberAnimation {
+            target: root
+            property: "opacity"
+            from: 1
+            to: 0
+            duration: 130
+            easing.type: Easing.InCubic
+        }
+        onFinished: NotificationService.dismiss(root.notification.id)
+    }
+
     Behavior on opacity {
+        enabled: !root.dismissing
         NumberAnimation { duration: Motion.fast; easing.type: Easing.OutCubic }
     }
 
@@ -96,6 +137,20 @@ Item {
         repeat: false
         running: true
         onTriggered: NotificationService.expireToast(root.notification.id)
+    }
+
+    ParallelAnimation {
+        id: toastEntrance
+        running: !Motion.reduced
+
+        NumberAnimation {
+            target: toastSlide
+            property: "x"
+            from: 36
+            to: 0
+            duration: 220
+            easing.type: Easing.OutCubic
+        }
     }
 
     Component.onCompleted: root.opacity = 1
