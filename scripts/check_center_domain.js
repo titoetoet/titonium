@@ -128,6 +128,9 @@ for (const name of adapterNames) {
 
 for (const file of ["CenterDomain.qml", "CenterActionDispatcher.qml"])
     assert.equal(fs.existsSync(path.join(centerRoot, file)), true, `missing ${file}`);
+assert.match(fs.readFileSync(path.join(centerRoot, "qmldir"), "utf8"),
+    /CenterActionDispatcher 1\.0 CenterActionDispatcher\.qml/,
+    "CenterActionDispatcher must be exported for runtime construction");
 const domainSource = fs.readFileSync(path.join(centerRoot, "CenterDomain.qml"), "utf8");
 assert.match(domainSource, /readonly property var snapshot/);
 assert.match(domainSource, /signal presentationRequested\(var request\)/);
