@@ -97,34 +97,30 @@ for (const item of expectedMaskItems)
 assert.doesNotMatch(surface, /Region \{ item: root\.(leftHitbox|rightHitbox) \}/,
     "Classic row-group bounds must not swallow the click-through gaps between pills");
 requireFragments("Titonium/Bar/BarHost.qml", [
-    "styleName: RightPillCoordinator.presentedStyle",
+    "profile: CenterPresentationRules.profile(RightPillCoordinator.presentedStyle)",
 ]);
 
 const barHost = read("Titonium/Bar/BarHost.qml");
-assert.equal((barHost.match(/CenterPillWindow\s*\{/g) || []).length, 1,
-    "both styles share one CenterPillWindow owner");
+assert.equal((barHost.match(/CenterSurfaceHost\s*\{/g) || []).length, 1,
+    "all styles share one neutral CenterSurfaceHost owner");
 assert.equal(fs.existsSync(path.join(root,
     "Titonium/Bar/classic/ClassicCenterNotchWindow.qml")), false);
 assert.equal(fs.existsSync(path.join(root,
     "Titonium/Bar/classic/ClassicCenterNotchSurface.qml")), false);
 assert.match(read("Titonium/Bar/islands/ActiveWindowPill.qml"),
-    /if \(RightPillCoordinator\.toggleApp\([\s\S]*?return;[\s\S]*?CenterNotchCoordinator\.openExpanded\(root\.screen\.name\)/,
-    "Active Window without a tray menu must open the shared coordinator for the Classic owner");
-assert.match(read("Titonium/Bar/notch/CenterPillWindow.qml"),
-    /property string styleName:[\s\S]*?CenterNotchCoordinator\.ownerScreenName/,
-    "the shared Center owner receives style as presentation data only");
+    /if \(RightPillCoordinator\.toggleApp\([\s\S]*?return;[\s\S]*?CenterSurfaceController\.dispatch\(\{ type: "request-open",[\s\S]*?mode: "expanded" \}\)/,
+    "Active Window without a tray menu must request the shared Center surface");
 
 requireFragments("Titonium/Bar/right/EdgeMenuWindow.qml", [
     "property bool styleActive: true",
     "visible: window.styleActive",
 ]);
 
-requireFragments("Titonium/Bar/notch/CenterPillWindow.qml", [
-    "WlrLayershell.keyboardFocus: window.ownsIsland",
+requireFragments("Titonium/Core/Surfaces/Center/CenterOverlayWindow.qml", [
+    "window.viewState.focusPolicy === \"exclusive\"",
     "? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None",
-    "visible: !window.ownsIsland && !window.dismissing",
-    "width: !window.ownsIsland ? surface.compactInputWidth : 0",
-    "height: !window.ownsIsland ? surface.compactInputHeight : 0",
+    "renderer.visualBounds",
+    "CenterSurfaceController.finishClose",
 ]);
 requireFragments("Titonium/Bar/right/EdgeMenuWindow.qml", [
     "WlrLayershell.keyboardFocus: window.ownsMenu",

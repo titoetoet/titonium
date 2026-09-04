@@ -129,7 +129,7 @@ def main() -> int:
         source = CENTER_VIEW.read_text(encoding="utf-8")
         for fragment in (
             "CenterAttentionService.presentation",
-            "CenterNotchCoordinator.activitySlots.primary",
+            "CenterSurfaceController.activitySlots.primary",
             "CenterFocusStore.text",
         ):
             if fragment not in source:

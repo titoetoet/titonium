@@ -116,7 +116,7 @@ def main() -> int:
         "SystemTrayService.menuContextForApp",
         "SystemTrayService.hasMenuForApp",
         "RightPillCoordinator.toggleApp",
-        "CenterNotchCoordinator.openExpanded",
+        'CenterSurfaceController.dispatch({ type: "request-open"',
     ):
         if fragment not in active_source:
             errors.append(f"ActiveWindowPill missing tray-menu contract: {fragment}")

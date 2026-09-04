@@ -1,5 +1,1 @@
 module qs.Titonium.Bar.notch
-singleton CenterNotchCoordinator 1.0 CenterNotchCoordinator.qml
-CenterPillWindow 1.0 CenterPillWindow.qml
-CenterNotchSurface 1.0 CenterNotchSurface.qml
-CenterNotch 1.0 CenterNotch.qml

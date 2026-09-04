@@ -15,8 +15,6 @@ Item {
     readonly property alias connectivityHitbox: endIsland.connectivityHitbox
     readonly property alias statusHitbox: endIsland.statusHitbox
     readonly property bool hovered: barHover.hovered
-    signal centerRequested(var screen)
-    signal sourceRequested(var screen, string intent)
     readonly property var optionalPlan: BarLayout.optionalVisibility(
         root.width,
         startIsland.implicitWidth,

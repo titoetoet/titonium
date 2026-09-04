@@ -9,6 +9,12 @@ Scope {
     required property ShellScreen screenModel
     required property var profile
 
+    Component.onCompleted: {
+        if (CenterSurfaceController.mode === "closed")
+            CenterSurfaceController.dispatch({ type: "surface-granted",
+                screenName: root.screenModel.name });
+    }
+
     CenterCompactWindow {
         screenModel: root.screenModel
         snapshot: CenterDomain.snapshot

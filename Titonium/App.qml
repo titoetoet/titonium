@@ -26,10 +26,6 @@ Scope {
     Component.onCompleted: serviceBootstrap.activate()
 
     BarHost {
-        onCenterRequested: screen => router.openCenterNotch(screen, "overview")
-        onBannerRequested: (screen, context, autoDismiss) =>
-            router.openCenterBanner(screen, context, autoDismiss)
-        onSourceRequested: (screen, intent) => router.activateCenterSource(screen, intent)
         onSettingsRequested: screen => router.openSettings(screen, "bar")
     }
 
@@ -37,7 +33,7 @@ Scope {
         appid: "titonium"
         name: "dynamicIsland"
         description: "Open Expanded Dynamic Island"
-        onPressed: router.openCenterNotch(null, "overview")
+        onPressed: router.openCenter(null, "overview", "")
     }
 
     DockHost {

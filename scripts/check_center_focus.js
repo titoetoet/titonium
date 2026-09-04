@@ -65,9 +65,14 @@ for (let day = 1; day <= 31; day += 1)
 assert.equal(observed.size > 1, true);
 console.log("PASS stable date hashing distributes normalized prompts");
 
-const centerIsland = fs.readFileSync(path.join(root, "Titonium", "Bar", "islands",
-    "CenterIsland.qml"), "utf8");
-assert.equal(centerIsland.includes("CenterFocusStore.openScratchpad()"), false,
-    "TopBar Center must open the Notch instead of Daily Focus directly");
-assert.match(centerIsland, /signal notchRequested\(var screen\)/);
-console.log("PASS Daily Focus remains a compact read-only projection");
+const renderer = fs.readFileSync(path.join(root, "Titonium", "Bar", "center",
+    "presentations", "Connected", "ConnectedRenderer.qml"), "utf8");
+const adapter = fs.readFileSync(path.join(root, "Titonium", "Services", "Center",
+    "adapters", "FocusCenterAdapter.qml"), "utf8");
+assert.equal(renderer.includes("CenterFocusStore"), false,
+    "Center presentations must not own Daily Focus behavior");
+assert.match(renderer, /root\.context\?\.title/);
+assert.match(adapter, /source: "focus"/);
+assert.match(adapter, /readonly property var actions: Object\.freeze\(\[\]\)/);
+assert.doesNotMatch(adapter, /openScratchpad|Process\s*\{|FileView\s*\{/);
+console.log("PASS Daily Focus remains a neutral semantic projection");

@@ -18,7 +18,7 @@ QtObject {
     readonly property string selectedContextId: root.internalState.selectedContextId
     readonly property string destination: root.internalState.destination
     readonly property real dragProgress: root.internalState.dragProgress
-    readonly property bool active: root.mode !== "closed"
+    readonly property bool active: root.mode === "banner" || root.mode === "expanded"
     readonly property int generation: root.internalState.generation
     readonly property var viewState: Object.freeze({
         generation: root.generation,

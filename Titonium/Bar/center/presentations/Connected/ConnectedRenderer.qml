@@ -14,6 +14,8 @@ FocusScope {
     signal transitionFinished(int generation)
     readonly property var context: root.snapshot.contexts.find(
         item => item.id === root.viewState.selectedContextId) || root.snapshot.primary
+    readonly property var contextActions: root.snapshot.capabilities.actions.filter(
+        item => root.context && item.contextId === root.context.id)
     readonly property rect visualBounds: Qt.rect(body.x, body.y, body.width, body.height)
     readonly property rect interactiveBounds: root.visualBounds
 
@@ -30,16 +32,47 @@ FocusScope {
             : root.profile.compact.radius)
         color: Theme.light ? "#ffffff" : "#000000"
 
-        RowLayout {
+        ColumnLayout {
             anchors.centerIn: parent
             width: Math.max(0, parent.width - 32)
             spacing: Metrics.spacingSmall
-            Shared.Icon { name: root.context?.icon || "center_focus_strong"; size: 18 }
+
+            RowLayout {
+                Layout.fillWidth: true
+                Shared.Icon { name: root.context?.icon || "center_focus_strong"; size: 18 }
+                Shared.TextLabel {
+                    Layout.fillWidth: true
+                    text: root.context?.title || "Center"
+                    elide: Text.ElideRight
+                    horizontalAlignment: Text.AlignHCenter
+                }
+            }
             Shared.TextLabel {
                 Layout.fillWidth: true
-                text: root.context?.title || "Center"
-                elide: Text.ElideRight
+                visible: root.viewState.mode !== "compact" && (root.context?.subtitle || "").length > 0
+                text: root.context?.subtitle || ""
+                variant: "caption"
+                tone: "secondary"
                 horizontalAlignment: Text.AlignHCenter
+                elide: Text.ElideRight
+            }
+            RowLayout {
+                Layout.alignment: Qt.AlignHCenter
+                visible: root.viewState.mode !== "compact" && root.contextActions.length > 0
+                spacing: Metrics.spacingSmall
+                Repeater {
+                    model: root.contextActions
+                    Shared.Button {
+                        required property var modelData
+                        size: "small"
+                        variant: modelData.role === "primary" ? "primary" : "quiet"
+                        iconName: modelData.icon
+                        accessibleName: modelData.label
+                        enabled: modelData.enabled
+                        onTriggered: root.intentRequested({ type: "invoke-action",
+                            actionId: modelData.id, contextId: modelData.contextId })
+                    }
+                }
             }
         }
         TapHandler {

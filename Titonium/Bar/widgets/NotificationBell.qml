@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import qs.Titonium.Bar.notch
+import qs.Titonium.Core.Surfaces.Center
 import qs.Titonium.Core.Runtime
 import qs.Titonium.Services.Notifications
 import qs.Titonium.Shared as Shared
@@ -97,12 +97,10 @@ Item {
         id: bellTap
         onTapped: {
             const item = root.latestNotification;
-            CenterNotchCoordinator.openBanner(root.screen.name, {
-                source: "notification",
-                id: item?.id || "notification:unread",
-                title: item?.summary || item?.body || "Notification",
-                body: item?.body || ""
-            });
+            CenterSurfaceController.dispatch({ type: "request-open",
+                screenName: root.screen.name, mode: "banner",
+                contextId: item ? "notification:" + item.id : "",
+                timeoutMs: 0, focusPolicy: "none" });
         }
     }
 

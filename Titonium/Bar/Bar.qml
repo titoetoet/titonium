@@ -2,7 +2,6 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Titonium.Bar.islands
-import qs.Titonium.Bar.notch
 import qs.Titonium.Bar.right
 import qs.Titonium.Theme
 import "notch/BarLayout.js" as BarLayout
@@ -10,8 +9,6 @@ import "notch/BarLayout.js" as BarLayout
 Item {
     id: root
     required property var screen
-    signal centerRequested(var screen)
-    signal sourceRequested(var screen, string intent)
     readonly property bool hovered: barHover.hovered
     readonly property alias leftHitbox: leftReservation
     readonly property alias rightHitbox: rightReservation
@@ -40,8 +37,7 @@ Item {
 
     Item {
         id: centerGroup
-        implicitWidth: Math.max(180, Math.min(220, CenterNotchCoordinator.islandWidth))
-            + (CenterNotchCoordinator.satelliteActive ? 44 : 0)
+        implicitWidth: 220
         width: implicitWidth
         implicitHeight: Metrics.barHeight
         x: BarLayout.centerX(root.width, centerGroup.width)

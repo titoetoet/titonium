@@ -51,11 +51,10 @@ assert.equal(rules.geometry(connected, { width: 360, height: 800 }, "expanded").
 assert.equal(rules.profile("invalid").id, "connected");
 console.log("PASS four Center presentation profiles provide frozen clamped geometry");
 
-for (const file of [
-    "CenterRenderer.qml",
-    "presentations/Connected/ConnectedRenderer.qml",
-    "presentations/Connected/ConnectedProfile.js",
-]) assert.equal(fs.existsSync(path.join(path.dirname(rulesPath), file)), true, `missing ${file}`);
+for (const file of ["CenterRenderer.qml", ...["Pill", "Notch", "Connected", "Classic"]
+    .flatMap(name => [`presentations/${name}/${name}Renderer.qml`,
+        `presentations/${name}/${name}Profile.js`])])
+    assert.equal(fs.existsSync(path.join(path.dirname(rulesPath), file)), true, `missing ${file}`);
 const renderer = fs.readFileSync(path.join(path.dirname(rulesPath),
     "presentations/Connected/ConnectedRenderer.qml"), "utf8");
 for (const fragment of ["required property var snapshot", "required property var viewState",
@@ -66,3 +65,10 @@ for (const fragment of ["required property var snapshot", "required property var
 assert.doesNotMatch(renderer, /Services\.(Capture|Mpris|Notifications|AgentApproval|Center)/);
 assert.doesNotMatch(renderer, /\b(Process|FileView|Timer)\s*\{/);
 console.log("PASS Connected renderer exposes neutral state and intent contract");
+
+for (const legacy of ["CenterNotchCoordinator.qml", "CenterNotchSurface.qml",
+    "CenterNotch.qml", "CenterPillWindow.qml"]) {
+    assert.equal(fs.existsSync(path.join(root, "Titonium", "Bar", "notch", legacy)), false,
+        `legacy Center owner remains: ${legacy}`);
+}
+console.log("PASS presentation profiles replace legacy Center ownership");

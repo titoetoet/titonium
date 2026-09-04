@@ -6,6 +6,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CONTROLLER = ROOT / "Titonium/Core/Surfaces/Center/CenterSurfaceController.qml"
 ROUTER = ROOT / "Titonium/Orchestration/SurfaceRouter.qml"
 HOST_ROOT = ROOT / "Titonium/Core/Surfaces/Center"
+BAR_HOST = ROOT / "Titonium/Bar/BarHost.qml"
 
 errors = []
 if not CONTROLLER.exists():
@@ -35,6 +36,23 @@ for fragment in ("function openCenter(", "function presentCenterBanner(", "funct
 for filename in ("CenterSurfaceHost.qml", "CenterCompactWindow.qml", "CenterOverlayWindow.qml"):
     if not (HOST_ROOT / filename).exists():
         errors.append(f"missing neutral host file: {filename}")
+
+bar_host_source = BAR_HOST.read_text()
+if "CenterSurfaceHost {" not in bar_host_source:
+    errors.append("BarHost does not compose CenterSurfaceHost")
+if "CenterPillWindow {" in bar_host_source:
+    errors.append("BarHost still composes legacy CenterPillWindow")
+
+production_files = list((ROOT / "Titonium").rglob("*.qml"))
+legacy_consumers = []
+legacy_name = "Center" + "NotchCoordinator"
+for path in production_files:
+    if path.name == legacy_name + ".qml":
+        continue
+    if legacy_name in path.read_text():
+        legacy_consumers.append(str(path.relative_to(ROOT)))
+if legacy_consumers:
+    errors.append("legacy coordinator consumers: " + ", ".join(legacy_consumers))
 
 if errors:
     print("FAIL neutral Center architecture")

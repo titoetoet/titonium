@@ -596,7 +596,7 @@ def main() -> int:
     ), "App audio composition")
     require_fragments(errors, ROOT / "Titonium/Orchestration/SurfaceRouter.qml", (
         "function onOpened(ownerId: string, descriptor: var, screen: var): void",
-        "CenterNotchCoordinator.close()",
+        'root.closeCenter("surface-opened")',
     ), "surface routing")
 
     if errors:

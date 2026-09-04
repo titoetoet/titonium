@@ -185,8 +185,8 @@ assert.match(coordinator,
     /function onBarStyleChanged\(\): void\s*\{[\s\S]*?root\.presentedStyle = BarPopupRouting\.styleAfterCleanup\([\s\S]*?root\.closeForStyleChange\(\)/,
     "one preference connection must clean up before publishing the alternate style");
 assert.match(coordinator,
-    /function closeForStyleChange\(\): void\s*\{[\s\S]*?SurfaceManager\.descriptor[\s\S]*?SurfaceManager\.screen[\s\S]*?forceCloseConnectedSurface\(\)[\s\S]*?RightPillState\.matchesSurfaceOpen\([\s\S]*?SurfaceManager\.close\([\s\S]*?CenterNotchCoordinator\.close\(\)[\s\S]*?CenterNotchCoordinator\.finishClose\([\s\S]*?root\.close\(\)[\s\S]*?root\.finishClose\(/,
-    "style cleanup must synchronously release the current owner and both visual coordinators");
+    /function closeForStyleChange\(\): void\s*\{[\s\S]*?SurfaceManager\.descriptor[\s\S]*?SurfaceManager\.screen[\s\S]*?forceCloseConnectedSurface\(\)[\s\S]*?RightPillState\.matchesSurfaceOpen\([\s\S]*?SurfaceManager\.close\([\s\S]*?CenterSurfaceController\.dispatch\(\{ type: "request-mode", mode: "compact" \}\)[\s\S]*?root\.close\(\)[\s\S]*?root\.finishClose\(/,
+    "style cleanup must release the current owner and compact the neutral Center surface");
 
 const barSurface = read("Titonium/Bar/BarSurface.qml");
 const barHost = read("Titonium/Bar/BarHost.qml");
@@ -200,7 +200,7 @@ assert.doesNotMatch(barHost, /styleActive:\s*Preferences\.barStyle/,
     "connected visual windows must not activate directly from Preferences");
 assert.equal((barHost.match(
     /styleActive:\s*RightPillCoordinator\.presentedStyle === "connected"/g) || []).length, 1);
-assert.match(barHost, /CenterPillWindow\s*\{[\s\S]*?styleName:\s*RightPillCoordinator\.presentedStyle/,
+assert.match(barHost, /CenterSurfaceHost\s*\{[\s\S]*?profile:\s*CenterPresentationRules\.profile\(RightPillCoordinator\.presentedStyle\)/,
     "one Center owner receives the published style as presentation data");
 
 const initial = connectedState.connectedInitialState();
