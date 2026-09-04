@@ -6,6 +6,7 @@ import QtQuick.Layouts
 import qs.Titonium.Theme
 import qs.Titonium.Core.Runtime
 import "SpotlightLayout.js" as SpotlightLayout
+import "SpotlightWheelPaging.js" as SpotlightWheelPaging
 
 FocusScope {
     id: root
@@ -20,6 +21,8 @@ FocusScope {
     readonly property int transitionDuration: Preferences.reducedMotion
         || root.spotlightSettings.pageTransition === "none" ? 0
             : (root.spotlightSettings.transitionDuration ?? 220)
+    property real wheelAccumulator: 0
+    property double lastWheelConsumedAt: 0
 
     ColumnLayout {
         anchors.fill: parent
@@ -50,19 +53,6 @@ FocusScope {
                     required property var modelData
                     width: pageView.width
                     height: pageView.height
-                    opacity: root.spotlightSettings.pageTransition === "slide-fade"
-                            || root.spotlightSettings.pageTransition === "fade"
-                        ? (ListView.isCurrentItem ? 1.0 : 0.18) : 1.0
-                    scale: root.spotlightSettings.pageTransition === "slide-scale"
-                        ? (ListView.isCurrentItem ? 1.0 : 0.94) : 1.0
-
-                    Behavior on opacity {
-                        NumberAnimation { duration: root.transitionDuration; easing.type: Easing.OutCubic }
-                    }
-                    Behavior on scale {
-                        NumberAnimation { duration: root.transitionDuration; easing.type: Easing.OutCubic }
-                    }
-
                     Grid {
                         anchors.fill: parent
                         columns: root.columns
@@ -93,13 +83,20 @@ FocusScope {
                 acceptedButtons: Qt.NoButton
                 propagateComposedEvents: true
                 onWheel: wheel => {
-                    const delta = wheel.angleDelta.y !== 0 ? wheel.angleDelta.y : wheel.angleDelta.x;
-                    if (delta < 0)
-                        root.spotlightModel.setPage(root.spotlightModel.pageIndex + 1);
-                    else if (delta > 0)
-                        root.spotlightModel.setPage(root.spotlightModel.pageIndex - 1);
-                    else
+                    const angle = wheel.angleDelta.y !== 0
+                        ? wheel.angleDelta.y : wheel.angleDelta.x;
+                    const pixel = wheel.pixelDelta.y !== 0
+                        ? wheel.pixelDelta.y : wheel.pixelDelta.x;
+                    const delta = angle !== 0 ? angle : pixel;
+                    if (delta === 0)
                         return;
+                    const result = SpotlightWheelPaging.update(delta, Date.now(),
+                        root.spotlightModel.pageIndex, root.spotlightModel.pages.length,
+                        root.lastWheelConsumedAt, root.wheelAccumulator);
+                    root.wheelAccumulator = result.accumulator;
+                    root.lastWheelConsumedAt = result.lastConsumedAt;
+                    if (result.consumed)
+                        root.spotlightModel.setPage(result.page);
                     wheel.accepted = true;
                 }
             }
