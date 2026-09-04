@@ -11,6 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PARSER = ROOT / "scripts/check_focus_handoff_trace.py"
 FIXTURES = ROOT / "tests/fixtures"
+PROTECTED_ACCEPTANCE = ROOT / "scripts/protected_acceptance.sh"
 OLD_OWNER = "center:DP-1"
 NEW_OWNER = "overlay:spotlight:DP-1"
 
@@ -55,8 +56,31 @@ def handoff_status(events: list[object]) -> int:
         return parser.require_handoff(events, OLD_OWNER, NEW_OWNER)
 
 
+def require_immutable_final_log_contract() -> None:
+    source = PROTECTED_ACCEPTANCE.read_text(encoding="utf-8")
+    require("stop_focus_shell()" in source,
+            "protected acceptance must define an exact focus-shell stop helper")
+    helper_start = source.index("stop_focus_shell()")
+    helper_end = source.index("\n}\n", helper_start)
+    helper = source[helper_start:helper_end]
+    kill_index = helper.index('kill "$pid"')
+    wait_index = helper.index('wait "$pid"')
+    clear_index = helper.index('focus_shell_pid=""')
+    require(kill_index < wait_index < clear_index,
+            "focus shell helper must kill, wait for the exact pid, then clear the cleanup guard")
+
+    cancel_index = source.index("focus_ipc settings cancel")
+    stop_index = source.index("stop_focus_shell", cancel_index)
+    cursor_index = source.index('local final_focus_cursor="$(focus_log_cursor)"', stop_index)
+    validation_index = source.index('validate_focus_trace "final Center acquisition range"', cursor_index)
+    diagnostics_index = source.index("if rg -q 'exclusive-focus-conflict|missing-focus-owner'", validation_index)
+    require(cancel_index < stop_index < cursor_index < validation_index < diagnostics_index,
+            "final ranges and diagnostics must run only after the exact focus-shell pid is waited")
+
+
 def main() -> int:
     require(PARSER.is_file(), "focus handoff trace parser must exist")
+    require_immutable_final_log_contract()
 
     premature = (FIXTURES / "focus-handoff-premature-acquisition.log").read_text(
         encoding="utf-8")

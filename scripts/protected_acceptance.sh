@@ -11,11 +11,20 @@ focus_shell_pid=""
 focus_trace_checker="$project_root/scripts/check_focus_handoff_trace.py"
 export TITONIUM_AGENT_APPROVAL_SOCKET="$test_approval_sock"
 
-cleanup() {
-    if [[ -n "$focus_shell_pid" ]] && kill -0 "$focus_shell_pid" 2>/dev/null; then
-        kill "$focus_shell_pid" 2>/dev/null || true
-        wait "$focus_shell_pid" 2>/dev/null || true
+stop_focus_shell() {
+    local pid="$focus_shell_pid"
+    if [[ -z "$pid" ]]; then
+        return 0
     fi
+    if kill -0 "$pid" 2>/dev/null; then
+        kill "$pid" 2>/dev/null || true
+    fi
+    wait "$pid" 2>/dev/null || true
+    focus_shell_pid=""
+}
+
+cleanup() {
+    stop_focus_shell
     rm -f -- "$test_approval_sock"
     case "$focus_test_dir" in
         /tmp/titonium-focus-handoff-acceptance.*) rm -rf -- "$focus_test_dir" ;;
@@ -83,28 +92,6 @@ validate_focus_trace() {
     fi
 }
 
-wait_for_focus_log_settle() {
-    local previous_cursor=""
-    local current_cursor=""
-    local unchanged_samples=0
-    for _ in {1..80}; do
-        current_cursor="$(focus_log_cursor)"
-        if [[ "$current_cursor" == "$previous_cursor" ]]; then
-            ((unchanged_samples += 1))
-        else
-            previous_cursor="$current_cursor"
-            unchanged_samples=0
-        fi
-        if [[ $unchanged_samples -ge 4 ]]; then
-            printf '%s\n' "$current_cursor"
-            return 0
-        fi
-        sleep 0.05
-    done
-    echo "FAIL focus handoff log did not settle" >&2
-    return 1
-}
-
 run_focus_handoff_acceptance() {
     XDG_DATA_HOME="$focus_test_dir/data" \
     XDG_STATE_HOME="$focus_test_dir/state" \
@@ -154,7 +141,8 @@ run_focus_handoff_acceptance() {
     focus_ipc settings cancel >/dev/null
     wait_for_focus_trace "Settings release" event "$settings_close_cursor" released "settings:DP-1"
 
-    local final_focus_cursor="$(wait_for_focus_log_settle)"
+    stop_focus_shell
+    local final_focus_cursor="$(focus_log_cursor)"
     validate_focus_trace "final Center acquisition range" event "$center_cursor" \
         "$spotlight_cursor" acquired "center:DP-1"
     validate_focus_trace "final Center to Spotlight range" handoff "$spotlight_cursor" \
