@@ -7,6 +7,7 @@ CONTROLLER = ROOT / "Titonium/Core/Surfaces/Center/CenterSurfaceController.qml"
 ROUTER = ROOT / "Titonium/Orchestration/SurfaceRouter.qml"
 HOST_ROOT = ROOT / "Titonium/Core/Surfaces/Center"
 BAR_HOST = ROOT / "Titonium/Bar/BarHost.qml"
+PRESENTATIONS = ROOT / "Titonium/Bar/center/presentations"
 
 errors = []
 if not CONTROLLER.exists():
@@ -32,6 +33,10 @@ router_source = ROUTER.read_text()
 for fragment in ("function openCenter(", "function presentCenterBanner(", "function closeCenter("):
     if fragment not in router_source:
         errors.append(f"router missing neutral API: {fragment}")
+for forbidden in ("activateCenterSource", "openCenterNotch", "openCenterBanner",
+                  "Services.Mpris", "CenterServices"):
+    if forbidden in router_source:
+        errors.append(f"router retains source/theme API: {forbidden}")
 
 for filename in ("CenterSurfaceHost.qml", "CenterCompactWindow.qml", "CenterOverlayWindow.qml"):
     if not (HOST_ROOT / filename).exists():
@@ -53,6 +58,27 @@ for path in production_files:
         legacy_consumers.append(str(path.relative_to(ROOT)))
 if legacy_consumers:
     errors.append("legacy coordinator consumers: " + ", ".join(legacy_consumers))
+
+for path in PRESENTATIONS.rglob("*.qml"):
+    source = path.read_text()
+    for forbidden in ("Services.Capture", "Services.Mpris", "Services.Notifications",
+                      "Services.AgentApproval", "Services.Center", "SurfaceManager",
+                      "ScreenRouter", "PanelWindow", "WlrLayershell", "Process {",
+                      "FileView {", "Timer {"):
+        if forbidden in source:
+            errors.append(f"presentation owns forbidden dependency: {path.relative_to(ROOT)}: {forbidden}")
+
+document_contracts = {
+    "docs/ARCHITECTURE.md": ("CenterDomain", "CenterSurfaceController", "CenterSurfaceHost"),
+    "docs/MODULE_CONTRACT.md": ("CenterDomain", "CenterSurfaceController", "CenterSurfaceHost"),
+    "docs/TESTING.md": ("CenterSurfaceHost", "compact/banner/expanded"),
+    "docs/THEMING_AND_GLASS.md": ("Pill, Notch, Connected, and Classic", "CenterSurfaceHost"),
+}
+for relative, required in document_contracts.items():
+    source = (ROOT / relative).read_text()
+    for fragment in required:
+        if fragment not in source:
+            errors.append(f"{relative} missing neutral Center boundary: {fragment}")
 
 if errors:
     print("FAIL neutral Center architecture")

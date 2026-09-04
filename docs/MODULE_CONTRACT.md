@@ -44,6 +44,24 @@ Bar widgets remain cheap while visible. Heavy panels use `SurfaceManager` plus `
 Independent non-focus surfaces such as OSD and notification toasts use their own DP-1-only host,
 `ExclusionMode.Ignore`, `WlrKeyboardFocus.None` and an input mask limited to visible content.
 
+## Center surface boundary
+
+Center is a domain/controller/host/presentation pipeline. `Services/Center/CenterDomain.qml`
+publishes a recursively frozen semantic snapshot and accepts only advertised capability actions.
+Its source adapters are read-only projections plus explicit dispatch; existing source services
+remain the sole listener owners.
+
+`Core/Surfaces/Center/CenterSurfaceController.qml` owns the logical `closed`, `compact`, `banner`,
+and `expanded` lifecycle, selection, timeout, focus policy, owner screen, and generation. Pure
+transitions receive time explicitly. `SurfaceRouter` grants or denies ownership and exposes the
+neutral `openCenter`, `presentCenterBanner`, and `closeCenter` orchestration API.
+
+Only `CenterSurfaceHost`, `CenterCompactWindow`, and `CenterOverlayWindow` may use Center native
+windows, layer-shell roles, input regions, or keyboard focus. A presentation receives only
+`snapshot`, `viewState`, and an immutable profile. Pill, Notch, Connected, and Classic renderers may
+own geometry and animation, but may not import business services, route screens, execute actions,
+or mutate controller state except by emitting a neutral intent.
+
 ## Adapting third-party code
 
 Do not copy a repository's shell root, theme engine or god service. Extract the protocol or model

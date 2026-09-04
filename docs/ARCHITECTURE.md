@@ -7,12 +7,11 @@ shell.qml
 └── Titonium/App.qml
     ├── Orchestration/ServiceBootstrap + SurfaceRouter + BluetoothAudioBridge
     ├── Ipc/CoreIpc + CenterIpc + DeviceIpc + AgentApprovalIpc
-    ├── Bar/BarHost.qml ── Variants(Quickshell.screens)
-    │   ├── BarSurface → Start / Center / End islands
-    │   │   ├── Start → Workspaces + ActiveWindowPill
-    │   │   └── CenterGroup → CenterIsland + independent Bar pin
-    │   └── CenterNotchWindow → Loader(active for owner screen only)
-    │       └── CenterNotch → Rail + lazy StackView viewport
+    ├── Bar/BarHost.qml ── Variants(ScreenPolicy.screens)
+    │   ├── BarSurface → Start / Center reservation / End islands
+    │   └── Core/Surfaces/Center/CenterSurfaceHost
+    │       ├── CenterCompactWindow + CenterOverlayWindow
+    │       └── Bar/center/CenterRenderer → selected presentation profile
     ├── Dock/DockHost.qml ── Variants(ScreenPolicy.screens)
     ├── Notifications/ToastHost.qml ── Variants(ScreenPolicy.screens)
     │   └── ToastWindow → Loader(active only while toast IDs exist)
@@ -60,13 +59,16 @@ The eligible output owns one lightweight overlay window, but its feature tree ex
 manager allows one transient owner across the shell. Focused-monitor changes close Spotlight to
 prevent a stranded exclusive-focus window.
 
-The Bar owns a second, independent lightweight `CenterNotchWindow` on the eligible output. Only the screen
-named by `CenterNotchCoordinator.ownerScreenName` activates its heavy Loader. Opening Spotlight
-closes the notch; opening the notch closes `SurfaceManager`, so the two exclusive-focus surfaces
-cannot overlap. An outside click, Escape, or focused-monitor change releases the notch window.
+The eligible Bar scope composes one neutral `CenterSurfaceHost`. Its compact and overlay helpers are
+the only Center files allowed to own layer-shell windows, masks, stacking, or keyboard focus. The
+theme-neutral `CenterSurfaceController` owns screen, mode, selection, deadline, drag, and generation
+state. `SurfaceRouter` arbitrates Center against Settings, Spotlight, `SurfaceManager`, and Right
+Pill through `openCenter`, `presentCenterBanner`, and `closeCenter`; presentation code never performs
+that arbitration. Outside click and Escape compact the surface, and stale animation completions are
+ignored by generation.
 
-The true-center `CenterGroup` remains positioned from the full screen width and contains the
-attention `CenterIsland` followed by the independently targetable TopBar pin. The Active Window
+The true-center reservation remains positioned from the full screen width, while the neutral host
+renders Center above it. The Active Window
 pill sits directly after the five-slot Workspace group, sizes naturally up to
 520 logical pixels, and projects the active descriptor as app icon plus an optional
 `Application · app-provided tray context`. For a conservatively matched tray item, a `Running`
@@ -90,23 +92,31 @@ atomic settings write succeeds.
 time, keyed by `RightPillCoordinator.presentedStyle`. Before publishing a different style, the
 coordinator closes the old style's transient owner and finalizes its exit state; stale close
 callbacks are guarded by the retained owner/generation snapshot and cannot clear a newer owner.
-`CenterPillWindow` remains active for both Top Bar styles and is the sole Dynamic Island visual
-owner. `EdgeMenuWindow` is active only for Connected, while `OverlayHost` loads only non-Connected
+`CenterSurfaceHost` remains composed for both Top Bar styles and is the sole Center native owner.
+Theme switching changes only the immutable presentation profile selected by `CenterRenderer`; it
+does not reset controller state. `EdgeMenuWindow` is active only for Connected, while `OverlayHost` loads only non-Connected
 descriptors. Consequently an OverlayHost never loads a Connected popup and the two style trees
 cannot expose overlapping Bar hitboxes.
 
 Connected keeps the continuous left/right pill layout and makes `EdgeMenuWindow` the sole owner
 of connected Wi-Fi, Bluetooth, Audio, and app-provided SystemTray menus. An Active Window without
-a prepared menu opens Center Notch instead. The frozen descriptor selects the correct control
+a prepared menu requests expanded Center instead. The frozen descriptor selects the correct control
 anchor for the expanding right-pill branch until its exit animation completes. Classic restores
 detached `Shared.Surface` trees for launcher, Workspaces and Active Window on the left, plus
 separate pin, connectivity, and status surfaces on the right. Its centered reservation feeds the
-shared Dynamic Island owner; notification state is not rendered as a detached bell. Classic Network, Bluetooth, Audio, and System Tray
+shared neutral Center owner; notification state is not rendered as a detached bell. Classic Network, Bluetooth, Audio, and System Tray
 popups use their existing OverlayHost surfaces rather than the Connected Edge window.
 
 ## State and presentation
 
 Singleton services expose reactive state once for all consumers:
+
+- `CenterDomain`: combines seven narrow adapters into one recursively frozen semantic snapshot.
+  It alone arbitrates primary/secondary contexts and validates advertised capability actions.
+  Capture, Media, Notification, Agent Approval, Focus, Timer, and Job adapters may project their
+  source service and dispatch an explicit action, but may not own listeners, timers, processes, or
+  presentation state. Renderers consume only `snapshot`, `viewState`, and a static profile, then emit
+  neutral surface or `invoke-action` intents.
 
 - `ApplicationService`: DesktopEntries catalog, visibility and launch boundary.
 - `ClipboardService`: Quickshell clipboard events and atomic history persistence.
@@ -165,15 +175,12 @@ notification temporarily replaces Secondary without using unread count as activi
 `Quickshell.dataPath("center/")`. It watches both files, checks the explicit file mtime only at
 startup or a file event, and uses one non-repeating midnight timer to invalidate the local-day
 selection. `CenterFocusRules.js` chooses the first same-day non-heading Markdown line or a
-date-stable prompt fallback. Startup is read-only. The service creates the directory/file and
-invokes `xdg-open` only after explicit `openScratchpad()` intent from the view. Overview may also
-submit an explicit `saveToday(text)` intent; the service normalizes it to one line and performs the
-atomic file write, while the card owns only the transient inline-editing state.
+date-stable prompt fallback. Startup and the exported IPC surface are read-only.
 
-`CenterIsland` consumes only immutable Attention/Activity presentations and focus text. Its primary
-click always requests the scratchpad action, including while a transient event is visible. It owns
-no process, file watcher, timer or system listener. `ActiveWindowPill` remains a separate Start
-island concern and continues to open Center Notch.
+`FocusCenterAdapter` projects that value into the shared domain contract. Center presentations
+consume it only through `CenterDomain.snapshot`; they own no process, file watcher, timer, system
+listener, or source action. `ActiveWindowPill` remains a separate Start-island concern and requests
+expanded Center through the neutral controller.
 
 The `center` IPC target exposes only `state()` and `focusState()` snapshots. It intentionally has
 no publish, acknowledgement, timer/job mutation or scratchpad-launch endpoint.

@@ -107,12 +107,12 @@ if [[ "$(call_ipc bluetooth popup)" != "open:DP-1" ]]; then
     printf 'FAIL Bluetooth popup did not reopen: %q\n' "$(call_ipc bluetooth popupState)" >&2
     exit 1
 fi
-if [[ "$(call_ipc centerNotch open overview)" != "open:DP-1;page=overview" ]]; then
-    printf 'FAIL Center Notch did not replace Bluetooth popup: %q\n' "$(call_ipc centerNotch state)" >&2
+if [[ "$(call_ipc centerNotch open overview)" != "open:DP-1;mode=expanded" ]]; then
+    printf 'FAIL Center did not replace Bluetooth popup: %q\n' "$(call_ipc centerNotch state)" >&2
     exit 1
 fi
 if [[ "$(call_ipc bluetooth popupState)" != "closed" ]]; then
-    printf 'FAIL Center Notch did not close Bluetooth popup: %q\n' "$(call_ipc bluetooth popupState)" >&2
+    printf 'FAIL Center did not close Bluetooth popup: %q\n' "$(call_ipc bluetooth popupState)" >&2
     exit 1
 fi
 call_ipc centerNotch close >/dev/null
