@@ -96,19 +96,44 @@ assert.deepEqual(plain(rules.clearState({
     notifications: [{ key: "native:8" }], unreadKeys: ["native:8"], toastKeys: ["native:8"],
 })), { notifications: [], unreadKeys: [], toastKeys: [] });
 
-for (const closeReason of [0, 1, 2]) {
-    const retiredState = rules.retireState({
-        notifications: [{ key: "native:8" }, { key: "native:7" }],
-        unreadKeys: ["native:8", "native:7"],
-        toastKeys: ["native:8", "native:7"],
-    }, "native:8", closeReason);
+const nativeLifecycleState = {
+    notifications: [
+        { key: "native:8", actions: [{ id: "open", label: "Open" }] },
+        { key: "native:7", actions: [{ id: "archive", label: "Archive" }] },
+    ],
+    unreadKeys: ["native:8", "native:7"],
+    toastKeys: ["native:8", "native:7"],
+};
+for (const closeReason of ["expired", "close-requested"]) {
+    const retiredState = rules.retireState(
+        nativeLifecycleState, "native:8", closeReason);
     assert.deepEqual(plain(retiredState), {
-        notifications: [{ key: "native:8" }, { key: "native:7" }],
+        notifications: [
+            { key: "native:8", actions: [] },
+            { key: "native:7", actions: [{ id: "archive", label: "Archive" }] },
+        ],
         unreadKeys: ["native:8", "native:7"],
         toastKeys: ["native:7"],
     });
+    assert.equal(Object.isFrozen(retiredState.notifications[0]), true);
+    assert.equal(Object.isFrozen(retiredState.notifications[0].actions), true);
 }
-console.log("PASS expired, dismissed, and close-requested native lifecycle retires only toast state");
+console.log("PASS expiry and remote close retain history while retiring toast and actions");
+
+const explicitlyRetiredState = rules.retireState(
+    nativeLifecycleState, "native:8", "dismissed");
+assert.deepEqual(plain(explicitlyRetiredState), {
+    notifications: [
+        { key: "native:7", actions: [{ id: "archive", label: "Archive" }] },
+    ],
+    unreadKeys: ["native:7"],
+    toastKeys: ["native:7"],
+});
+assert.equal(rules.closeReason(0), "expired");
+assert.equal(rules.closeReason(1), "dismissed");
+assert.equal(rules.closeReason(2), "close-requested");
+assert.equal(rules.closeReason(99), "close-requested");
+console.log("PASS explicit dismiss deletes history and native close reasons are normalized");
 
 let warningCounts = Object.freeze({});
 for (let attempt = 0; attempt < 3; attempt++) {

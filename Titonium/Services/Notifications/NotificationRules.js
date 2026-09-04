@@ -268,11 +268,35 @@ function dismissState(state, key) {
     });
 }
 
+function closeReason(value) {
+    if (["expired", "dismissed", "close-requested"].indexOf(value) >= 0)
+        return value;
+    const reason = Number(value);
+    if (reason === 0)
+        return "expired";
+    if (reason === 1)
+        return "dismissed";
+    return "close-requested";
+}
+
+function retireDescriptor(descriptor) {
+    const result = {};
+    for (const name in descriptor)
+        result[name] = descriptor[name];
+    result.actions = Object.freeze([]);
+    return Object.freeze(result);
+}
+
 function retireState(state, key, reason) {
     const source = state && typeof state === "object" ? state : {};
+    if (closeReason(reason) === "dismissed")
+        return dismissState(source, key);
+    const targetKey = stableKey(key);
+    const notifications = Array.isArray(source.notifications)
+        ? source.notifications.map(item => stableKey(item?.key) === targetKey
+            ? retireDescriptor(item) : item) : [];
     return Object.freeze({
-        notifications: Object.freeze(Array.isArray(source.notifications)
-            ? source.notifications.slice() : []),
+        notifications: Object.freeze(notifications),
         unreadKeys: Object.freeze(Array.isArray(source.unreadKeys)
             ? source.unreadKeys.slice() : []),
         toastKeys: removeKey(source.toastKeys, key),

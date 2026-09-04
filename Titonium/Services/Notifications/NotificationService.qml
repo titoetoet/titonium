@@ -11,7 +11,7 @@ Singleton {
     id: root
 
     signal descriptorPublished(var descriptor)
-    signal descriptorRetired(string key, var reason)
+    signal descriptorRetired(string key, string reason)
 
     property var projectedNotifications: Object.freeze([])
     property var toastKeys: Object.freeze([])
@@ -65,6 +65,7 @@ Singleton {
     }
 
     function dismiss(key: string): bool {
+        const known = root.projectedNotifications.some(item => item.key === key);
         const nativeNotification = nativeTargets.byKey[key];
         let dismissed = false;
         if (!nativeNotification) {
@@ -77,9 +78,10 @@ Singleton {
                 root.warnOperation("dismiss.failure", "native notification dismissal failed");
             }
         }
-        if (root.nativeTargetCurrent(key, nativeNotification))
+        if (root.nativeTargetCurrent(key, nativeNotification)
+                || root.projectedNotifications.some(item => item.key === key))
             root.retireNativeNotification(key, NotificationCloseReason.Dismissed);
-        return dismissed;
+        return known || dismissed;
     }
 
     function dismissAll(): int {
@@ -139,16 +141,17 @@ Singleton {
     }
 
     function retireNativeNotification(key: string, reason: var): void {
+        const lifecycleReason = NotificationRules.closeReason(reason);
         const state = NotificationRules.retireState({
             notifications: root.projectedNotifications,
             unreadKeys: root.unreadKeys,
             toastKeys: root.toastKeys,
-        }, key, reason);
+        }, key, lifecycleReason);
         root.projectedNotifications = state.notifications;
         root.unreadKeys = state.unreadKeys;
         root.toastKeys = state.toastKeys;
         root.removeNativeTarget(key);
-        root.descriptorRetired(key, reason);
+        root.descriptorRetired(key, lifecycleReason);
     }
 
     function refreshNativeNotification(notification: var): void {

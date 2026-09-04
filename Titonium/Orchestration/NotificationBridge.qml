@@ -10,8 +10,8 @@ QtObject {
         function onDescriptorPublished(descriptor: var): void {
             NotificationCoordinator.publish(descriptor);
         }
-        function onDescriptorRetired(key: string, reason: var): void {
-            NotificationCoordinator.retire(key);
+        function onDescriptorRetired(key: string, reason: string): void {
+            NotificationCoordinator.retire(key, reason);
         }
     }
 

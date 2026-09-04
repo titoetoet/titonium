@@ -184,6 +184,27 @@ assert.deepEqual(plain(promoted.toastKeys), []);
 assert.equal(promoted.deadlineAt, 4500);
 console.log("PASS normal toast reclassification promotes critical items in FIFO order");
 
+let replacementOrder = rules.setPresentationEligible(rules.initialState(), false, 0);
+replacementOrder = rules.publish(replacementOrder,
+    item("native:queued-a", "center", 100), 100, false, true);
+replacementOrder = rules.publish(replacementOrder,
+    item("native:queued-b", "center", 200), 200, false, true);
+replacementOrder = rules.publish(replacementOrder,
+    item("native:promoted", "toast", 300), 300, false, true);
+const refreshedQueuedA = item("native:queued-a", "center", 500,
+    { summary: "Queued replacement" });
+replacementOrder = rules.publish(replacementOrder,
+    refreshedQueuedA, 500, false, true);
+replacementOrder = rules.reclassify(replacementOrder, {}, 600,
+    descriptor => descriptor.key === "native:promoted"
+        ? Object.freeze(Object.assign({}, descriptor,
+            { severity: "critical", route: "center" }))
+        : descriptor, true);
+assert.deepEqual(plain(replacementOrder.criticalQueue.map(entry => entry.key)),
+    ["native:queued-a", "native:queued-b", "native:promoted"]);
+assert.equal(replacementOrder.criticalQueue[0], refreshedQueuedA);
+console.log("PASS reclassification preserves queued replacements before newly promoted toasts");
+
 const read = rules.read(reclassified, "native:pending");
 assert.deepEqual(plain(read.unreadKeys), ["native:current"]);
 const dismissed = rules.dismiss(read, "native:current", 1000);
@@ -200,19 +221,34 @@ assert.equal(autoRead.history[0].key, "native:auto-read");
 console.log("PASS completion honors disabled keep-critical-unread without removing history");
 
 let retired = rules.publish(rules.initialState(),
-    item("native:retired", "center", 0), 0, true, true);
+    item("native:retired", "center", 0, {
+        actions: Object.freeze([Object.freeze({ id: "open", label: "Open" })]),
+    }), 0, true, true);
 retired = rules.publish(retired,
     item("internal:timer_finished:next", "center", 1), 1, true, true);
-retired = rules.retire(retired, "native:retired", 100);
+retired = rules.retire(retired, "native:retired", "expired", 100);
 assert.deepEqual(plain(retired.history.map(entry => entry.key)),
     ["internal:timer_finished:next", "native:retired"]);
 assert.deepEqual(plain(retired.unreadKeys),
     ["internal:timer_finished:next", "native:retired"]);
+assert.deepEqual(plain(retired.history.find(entry =>
+    entry.key === "native:retired").actions), []);
 assert.equal(retired.currentCritical.key, "internal:timer_finished:next");
 assert.deepEqual(plain(retired.criticalQueue.map(entry => entry.key)),
     ["internal:timer_finished:next"]);
 assert.deepEqual(plain(retired.toastKeys), []);
-console.log("PASS native retirement advances presentation without deleting session history/unread");
+console.log("PASS expiry retires native presentation/actions without deleting session history/unread");
+
+let explicitlyDismissed = rules.publish(rules.initialState(),
+    item("native:explicit", "toast", 0, {
+        actions: Object.freeze([Object.freeze({ id: "open", label: "Open" })]),
+    }), 0, true, true);
+explicitlyDismissed = rules.retire(
+    explicitlyDismissed, "native:explicit", "dismissed", 100);
+assert.deepEqual(plain(explicitlyDismissed.history), []);
+assert.deepEqual(plain(explicitlyDismissed.unreadKeys), []);
+assert.deepEqual(plain(explicitlyDismissed.toastKeys), []);
+console.log("PASS explicit native dismissal removes coordinator history and unread state");
 
 assert.equal(rules.deadlineMatches(resumed,
     "native:3", 7, 7, 8000, 8000), true);

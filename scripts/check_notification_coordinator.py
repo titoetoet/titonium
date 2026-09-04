@@ -49,7 +49,7 @@ def main() -> int:
         "function completeCritical(key: string): bool",
         "function setCriticalPresentationEligible(eligible: bool): bool",
         "function reclassify(): bool",
-        "function retire(key: string): bool",
+        "function retire(key: string, reason: string): bool",
         "function handleCriticalDeadline(key: string, generation: int,",
         "deadline: double, now: double): bool",
         "property string scheduledCriticalKey:",
@@ -74,7 +74,7 @@ def main() -> int:
     service = SERVICE.read_text(encoding="utf-8")
     require(errors, service, "NotificationService", (
         "signal descriptorPublished(var descriptor)",
-        "signal descriptorRetired(string key, var reason)",
+        "signal descriptorRetired(string key, string reason)",
         "root.descriptorPublished(item)",
         "function retireNativeNotification(key: string, reason: var): void",
         "notification.closed.connect(reason =>",
@@ -108,7 +108,7 @@ def main() -> int:
         "target: CenterJobService",
         "target: CenterTimerService",
         "NotificationCoordinator.publish(descriptor)",
-        "NotificationCoordinator.retire(key)",
+        "NotificationCoordinator.retire(key, reason)",
         "NotificationCoordinator.publishInternal(notification)",
     ))
     if "onDescriptorRemoved" in bridge or "NotificationCoordinator.withdraw" in bridge:

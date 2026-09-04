@@ -125,9 +125,9 @@ QtObject {
         return known || nativeAccepted || changed;
     }
 
-    function retire(key: string): bool {
+    function retire(key: string, reason: string): bool {
         return root.applyState(CoordinatorRules.retire(
-            root.coordinatorState, key, Date.now()));
+            root.coordinatorState, key, reason, Date.now()));
     }
 
     function action(key: string, actionId: string): bool {

@@ -277,23 +277,41 @@ function dismiss(value, key, now) {
         state.presentationEligible);
 }
 
-function retire(value, key, now) {
+function retireDescriptor(descriptor) {
+    var result = {};
+    for (var name in descriptor)
+        result[name] = descriptor[name];
+    result.actions = Object.freeze([]);
+    return Object.freeze(result);
+}
+
+function retire(value, key, reason, now) {
     var state = sourceState(value);
     var targetKey = keyText(key);
     if (!targetKey)
         return state;
+    if (reason === "dismissed")
+        return dismiss(state, targetKey, now);
     var wasCurrent = state.currentCritical
         && keyText(state.currentCritical.key) === targetKey;
+    var historyChanged = false;
+    var history = state.history.map(function(descriptor) {
+        if (keyText(descriptor.key) !== targetKey
+                || !descriptor.actions || descriptor.actions.length === 0)
+            return descriptor;
+        historyChanged = true;
+        return retireDescriptor(descriptor);
+    });
     var toastKeys = removeKey(state.toastKeys, targetKey);
     var queue = removeKey(state.criticalQueue, targetKey);
-    if (!wasCurrent && toastKeys.length === state.toastKeys.length
+    if (!historyChanged && !wasCurrent && toastKeys.length === state.toastKeys.length
             && queue.length === state.criticalQueue.length)
         return state;
     var retainedKey = wasCurrent || !state.currentCritical
         ? "" : keyText(state.currentCritical.key);
     var visible = presentation(state, queue, Number.isFinite(now) ? now : 0,
         state.presentationEligible, retainedKey);
-    return stateValue(state.history, state.unreadKeys, toastKeys, queue,
+    return stateValue(history, state.unreadKeys, toastKeys, queue,
         visible.current, visible.deadlineAt, visible.remainingMs, visible.paused,
         state.presentationEligible);
 }
@@ -307,6 +325,8 @@ function reclassify(value, preferences, now, resolver, toastsEnabled) {
     if (typeof resolver !== "function")
         return state;
     var currentKey = state.currentCritical ? keyText(state.currentCritical.key) : "";
+    var queuedKeys = keySet(state.criticalQueue || []);
+    var pendingToastKeys = keySet(state.toastKeys || []);
     var pendingKeys = {};
     (state.toastKeys || []).forEach(function(key) { pendingKeys[keyText(key)] = true; });
     (state.criticalQueue || []).forEach(function(descriptor) {
@@ -335,16 +355,26 @@ function reclassify(value, preferences, now, resolver, toastsEnabled) {
     var queue = [];
     if (currentKey && mappedByKey[currentKey])
         queue.push(state.currentCritical);
-    var pendingCritical = history.filter(function(descriptor) {
+    (state.criticalQueue || []).forEach(function(descriptor) {
         var key = keyText(descriptor.key);
-        return key !== currentKey && pendingKeys[key] && descriptor.route === "center";
+        var mapped = mappedByKey[key];
+        if (key !== currentKey && mapped && mapped.route === "center"
+                && queue.length < CRITICAL_LIMIT)
+            queue.push(mapped);
     });
-    pendingCritical.sort(function(left, right) {
+    var promotedCritical = history.filter(function(descriptor) {
+        var key = keyText(descriptor.key);
+        return key !== currentKey && pendingToastKeys[key] && !queuedKeys[key]
+            && descriptor.route === "center";
+    });
+    promotedCritical.sort(function(left, right) {
         if (receivedAt(left) !== receivedAt(right))
             return receivedAt(left) - receivedAt(right);
-        return keyText(left.key) < keyText(right.key) ? -1 : 1;
+        var leftKey = keyText(left.key);
+        var rightKey = keyText(right.key);
+        return leftKey === rightKey ? 0 : (leftKey < rightKey ? -1 : 1);
     });
-    pendingCritical.forEach(function(descriptor) {
+    promotedCritical.forEach(function(descriptor) {
         if (queue.length < CRITICAL_LIMIT)
             queue.push(descriptor);
     });
