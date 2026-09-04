@@ -1,0 +1,8 @@
+module qs.Titonium.Services.Center.adapters
+CaptureCenterAdapter 1.0 CaptureCenterAdapter.qml
+MediaCenterAdapter 1.0 MediaCenterAdapter.qml
+NotificationCenterAdapter 1.0 NotificationCenterAdapter.qml
+AgentApprovalCenterAdapter 1.0 AgentApprovalCenterAdapter.qml
+FocusCenterAdapter 1.0 FocusCenterAdapter.qml
+TimerCenterAdapter 1.0 TimerCenterAdapter.qml
+JobCenterAdapter 1.0 JobCenterAdapter.qml

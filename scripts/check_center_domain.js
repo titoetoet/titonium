@@ -112,3 +112,24 @@ assert.deepEqual(plain(rules.actionResult({ accepted: true, status: "unknown" })
     closePolicy: "keep",
 });
 console.log("PASS Center Domain normalizes action results");
+
+const centerRoot = path.dirname(rulesPath);
+const adapterNames = ["Capture", "Media", "Notification", "AgentApproval",
+    "Focus", "Timer", "Job"];
+for (const name of adapterNames) {
+    const adapterPath = path.join(centerRoot, "adapters", `${name}CenterAdapter.qml`);
+    assert.equal(fs.existsSync(adapterPath), true, `missing ${name} Center adapter`);
+    const adapterSource = fs.readFileSync(adapterPath, "utf8");
+    for (const fragment of ["readonly property var contexts", "readonly property var indicators",
+        "readonly property var actions", "function dispatch(actionId: string, contextId: string,"])
+        assert.match(adapterSource, new RegExp(fragment.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    assert.doesNotMatch(adapterSource, /\b(Process|FileView|Timer)\s*\{/);
+}
+
+for (const file of ["CenterDomain.qml", "CenterActionDispatcher.qml"])
+    assert.equal(fs.existsSync(path.join(centerRoot, file)), true, `missing ${file}`);
+const domainSource = fs.readFileSync(path.join(centerRoot, "CenterDomain.qml"), "utf8");
+assert.match(domainSource, /readonly property var snapshot/);
+assert.match(domainSource, /signal presentationRequested\(var request\)/);
+assert.match(domainSource, /function dispatch\(intent: var\): var/);
+console.log("PASS Center Domain owns seven narrow listener-free adapters and dispatch boundary");
