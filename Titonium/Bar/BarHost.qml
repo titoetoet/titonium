@@ -1,7 +1,6 @@
 pragma ComponentBehavior: Bound
 
 import Quickshell
-import qs.Titonium.Bar.classic
 import qs.Titonium.Bar.notch
 import qs.Titonium.Bar.right
 import qs.Titonium.Core.Screens
@@ -25,14 +24,7 @@ Scope {
             }
             CenterPillWindow {
                 screenModel: screenScope.modelData
-                styleActive: RightPillCoordinator.presentedStyle === "connected"
-                onBannerRequested: (screen, context, autoDismiss) =>
-                    root.bannerRequested(screen, context, autoDismiss)
-                onSettingsRequested: screen => root.settingsRequested(screen)
-            }
-            ClassicCenterNotchWindow {
-                screenModel: screenScope.modelData
-                styleActive: RightPillCoordinator.presentedStyle === "classic"
+                styleName: RightPillCoordinator.presentedStyle
                 onBannerRequested: (screen, context, autoDismiss) =>
                     root.bannerRequested(screen, context, autoDismiss)
                 onSettingsRequested: screen => root.settingsRequested(screen)

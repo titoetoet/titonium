@@ -6,24 +6,27 @@ import Quickshell.Wayland
 import qs.Titonium.Core.Runtime
 import qs.Titonium.Services.Hyprland
 import qs.Titonium.Theme
+import "CenterStyleProfile.js" as CenterStyleProfile
 
 PanelWindow {
     id: window
 
     required property ShellScreen screenModel
-    property bool styleActive: true
+    property string styleName: "connected"
     signal bannerRequested(var screen, var context, bool autoDismiss)
     signal settingsRequested(var screen)
 
-    readonly property bool ownsIsland: window.styleActive
-        && CenterNotchCoordinator.ownerScreenName === window.screenModel.name
-    readonly property bool dismissing: window.styleActive
-        && CenterNotchCoordinator.exitingScreenName === window.screenModel.name
+    readonly property var styleProfile: CenterStyleProfile.profile(
+        window.styleName, window.width, window.height)
+    readonly property bool ownsIsland:
+        CenterNotchCoordinator.ownerScreenName === window.screenModel.name
+    readonly property bool dismissing:
+        CenterNotchCoordinator.exitingScreenName === window.screenModel.name
     readonly property real compactY: BarVisibilityState.revealed || window.ownsIsland
-        ? 0 : -Metrics.barHeight + 2
+        ? window.styleProfile.compactY : -Metrics.barHeight + 2
 
     screen: window.screenModel
-    visible: window.styleActive
+    visible: true
     color: "transparent"
     aboveWindows: true
     exclusiveZone: 0
@@ -56,11 +59,11 @@ PanelWindow {
 
     Item {
         id: compactInputRegion
-        visible: window.styleActive && !window.ownsIsland && !window.dismissing
+        visible: !window.ownsIsland && !window.dismissing
         x: surface.compactInputX
         y: window.compactY
-        width: window.styleActive && !window.ownsIsland ? surface.compactInputWidth : 0
-        height: window.styleActive && !window.ownsIsland ? surface.compactInputHeight : 0
+        width: !window.ownsIsland ? surface.compactInputWidth : 0
+        height: !window.ownsIsland ? surface.compactInputHeight : 0
     }
 
 
@@ -71,6 +74,7 @@ PanelWindow {
         ownsIsland: window.ownsIsland
         closeRequested: window.dismissing
         compactY: window.compactY
+        styleName: window.styleProfile.style
         onBannerRequested: (screen, context, autoDismiss) =>
             window.bannerRequested(screen, context, autoDismiss)
         onSettingsRequested: screen => window.settingsRequested(screen)
@@ -87,12 +91,4 @@ PanelWindow {
         }
     }
 
-    onStyleActiveChanged: {
-        if (window.styleActive)
-            return;
-        if (CenterNotchCoordinator.ownerScreenName === window.screenModel.name)
-            CenterNotchCoordinator.collapse();
-        if (CenterNotchCoordinator.exitingScreenName === window.screenModel.name)
-            CenterNotchCoordinator.finishClose(window.screenModel.name);
-    }
 }

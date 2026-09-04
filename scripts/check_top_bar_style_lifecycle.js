@@ -199,7 +199,9 @@ assert.match(barSurface,
 assert.doesNotMatch(barHost, /styleActive:\s*Preferences\.barStyle/,
     "connected visual windows must not activate directly from Preferences");
 assert.equal((barHost.match(
-    /styleActive:\s*RightPillCoordinator\.presentedStyle === "connected"/g) || []).length, 2);
+    /styleActive:\s*RightPillCoordinator\.presentedStyle === "connected"/g) || []).length, 1);
+assert.match(barHost, /CenterPillWindow\s*\{[\s\S]*?styleName:\s*RightPillCoordinator\.presentedStyle/,
+    "one Center owner receives the published style as presentation data");
 
 const initial = connectedState.connectedInitialState();
 const first = connectedState.connectedOpen(initial, "network:DP-1", {

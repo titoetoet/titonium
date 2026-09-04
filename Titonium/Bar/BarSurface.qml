@@ -43,10 +43,6 @@ PanelWindow {
         root.hitbox(classicBarLoader.item, "workspaceHitbox")
     readonly property var classicActiveWindowHitbox:
         root.hitbox(classicBarLoader.item, "activeWindowHitbox")
-    readonly property var classicCenterHitbox:
-        root.hitbox(classicBarLoader.item, "centerHitbox")
-    readonly property var classicNotificationHitbox:
-        root.hitbox(classicBarLoader.item, "notificationHitbox")
     readonly property var classicPinHitbox:
         root.hitbox(classicBarLoader.item, "pinHitbox")
     readonly property var classicConnectivityHitbox:
@@ -65,8 +61,6 @@ PanelWindow {
         Region { item: root.classicArchHitbox }
         Region { item: root.classicWorkspaceHitbox }
         Region { item: root.classicActiveWindowHitbox }
-        Region { item: root.classicCenterHitbox }
-        Region { item: root.classicNotificationHitbox }
         Region { item: root.classicPinHitbox }
         Region { item: root.classicConnectivityHitbox }
         Region { item: root.classicStatusHitbox }

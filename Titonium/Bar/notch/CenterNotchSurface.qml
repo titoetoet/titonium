@@ -17,6 +17,7 @@ FocusScope {
     required property ShellScreen screenModel
     required property bool ownsIsland
     required property real compactY
+    property string styleName: "connected"
     property bool closeRequested: false
     signal bannerRequested(var screen, var context, bool autoDismiss)
     signal settingsRequested(var screen)

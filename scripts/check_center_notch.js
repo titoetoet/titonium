@@ -169,20 +169,17 @@ assert.match(centerIslandSource, /CenterNotchCoordinator\.setCompactWidth\(root\
     "compact content publishes only its width target to the visual owner");
 assert.equal((sources["CenterNotchSurface.qml"].match(/Shared\.ConnectedPillShape\s*\{/g) || []).length, 1,
     "popup must render one connected silhouette");
-assert.match(sources["CenterPillWindow.qml"], /visible: window.styleActive/,
+assert.match(sources["CenterPillWindow.qml"], /visible: true/,
     "one screen-local owner remains mounted across every state");
 assert.match(sources["CenterPillWindow.qml"],
-    /visible:\s*window\.styleActive\s*&&\s*!window\.ownsIsland\s*&&\s*!window\.dismissing/,
-    "Classic mode must hide the compact Center input region");
+    /visible:\s*!window\.ownsIsland\s*&&\s*!window\.dismissing/,
+    "both styles expose the shared compact Center input region");
 assert.match(sources["CenterPillWindow.qml"],
-    /width:\s*window\.styleActive\s*&&\s*!window\.ownsIsland\s*\?\s*surface\.compactInputWidth\s*:\s*0/,
-    "Classic mode must leave the Center mask empty");
+    /width:\s*!window\.ownsIsland\s*\?\s*surface\.compactInputWidth\s*:\s*0/,
+    "the shared owner supplies the compact Center mask");
 assert.match(sources["CenterPillWindow.qml"],
     /WlrLayershell\.keyboardFocus:\s*window\.ownsIsland[\s\S]*?WlrKeyboardFocus\.None/,
     "Classic mode must retain no Center keyboard focus");
-assert.match(sources["CenterPillWindow.qml"],
-    /onStyleActiveChanged:\s*\{[\s\S]*?CenterNotchCoordinator\.ownerScreenName === window\.screenModel\.name[\s\S]*?CenterNotchCoordinator\.collapse\(\);[\s\S]*?CenterNotchCoordinator\.exitingScreenName === window\.screenModel\.name[\s\S]*?CenterNotchCoordinator\.finishClose\(window\.screenModel\.name\);/,
-    "Classic mode must finish screen-local Center coordinator cleanup");
 assert.doesNotMatch(sources["CenterPillWindow.qml"], /Loader\s*\{/);
 assert.match(sources["CenterNotchSurface.qml"],
     /StartIsland\s*\{[\s\S]*?visible:\s*root\.ownsIsland/,
