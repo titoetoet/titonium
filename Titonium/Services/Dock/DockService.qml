@@ -168,7 +168,7 @@ QtObject {
         return success;
     }
 
-    function togglePin(appId: string): bool {
+    function togglePin(appId: string): var {
         return DockStore.togglePin(appId);
     }
 

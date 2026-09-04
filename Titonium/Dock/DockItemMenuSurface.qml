@@ -161,8 +161,11 @@ FocusScope {
                 iconName: "keep"
                 contentAlignment: Qt.AlignLeft
                 onTriggered: {
-                    DockService.togglePin(root.appId);
-                    root.close();
+                    const result = DockService.togglePin(root.appId);
+                    if (result.accepted)
+                        root.close();
+                    else
+                        Logger.warn("dock", "pin mutation rejected: " + result.error);
                 }
             }
 

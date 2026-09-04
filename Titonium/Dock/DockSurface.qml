@@ -159,7 +159,9 @@ FocusScope {
         }
 
         function togglePinnedOpen(): void {
-            DockStore.setPinnedOpen(!DockStore.pinnedOpen);
+            const result = DockStore.setPinnedOpen(!DockStore.pinnedOpen);
+            if (!result.accepted)
+                Logger.warn("dock", "visibility pin mutation rejected: " + result.error);
         }
 
         HoverHandler { id: pinHover; cursorShape: Qt.PointingHandCursor }

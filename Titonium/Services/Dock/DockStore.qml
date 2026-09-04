@@ -4,6 +4,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.Titonium.Core.Runtime
 import "DockRules.js" as DockRules
+import "DockMutationRules.js" as DockMutationRules
 
 QtObject {
     id: root
@@ -40,20 +41,13 @@ QtObject {
         return root.pinnedIds.some(id => id.toLocaleLowerCase() === key);
     }
 
-    function togglePin(appId: string): bool {
-        const id = typeof appId === "string" ? appId.trim() : "";
-        if (!id)
-            return false;
-        const key = id.toLocaleLowerCase();
-        const next = root.pinnedIds.slice();
-        for (let index = 0; index < next.length; index++) {
-            if (next[index].toLocaleLowerCase() !== key)
-                continue;
-            next.splice(index, 1);
-            return root.setPinnedIds(next);
-        }
-        next.push(id);
-        return root.setPinnedIds(next);
+    function togglePin(appId: string): var {
+        const plan = DockMutationRules.toggle(root.pinnedIds, appId);
+        if (!plan.accepted)
+            return plan;
+        const accepted = root.setPinnedIds(plan.value);
+        return DockMutationRules.withWriteResult(plan, accepted,
+            Preferences.lastError || "preferences-busy");
     }
 
     function movePin(fromIndex: int, toIndex: int): bool {
@@ -61,8 +55,10 @@ QtObject {
             root.pinnedIds, fromIndex, toIndex));
     }
 
-    function setPinnedOpen(value: bool): bool {
-        return root.setVisibilityMode(value ? "reserve-space" : "auto-hide");
+    function setPinnedOpen(value: bool): var {
+        const accepted = root.setVisibilityMode(value ? "reserve-space" : "auto-hide");
+        return DockMutationRules.visibility(value, accepted,
+            Preferences.lastError || "preferences-busy");
     }
 
     function setAutoHide(value: bool): bool {

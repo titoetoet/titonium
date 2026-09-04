@@ -25,7 +25,7 @@ REQUIRED_SERVICE_FRAGMENTS = (
     "function activateOrLaunch(appId: string): bool",
     "function launchNew(appId: string): bool",
     "function closeActive(appId: string): bool",
-    "function togglePin(appId: string): bool",
+    "function togglePin(appId: string): var",
     "function snapshot(): string",
     "HyprlandService.windows",
     "HyprlandService.activeWorkspaceWindowCount",
