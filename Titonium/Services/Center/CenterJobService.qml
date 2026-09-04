@@ -59,10 +59,12 @@ QtObject {
         root.syncIndicator(result.next.length > 0);
         if (result.event !== null) {
             if (result.event.kind === "job_failed"
-                    || result.event.kind === "job_requires_action")
+                    || result.event.kind === "job_requires_action") {
+                CenterAttentionService.clear(result.event.id);
                 root.notificationPublished(result.event);
-            else
+            } else {
                 CenterAttentionService.publish(result.event);
+            }
         }
         return "ok";
     }

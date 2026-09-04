@@ -52,6 +52,7 @@ def main() -> int:
             'result.event.kind === "job_failed"',
             'result.event.kind === "job_requires_action"',
             "root.notificationPublished(result.event)",
+            "CenterAttentionService.clear(result.event.id)",
             '"id": "job:" + job.id',
             '"source": "job"',
             '"label": job.label',
@@ -78,6 +79,10 @@ def main() -> int:
         ):
             if forbidden in source:
                 errors.append(f"CenterJobService has forbidden ownership: {forbidden}")
+        clear_index = source.find("CenterAttentionService.clear(result.event.id)")
+        publish_index = source.find("root.notificationPublished(result.event)")
+        if clear_index < 0 or publish_index < 0 or clear_index > publish_index:
+            errors.append("CenterJobService must clear the exact legacy event before rerouting it")
 
     if RULES.is_file():
         source = RULES.read_text(encoding="utf-8")

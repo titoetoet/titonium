@@ -11,7 +11,7 @@ Singleton {
     id: root
 
     signal descriptorPublished(var descriptor)
-    signal descriptorRemoved(string key)
+    signal descriptorRetired(string key, var reason)
 
     property var projectedNotifications: Object.freeze([])
     property var toastKeys: Object.freeze([])
@@ -77,8 +77,8 @@ Singleton {
                 root.warnOperation("dismiss.failure", "native notification dismissal failed");
             }
         }
-        root.removeLocalNotification(key);
-        root.removeNativeTarget(key);
+        if (root.nativeTargetCurrent(key, nativeNotification))
+            root.retireNativeNotification(key, NotificationCloseReason.Dismissed);
         return dismissed;
     }
 
@@ -86,7 +86,6 @@ Singleton {
         const keys = root.projectedNotifications.map(item => item.key);
         for (let index = 0; index < keys.length; index++)
             root.dismiss(keys[index]);
-        root.clearLocalNotifications();
         nativeTargets.byKey = Object.freeze({});
         return keys.length;
     }
@@ -135,26 +134,21 @@ Singleton {
         nativeTargets.byKey = Object.freeze(next);
     }
 
-    function nativeTargetSuperseded(key: string, notification: var): bool {
-        return nativeTargets.byKey[key] && nativeTargets.byKey[key] !== notification;
+    function nativeTargetCurrent(key: string, notification: var): bool {
+        return !!notification && nativeTargets.byKey[key] === notification;
     }
 
-    function removeLocalNotification(key: string): void {
-        const state = NotificationRules.dismissState({
+    function retireNativeNotification(key: string, reason: var): void {
+        const state = NotificationRules.retireState({
             notifications: root.projectedNotifications,
             unreadKeys: root.unreadKeys,
             toastKeys: root.toastKeys,
-        }, key);
+        }, key, reason);
         root.projectedNotifications = state.notifications;
         root.unreadKeys = state.unreadKeys;
         root.toastKeys = state.toastKeys;
-    }
-
-    function clearLocalNotifications(): void {
-        const state = NotificationRules.clearState();
-        root.projectedNotifications = state.notifications;
-        root.unreadKeys = state.unreadKeys;
-        root.toastKeys = state.toastKeys;
+        root.removeNativeTarget(key);
+        root.descriptorRetired(key, reason);
     }
 
     function refreshNativeNotification(notification: var): void {
@@ -194,12 +188,10 @@ Singleton {
         notification.urgencyChanged.connect(refresh);
         notification.desktopEntryChanged.connect(refresh);
         notification.actionsChanged.connect(refresh);
-        notification.closed.connect(() => {
-            if (root.nativeTargetSuperseded(key, notification))
+        notification.closed.connect(reason => {
+            if (!root.nativeTargetCurrent(key, notification))
                 return;
-            root.removeLocalNotification(key);
-            root.removeNativeTarget(key);
-            root.descriptorRemoved(key);
+            root.retireNativeNotification(key, reason);
         });
     }
 

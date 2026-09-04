@@ -100,6 +100,8 @@ for (let index = 0; index < 120; index++)
         index, true, true);
 assert.equal(capped.history.length, 100);
 assert.equal(capped.unreadKeys.length, 100);
+assert.equal(capped.unreadKeys.every(key =>
+    capped.history.some(entry => entry.key === key)), true);
 for (let index = 0; index < 5; index++)
     capped = rules.publish(capped, item(`native:toast-${index}`, "toast", 200 + index),
         200 + index, true, true);
@@ -126,6 +128,25 @@ assert.equal(visibleDuringBurst.unreadKeys.includes("native:visible"), true);
 assert.equal(visibleDuringBurst.currentCritical.key, "native:visible");
 console.log("PASS capped history retains the currently visible critical descriptor");
 
+let queuedDuringBurst = rules.setPresentationEligible(rules.initialState(), false, 0);
+for (let index = 0; index < 16; index++)
+    queuedDuringBurst = rules.publish(queuedDuringBurst,
+        item(`internal:job_failed:queued-${index}`, "center", index),
+        index, false, true);
+for (let index = 0; index < 100; index++)
+    queuedDuringBurst = rules.publish(queuedDuringBurst,
+        item(`native:passive-${index}`, "history", 100 + index),
+        100 + index, false, true);
+assert.equal(queuedDuringBurst.history.length, 100);
+assert.equal(queuedDuringBurst.currentCritical, null);
+assert.equal(queuedDuringBurst.criticalQueue.every(entry =>
+    queuedDuringBurst.history.some(historyItem => historyItem.key === entry.key)), true);
+assert.equal(queuedDuringBurst.criticalQueue.every(entry =>
+    queuedDuringBurst.unreadKeys.includes(entry.key)), true);
+assert.equal(queuedDuringBurst.unreadKeys.every(key =>
+    queuedDuringBurst.history.some(entry => entry.key === key)), true);
+console.log("PASS disabled presentation cannot leave queued critical keys outside capped history/unread");
+
 const current = item("native:current", "center", 100);
 const pending = item("native:pending", "center", 200);
 const quiet = item("native:quiet", "toast", 300);
@@ -150,6 +171,19 @@ assert.deepEqual(plain(reclassified.toastKeys), ["native:pending"]);
 assert.deepEqual(plain(reclassified.unreadKeys), ["native:pending", "native:current"]);
 console.log("PASS settings reclassification keeps visible critical content stable and reroutes pending items");
 
+let promoted = rules.publish(rules.initialState(),
+    item("native:normal-old", "toast", 100), 100, true, true);
+promoted = rules.publish(promoted,
+    item("native:normal-new", "toast", 200), 200, true, true);
+promoted = rules.reclassify(promoted, {}, 500, descriptor => Object.freeze(
+    Object.assign({}, descriptor, { severity: "critical", route: "center" })), true);
+assert.equal(promoted.currentCritical.key, "native:normal-old");
+assert.deepEqual(plain(promoted.criticalQueue.map(entry => entry.key)),
+    ["native:normal-old", "native:normal-new"]);
+assert.deepEqual(plain(promoted.toastKeys), []);
+assert.equal(promoted.deadlineAt, 4500);
+console.log("PASS normal toast reclassification promotes critical items in FIFO order");
+
 const read = rules.read(reclassified, "native:pending");
 assert.deepEqual(plain(read.unreadKeys), ["native:current"]);
 const dismissed = rules.dismiss(read, "native:current", 1000);
@@ -164,3 +198,32 @@ autoRead = rules.complete(autoRead, "native:auto-read", 4000, false);
 assert.deepEqual(plain(autoRead.unreadKeys), []);
 assert.equal(autoRead.history[0].key, "native:auto-read");
 console.log("PASS completion honors disabled keep-critical-unread without removing history");
+
+let retired = rules.publish(rules.initialState(),
+    item("native:retired", "center", 0), 0, true, true);
+retired = rules.publish(retired,
+    item("internal:timer_finished:next", "center", 1), 1, true, true);
+retired = rules.retire(retired, "native:retired", 100);
+assert.deepEqual(plain(retired.history.map(entry => entry.key)),
+    ["internal:timer_finished:next", "native:retired"]);
+assert.deepEqual(plain(retired.unreadKeys),
+    ["internal:timer_finished:next", "native:retired"]);
+assert.equal(retired.currentCritical.key, "internal:timer_finished:next");
+assert.deepEqual(plain(retired.criticalQueue.map(entry => entry.key)),
+    ["internal:timer_finished:next"]);
+assert.deepEqual(plain(retired.toastKeys), []);
+console.log("PASS native retirement advances presentation without deleting session history/unread");
+
+assert.equal(rules.deadlineMatches(resumed,
+    "native:3", 7, 7, 8000, 8000), true);
+assert.equal(rules.deadlineMatches(resumed,
+    "native:3", 6, 7, 8000, 8000), false);
+assert.equal(rules.deadlineMatches(resumed,
+    "internal:timer_finished:tea", 7, 7, 8000, 8000), false);
+assert.equal(rules.deadlineMatches(resumed,
+    "native:3", 7, 7, 7000, 8000), false);
+assert.equal(rules.deadlineMatches(resumed,
+    "native:3", 7, 7, 8000, 7999), false);
+assert.equal(rules.deadlineMatches(paused,
+    "native:3", 7, 7, 0, 8000), false);
+console.log("PASS deadline validation rejects stale generation, key, deadline, early, and paused callbacks");

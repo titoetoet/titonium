@@ -49,8 +49,18 @@ def main() -> int:
         "function completeCritical(key: string): bool",
         "function setCriticalPresentationEligible(eligible: bool): bool",
         "function reclassify(): bool",
+        "function retire(key: string): bool",
+        "function handleCriticalDeadline(key: string, generation: int,",
+        "deadline: double, now: double): bool",
+        "property string scheduledCriticalKey:",
+        "property int scheduledCriticalGeneration:",
+        "property double scheduledCriticalDeadline:",
+        "property int deadlineGeneration:",
         "NotificationRules.resolvePolicy",
         "CoordinatorRules.reclassify",
+        "CoordinatorRules.deadlineMatches",
+        "if (root.currentCritical && !root.coordinatorState.paused)",
+        "root.syncDeadlineTimer();",
         "NotificationService.dismiss(key)",
         "NotificationService.invokeAction(key, actionId)",
         "repeat: false",
@@ -64,7 +74,11 @@ def main() -> int:
     service = SERVICE.read_text(encoding="utf-8")
     require(errors, service, "NotificationService", (
         "signal descriptorPublished(var descriptor)",
+        "signal descriptorRetired(string key, var reason)",
         "root.descriptorPublished(item)",
+        "function retireNativeNotification(key: string, reason: var): void",
+        "notification.closed.connect(reason =>",
+        "root.retireNativeNotification(key, reason)",
     ))
     for center_import in re.findall(r"^import\s+qs\.Titonium\.Services\.Center.*$", service,
                                     re.MULTILINE):
@@ -94,8 +108,11 @@ def main() -> int:
         "target: CenterJobService",
         "target: CenterTimerService",
         "NotificationCoordinator.publish(descriptor)",
+        "NotificationCoordinator.retire(key)",
         "NotificationCoordinator.publishInternal(notification)",
     ))
+    if "onDescriptorRemoved" in bridge or "NotificationCoordinator.withdraw" in bridge:
+        errors.append("native close must retire presentation instead of deleting coordinator history")
     if any(token in bridge for token in ("CenterSurfaceController", "SurfaceRouter", "PanelWindow")):
         errors.append("NotificationBridge must coordinate values, not own Center/UI presentation")
 

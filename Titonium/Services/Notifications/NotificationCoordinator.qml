@@ -10,6 +10,10 @@ QtObject {
     id: root
 
     property var coordinatorState: CoordinatorRules.initialState()
+    property int deadlineGeneration: 0
+    property string scheduledCriticalKey: ""
+    property int scheduledCriticalGeneration: 0
+    property double scheduledCriticalDeadline: 0
 
     readonly property var history: root.coordinatorState.history
     readonly property var toasts: root.valuesForKeys(root.coordinatorState.toastKeys)
@@ -34,12 +38,30 @@ QtObject {
 
     function syncDeadlineTimer(): void {
         criticalDeadline.stop();
+        root.deadlineGeneration += 1;
+        root.scheduledCriticalKey = "";
+        root.scheduledCriticalGeneration = root.deadlineGeneration;
+        root.scheduledCriticalDeadline = 0;
         if (!root.currentCritical || root.coordinatorState.paused
                 || root.coordinatorState.deadlineAt <= 0)
             return;
+        root.scheduledCriticalKey = root.currentCritical.key;
+        root.scheduledCriticalGeneration = root.deadlineGeneration;
+        root.scheduledCriticalDeadline = root.coordinatorState.deadlineAt;
         criticalDeadline.interval = Math.max(1,
-            root.coordinatorState.deadlineAt - Date.now());
+            root.scheduledCriticalDeadline - Date.now());
         criticalDeadline.start();
+    }
+
+    function handleCriticalDeadline(key: string, generation: int,
+            deadline: double, now: double): bool {
+        if (!CoordinatorRules.deadlineMatches(root.coordinatorState,
+                key, generation, root.deadlineGeneration, deadline, now)) {
+            if (root.currentCritical && !root.coordinatorState.paused)
+                root.syncDeadlineTimer();
+            return false;
+        }
+        return root.completeCritical(key);
     }
 
     function applyState(next: var): bool {
@@ -103,8 +125,8 @@ QtObject {
         return known || nativeAccepted || changed;
     }
 
-    function withdraw(key: string): bool {
-        return root.applyState(CoordinatorRules.dismiss(
+    function retire(key: string): bool {
+        return root.applyState(CoordinatorRules.retire(
             root.coordinatorState, key, Date.now()));
     }
 
@@ -162,8 +184,10 @@ QtObject {
         id: criticalDeadline
         repeat: false
         onTriggered: {
-            if (root.currentCritical)
-                root.completeCritical(root.currentCritical.key);
+            const key = root.scheduledCriticalKey;
+            const generation = root.scheduledCriticalGeneration;
+            const deadline = root.scheduledCriticalDeadline;
+            root.handleCriticalDeadline(key, generation, deadline, Date.now());
         }
     }
 

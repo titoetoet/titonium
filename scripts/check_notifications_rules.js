@@ -96,6 +96,20 @@ assert.deepEqual(plain(rules.clearState({
     notifications: [{ key: "native:8" }], unreadKeys: ["native:8"], toastKeys: ["native:8"],
 })), { notifications: [], unreadKeys: [], toastKeys: [] });
 
+for (const closeReason of [0, 1, 2]) {
+    const retiredState = rules.retireState({
+        notifications: [{ key: "native:8" }, { key: "native:7" }],
+        unreadKeys: ["native:8", "native:7"],
+        toastKeys: ["native:8", "native:7"],
+    }, "native:8", closeReason);
+    assert.deepEqual(plain(retiredState), {
+        notifications: [{ key: "native:8" }, { key: "native:7" }],
+        unreadKeys: ["native:8", "native:7"],
+        toastKeys: ["native:7"],
+    });
+}
+console.log("PASS expired, dismissed, and close-requested native lifecycle retires only toast state");
+
 let warningCounts = Object.freeze({});
 for (let attempt = 0; attempt < 3; attempt++) {
     const next = rules.warningState(warningCounts, "dismiss.stale", 3);

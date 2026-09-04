@@ -58,13 +58,56 @@ function addNewest(keys, key, limit) {
     return result.slice(0, limit);
 }
 
-function upsertNewest(values, descriptor, limit, protectedKey) {
-    var unbounded = [descriptor].concat(removeKey(values, descriptor.key));
-    var result = unbounded.slice(0, limit);
-    var targetKey = keyText(protectedKey);
-    if (targetKey && indexForKey(unbounded, targetKey) >= 0
-            && indexForKey(result, targetKey) < 0)
-        result[result.length - 1] = unbounded[indexForKey(unbounded, targetKey)];
+function keySet(values) {
+    var result = {};
+    values.forEach(function(value) {
+        var key = keyText(typeof value === "object" ? value.key : value);
+        if (key)
+            result[key] = true;
+    });
+    return result;
+}
+
+function boundedPreserving(values, limit, protectedSet) {
+    var keep = {};
+    var protectedCount = 0;
+    values.forEach(function(value) {
+        var key = keyText(typeof value === "object" ? value.key : value);
+        if (key && protectedSet[key] && !keep[key]) {
+            keep[key] = true;
+            protectedCount += 1;
+        }
+    });
+    var remaining = Math.max(0, limit - protectedCount);
+    values.forEach(function(value) {
+        var key = keyText(typeof value === "object" ? value.key : value);
+        if (key && !keep[key] && remaining > 0) {
+            keep[key] = true;
+            remaining -= 1;
+        }
+    });
+    return values.filter(function(value) {
+        var key = keyText(typeof value === "object" ? value.key : value);
+        return keep[key] === true;
+    });
+}
+
+function ensureDescriptors(values, descriptors) {
+    var result = values.slice();
+    descriptors.forEach(function(descriptor) {
+        if (indexForKey(result, keyText(descriptor.key)) < 0)
+            result.push(descriptor);
+    });
+    return result;
+}
+
+function ensureKeys(values, descriptors) {
+    var result = values.slice();
+    descriptors.forEach(function(descriptor) {
+        var key = keyText(descriptor.key);
+        if (indexForKey(result, key) < 0)
+            result.push(key);
+    });
     return result;
 }
 
@@ -111,19 +154,6 @@ function publish(value, descriptor, now, eligible, toastsEnabled) {
     if (descriptor.route === "block")
         return dismiss(state, key, nowValue);
 
-    var retainedKey = state.currentCritical ? keyText(state.currentCritical.key) : "";
-    var history = upsertNewest(
-        state.history || [], descriptor, HISTORY_LIMIT, retainedKey);
-    var unreadKeys = addNewest(state.unreadKeys || [], key, HISTORY_LIMIT)
-        .filter(function(unreadKey) { return indexForKey(history, unreadKey) >= 0; });
-    if (retainedKey && indexForKey(state.unreadKeys || [], retainedKey) >= 0
-            && indexForKey(history, retainedKey) >= 0
-            && indexForKey(unreadKeys, retainedKey) < 0)
-        unreadKeys[unreadKeys.length - 1] = retainedKey;
-    var toastKeys = removeKey(state.toastKeys || [], key);
-    if (descriptor.route === "toast" && toastsEnabled === true)
-        toastKeys = addNewest(toastKeys, key, TOAST_LIMIT);
-
     var queue = (state.criticalQueue || []).slice();
     var oldIndex = indexForKey(queue, key);
     queue = removeKey(queue, key);
@@ -135,6 +165,27 @@ function publish(value, descriptor, now, eligible, toastsEnabled) {
     }
     queue = queue.slice(0, CRITICAL_LIMIT);
 
+    var protectedHistory = keySet(queue);
+    var historyCandidates = [descriptor].concat(removeKey(state.history || [], key));
+    historyCandidates = ensureDescriptors(historyCandidates, queue);
+    var history = boundedPreserving(
+        historyCandidates, HISTORY_LIMIT, protectedHistory);
+
+    var unreadCandidates = addNewest(
+        state.unreadKeys || [], key, Number.MAX_SAFE_INTEGER);
+    var unreadQueue = queue.filter(function(queued) {
+        return indexForKey(unreadCandidates, keyText(queued.key)) >= 0;
+    });
+    unreadCandidates = ensureKeys(unreadCandidates, unreadQueue)
+        .filter(function(unreadKey) { return indexForKey(history, unreadKey) >= 0; });
+    var unreadKeys = boundedPreserving(
+        unreadCandidates, HISTORY_LIMIT, keySet(unreadQueue));
+
+    var toastKeys = removeKey(state.toastKeys || [], key);
+    if (descriptor.route === "toast" && toastsEnabled === true)
+        toastKeys = addNewest(toastKeys, key, TOAST_LIMIT);
+
+    var retainedKey = state.currentCritical ? keyText(state.currentCritical.key) : "";
     var visible = presentation(state, queue, nowValue, presentationEligible, retainedKey);
     return stateValue(history, unreadKeys, toastKeys, queue, visible.current,
         visible.deadlineAt, visible.remainingMs, visible.paused, presentationEligible);
@@ -226,6 +277,31 @@ function dismiss(value, key, now) {
         state.presentationEligible);
 }
 
+function retire(value, key, now) {
+    var state = sourceState(value);
+    var targetKey = keyText(key);
+    if (!targetKey)
+        return state;
+    var wasCurrent = state.currentCritical
+        && keyText(state.currentCritical.key) === targetKey;
+    var toastKeys = removeKey(state.toastKeys, targetKey);
+    var queue = removeKey(state.criticalQueue, targetKey);
+    if (!wasCurrent && toastKeys.length === state.toastKeys.length
+            && queue.length === state.criticalQueue.length)
+        return state;
+    var retainedKey = wasCurrent || !state.currentCritical
+        ? "" : keyText(state.currentCritical.key);
+    var visible = presentation(state, queue, Number.isFinite(now) ? now : 0,
+        state.presentationEligible, retainedKey);
+    return stateValue(state.history, state.unreadKeys, toastKeys, queue,
+        visible.current, visible.deadlineAt, visible.remainingMs, visible.paused,
+        state.presentationEligible);
+}
+
+function receivedAt(value) {
+    return Number.isFinite(value && value.receivedAt) ? value.receivedAt : 0;
+}
+
 function reclassify(value, preferences, now, resolver, toastsEnabled) {
     var state = sourceState(value);
     if (typeof resolver !== "function")
@@ -259,13 +335,18 @@ function reclassify(value, preferences, now, resolver, toastsEnabled) {
     var queue = [];
     if (currentKey && mappedByKey[currentKey])
         queue.push(state.currentCritical);
-    (state.criticalQueue || []).forEach(function(descriptor) {
+    var pendingCritical = history.filter(function(descriptor) {
         var key = keyText(descriptor.key);
-        if (key === currentKey || !mappedByKey[key])
-            return;
-        var mapped = mappedByKey[key];
-        if (mapped.route === "center" && queue.length < CRITICAL_LIMIT)
-            queue.push(mapped);
+        return key !== currentKey && pendingKeys[key] && descriptor.route === "center";
+    });
+    pendingCritical.sort(function(left, right) {
+        if (receivedAt(left) !== receivedAt(right))
+            return receivedAt(left) - receivedAt(right);
+        return keyText(left.key) < keyText(right.key) ? -1 : 1;
+    });
+    pendingCritical.forEach(function(descriptor) {
+        if (queue.length < CRITICAL_LIMIT)
+            queue.push(descriptor);
     });
     var toastKeys = [];
     if (toastsEnabled === true) {
@@ -276,7 +357,25 @@ function reclassify(value, preferences, now, resolver, toastsEnabled) {
                 toastKeys.push(key);
         });
     }
+    var retainedKey = state.currentCritical ? currentKey : "";
+    var visible = presentation(state, queue, Number.isFinite(now) ? now : 0,
+        state.presentationEligible, retainedKey);
     return stateValue(history, unreadKeys, toastKeys, queue,
-        state.currentCritical, state.deadlineAt, state.remainingMs, state.paused,
+        visible.current, visible.deadlineAt, visible.remainingMs, visible.paused,
         state.presentationEligible);
+}
+
+function deadlineMatches(state, scheduledKey, scheduledGeneration,
+        activeGeneration, scheduledDeadline, now) {
+    var source = sourceState(state);
+    return !!source.currentCritical
+        && source.paused !== true
+        && keyText(scheduledKey) === keyText(source.currentCritical.key)
+        && Number.isInteger(scheduledGeneration)
+        && scheduledGeneration === activeGeneration
+        && Number.isFinite(scheduledDeadline)
+        && scheduledDeadline > 0
+        && scheduledDeadline === source.deadlineAt
+        && Number.isFinite(now)
+        && now >= scheduledDeadline;
 }

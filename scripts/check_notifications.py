@@ -68,13 +68,11 @@ REQUIRED = (
     "function expireToast(key: string): bool",
     "function invokeAction(key: string, actionId: string): bool",
     "function refreshNativeNotification(notification: var): void",
-    "function removeLocalNotification(key: string): void",
-    "function clearLocalNotifications(): void",
+    "function retireNativeNotification(key: string, reason: var): void",
     "notification.tracked = true",
     "NotificationRules.descriptor",
     "NotificationRules.refreshState",
-    "NotificationRules.dismissState",
-    "NotificationRules.clearState",
+    "NotificationRules.retireState",
     "NotificationRules.warningState",
     "NotificationServer {",
     "keepOnReload: true",
@@ -89,6 +87,8 @@ REQUIRED = (
     "inlineReplySupported: false",
     "nativeTargets.byKey",
     "nativeNotification.dismiss()",
+    "if (root.nativeTargetCurrent(key, nativeNotification))",
+    "return !!notification && nativeTargets.byKey[key] === notification",
     "nativeAction.invoke()",
     "notification.appNameChanged.connect(refresh)",
     "notification.appIconChanged.connect(refresh)",
@@ -97,8 +97,9 @@ REQUIRED = (
     "notification.urgencyChanged.connect(refresh)",
     "notification.desktopEntryChanged.connect(refresh)",
     "notification.actionsChanged.connect(refresh)",
-    "root.removeLocalNotification(key);",
-    "root.clearLocalNotifications();",
+    "notification.closed.connect(reason =>",
+    "root.retireNativeNotification(key, reason)",
+    "root.descriptorRetired(key, reason)",
     "const keys = root.projectedNotifications.map(item => item.key)",
     "for (let index = 0; index < keys.length; index++)",
     "root.dismiss(keys[index])",
@@ -195,6 +196,20 @@ def validate_service(errors: list[str]) -> None:
             errors.append(f"notification service has forbidden dependency: {fragment}")
     if source.count("NotificationServer {") != 1:
         errors.append("NotificationService must own exactly one NotificationServer")
+    closed = re.search(r"notification\.closed\.connect\(reason => \{(?P<body>.*?)\n\s*\}\);",
+                       source, re.DOTALL)
+    if not closed:
+        errors.append("notification service must handle native close reasons")
+    elif "removeLocalNotification" in closed.group("body"):
+        errors.append("native close must preserve session history and unread state")
+    for destructive in (
+        "function removeLocalNotification(",
+        "function clearLocalNotifications(",
+        "NotificationRules.dismissState",
+        "NotificationRules.clearState",
+    ):
+        if destructive in source:
+            errors.append(f"native service retains destructive coordinator ownership: {destructive}")
     errors.extend(public_native_errors(source))
 
 

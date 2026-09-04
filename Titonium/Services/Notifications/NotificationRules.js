@@ -268,6 +268,17 @@ function dismissState(state, key) {
     });
 }
 
+function retireState(state, key, reason) {
+    const source = state && typeof state === "object" ? state : {};
+    return Object.freeze({
+        notifications: Object.freeze(Array.isArray(source.notifications)
+            ? source.notifications.slice() : []),
+        unreadKeys: Object.freeze(Array.isArray(source.unreadKeys)
+            ? source.unreadKeys.slice() : []),
+        toastKeys: removeKey(source.toastKeys, key),
+    });
+}
+
 function clearState() {
     return Object.freeze({
         notifications: Object.freeze([]),
