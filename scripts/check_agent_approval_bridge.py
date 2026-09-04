@@ -62,6 +62,18 @@ assert "item/commandExecution/requestApproval" in bridge.APPROVAL_METHODS
 assert "HOOK AUTO-APPROVE" not in inspect.getsource(bridge.antigravity_hook)
 assert '"decision": "force_ask"' in inspect.getsource(bridge.antigravity_hook)
 bridge_source = path.read_text(encoding="utf-8")
+old_flag = os.environ.pop("TITONIUM_AGENT_APPROVAL_ENABLED", None)
+try:
+    assert bridge.approval_enabled() is False
+    os.environ["TITONIUM_AGENT_APPROVAL_ENABLED"] = "1"
+    assert bridge.approval_enabled() is True
+    os.environ["TITONIUM_AGENT_APPROVAL_ENABLED"] = "true"
+    assert bridge.approval_enabled() is False
+finally:
+    if old_flag is None:
+        os.environ.pop("TITONIUM_AGENT_APPROVAL_ENABLED", None)
+    else:
+        os.environ["TITONIUM_AGENT_APPROVAL_ENABLED"] = old_flag
 assert bridge.project_path() == str(path.resolve().parent.parent)
 assert "/home/cole/Projects/titonium" not in bridge_source
 codex_source = bridge_source.split("def codex_proxy", 1)[1].split("def main", 1)[0]

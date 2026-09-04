@@ -14,6 +14,9 @@ import "ApprovalRules.js" as ApprovalRules
 QtObject {
     id: root
 
+    readonly property bool enabled:
+        Quickshell.env("TITONIUM_AGENT_APPROVAL_ENABLED") === "1"
+
     property var pending: Object.freeze([])
     property var clients: ({})
     property var sessionGrants: ({})
@@ -29,6 +32,8 @@ QtObject {
     readonly property string grantsFilePath: root.runtimeDirectory + "/titonium-agent-approval-grants.json"
 
     function activate(): void {
+        if (!root.enabled)
+            return;
         server.active = false;
         server.active = true;
     }
@@ -287,7 +292,7 @@ QtObject {
 
     property SocketServer server: SocketServer {
         id: server
-        active: true
+        active: root.enabled
         path: root.socketPath
         handler: Component {
             Socket {

@@ -33,6 +33,11 @@ IPC adapters retain public target names and response formats but own no persiste
 
 ## Agent approval bridge
 
+The Titonium interception layer is temporarily opt-in. Unless
+`TITONIUM_AGENT_APPROVAL_ENABLED=1`, the socket stays inactive, the Center adapter projects no
+approval context, ChatGPT approval JSON-RPC is forwarded to the Desktop unchanged, and the
+Antigravity hook delegates review to Antigravity. This bypass never auto-approves a request.
+
 `AgentApprovalService` owns one local Unix socket and a bounded, sequential approval queue.
 Antigravity reaches that contract through its documented `PreToolUse` command hook. ChatGPT
 Desktop reaches the same contract through a local Codex JSON-RPC proxy selected by

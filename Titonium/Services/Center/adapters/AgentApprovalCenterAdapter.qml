@@ -5,7 +5,8 @@ import qs.Titonium.Services.AgentApproval
 
 QtObject {
     id: root
-    readonly property var approval: AgentApprovalService.current
+    readonly property var approval: AgentApprovalService.enabled
+        ? AgentApprovalService.current : null
     readonly property string contextId: root.approval
         ? "agent:" + root.approval.requestId : ""
     readonly property var actionIds: Object.freeze([

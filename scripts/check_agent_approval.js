@@ -106,6 +106,13 @@ if (askPayload.decision !== "force_ask")
 
 const serviceSource = fs.readFileSync(
     "Titonium/Services/AgentApproval/AgentApprovalService.qml", "utf8");
+if (!serviceSource.includes('Quickshell.env("TITONIUM_AGENT_APPROVAL_ENABLED") === "1"')
+        || !serviceSource.includes("active: root.enabled"))
+    throw new Error("Agent approval must be opt-in and keep its socket inactive by default");
+const adapterSource = fs.readFileSync(
+    "Titonium/Services/Center/adapters/AgentApprovalCenterAdapter.qml", "utf8");
+if (!adapterSource.includes("AgentApprovalService.enabled"))
+    throw new Error("disabled approvals must not project a Center context");
 if (serviceSource.includes("canAutoApprove") || serviceSource.includes("requires_sudo"))
     throw new Error("AgentApprovalService must not contain the old blanket auto-approve path");
 for (const token of ["sessionGrants", "sessionGrantKey", "rememberSessionGrant",

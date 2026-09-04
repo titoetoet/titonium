@@ -12,7 +12,8 @@ baseline features.
 - A lazy Center Notch with an Overview and a direct Notification history route.
 - Spotlight Applications and Clipboard flows on `Super + Space` and `Super + V`.
 - A native Dock, audio popup/OSD, notification toasts, window switcher and transactional Settings.
-- A local Agent Approval surface for supported Antigravity and Codex approval requests.
+- An opt-in local Agent Approval surface for supported Antigravity and Codex approval requests
+  (`TITONIUM_AGENT_APPROVAL_ENABLED=1`); native approval remains the default.
 
 Titonium creates surfaces only on the configured eligible output and leaves other outputs to their
 own shell. Runtime preferences and user data live outside Git.

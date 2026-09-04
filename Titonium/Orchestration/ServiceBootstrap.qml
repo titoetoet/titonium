@@ -15,6 +15,7 @@ QtObject {
         CenterJobService.activate();
         CenterTimerService.activate();
         ScreenRecordService.activate();
-        AgentApprovalService.activate();
+        if (AgentApprovalService.enabled)
+            AgentApprovalService.activate();
     }
 }

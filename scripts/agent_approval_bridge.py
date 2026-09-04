@@ -21,6 +21,11 @@ APPROVAL_METHODS = {
 }
 
 
+def approval_enabled() -> bool:
+    """Titonium approval interception is an explicit temporary opt-in."""
+    return os.environ.get("TITONIUM_AGENT_APPROVAL_ENABLED") == "1"
+
+
 def socket_path() -> str:
     runtime = os.environ.get("XDG_RUNTIME_DIR", "/tmp")
     return os.environ.get(
@@ -130,6 +135,12 @@ def log_bridge(msg: str) -> None:
 
 
 def antigravity_hook() -> int:
+    if not approval_enabled():
+        print(json.dumps({
+            "decision": "ask",
+            "reason": "Titonium approval integration is disabled; review natively",
+        }))
+        return 0
     try:
         raw = sys.stdin.buffer.read(MAX_MESSAGE + 1)
         if len(raw) > MAX_MESSAGE:
@@ -207,7 +218,8 @@ def codex_proxy(argv: list[str]) -> int:
             sys.stdout.buffer.flush()
             continue
 
-        if message.get("method") not in APPROVAL_METHODS or "id" not in message:
+        if (not approval_enabled() or message.get("method") not in APPROVAL_METHODS
+                or "id" not in message):
             sys.stdout.buffer.write(raw_line)
             sys.stdout.buffer.flush()
             continue
