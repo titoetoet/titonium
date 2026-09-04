@@ -10,6 +10,7 @@ FocusScope {
     property string variant: "secondary"
     property string size: "medium"
     property bool checkable: false
+    property bool autoToggle: true
     property bool checked: false
     property bool selected: false
     property bool showFocusRing: true
@@ -41,7 +42,7 @@ FocusScope {
     function activate(): void {
         if (!root.enabled)
             return;
-        if (root.checkable)
+        if (root.checkable && root.autoToggle)
             root.checked = !root.checked;
         root.triggered();
     }

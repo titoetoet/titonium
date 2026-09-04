@@ -38,6 +38,8 @@ function item(key, route, receivedAt, overrides = {}) {
 }
 
 let state = rules.initialState();
+assert.equal(state.panelOpen, false);
+assert.equal(state.panelOwnerId, "");
 state = rules.publish(state, item("native:1", "toast", 100), 100, true, true);
 state = rules.publish(state, item("native:2", "history", 200), 200, true, true);
 assert.deepEqual(plain(state.history.map(entry => entry.key)), ["native:2", "native:1"]);
@@ -48,6 +50,32 @@ assert.equal(Object.isFrozen(state), true);
 assert.equal(Object.isFrozen(state.history), true);
 assert.equal(Object.isFrozen(state.unreadKeys), true);
 console.log("PASS passive notifications enter immutable history without false critical state");
+
+let panelState = rules.publish(rules.initialState(),
+    item("native:panel-before", "toast", 10), 10, true, true);
+panelState = rules.mountPanel(panelState, "notification-panel:DP-1");
+assert.equal(panelState.panelOpen, true);
+assert.equal(panelState.panelOwnerId, "notification-panel:DP-1");
+assert.deepEqual(plain(panelState.unreadKeys), ["native:panel-before"]);
+panelState = rules.read(panelState, "");
+assert.deepEqual(plain(panelState.unreadKeys), []);
+assert.deepEqual(plain(panelState.toastKeys), []);
+panelState = rules.publish(panelState,
+    item("native:panel-during", "toast", 20), 20, true, true);
+assert.deepEqual(plain(panelState.history.map(entry => entry.key)),
+    ["native:panel-during", "native:panel-before"]);
+assert.deepEqual(plain(panelState.unreadKeys), []);
+assert.deepEqual(plain(panelState.toastKeys), []);
+const staleUnmount = rules.unmountPanel(panelState, "notification-panel:DP-2");
+assert.strictEqual(staleUnmount, panelState,
+    "a stale screen teardown must not close the mounted panel state");
+panelState = rules.unmountPanel(panelState, "notification-panel:DP-1");
+assert.equal(panelState.panelOpen, false);
+panelState = rules.publish(panelState,
+    item("native:panel-after", "toast", 30), 30, true, true);
+assert.deepEqual(plain(panelState.unreadKeys), ["native:panel-after"]);
+assert.deepEqual(plain(panelState.toastKeys), ["native:panel-after"]);
+console.log("PASS mounted panel clears toasts, reads arrivals, and restores routing on close");
 
 state = rules.publish(state, item("native:3", "center", 300), 300, true, true);
 state = rules.publish(state, item("internal:timer_finished:tea", "center", 400),

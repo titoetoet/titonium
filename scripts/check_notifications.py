@@ -40,6 +40,8 @@ PRESENTATION_FILES = {
         "maximumLineCount: 3",
         "NotificationCoordinator.expireToast(root.notification.key)",
         "NotificationCoordinator.dismiss(root.notification.key)",
+        "id: toastTimer",
+        "toastTimer.stop()",
         "Timer {",
         "interval: Preferences.notifications.toastDuration",
         "repeat: false",
@@ -258,6 +260,21 @@ def validate_presentation(errors: list[str]) -> None:
             errors.append(f"notification presentation has forbidden dependency: {fragment}")
     if feature.count("Timer {") != 1:
         errors.append("notification presentation must own exactly one one-shot toast timer")
+    toast_card = (PRESENTATION_ROOT / "ToastCard.qml").read_text(encoding="utf-8")
+    dismiss = re.search(r"function\s+dismiss\s*\([^)]*\)[^{]*\{(?P<body>.*?)\n\s*\}",
+        toast_card, re.DOTALL)
+    if not dismiss:
+        errors.append("ToastCard must expose one explicit dismiss path")
+    else:
+        body = dismiss.group("body")
+        stop_index = body.find("toastTimer.stop()")
+        dismiss_index = body.find("NotificationCoordinator.dismiss(root.notification.key)")
+        if stop_index < 0 or dismiss_index < stop_index:
+            errors.append("explicit toast dismiss must stop expiry then synchronously dismiss")
+        if "toastExit" in body:
+            errors.append("explicit toast dismiss must not depend on an exit animation callback")
+    if re.search(r"onFinished\s*:\s*NotificationCoordinator\.dismiss", toast_card):
+        errors.append("toast dismissal must not be deferred to an animation completion")
     for locale in ("en", "vi"):
         catalog_path = ROOT / f"config/i18n/{locale}.json"
         catalog = json.loads(catalog_path.read_text(encoding="utf-8")).get("strings", {})

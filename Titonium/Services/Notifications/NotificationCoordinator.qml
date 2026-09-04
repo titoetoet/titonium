@@ -20,6 +20,7 @@ QtObject {
     readonly property var unread: root.valuesForKeys(root.coordinatorState.unreadKeys)
     readonly property int unreadCount: root.coordinatorState.unreadKeys.length
     readonly property bool hasUnread: root.unreadCount > 0
+    readonly property bool panelOpen: root.coordinatorState.panelOpen
     readonly property var currentCritical: root.coordinatorState.currentCritical
     readonly property int criticalQueueCount: root.coordinatorState.criticalQueue.length
 
@@ -113,6 +114,14 @@ QtObject {
 
     function markAllRead(): bool {
         return root.read("");
+    }
+
+    function panelMounted(ownerId: string): bool {
+        return root.applyState(CoordinatorRules.mountPanel(root.coordinatorState, ownerId));
+    }
+
+    function panelUnmounted(ownerId: string): bool {
+        return root.applyState(CoordinatorRules.unmountPanel(root.coordinatorState, ownerId));
     }
 
     function dismiss(key: string): bool {

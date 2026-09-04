@@ -91,12 +91,19 @@ def main() -> int:
         'Preferences.patch("modules.notifications.allowCriticalOnIsland"',
         'Preferences.patch("modules.notifications.keepCriticalUnread"',
         'Preferences.patch("modules.notifications.applicationOverrides"',
-        '"automatic"', '"custom"', "ApplicationService.allApplications",
+        '"automatic"', '"custom"', "NotificationCoordinator.history",
         "NotificationSettingsRules.applicationRows", "NotificationSettingsRules.setOverride",
         "NotificationSettingsRules.resetOverride", "NotificationSettingsRules.resetAll",
+        "NotificationSettingsRules.hasOverride",
         "Shared.Select", '"follow"', '"quiet"', '"normal"', '"critical"', '"block"',
         "settings.notifications.override.reset", "settings.notifications.overrides.reset_all",
     ), errors)
+    if "ApplicationService" in notifications:
+        errors.append("Notification policies must use observed sender identities, not installed apps")
+    if notifications.count("checkable: true") < 2 \
+            or notifications.count("autoToggle: false") < 2 \
+            or notifications.count("Accessible.role: Accessible.RadioButton") < 2:
+        errors.append("Automatic and Custom must expose mutually exclusive radio semantics")
     require(audio, "AudioPage", (
         "Shared.Toggle", "Preferences.allowAudioAmplification",
         'Preferences.patch("modules.audio.allowAmplification"',
@@ -193,6 +200,14 @@ def main() -> int:
         for key in keys:
             if not isinstance(catalog.get(key), str) or not catalog[key]:
                 errors.append(f"{locale} catalog missing Settings page key: {key}")
+    english = json.loads((ROOT / "config/i18n/en.json").read_text(
+        encoding="utf-8"))["strings"]
+    override_copy = english.get("settings.notifications.overrides.description", "").lower()
+    if "reported" not in override_copy or "not a security" not in override_copy:
+        errors.append("notification override copy must identify app-reported advisory identities")
+    if "presentation" not in english.get(
+            "settings.notifications.override.block", "").lower():
+        errors.append("Block must be labeled as presentation filtering, not a security control")
 
     feature = appearance + spotlight + applications + bar + dock + dock_editor \
         + notifications + audio + about

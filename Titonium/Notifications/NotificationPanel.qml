@@ -261,6 +261,13 @@ FocusScope {
     }
 
     onDescriptorChanged: root.reopenIfReplaced()
-    Component.onCompleted: panel.forceActiveFocus(Qt.PopupFocusReason)
-    Component.onDestruction: root.returnFocus()
+    Component.onCompleted: {
+        NotificationCoordinator.panelMounted(root.ownerId);
+        NotificationCoordinator.markAllRead();
+        panel.forceActiveFocus(Qt.PopupFocusReason);
+    }
+    Component.onDestruction: {
+        NotificationCoordinator.panelUnmounted(root.ownerId);
+        root.returnFocus();
+    }
 }

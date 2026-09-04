@@ -20,6 +20,12 @@ function currentOverride(overrides, id) {
     return validOverride(value) ? value : "follow";
 }
 
+function hasOverride(overrides, id) {
+    var key = appId(id);
+    return key.length > 0
+        && Object.prototype.hasOwnProperty.call(record(overrides), key);
+}
+
 function setOverride(overrides, id, value) {
     var key = appId(id);
     if (!key || !validOverride(value))
@@ -43,20 +49,22 @@ function resetAll() {
     return Object.freeze({});
 }
 
-function applicationRows(applications, overrides) {
+function applicationRows(notifications, overrides) {
     var rows = [];
     var seen = Object.create(null);
-    var source = Array.isArray(applications) ? applications : [];
+    var source = Array.isArray(notifications) ? notifications : [];
     for (var index = 0; index < source.length; index++) {
-        var application = record(source[index]);
-        var id = appId(application.id);
-        if (!id || seen[id])
+        var notification = record(source[index]);
+        var id = appId(notification.appId);
+        if (notification.source !== "native" || !id || seen[id])
             continue;
         seen[id] = true;
         rows.push(Object.freeze({
             id: id,
-            name: appId(application.name) || id,
-            icon: appId(application.icon),
+            name: typeof notification.appName === "string"
+                && notification.appName.trim() ? notification.appName.trim() : id,
+            icon: typeof notification.appIcon === "string"
+                ? notification.appIcon.trim() : "",
         }));
     }
     Object.keys(record(overrides)).forEach(function(id) {

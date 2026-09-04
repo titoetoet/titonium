@@ -14,7 +14,9 @@ function frozen(values) {
 }
 
 function stateValue(history, unreadKeys, toastKeys, criticalQueue,
-        currentCritical, deadlineAt, remainingMs, paused, presentationEligible) {
+        currentCritical, deadlineAt, remainingMs, paused, presentationEligible,
+        panelOwnerId) {
+    var ownerId = keyText(panelOwnerId);
     return Object.freeze({
         history: frozen(history),
         unreadKeys: frozen(unreadKeys),
@@ -25,11 +27,13 @@ function stateValue(history, unreadKeys, toastKeys, criticalQueue,
         remainingMs: Number.isFinite(remainingMs) ? Math.max(0, remainingMs) : 0,
         paused: paused === true,
         presentationEligible: presentationEligible !== false,
+        panelOwnerId: ownerId,
+        panelOpen: ownerId.length > 0,
     });
 }
 
 function initialState() {
-    return stateValue([], [], [], [], null, 0, 0, false, true);
+    return stateValue([], [], [], [], null, 0, 0, false, true, "");
 }
 
 function sourceState(value) {
@@ -171,7 +175,7 @@ function publish(value, descriptor, now, eligible, toastsEnabled) {
     var history = boundedPreserving(
         historyCandidates, HISTORY_LIMIT, protectedHistory);
 
-    var unreadCandidates = addNewest(
+    var unreadCandidates = state.panelOpen ? [] : addNewest(
         state.unreadKeys || [], key, Number.MAX_SAFE_INTEGER);
     var unreadQueue = queue.filter(function(queued) {
         return indexForKey(unreadCandidates, keyText(queued.key)) >= 0;
@@ -182,13 +186,33 @@ function publish(value, descriptor, now, eligible, toastsEnabled) {
         unreadCandidates, HISTORY_LIMIT, keySet(unreadQueue));
 
     var toastKeys = removeKey(state.toastKeys || [], key);
-    if (descriptor.route === "toast" && toastsEnabled === true)
+    if (!state.panelOpen && descriptor.route === "toast" && toastsEnabled === true)
         toastKeys = addNewest(toastKeys, key, TOAST_LIMIT);
 
     var retainedKey = state.currentCritical ? keyText(state.currentCritical.key) : "";
     var visible = presentation(state, queue, nowValue, presentationEligible, retainedKey);
     return stateValue(history, unreadKeys, toastKeys, queue, visible.current,
-        visible.deadlineAt, visible.remainingMs, visible.paused, presentationEligible);
+        visible.deadlineAt, visible.remainingMs, visible.paused, presentationEligible,
+        state.panelOwnerId);
+}
+
+function mountPanel(value, ownerId) {
+    var state = sourceState(value);
+    var owner = keyText(ownerId);
+    if (!owner)
+        return state;
+    return stateValue(state.history, state.unreadKeys, [], state.criticalQueue,
+        state.currentCritical, state.deadlineAt, state.remainingMs, state.paused,
+        state.presentationEligible, owner);
+}
+
+function unmountPanel(value, ownerId) {
+    var state = sourceState(value);
+    if (!state.panelOpen || keyText(ownerId) !== state.panelOwnerId)
+        return state;
+    return stateValue(state.history, state.unreadKeys, state.toastKeys,
+        state.criticalQueue, state.currentCritical, state.deadlineAt,
+        state.remainingMs, state.paused, state.presentationEligible, "");
 }
 
 function setPresentationEligible(value, eligible, now) {
@@ -202,7 +226,7 @@ function setPresentationEligible(value, eligible, now) {
         nextEligible, retainedKey);
     return stateValue(state.history, state.unreadKeys, state.toastKeys,
         state.criticalQueue, visible.current, visible.deadlineAt, visible.remainingMs,
-        visible.paused, nextEligible);
+        visible.paused, nextEligible, state.panelOwnerId);
 }
 
 function pause(value, now) {
@@ -213,7 +237,7 @@ function pause(value, now) {
     var remaining = Math.max(0, state.deadlineAt - nowValue);
     return stateValue(state.history, state.unreadKeys, state.toastKeys,
         state.criticalQueue, state.currentCritical, 0, remaining, true,
-        state.presentationEligible);
+        state.presentationEligible, state.panelOwnerId);
 }
 
 function resume(value, now) {
@@ -223,7 +247,7 @@ function resume(value, now) {
     var nowValue = Number.isFinite(now) ? now : 0;
     return stateValue(state.history, state.unreadKeys, state.toastKeys,
         state.criticalQueue, state.currentCritical, nowValue + state.remainingMs,
-        state.remainingMs, false, state.presentationEligible);
+        state.remainingMs, false, state.presentationEligible, state.panelOwnerId);
 }
 
 function complete(value, key, now, keepUnread) {
@@ -235,11 +259,11 @@ function complete(value, key, now, keepUnread) {
     var unreadKeys = keepUnread === false
         ? removeKey(state.unreadKeys, targetKey) : state.unreadKeys;
     var visible = presentation(stateValue(state.history, unreadKeys, state.toastKeys,
-        queue, null, 0, 0, false, state.presentationEligible), queue,
+        queue, null, 0, 0, false, state.presentationEligible, state.panelOwnerId), queue,
         Number.isFinite(now) ? now : 0, state.presentationEligible, "");
     return stateValue(state.history, unreadKeys, state.toastKeys, queue,
         visible.current, visible.deadlineAt, visible.remainingMs, visible.paused,
-        state.presentationEligible);
+        state.presentationEligible, state.panelOwnerId);
 }
 
 function read(value, key) {
@@ -250,7 +274,7 @@ function read(value, key) {
         return state;
     return stateValue(state.history, unreadKeys, state.toastKeys,
         state.criticalQueue, state.currentCritical, state.deadlineAt,
-        state.remainingMs, state.paused, state.presentationEligible);
+        state.remainingMs, state.paused, state.presentationEligible, state.panelOwnerId);
 }
 
 function dismiss(value, key, now) {
@@ -274,7 +298,7 @@ function dismiss(value, key, now) {
         state.presentationEligible, retainedKey);
     return stateValue(history, unreadKeys, toastKeys, queue, visible.current,
         visible.deadlineAt, visible.remainingMs, visible.paused,
-        state.presentationEligible);
+        state.presentationEligible, state.panelOwnerId);
 }
 
 function retireDescriptor(descriptor) {
@@ -313,7 +337,7 @@ function retire(value, key, reason, now) {
         state.presentationEligible, retainedKey);
     return stateValue(history, state.unreadKeys, toastKeys, queue,
         visible.current, visible.deadlineAt, visible.remainingMs, visible.paused,
-        state.presentationEligible);
+        state.presentationEligible, state.panelOwnerId);
 }
 
 function receivedAt(value) {
@@ -379,7 +403,7 @@ function reclassify(value, preferences, now, resolver, toastsEnabled) {
             queue.push(descriptor);
     });
     var toastKeys = [];
-    if (toastsEnabled === true) {
+    if (!state.panelOpen && toastsEnabled === true) {
         history.forEach(function(descriptor) {
             var key = keyText(descriptor.key);
             if (toastKeys.length < TOAST_LIMIT && key !== currentKey
@@ -392,7 +416,7 @@ function reclassify(value, preferences, now, resolver, toastsEnabled) {
         state.presentationEligible, retainedKey);
     return stateValue(history, unreadKeys, toastKeys, queue,
         visible.current, visible.deadlineAt, visible.remainingMs, visible.paused,
-        state.presentationEligible);
+        state.presentationEligible, state.panelOwnerId);
 }
 
 function deadlineMatches(state, scheduledKey, scheduledGeneration,

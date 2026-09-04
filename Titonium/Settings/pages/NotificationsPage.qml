@@ -3,7 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import qs.Titonium.Core.Runtime
-import qs.Titonium.Services.Applications
+import qs.Titonium.Services.Notifications
 import qs.Titonium.Theme
 import qs.Titonium.Shared as Shared
 import qs.Titonium.Settings.components
@@ -19,7 +19,7 @@ Item {
     readonly property var applicationOverrides:
         Preferences.notifications.applicationOverrides || ({})
     readonly property var applicationRows: NotificationSettingsRules.applicationRows(
-        ApplicationService.allApplications, root.applicationOverrides)
+        NotificationCoordinator.history, root.applicationOverrides)
     readonly property var overrideOptions: Object.freeze([
         Object.freeze({ value: "follow",
             label: I18n.tr("settings.notifications.override.follow") }),
@@ -80,14 +80,22 @@ Item {
 
                     Shared.Button {
                         label: I18n.tr("settings.notifications.policy.automatic")
-                        selected: root.policyMode === "automatic"
+                        checkable: true
+                        autoToggle: false
+                        checked: root.policyMode === "automatic"
+                        selected: checked
+                        Accessible.role: Accessible.RadioButton
                         onTriggered: Preferences.patch("modules.notifications.policyMode",
                             "automatic")
                     }
 
                     Shared.Button {
                         label: I18n.tr("settings.notifications.policy.custom")
-                        selected: root.policyMode === "custom"
+                        checkable: true
+                        autoToggle: false
+                        checked: root.policyMode === "custom"
+                        selected: checked
+                        Accessible.role: Accessible.RadioButton
                         onTriggered: Preferences.patch("modules.notifications.policyMode",
                             "custom")
                     }
@@ -293,9 +301,9 @@ Item {
                                 iconName: "restart_alt"
                                 size: "small"
                                 variant: "quiet"
-                                enabled: NotificationSettingsRules.currentOverride(
+                                enabled: NotificationSettingsRules.hasOverride(
                                     root.applicationOverrides,
-                                    applicationRow.modelData.id) !== "follow"
+                                    applicationRow.modelData.id)
                                 accessibleName: I18n.tr(
                                     "settings.notifications.override.reset", {
                                         "name": applicationRow.modelData.name

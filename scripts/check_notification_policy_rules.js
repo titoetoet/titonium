@@ -59,6 +59,19 @@ assert.deepEqual(plain(normal), {
 assert.equal(Object.isFrozen(normal), true);
 assert.equal(Object.isFrozen(normal.actions), true);
 
+const reportedNameFallback = rules.descriptor({
+    id: 9,
+    appName: "Browser Sender",
+    urgency: 1,
+    summary: "No desktop entry",
+}, 1236);
+assert.equal(reportedNameFallback.appId, "Browser Sender",
+    "missing desktopEntry falls back to the normalized reported app name");
+assert.equal(rules.resolvePolicy(reportedNameFallback, preferences({
+    "Browser Sender": "quiet",
+})).route, "history",
+"fallback sender identity must match the stored override key exactly");
+
 const actionsDescriptor = rules.descriptor({
     id: 8,
     appId: "org.example.Actions",

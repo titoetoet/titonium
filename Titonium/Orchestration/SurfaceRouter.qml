@@ -7,7 +7,6 @@ import qs.Titonium.Core.Screens
 import qs.Titonium.Core.Surfaces
 import qs.Titonium.Core.Surfaces.Center
 import qs.Titonium.Services.Hyprland
-import qs.Titonium.Services.Notifications
 import qs.Titonium.Settings
 import "../Settings/SettingsLifecycleRules.js" as SettingsLifecycleRules
 import "NotificationPanelRouting.js" as NotificationPanelRouting
@@ -83,8 +82,6 @@ QtObject {
             "ownerId": owner,
             "invoker": invoker
         }, screen);
-        if (opened)
-            NotificationCoordinator.markAllRead();
         return opened ? "open:" + screen.name : "unavailable:no-screen";
     }
 

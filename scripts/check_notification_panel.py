@@ -48,6 +48,7 @@ def main() -> int:
     classic_bar = read("Titonium/Bar/classic/ClassicBar.qml", errors)
     classic_end = read("Titonium/Bar/classic/ClassicEndIsland.qml", errors)
     router = read("Titonium/Orchestration/SurfaceRouter.qml", errors)
+    coordinator = read("Titonium/Services/Notifications/NotificationCoordinator.qml", errors)
     panel = read("Titonium/Notifications/NotificationPanel.qml", errors)
     row = read("Titonium/Notifications/NotificationHistoryRow.qml", errors)
     qmldir = read("Titonium/Notifications/qmldir", errors)
@@ -63,6 +64,14 @@ def main() -> int:
         'I18n.tr(NotificationCoordinator.hasUnread',
         '"notification.bell.none"',
         '"notification.bell.unread"',
+        "activeFocusOnTab: true",
+        "function activate(): void",
+        "root.forceActiveFocus(Qt.MouseFocusReason)",
+        "Keys.onPressed:",
+        "Qt.Key_Space", "Qt.Key_Return", "Qt.Key_Enter",
+        "Accessible.focusable: true",
+        "Accessible.onPressAction: root.activate()",
+        "root.activeFocus ? Theme.focus",
     ), errors)
     if re.search(r"^    visible:\s*NotificationCoordinator\.hasUnread\s*$", bell, re.MULTILINE):
         errors.append("NotificationBell itself must always render; only its badge may be conditional")
@@ -110,14 +119,18 @@ def main() -> int:
         'root.closeCenter("notifications-opened")',
         "RightPillCoordinator.close()",
         "SurfaceManager.open(owner,",
-        "NotificationCoordinator.markAllRead()",
     ), errors)
     toggle = function_block(router, "toggleNotificationPanel")
-    opened_index = toggle.find("const opened = SurfaceManager.open")
-    read_index = toggle.find("NotificationCoordinator.markAllRead()")
-    if opened_index < 0 or read_index < opened_index or not re.search(
-            r"if\s*\(opened\)[\s\S]*NotificationCoordinator\.markAllRead\(\)", toggle):
-        errors.append("Notification panel must mark history read only after SurfaceManager.open succeeds")
+    if "NotificationCoordinator.markAllRead()" in toggle:
+        errors.append("SurfaceRouter must not mark history read before the lazy panel mounts")
+
+    require(coordinator, "NotificationCoordinator", (
+        "readonly property bool panelOpen: root.coordinatorState.panelOpen",
+        "function panelMounted(ownerId: string): bool",
+        "CoordinatorRules.mountPanel(root.coordinatorState, ownerId)",
+        "function panelUnmounted(ownerId: string): bool",
+        "CoordinatorRules.unmountPanel(root.coordinatorState, ownerId)",
+    ), errors)
 
     require(panel, "NotificationPanel", (
         "FocusScope {", "property var descriptor:", "property var screen:",
@@ -129,7 +142,17 @@ def main() -> int:
         'I18n.tr("notification.panel.title")',
         'I18n.tr("notification.panel.clear_all")',
         "NotificationCoordinator.dismissAll()", "Qt.Key_Escape",
+        "Component.onCompleted:",
+        "NotificationCoordinator.panelMounted(root.ownerId)",
+        "NotificationCoordinator.markAllRead()",
+        "Component.onDestruction:",
+        "NotificationCoordinator.panelUnmounted(root.ownerId)",
     ), errors)
+    completed = re.search(r"Component\.onCompleted\s*:\s*\{(?P<body>.*?)\n\s*\}",
+        panel, re.DOTALL)
+    if not completed or "NotificationCoordinator.panelMounted(root.ownerId)" not in completed.group("body") \
+            or "NotificationCoordinator.markAllRead()" not in completed.group("body"):
+        errors.append("NotificationPanel must mark read only from its successful mount boundary")
     require(row, "NotificationHistoryRow", (
         "required property var notification", "Shared.SystemIcon",
         "model: root.notification.actions", "NotificationCoordinator.action(",

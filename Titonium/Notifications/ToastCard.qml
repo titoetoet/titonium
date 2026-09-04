@@ -98,33 +98,8 @@ Item {
         if (root.dismissing)
             return;
         root.dismissing = true;
-        if (Motion.reduced) {
-            NotificationCoordinator.dismiss(root.notification.key);
-        } else {
-            toastExit.start();
-        }
-    }
-
-    ParallelAnimation {
-        id: toastExit
-
-        NumberAnimation {
-            target: toastSlide
-            property: "x"
-            from: 0
-            to: 48
-            duration: 150
-            easing.type: Easing.InCubic
-        }
-        NumberAnimation {
-            target: root
-            property: "opacity"
-            from: 1
-            to: 0
-            duration: 130
-            easing.type: Easing.InCubic
-        }
-        onFinished: NotificationCoordinator.dismiss(root.notification.key)
+        toastTimer.stop();
+        NotificationCoordinator.dismiss(root.notification.key);
     }
 
     Behavior on opacity {
@@ -133,6 +108,7 @@ Item {
     }
 
     Timer {
+        id: toastTimer
         interval: Preferences.notifications.toastDuration
         repeat: false
         running: true

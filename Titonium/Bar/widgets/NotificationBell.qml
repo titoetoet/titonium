@@ -14,6 +14,11 @@ Item {
 
     implicitWidth: 28
     implicitHeight: Metrics.widgetHeight
+    activeFocusOnTab: true
+
+    function activate(): void {
+        root.toggleRequested(root.screen, root);
+    }
 
     Connections {
         target: NotificationCoordinator
@@ -31,6 +36,18 @@ Item {
                 bellIcon.rotation = 0;
             }
         }
+    }
+
+    Rectangle {
+        anchors.centerIn: parent
+        width: 28
+        height: 28
+        radius: Metrics.radiusSmall
+        color: bellHover.hovered || bellTap.pressed
+            ? Theme.surfaceInteractive : "transparent"
+        border.width: root.activeFocus ? Metrics.borderWidth : 0
+        border.color: root.activeFocus ? Theme.focus : "transparent"
+        Behavior on color { ColorAnimation { duration: Motion.fast } }
     }
 
     Shared.Icon {
@@ -86,7 +103,17 @@ Item {
     HoverHandler { id: bellHover; cursorShape: Qt.PointingHandCursor }
     TapHandler {
         id: bellTap
-        onTapped: root.toggleRequested(root.screen, root)
+        onTapped: {
+            root.forceActiveFocus(Qt.MouseFocusReason);
+            root.activate();
+        }
+    }
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_Space || event.key === Qt.Key_Return
+                || event.key === Qt.Key_Enter) {
+            root.activate();
+            event.accepted = true;
+        }
     }
 
     Accessible.role: Accessible.Button
@@ -94,4 +121,6 @@ Item {
         ? "notification.bell.unread" : "notification.bell.none", {
         count: NotificationCoordinator.unreadCount
     })
+    Accessible.focusable: true
+    Accessible.onPressAction: root.activate()
 }

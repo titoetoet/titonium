@@ -34,15 +34,22 @@ assert.deepEqual(plain(rules.resetOverride({ browser: "quiet" }, "missing")), {
 assert.deepEqual(plain(rules.resetAll()), {});
 assert.equal(rules.currentOverride({ browser: "block" }, "browser"), "block");
 assert.equal(rules.currentOverride({ browser: "invalid" }, "browser"), "follow");
+assert.equal(rules.hasOverride({ browser: "follow" }, "browser"), true,
+    "an explicit persisted follow value remains resettable");
+assert.equal(rules.hasOverride({}, "browser"), false);
+assert.equal(rules.hasOverride({ constructor: "block" }, "constructor"), false);
 
 const rows = plain(rules.applicationRows([
-    { id: "terminal", name: "Terminal", icon: "terminal" },
-    { id: "browser", name: "Browser", icon: "browser" },
+    { source: "native", appId: "terminal.desktop", appName: "Terminal", appIcon: "terminal" },
+    { source: "internal", appId: "", appName: "Titonium", appIcon: "timer" },
+    { source: "native", appId: "Browser Sender", appName: "Browser", appIcon: "browser" },
+    { source: "native", appId: "terminal.desktop", appName: "Renamed terminal", appIcon: "" },
 ], { "org.extra.App": "quiet", terminal: "critical" }));
 assert.deepEqual(rows, [
-    { id: "browser", name: "Browser", icon: "browser" },
+    { id: "Browser Sender", name: "Browser", icon: "browser" },
     { id: "org.extra.App", name: "org.extra.App", icon: "" },
-    { id: "terminal", name: "Terminal", icon: "terminal" },
+    { id: "terminal", name: "terminal", icon: "" },
+    { id: "terminal.desktop", name: "Terminal", icon: "terminal" },
 ]);
 
 console.log("PASS immutable notification application override settings rules");
