@@ -126,6 +126,19 @@ for (const name of adapterNames) {
     assert.doesNotMatch(adapterSource, /\b(Process|FileView|Timer)\s*\{/);
 }
 
+const notificationAdapter = fs.readFileSync(path.join(centerRoot, "adapters",
+    "NotificationCenterAdapter.qml"), "utf8");
+assert.match(notificationAdapter, /const contextId = "notification:" \+ item\.key/,
+    "Notification adapter must retain the service's namespaced descriptor identity");
+assert.match(notificationAdapter,
+    /const notificationKey = contextId\.slice\("notification:"\.length\)/,
+    "Notification adapter must recover the stable key without native identity");
+assert.match(notificationAdapter, /NotificationService\.dismiss\(notificationKey\)/,
+    "Notification adapter must dismiss through the stable service boundary");
+assert.doesNotMatch(notificationAdapter, /\+ item\.id|notificationId: item\.id|Number\(contextId\.slice/,
+    "Notification adapter must not rely on leaked native numeric IDs");
+console.log("PASS Notification Center adapter preserves stable notification keys");
+
 for (const file of ["CenterDomain.qml", "CenterActionDispatcher.qml"])
     assert.equal(fs.existsSync(path.join(centerRoot, file)), true, `missing ${file}`);
 assert.match(fs.readFileSync(path.join(centerRoot, "qmldir"), "utf8"),

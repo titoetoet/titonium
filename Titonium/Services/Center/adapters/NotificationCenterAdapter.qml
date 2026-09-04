@@ -6,14 +6,14 @@ import qs.Titonium.Services.Notifications
 QtObject {
     id: root
     readonly property var contexts: Object.freeze(NotificationService.notifications.map(item => {
-        const contextId = "notification:" + item.id;
+        const contextId = "notification:" + item.key;
         return Object.freeze({
             id: contextId, source: "notification", kind: "notification",
             title: item.summary || item.body || "Notification", subtitle: item.appName || "",
             icon: item.appIcon || "notifications", tone: item.urgency >= 2 ? "critical" : "normal",
             attention: item.urgency >= 2 ? "transient" : "ambient", progress: null,
             occurredAt: item.createdAt || 0, expiresAt: 0,
-            details: Object.freeze({ notificationId: item.id, body: item.body || "" }),
+            details: Object.freeze({ notificationKey: item.key, body: item.body || "" }),
             actionIds: Object.freeze(["notification.dismiss"])
         });
     }))
@@ -28,8 +28,8 @@ QtObject {
     function dispatch(actionId: string, contextId: string, idempotencyKey: string): var {
         if (actionId !== "notification.dismiss" || contextId.indexOf("notification:") !== 0)
             return root.result(false, "stale", "unknown-action");
-        const notificationId = Number(contextId.slice("notification:".length));
-        const accepted = NotificationService.dismiss(notificationId);
+        const notificationKey = contextId.slice("notification:".length);
+        const accepted = NotificationService.dismiss(notificationKey);
         return root.result(accepted, accepted ? "completed" : "stale", "");
     }
     function result(accepted: bool, status: string, reason: string): var {

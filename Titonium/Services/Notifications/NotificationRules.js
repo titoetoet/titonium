@@ -48,12 +48,21 @@ function actions(value) {
         const candidate = source[index];
         if (!candidate || typeof candidate !== "object")
             continue;
-        const id = text(candidate.id);
+        const id = text(candidate.id) || text(candidate.identifier);
         if (!id)
             continue;
-        result.push(Object.freeze({ id: id, label: text(candidate.label) }));
+        result.push(Object.freeze({
+            id: id,
+            label: text(candidate.label) || text(candidate.text),
+        }));
     }
     return Object.freeze(result);
+}
+
+function nativeActions(notification) {
+    const source = notification && typeof notification === "object"
+        ? notification.actions : [];
+    return actions(source);
 }
 
 function descriptor(raw, receivedAt) {
@@ -72,7 +81,6 @@ function descriptor(raw, receivedAt) {
         : "notification");
     const severity = nativeSeverity(normalizedUrgency);
     const result = {
-        id: id,
         key: key,
         source: internal ? "internal" : "native",
         appId: text(source.appId) || (internal ? "" : text(source.appName)),
@@ -88,8 +96,6 @@ function descriptor(raw, receivedAt) {
         actions: actions(source.actions),
         receivedAt: Number.isFinite(timestamp) ? timestamp : 0,
     };
-    if (!id)
-        delete result.id;
     return Object.freeze(result);
 }
 
@@ -155,76 +161,61 @@ function resolvePolicy(value, preferences) {
 function upsert(list, item, limit) {
     const source = Array.isArray(list) ? list : [];
     const maximum = Number.isInteger(limit) && limit > 0 ? limit : historyLimit();
-    if (!item || !positiveId(item.id))
+    const key = stableKey(item?.key);
+    if (!item || !key)
         return Object.freeze(source.slice(0, maximum));
     const result = [item];
     for (let index = 0; index < source.length && result.length < maximum; index++) {
-        if (positiveId(source[index]?.id) !== item.id)
+        if (stableKey(source[index]?.key) !== key)
             result.push(source[index]);
     }
     return Object.freeze(result);
 }
 
-function addToast(ids, id, limit) {
-    const source = Array.isArray(ids) ? ids : [];
-    const targetId = positiveId(id);
+function stableKey(value) {
+    return trimmedText(value);
+}
+
+function addToast(keys, key, limit) {
+    const source = Array.isArray(keys) ? keys : [];
+    const targetKey = stableKey(key);
     const maximum = Number.isInteger(limit) && limit > 0 ? limit : toastLimit();
-    if (!targetId)
+    if (!targetKey)
         return Object.freeze(source.slice(0, maximum));
-    const result = [targetId];
+    const result = [targetKey];
     for (let index = 0; index < source.length && result.length < maximum; index++) {
-        const candidate = positiveId(source[index]);
-        if (candidate && candidate !== targetId)
+        const candidate = stableKey(source[index]);
+        if (candidate && candidate !== targetKey)
             result.push(candidate);
     }
     return Object.freeze(result);
 }
 
-function removeId(values, id) {
+function removeKey(values, key) {
     const source = Array.isArray(values) ? values : [];
-    const targetId = positiveId(id);
-    if (!targetId)
+    const targetKey = stableKey(key);
+    if (!targetKey)
         return Object.freeze(source.slice());
-    return Object.freeze(source.filter(value => {
-        const candidate = typeof value === "object" ? value?.id : value;
-        return positiveId(candidate) !== targetId;
-    }));
+    return Object.freeze(source.filter(value => stableKey(
+        typeof value === "object" ? value?.key : value) !== targetKey));
 }
 
-function removeIds(values, ids) {
+function removeKeys(values, keys) {
     const source = Array.isArray(values) ? values : [];
-    const candidates = Array.isArray(ids) ? ids : [];
+    const candidates = Array.isArray(keys) ? keys : [];
     const removals = {};
     for (let index = 0; index < candidates.length; index++) {
-        const value = candidates[index];
-        const candidate = typeof value === "object" ? value?.id : value;
-        const id = positiveId(candidate);
-        if (id)
-            removals[String(id)] = true;
+        const candidate = stableKey(typeof candidates[index] === "object"
+            ? candidates[index]?.key : candidates[index]);
+        if (candidate)
+            removals[candidate] = true;
     }
-    return Object.freeze(source.filter(value => {
-        const candidate = typeof value === "object" ? value?.id : value;
-        return removals[String(positiveId(candidate))] !== true;
-    }));
+    return Object.freeze(source.filter(value => removals[stableKey(
+        typeof value === "object" ? value?.key : value)] !== true));
 }
 
-function markUnread(ids, id) {
-    return addToast(ids, id, Number.MAX_SAFE_INTEGER);
-}
-
-function centerEvent(item, title, now) {
-    if (!item || !positiveId(item.id) || !text(title))
-        return null;
-    const screenshot = text(item.summary).toLowerCase() === "screenshot saved";
-    return Object.freeze({
-        id: screenshot ? "capture:screenshot" : "notification:new",
-        deduplicationKey: screenshot ? "capture:screenshot" : "notification:new",
-        source: screenshot ? "capture" : "notification",
-        kind: screenshot ? "screenshot_saved" : "new",
-        title: screenshot ? title : (text(item.summary) || text(item.body) || text(title)),
-        icon: screenshot ? "screenshot" : "notifications",
-        createdAt: Number.isFinite(now) ? now : 0,
-    });
+function markUnread(keys, key) {
+    return addToast(keys, key, Number.MAX_SAFE_INTEGER);
 }
 
 function unreadIndicator(count, label) {

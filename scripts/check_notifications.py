@@ -38,8 +38,8 @@ PRESENTATION_FILES = {
         "Shared.SystemIcon",
         "maximumLineCount: 1",
         "maximumLineCount: 3",
-        "NotificationService.expireToast(root.notification.id)",
-        "NotificationService.dismiss(root.notification.id)",
+        "NotificationService.expireToast(root.notification.key)",
+        "NotificationService.dismiss(root.notification.key)",
         "Timer {",
         "interval: Preferences.notifications.toastDuration",
         "repeat: false",
@@ -56,22 +56,24 @@ REQUIRED = (
     "import Quickshell.Services.Notifications",
     'import "NotificationRules.js" as NotificationRules',
     "property var projectedNotifications: Object.freeze([])",
-    "property var toastIds: Object.freeze([])",
-    "property var unreadIds: Object.freeze([])",
+    "property var toastKeys: Object.freeze([])",
+    "property var unreadKeys: Object.freeze([])",
     "readonly property var notifications: root.projectedNotifications",
     "readonly property var toastNotifications:",
     "readonly property int unreadCount:",
     "readonly property bool hasUnread:",
     "function markAllRead(): bool",
-    "function dismiss(id: int): bool",
+    "function dismiss(key: string): bool",
     "function dismissAll(): int",
-    "function expireToast(id: int): bool",
+    "function expireToast(key: string): bool",
+    "function invokeAction(key: string, actionId: string): bool",
     "notification.tracked = true",
     "NotificationRules.descriptor",
     "NotificationRules.upsert",
     "NotificationRules.markUnread",
-    "root.toastIds = NotificationRules.addToast(root.toastIds, item.id, 3)",
-    "NotificationRules.removeId",
+    "if (item.route === \"toast\" && root.toastsEnabled)",
+    "root.toastKeys = NotificationRules.addToast(root.toastKeys, item.key, 3)",
+    "NotificationRules.removeKey",
     "NotificationServer {",
     "keepOnReload: true",
     "persistenceSupported: true",
@@ -79,15 +81,16 @@ REQUIRED = (
     "bodyMarkupSupported: false",
     "bodyHyperlinksSupported: false",
     "bodyImagesSupported: false",
-    "actionsSupported: false",
+    "actionsSupported: true",
     "actionIconsSupported: false",
     "imageSupported: false",
     "inlineReplySupported: false",
-    "server.trackedNotifications.values",
+    "nativeTargets.byKey",
     "nativeNotification.dismiss()",
-    "const ids = root.projectedNotifications.map(item => item.id)",
-    "for (let index = 0; index < ids.length; index++)",
-    "root.dismiss(ids[index])",
+    "nativeAction.invoke()",
+    "const keys = root.projectedNotifications.map(item => item.key)",
+    "for (let index = 0; index < keys.length; index++)",
+    "root.dismiss(keys[index])",
     "readonly property int operationWarningLimit: 3",
     "readonly property bool toastsEnabled:",
     "onToastsEnabledChanged:",
@@ -102,6 +105,9 @@ FORBIDDEN = (
     "execDetached",
     "notify-send",
     "DBus",
+    "import qs.Titonium.Services.Center",
+    "CenterAttentionService",
+    "CenterActivityService",
 )
 
 
@@ -112,7 +118,7 @@ def public_native_errors(source: str) -> list[str]:
     )
     for match in property_pattern.finditer(source):
         declaration = match.group(0)
-        if re.search(r"\bNotification(?:Server)?\b|:\s*server\b|trackedNotifications", declaration):
+        if re.search(r"\bNotification(?:Server)?\b|:\s*server\b|trackedNotifications|nativeTargets", declaration):
             errors.append("notification singleton exposes a native object through a root property")
     function_pattern = re.compile(r"^    function\s+(\w+)\s*\([^)]*\)[^{]*\{", re.MULTILINE)
     for match in function_pattern.finditer(source):

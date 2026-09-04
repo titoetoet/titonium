@@ -41,7 +41,6 @@ assert.equal(rules.nativeUrgency("critical"), "normal");
 
 const normal = native(1);
 assert.deepEqual(plain(normal), {
-    id: 7,
     key: "native:7",
     source: "native",
     appId: "org.example.Mail",
