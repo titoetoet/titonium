@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell.Io
+import qs.Titonium.Core.Runtime
 import qs.Titonium.Core.Screens
 import qs.Titonium.Core.Surfaces
 import qs.Titonium.Overlays.Audio
@@ -97,6 +98,19 @@ QtObject {
                 descriptorCount: NotificationCoordinator.history.length,
                 toastCount: NotificationCoordinator.toasts.length,
                 unreadCount: NotificationCoordinator.unreadCount,
+                panel: {
+                    open: NotificationCoordinator.panelOpen,
+                    ownerId: NotificationCoordinator.coordinatorState.panelOwnerId,
+                },
+                queue: {
+                    count: NotificationCoordinator.criticalQueueCount,
+                    currentKey: NotificationCoordinator.currentCritical?.key || "",
+                },
+                policy: {
+                    mode: Preferences.notifications.policyMode === "custom" ? "custom" : "automatic",
+                    allowCriticalOnIsland: Preferences.notifications.allowCriticalOnIsland !== false,
+                    keepCriticalUnread: Preferences.notifications.keepCriticalUnread !== false,
+                },
             });
         }
         function markRead(): string {

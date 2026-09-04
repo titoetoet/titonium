@@ -33,7 +33,8 @@ historical release tag.
 - Bluetooth uses the native Quickshell service and a narrow service/view boundary. Audio handoff is
   coordinated through semantic signals; views do not own native Bluetooth objects.
 - Clipboard formatting and preview extraction live behind the Clipboard service plus pure helper
-  rules. Native notification history remains service-owned, but currently has no Center route.
+  rules. Native notification history and policy remain coordinator-owned; critical values route to
+  the shared Center FIFO while the Bell owns the independent history panel.
 - The Center pig is a user-configurable idle animation. Its drawing implementation is currently
   shared with the `demos/dancing_pig` visual fixture; this intentional dependency should be moved
   into a production-owned component if the demo is retired later.

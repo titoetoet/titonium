@@ -23,6 +23,17 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# org.freedesktop.Notifications is owned once per session. This focused fixture
+# must never replace a shell the user is already running.
+if qs -p "$project_root" ipc call app status >/dev/null 2>&1; then
+    echo "SKIP notifications acceptance: existing Titonium instance owns the notification D-Bus name" >&2
+    exit 0
+fi
+if busctl --user status org.freedesktop.Notifications >/dev/null 2>&1; then
+    echo "SKIP notifications acceptance: session notification D-Bus name is already owned" >&2
+    exit 0
+fi
+
 call_ipc() {
     qs -p "$project_root" ipc --pid "$shell_pid" call "$@"
 }
@@ -41,8 +52,44 @@ except Exception:
     raise SystemExit(1)
 expected = [int(value) for value in sys.argv[2:]]
 actual = [state.get("descriptorCount"), state.get("toastCount"), state.get("unreadCount")]
-raise SystemExit(0 if actual == expected else 1)
+panel = state.get("panel")
+queue = state.get("queue")
+policy = state.get("policy")
+contract = (
+    isinstance(panel, dict) and isinstance(panel.get("open"), bool)
+    and isinstance(panel.get("ownerId"), str)
+    and isinstance(queue, dict) and isinstance(queue.get("count"), int)
+    and queue["count"] >= 0 and isinstance(queue.get("currentKey"), str)
+    and isinstance(policy, dict) and policy.get("mode") in ("automatic", "custom")
+    and isinstance(policy.get("allowCriticalOnIsland"), bool)
+    and isinstance(policy.get("keepCriticalUnread"), bool)
+)
+raise SystemExit(0 if actual == expected and contract else 1)
 ' "$state" "$expected_descriptors" "$expected_toasts" "$expected_unread"
+}
+
+snapshot_contract() {
+    local state
+    state="$(call_ipc notifications state 2>/dev/null || true)"
+    python3 -c '
+import json, sys
+try:
+    state = json.loads(sys.argv[1])
+except Exception:
+    raise SystemExit(1)
+panel = state.get("panel")
+queue = state.get("queue")
+policy = state.get("policy")
+raise SystemExit(0 if (
+    isinstance(panel, dict) and isinstance(panel.get("open"), bool)
+    and isinstance(panel.get("ownerId"), str)
+    and isinstance(queue, dict) and isinstance(queue.get("count"), int)
+    and queue["count"] >= 0 and isinstance(queue.get("currentKey"), str)
+    and isinstance(policy, dict) and policy.get("mode") in ("automatic", "custom")
+    and isinstance(policy.get("allowCriticalOnIsland"), bool)
+    and isinstance(policy.get("keepCriticalUnread"), bool)
+) else 1)
+' "$state"
 }
 
 screen_layers() {
@@ -59,19 +106,6 @@ print("\n".join(names))
 ' "$monitor"
 }
 
-qs -p "$project_root" kill >/dev/null 2>&1 || true
-stopped=false
-for _ in {1..50}; do
-    if ! qs -p "$project_root" ipc call app status >/dev/null 2>&1; then
-        stopped=true
-        break
-    fi
-    sleep 0.1
-done
-if [[ "$stopped" != true ]]; then
-    echo "FAIL existing Titonium instance did not stop" >&2
-    exit 1
-fi
 qs -n -p "$project_root" --no-color >"$log_file" 2>&1 &
 shell_pid=$!
 
@@ -86,6 +120,11 @@ done
 if [[ "$ready" != true ]]; then
     sed -n '1,260p' "$log_file" >&2
     echo "FAIL notification acceptance shell did not become ready" >&2
+    exit 1
+fi
+if ! snapshot_contract; then
+    call_ipc notifications state >&2 || true
+    echo "FAIL notifications state omitted read-only panel, queue, or policy metadata" >&2
     exit 1
 fi
 
@@ -141,6 +180,42 @@ if [[ "$received_second" != true ]]; then
     exit 1
 fi
 
+notify-send --urgency=critical --app-name="Titonium Acceptance" --icon=dialog-warning \
+    "Titonium critical fixture" "Center FIFO acceptance"
+
+critical_routed=false
+for _ in {1..30}; do
+    state="$(call_ipc notifications state 2>/dev/null || true)"
+    if python3 -c '
+import json, sys
+try:
+    state = json.loads(sys.argv[1])
+except Exception:
+    raise SystemExit(1)
+queue = state.get("queue", {})
+raise SystemExit(0 if state.get("descriptorCount") == 3
+    and state.get("toastCount") == 1 and state.get("unreadCount") == 2
+    and queue.get("count") == 1 and str(queue.get("currentKey", "")).startswith("native:")
+    else 1)
+' "$state"; then
+        critical_routed=true
+        break
+    fi
+    sleep 0.1
+done
+if [[ "$critical_routed" != true ]]; then
+    call_ipc notifications state >&2 || true
+    echo "FAIL critical fixture was not routed to the Center FIFO queue" >&2
+    exit 1
+fi
+
+sleep 5
+if ! state_matches 3 0 2; then
+    call_ipc notifications state >&2 || true
+    echo "FAIL critical queue did not expire after its readable interval" >&2
+    exit 1
+fi
+
 if [[ "$(git -C "$project_root" status --porcelain=v1)" != "$before_git" ]]; then
     git -C "$project_root" status --short >&2
     echo "FAIL notification acceptance changed repository files" >&2
@@ -162,4 +237,4 @@ if rg -i "$runtime_rejection_pattern" "$log_file"; then
     exit 1
 fi
 
-echo "PASS native notification history, toast, unread lifecycle and DP-1-only acceptance"
+echo "PASS passive/critical notification routing, state seam, and DP-1-only acceptance"

@@ -44,6 +44,22 @@ Bar widgets remain cheap while visible. Heavy panels use `SurfaceManager` plus `
 Independent non-focus surfaces such as OSD and notification toasts use their own DP-1-only host,
 `ExclusionMode.Ignore`, `WlrKeyboardFocus.None` and an input mask limited to visible content.
 
+## Notification boundary
+
+`NotificationService` is the only native `NotificationServer` owner. It emits frozen descriptors;
+`NotificationCoordinator` owns bounded session history, unread state, passive toast IDs, the
+critical FIFO queue and lazy-panel ownership. Neither notification view nor Center presentation may
+import native Notifications objects, own a native listener, or retain one.
+
+The Notification Bell is always present in both Bar styles and routes only an open/close request to
+the screen-local history panel. The panel is loaded through `SurfaceManager`, marks read only after
+its owner is mounted, and releases only its matching owner on close or screen loss. Standard actions,
+dismissal and clear-all are local user intents revalidated by the coordinator/service boundary.
+
+The public `notifications` IPC target has exactly `state()` and `markRead()`. Its state is limited to
+counts plus read-only panel, queue and policy metadata. It must never expose notification injection,
+action invocation, dismissal, clear-all, panel lifecycle or settings-patch IPC.
+
 ## Center surface boundary
 
 Center is a domain/controller/host/presentation pipeline. `Services/Center/CenterDomain.qml`

@@ -187,6 +187,21 @@ def validate_gate_fixtures(errors: list[str]) -> None:
     for fixture in fixtures:
         if not public_native_errors(fixture):
             errors.append("notification native-exposure matcher missed malicious fixture")
+    acceptance_path = ROOT / "scripts/notifications_acceptance.sh"
+    acceptance = acceptance_path.read_text(encoding="utf-8") if acceptance_path.is_file() else ""
+    for fragment in (
+        "existing Titonium instance owns the notification D-Bus name",
+        "session notification D-Bus name is already owned",
+        "snapshot_contract()",
+        'notify-send --urgency=critical',
+        "critical fixture was not routed to the Center FIFO queue",
+        "critical queue did not expire after its readable interval",
+        "notifications state", "notifications markRead",
+    ):
+        if fragment not in acceptance:
+            errors.append(f"notifications acceptance missing safe routing coverage: {fragment}")
+    if 'qs -p "$project_root" kill' in acceptance:
+        errors.append("notifications acceptance must not stop a resident Titonium instance")
 
 
 def validate_service(errors: list[str]) -> None:
@@ -293,6 +308,8 @@ def validate_composition(errors: list[str]) -> None:
         errors.append("App must import the notification presentation module")
     device_path = ROOT / "Titonium/Ipc/DeviceIpc.qml"
     device_source = device_path.read_text(encoding="utf-8") if device_path.is_file() else ""
+    if "import qs.Titonium.Core.Runtime" not in device_source:
+        errors.append("notifications IPC policy projection must import runtime preferences")
     ipc = notification_ipc(device_source)
     if not ipc:
         errors.append("DeviceIpc must expose the narrow notifications IPC target")
@@ -307,6 +324,16 @@ def validate_composition(errors: list[str]) -> None:
             "NotificationCoordinator.history.length",
             "NotificationCoordinator.toasts.length",
             "NotificationCoordinator.unreadCount",
+            "panel: {",
+            "open: NotificationCoordinator.panelOpen",
+            "ownerId: NotificationCoordinator.coordinatorState.panelOwnerId",
+            "queue: {",
+            "count: NotificationCoordinator.criticalQueueCount",
+            "currentKey: NotificationCoordinator.currentCritical?.key || \"\"",
+            "policy: {",
+            "mode: Preferences.notifications.policyMode === \"custom\" ? \"custom\" : \"automatic\"",
+            "allowCriticalOnIsland: Preferences.notifications.allowCriticalOnIsland !== false",
+            "keepCriticalUnread: Preferences.notifications.keepCriticalUnread !== false",
             "NotificationCoordinator.markAllRead()",
         ):
             if fragment not in ipc:

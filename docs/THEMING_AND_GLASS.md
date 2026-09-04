@@ -25,8 +25,8 @@ side's base silhouette stays continuous.
 Right-pill controls use uniform 28dp interaction cells. Connectivity icons have 4dp internal gaps
 and the Pin, Connectivity, Input Method and conditional Notification groups have 8dp gaps. The Pin
 has no resting, hover or selected background; state is communicated through its glyph and color.
-The Notification bell occupies no layout width without unread items and runs only three wobble
-cycles when the unread count increases.
+The always-present Notification Bell retains its interaction cell in both Bar styles; only its unread
+badge is conditional, and it runs at most three wobble cycles when the unread count increases.
 
 Both edge pills animate their displayed width toward the latest content-derived implicit width in
 220ms with `Motion.springDamped`. Rapid Window Title or unread changes retarget the same animation

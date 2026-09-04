@@ -25,16 +25,17 @@ The previous feature roadmap is retired. Work now advances by researched capabil
 3. **Network/Wi-Fi native slice — automated acceptance complete, visual approval pending.** Native
    networking ownership, normalized descriptors, secret boundary, compact Bar control and lazy
    popup are implemented without command helpers.
-4. **Notification toast slice — complete.** One native service, immutable bounded history,
-   session-only unread Bell and a DP-1-only lazy stack of at most three five-second toasts passed
-   focused and protected acceptance on 2026-08-27.
+4. **Independent Notification Center — complete.** One native service, immutable bounded history,
+   an always-present Bell, a lazy screen-owned history panel, standard actions, per-application
+   policy, passive DP-1-only toasts and a critical FIFO Center route are covered by focused static
+   and safe foreground acceptance.
 5. **Settings Center V1 — implementation and isolated acceptance complete; visual approval
    pending.** Eight lazy pages now edit a single transactional settings v7 model with
    Preview/Apply/Cancel, legacy Dock projection and DP-1-only lifecycle. The remaining checkpoint
    is manual visual review plus persistence/rollback verification against backed-up live data.
 
-Deferred notification work is a rebuilt Notification Center, action invocation, persistence and
-per-application policy. The retired Center history view is not part of the completed toast slice.
+Deferred notification work is persisted history and any future producer-specific policy. The retired
+Center history view is not part of the independent Bell-owned panel.
 
 ## Continuing reference-repository research
 
