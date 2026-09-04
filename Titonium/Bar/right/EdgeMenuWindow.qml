@@ -19,10 +19,24 @@ PanelWindow {
     readonly property bool ownsMenu: window.styleActive && (
         RightPillCoordinator.ownerScreenName === window.screenModel.name
         || window.ownsConnectedSurface)
-    readonly property string focusOwnerId: "edge-menu:" + window.screenModel.name
     readonly property bool wantsInteractiveFocus: window.ownsMenu
+    readonly property string logicalFocusOwnerId: !window.wantsInteractiveFocus ? ""
+        : RightPillCoordinator.ownerScreenName === window.screenModel.name
+            ? "edge-menu:" + window.screenModel.name + ":menu:"
+                + RightPillCoordinator.menuSource
+            : "edge-menu:" + window.screenModel.name + ":surface:"
+                + RightPillCoordinator.connectedOwnerId
+    property string focusOwnerId: ""
+    property string diagnosticFocusOwnerId: ""
     readonly property bool effectiveInteractiveFocus: window.wantsInteractiveFocus
         && FocusArbiter.granted(window.focusOwnerId)
+
+    function syncInteractiveFocus(): void {
+        if (window.wantsInteractiveFocus && window.logicalFocusOwnerId)
+            window.focusOwnerId = window.logicalFocusOwnerId;
+        if (window.focusOwnerId)
+            FocusArbiter.request(window.focusOwnerId, window.wantsInteractiveFocus);
+    }
     readonly property bool dismissing: window.styleActive
         && RightPillCoordinator.exitingScreenName === window.screenModel.name
     readonly property real compactY: BarVisibilityState.revealed || window.ownsMenu
@@ -73,17 +87,28 @@ PanelWindow {
             RightPillCoordinator.finishClose(window.screenModel.name);
     }
 
-    onWantsInteractiveFocusChanged:
-        FocusArbiter.request(window.focusOwnerId, window.wantsInteractiveFocus)
-    onEffectiveInteractiveFocusChanged: FocusDiagnostics.observe(
-        window.focusOwnerId, window.effectiveInteractiveFocus,
-        { mode: window.ownsMenu ? "open" : "closed", focusPolicy: "exclusive" })
-    Component.onCompleted:
-        FocusArbiter.request(window.focusOwnerId, window.wantsInteractiveFocus)
+    onWantsInteractiveFocusChanged: window.syncInteractiveFocus()
+    onLogicalFocusOwnerIdChanged: window.syncInteractiveFocus()
+    onEffectiveInteractiveFocusChanged: {
+        if (window.effectiveInteractiveFocus) {
+            window.diagnosticFocusOwnerId = window.focusOwnerId;
+            FocusDiagnostics.observe(window.diagnosticFocusOwnerId, true,
+                { mode: "open", focusPolicy: "exclusive" });
+        } else if (window.diagnosticFocusOwnerId) {
+            FocusDiagnostics.observe(window.diagnosticFocusOwnerId, false,
+                { mode: "closed", focusPolicy: "exclusive" });
+            window.diagnosticFocusOwnerId = "";
+        }
+    }
+    Component.onCompleted: window.syncInteractiveFocus()
 
     Component.onDestruction: {
-        FocusArbiter.withdraw(window.focusOwnerId);
-        FocusDiagnostics.observe(window.focusOwnerId, false, { mode: "destroyed" });
+        if (window.focusOwnerId) {
+            FocusArbiter.withdraw(window.focusOwnerId);
+            if (window.diagnosticFocusOwnerId)
+                FocusDiagnostics.observe(window.diagnosticFocusOwnerId, false,
+                    { mode: "destroyed" });
+        }
         if (RightPillCoordinator.connectedSurfacePresented
                 && RightPillCoordinator.connectedScreen === window.screenModel)
             RightPillCoordinator.releaseConnectedSurface(

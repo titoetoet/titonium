@@ -83,7 +83,38 @@ assert.equal(state.shouldSchedule, false);
 const staleRelease = arbiter.withdraw(state, "center:DP-1");
 assert.equal(staleRelease.owner, "overlay:spotlight:DP-1",
     "a stale release cannot clear a newer owner");
-assert.equal(arbiter.withdraw(state, "overlay:spotlight:DP-1").phase, "idle");
+const currentWithdrawal = arbiter.withdraw(state, "overlay:spotlight:DP-1");
+assert.equal(currentWithdrawal.phase, "releasing");
+assert.equal(arbiter.grantPending(
+    currentWithdrawal, currentWithdrawal.generation).phase, "idle");
+
+let closeThenOpen = arbiter.initial();
+closeThenOpen = arbiter.request(closeThenOpen, "edge-menu:DP-1:input");
+closeThenOpen = arbiter.withdraw(closeThenOpen, "edge-menu:DP-1:input");
+assert.deepEqual(plain(closeThenOpen), {
+    owner: "", pendingOwner: "", generation: 2,
+    phase: "releasing", shouldSchedule: true, violation: "",
+}, "withdrawing the current owner must enter an ownerless cooldown");
+const releaseGeneration = closeThenOpen.generation;
+closeThenOpen = arbiter.request(closeThenOpen, "center:DP-1");
+assert.deepEqual(plain(closeThenOpen), {
+    owner: "", pendingOwner: "center:DP-1", generation: releaseGeneration,
+    phase: "releasing", shouldSchedule: true, violation: "",
+}, "a request during cooldown must remain ownerless until the scheduled grant");
+closeThenOpen = arbiter.grantPending(closeThenOpen, releaseGeneration);
+assert.equal(closeThenOpen.owner, "center:DP-1");
+assert.equal(closeThenOpen.phase, "owned");
+
+let noSuccessor = arbiter.initial();
+noSuccessor = arbiter.request(noSuccessor, "settings:DP-1");
+noSuccessor = arbiter.withdraw(noSuccessor, "settings:DP-1");
+assert.equal(noSuccessor.phase, "releasing",
+    "a release without a known successor must still fail closed for one tick");
+noSuccessor = arbiter.grantPending(noSuccessor, noSuccessor.generation);
+assert.deepEqual(plain(noSuccessor), {
+    owner: "", pendingOwner: "", generation: 2,
+    phase: "idle", shouldSchedule: false, violation: "",
+}, "a no-successor release must settle to idle after its barrier");
 
 const blankRequest = arbiter.request(state, "  ");
 assert.equal(blankRequest.owner, state.owner, "blank requests cannot replace an owner");
@@ -113,9 +144,11 @@ assert.equal(arbiter.withdraw(replacement, "overlay:spotlight:DP-1").owner,
     "settings:DP-1");
 replacement = arbiter.withdraw(replacement, "settings:DP-1");
 assert.deepEqual(plain(replacement), {
-    owner: "", pendingOwner: "", generation: settingsGeneration,
-    phase: "idle", shouldSchedule: false, violation: "",
+    owner: "", pendingOwner: "", generation: settingsGeneration + 1,
+    phase: "releasing", shouldSchedule: true, violation: "",
 });
+replacement = arbiter.grantPending(replacement, replacement.generation);
+assert.equal(replacement.phase, "idle");
 
 let pending = arbiter.initial();
 pending = arbiter.request(pending, "center:DP-1");
@@ -123,9 +156,55 @@ pending = arbiter.request(pending, "overlay:spotlight:DP-1");
 pending = arbiter.withdraw(pending, "overlay:spotlight:DP-1");
 assert.deepEqual(plain(pending), {
     owner: "", pendingOwner: "", generation: 2,
-    phase: "idle", shouldSchedule: false, violation: "",
-}, "withdrawing the pending owner cancels the handoff");
+    phase: "releasing", shouldSchedule: true, violation: "",
+}, "withdrawing the pending owner retains the ownerless handoff barrier");
 assert.equal(arbiter.grantPending(pending, 2).phase, "idle");
+
+let samePending = arbiter.initial();
+samePending = arbiter.request(samePending, "center:DP-1");
+samePending = arbiter.request(samePending, "overlay:spotlight:DP-1");
+const unchangedPending = arbiter.request(samePending, "overlay:spotlight:DP-1");
+assert.strictEqual(unchangedPending, samePending,
+    "an unchanged pending request must be idempotent and preserve its generation");
+
+let scheduledState = arbiter.initial();
+let scheduledGeneration = -1;
+const scheduledCallbacks = [];
+function applyScheduled(next) {
+    if (next === scheduledState)
+        return;
+    scheduledState = next;
+    if (next.shouldSchedule && scheduledGeneration !== next.generation) {
+        scheduledGeneration = next.generation;
+        scheduledCallbacks.push(next.generation);
+    }
+}
+applyScheduled(arbiter.request(scheduledState, "center:DP-1"));
+applyScheduled(arbiter.request(scheduledState, "overlay:spotlight:DP-1"));
+applyScheduled(arbiter.request(scheduledState, "overlay:spotlight:DP-1"));
+assert.deepEqual(scheduledCallbacks, [2],
+    "one unchanged pending request must leave exactly one callback outstanding");
+
+let overlayReplacement = arbiter.initial();
+overlayReplacement = arbiter.request(
+    overlayReplacement, "overlay:spotlight:DP-1");
+overlayReplacement = arbiter.request(
+    overlayReplacement, "overlay:window-switcher:DP-1");
+assert.equal(overlayReplacement.owner, "",
+    "same-window overlay replacement must revoke the previous logical grant");
+assert.equal(overlayReplacement.pendingOwner, "overlay:window-switcher:DP-1");
+assert.equal(overlayReplacement.phase, "releasing");
+
+let edgeReplacement = arbiter.initial();
+edgeReplacement = arbiter.request(
+    edgeReplacement, "edge-menu:DP-1:menu:input");
+edgeReplacement = arbiter.request(
+    edgeReplacement, "edge-menu:DP-1:surface:system-tray:DP-1:audio");
+assert.equal(edgeReplacement.owner, "",
+    "same-window Edge Menu replacement must revoke the previous logical grant");
+assert.equal(edgeReplacement.pendingOwner,
+    "edge-menu:DP-1:surface:system-tray:DP-1:audio");
+assert.equal(edgeReplacement.phase, "releasing");
 
 const arbiterPath = path.join(root, "Titonium/Core/Surfaces/FocusArbiter.qml");
 assert.equal(fs.existsSync(arbiterPath), true, "FocusArbiter.qml must exist");
@@ -145,6 +224,11 @@ assert.equal((arbiterQml.match(/Qt\.callLater/g) || []).length, 1,
     "FocusArbiter must own exactly one event-loop handoff");
 assert.match(arbiterQml, /scheduledGeneration/,
     "FocusArbiter must guard duplicate scheduling by generation");
+assert.match(arbiterQml, /if \(next === root\.state\)\s*return;/,
+    "FocusArbiter must ignore unchanged snapshots before scheduling");
+assert.match(arbiterQml,
+    /next\.shouldSchedule\s*&&\s*root\.scheduledGeneration !== next\.generation/,
+    "FocusArbiter must queue at most one callback for a generation");
 
 const interactiveWindows = [
     {
@@ -205,6 +289,37 @@ for (const contract of interactiveWindows) {
         /onEffectiveInteractiveFocusChanged:[\s\S]{0,260}FocusDiagnostics\.observe\(/,
         `${contract.relative} diagnostics must observe effective grant changes`);
 }
+
+const overlayHost = fs.readFileSync(
+    path.join(root, "Titonium/Core/Surfaces/OverlayHost.qml"), "utf8");
+assert.match(overlayHost,
+    /readonly property string logicalFocusOwnerId:[\s\S]{0,100}"overlay:"\s*\+\s*SurfaceManager\.ownerId/,
+    "OverlayHost logical focus identity must include SurfaceManager.ownerId");
+assert.match(overlayHost,
+    /onLogicalFocusOwnerIdChanged:[\s\S]{0,180}syncInteractiveFocus\(\)/,
+    "OverlayHost must resubmit when its logical owner changes in place");
+assert.match(overlayHost, /property string diagnosticFocusOwnerId:/,
+    "OverlayHost must retain the identity that actually held its effective grant");
+assert.match(overlayHost,
+    /onEffectiveInteractiveFocusChanged:[\s\S]{0,700}FocusDiagnostics\.observe\(window\.diagnosticFocusOwnerId/,
+    "OverlayHost must release the identity that actually held its effective grant");
+
+const edgeMenu = fs.readFileSync(
+    path.join(root, "Titonium/Bar/right/EdgeMenuWindow.qml"), "utf8");
+assert.match(edgeMenu,
+    /readonly property string logicalFocusOwnerId:[\s\S]{0,500}RightPillCoordinator\.menuSource/,
+    "EdgeMenuWindow logical focus identity must include the active menu source");
+assert.match(edgeMenu,
+    /readonly property string logicalFocusOwnerId:[\s\S]{0,500}RightPillCoordinator\.connectedOwnerId/,
+    "EdgeMenuWindow logical focus identity must include the connected surface owner");
+assert.match(edgeMenu,
+    /onLogicalFocusOwnerIdChanged:[\s\S]{0,180}syncInteractiveFocus\(\)/,
+    "EdgeMenuWindow must resubmit when its logical owner changes in place");
+assert.match(edgeMenu, /property string diagnosticFocusOwnerId:/,
+    "EdgeMenuWindow must retain the identity that actually held its effective grant");
+assert.match(edgeMenu,
+    /onEffectiveInteractiveFocusChanged:[\s\S]{0,700}FocusDiagnostics\.observe\(window\.diagnosticFocusOwnerId/,
+    "EdgeMenuWindow must release the identity that actually held its effective grant");
 
 const qmldir = fs.readFileSync(
     path.join(root, "Titonium/Core/Surfaces/qmldir"), "utf8");

@@ -37,10 +37,14 @@ function request(current, ownerId) {
 
     if (state.owner === owner && state.phase === "owned")
         return snapshot(state.owner, "", state.generation, "owned", false, "");
+    if (state.pendingOwner === owner && state.phase === "releasing")
+        return state;
 
     const generation = normalizeGeneration(state.generation) + 1;
     if (!state.owner && state.phase === "idle")
         return snapshot(owner, "", generation, "owned", false, "");
+    if (!state.owner && state.phase === "releasing" && !state.pendingOwner)
+        return snapshot("", owner, state.generation, "releasing", true, "");
 
     return snapshot("", owner, generation, "releasing", true, "");
 }
@@ -53,11 +57,11 @@ function withdraw(current, ownerId) {
             state.phase, state.shouldSchedule, "missing-focus-owner");
 
     if (state.owner === owner)
-        return snapshot("", "", state.generation, "idle", false, "");
+        return snapshot("", "", normalizeGeneration(state.generation) + 1,
+            "releasing", true, "");
 
     if (state.pendingOwner === owner)
-        return snapshot(state.owner, "", state.generation,
-            state.owner ? "owned" : "idle", false, "");
+        return snapshot("", "", state.generation, "releasing", true, "");
 
     return state;
 }
@@ -67,7 +71,9 @@ function grantPending(current, generation) {
     if (typeof generation !== "number" || !Number.isSafeInteger(generation)
             || generation < 0 || generation !== state.generation)
         return state;
-    if (state.phase !== "releasing" || state.owner || !state.pendingOwner)
+    if (state.phase !== "releasing" || state.owner)
         return state;
+    if (!state.pendingOwner)
+        return snapshot("", "", state.generation, "idle", false, "");
     return snapshot(state.pendingOwner, "", state.generation, "owned", false, "");
 }

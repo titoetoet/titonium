@@ -18,20 +18,36 @@ Scope {
                 && SurfaceManager.screen === window.modelData
             readonly property bool ownsOverlaySurface: window.ownsSurface
                 && SurfaceManager.descriptor.barConnected !== true
-            readonly property string focusOwnerId: "overlay:" + window.modelData.name
             readonly property bool wantsInteractiveFocus: window.ownsOverlaySurface
                 && SurfaceManager.descriptor.keyboardFocus === "exclusive"
+            readonly property string logicalFocusOwnerId: window.wantsInteractiveFocus
+                ? "overlay:" + SurfaceManager.ownerId : ""
+            property string focusOwnerId: ""
+            property string diagnosticFocusOwnerId: ""
             readonly property bool effectiveInteractiveFocus: window.wantsInteractiveFocus
                 && FocusArbiter.granted(window.focusOwnerId)
 
-            onWantsInteractiveFocusChanged:
-                FocusArbiter.request(window.focusOwnerId, window.wantsInteractiveFocus)
-            onEffectiveInteractiveFocusChanged: FocusDiagnostics.observe(
-                window.focusOwnerId, window.effectiveInteractiveFocus,
-                { mode: window.ownsOverlaySurface ? "overlay" : "closed",
-                    focusPolicy: "exclusive" })
-            Component.onCompleted:
-                FocusArbiter.request(window.focusOwnerId, window.wantsInteractiveFocus)
+            function syncInteractiveFocus(): void {
+                if (window.wantsInteractiveFocus && window.logicalFocusOwnerId)
+                    window.focusOwnerId = window.logicalFocusOwnerId;
+                if (window.focusOwnerId)
+                    FocusArbiter.request(window.focusOwnerId, window.wantsInteractiveFocus);
+            }
+
+            onWantsInteractiveFocusChanged: window.syncInteractiveFocus()
+            onLogicalFocusOwnerIdChanged: window.syncInteractiveFocus()
+            onEffectiveInteractiveFocusChanged: {
+                if (window.effectiveInteractiveFocus) {
+                    window.diagnosticFocusOwnerId = window.focusOwnerId;
+                    FocusDiagnostics.observe(window.diagnosticFocusOwnerId, true,
+                        { mode: "overlay", focusPolicy: "exclusive" });
+                } else if (window.diagnosticFocusOwnerId) {
+                    FocusDiagnostics.observe(window.diagnosticFocusOwnerId, false,
+                        { mode: "closed", focusPolicy: "exclusive" });
+                    window.diagnosticFocusOwnerId = "";
+                }
+            }
+            Component.onCompleted: window.syncInteractiveFocus()
 
             screen: window.modelData
             visible: window.ownsOverlaySurface
@@ -147,8 +163,12 @@ Scope {
             }
 
             Component.onDestruction: {
-                FocusArbiter.withdraw(window.focusOwnerId);
-                FocusDiagnostics.observe(window.focusOwnerId, false, { mode: "destroyed" });
+                if (window.focusOwnerId) {
+                    FocusArbiter.withdraw(window.focusOwnerId);
+                    if (window.diagnosticFocusOwnerId)
+                        FocusDiagnostics.observe(window.diagnosticFocusOwnerId, false,
+                            { mode: "destroyed" });
+                }
                 const ownerId = SurfaceManager.ownerId;
                 const descriptor = SurfaceManager.descriptor;
                 const screen = SurfaceManager.screen;
