@@ -42,7 +42,7 @@ function routeForSeverity(severity) {
 }
 
 function actions(value) {
-    const source = Array.isArray(value) ? value : [];
+    const source = actionSequence(value);
     const result = [];
     for (let index = 0; index < source.length; index++) {
         const candidate = source[index];
@@ -57,6 +57,17 @@ function actions(value) {
         }));
     }
     return Object.freeze(result);
+}
+
+function actionSequence(value) {
+    if (Array.isArray(value))
+        return value;
+    if (!value || typeof value !== "object")
+        return [];
+    const length = Number(value.length);
+    if (!Number.isInteger(length) || length < 0 || length > 64)
+        return [];
+    return value;
 }
 
 function actionIdentifier(candidate) {

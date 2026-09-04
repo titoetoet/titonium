@@ -150,6 +150,14 @@ assert.equal(rules.actionIdentifier({ identifier: "  opaque\t action  " }),
 assert.deepEqual(plain(rules.nativeActions({ actions: [
     { identifier: "open", text: "Open" },
 ] })), [{ id: "open", label: "Open" }]);
+assert.deepEqual(plain(rules.nativeActions({ actions: {
+    0: { identifier: "  opaque\t action  ", text: "Opaque" },
+    1: { identifier: "archive", text: "Archive" },
+    length: 2,
+} })), [
+    { id: "  opaque\t action  ", label: "Opaque" },
+    { id: "archive", label: "Archive" },
+]);
 console.log("PASS notification descriptors project standard native actions without native objects");
 
 const relativeNow = 200000000;
