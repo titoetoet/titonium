@@ -67,13 +67,12 @@ assert.match(compact, /x: renderer\.interactiveBounds\.x/);
 assert.match(overlay,
     /window\.viewState\.focusPolicy === "exclusive"[\s\S]*?WlrKeyboardFocus\.Exclusive/);
 assert.match(overlay, /CenterSurfaceController\.finishClose\(/);
-assert.match(overlay, /transitionOwner:\s*true/,
-    "overlay Center window must be the sole Classic popup transition owner");
+assert.doesNotMatch(overlay, /transitionOwner:\s*true/,
+    "overlay transition ownership must never be unconditional");
 assert.match(overlay,
-    /presentationActive:\s*window\.ownsOverlay \|\| window\.dismissing \|\| renderer\.transitionActive/);
-assert.match(overlay,
-    /visible:\s*window\.ownsOverlay \|\| window\.dismissing \|\| renderer\.transitionActive/,
-    "overlay window must remain mounted through the detached Classic exit");
+    /transitionOwner:\s*PresentationRules\.transitionOwner\([\s\S]*?window\.viewState, window\.screenModel\.name\)/);
+assert.match(overlay, /presentationActive:\s*window\.ownsOverlay \|\| window\.dismissing/);
+assert.match(overlay, /visible:\s*window\.ownsOverlay \|\| window\.dismissing/);
 assert.match(overlay,
     /function closeIntent\(\): var[\s\S]*?window\.viewState\.mode === "banner"[\s\S]*?window\.viewState\.dismissalPolicy === "timed"[\s\S]*?type: "user-dismiss-presentation"/,
     "timed banner Escape/outside dismissal must be distinct from compact navigation");

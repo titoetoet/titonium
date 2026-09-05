@@ -313,6 +313,9 @@ After the focused fixture (or its safe skip), manually verify the assigned Titon
 - on a short output, confirm the Classic popup height clamps below the Topbar gap; during animation,
   confirm outside-click follows the transformed painted bounds and the 72px banner keeps title,
   subtitle, and actions inside its single padded row;
+- with two eligible test outputs, open/dismiss Classic Center on DP-1 and confirm DP-2 never mounts,
+  animates, or completes that transition; repeat a critical FIFO replacement and confirm the visible
+  banner content crossfades in place without restarting its popup entrance;
 - submit an AI approval and confirm Center opens directly to Expanded, advances queued requests
   in place, and collapses after the final decision;
 - with unread notifications, confirm the non-interactive Center secondary compact pill alone presents

@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Wayland
 import qs.Titonium.Bar.center
 import qs.Titonium.Core.Surfaces
+import "CenterSurfacePresentationRules.js" as PresentationRules
 
 PanelWindow {
     id: window
@@ -57,7 +58,7 @@ PanelWindow {
     }
 
     screen: window.screenModel
-    visible: window.ownsOverlay || window.dismissing || renderer.transitionActive
+    visible: window.ownsOverlay || window.dismissing
     color: "transparent"
     aboveWindows: true
     exclusiveZone: 0
@@ -106,8 +107,9 @@ PanelWindow {
         snapshot: window.snapshot
         viewState: window.viewState
         profile: window.profile
-        transitionOwner: true
-        presentationActive: window.ownsOverlay || window.dismissing || renderer.transitionActive
+        transitionOwner: PresentationRules.transitionOwner(
+            window.viewState, window.screenModel.name)
+        presentationActive: window.ownsOverlay || window.dismissing
         onIntentRequested: intent => CenterSurfaceController.dispatch(intent)
         onTransitionFinished: generation => {
             CenterSurfaceController.dispatch({ type: "transition-finished", generation: generation });

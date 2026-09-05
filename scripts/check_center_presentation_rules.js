@@ -290,6 +290,12 @@ assert.doesNotMatch(classicRenderer,
 assert.match(classicRenderer,
     /else if \(effect\.type === "emit-completion" && root\.transitionOwner\)/,
     "only the explicit Classic transition owner may emit completion");
+assert.match(classicRenderer,
+    /id:\s*bannerContextTransition[\s\S]*?target:\s*bannerContent[\s\S]*?root\.commitPendingPopupContext\(\)/,
+    "FIFO replacement must crossfade and commit the visible Classic banner layer");
+assert.doesNotMatch(classicRenderer,
+    /id:\s*bannerContextTransition[\s\S]*?target:\s*standardContent[\s\S]*?id:\s*popupEntrance/,
+    "Classic banner crossfade must not target the hidden expanded/compact layer");
 for (const [source, label] of [[renderer, "Connected"], [classicRenderer, "Classic"]])
     assert.doesNotMatch(source, /readonly property rect interactiveBounds:\s*root\.visualBounds/,
         `${label} secondary visuals must not expand the primary-only input bounds`);

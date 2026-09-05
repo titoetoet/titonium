@@ -33,8 +33,11 @@ function transition(state, event) {
     var mode = String(value.mode || "");
     var nextPopup = isPopup(mode);
     var hadPopup = isPopup(current.presentedMode);
-    var token = current.token + 1;
     var generation = Math.max(0, Number(value.generation) || 0);
+    if (nextPopup && hadPopup && mode === current.presentedMode
+            && generation === current.generation)
+        return Object.freeze({ state: current, effects: Object.freeze([]) });
+    var token = current.token + 1;
     var effects = [];
     if (current.phase === "opening" || current.phase === "closing")
         effects.push(Object.freeze({ type: "cancel-animation", token: current.token }));
@@ -100,10 +103,16 @@ function complete(state, token) {
     var current = state || initialState();
     if (Number(token) !== current.token || !current.completionPending)
         return Object.freeze({ state: current, effects: Object.freeze([]) });
-    return Object.freeze({ state: stateValue(Object.assign({}, current,
-        { phase: "idle", completionPending: false })), effects: Object.freeze([
-        Object.freeze({ type: "emit-completion", generation: current.generation })
-    ]) });
+    var closing = current.phase === "closing";
+    var completed = stateValue(Object.assign({}, current, { phase: "idle",
+        completionPending: false, presentedMode: closing ? "" : current.presentedMode,
+        presentedContextId: closing ? "" : current.presentedContextId }));
+    var effects = [];
+    if (closing)
+        effects.push(Object.freeze({ type: "normalize", opacity: 0,
+            scale: 0.96, y: -8 }));
+    effects.push(Object.freeze({ type: "emit-completion", generation: current.generation }));
+    return Object.freeze({ state: completed, effects: Object.freeze(effects) });
 }
 
 function setReducedMotion(state, reduced) {
@@ -112,7 +121,9 @@ function setReducedMotion(state, reduced) {
         return Object.freeze({ state: current, effects: Object.freeze([]) });
     var closing = current.phase === "closing";
     var normalized = stateValue(Object.assign({}, current,
-        { phase: "idle", completionPending: false }));
+        { phase: "idle", completionPending: false,
+            presentedMode: closing ? "" : current.presentedMode,
+            presentedContextId: closing ? "" : current.presentedContextId }));
     return Object.freeze({ state: normalized, effects: Object.freeze([
         Object.freeze({ type: "cancel-animation", token: current.token }),
         Object.freeze({ type: "normalize", opacity: closing ? 0 : 1,
@@ -150,4 +161,14 @@ function bannerLayout(width, height, padding) {
     return Object.freeze({ contentWidth: Math.max(0, (Number(width) || 0) - inset * 2),
         contentHeight: Math.max(0, (Number(height) || 0) - inset * 2),
         iconSize: 18, actionHeight: 28, titleLines: 1, subtitleLines: 1 });
+}
+
+function bannerContextReplacement(previousId, nextId, reducedMotion) {
+    var previous = String(previousId || "");
+    var next = String(nextId || "");
+    if (previous === next)
+        return Object.freeze({ kind: "unchanged", exitMs: 0, enterMs: 0 });
+    if (!previous || reducedMotion === true)
+        return Object.freeze({ kind: "replace", exitMs: 0, enterMs: 0 });
+    return Object.freeze({ kind: "crossfade", exitMs: 80, enterMs: 120 });
 }

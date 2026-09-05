@@ -11,6 +11,22 @@ const source = fs.readFileSync(rulesPath, "utf8").replace(/^\.pragma library\s*\
 const rules = vm.createContext({});
 vm.runInContext(source, rules, { filename: rulesPath });
 const plain = value => JSON.parse(JSON.stringify(value));
+const ownershipPath = path.join(__dirname, "..", "Titonium", "Core", "Surfaces",
+    "Center", "CenterSurfacePresentationRules.js");
+const ownershipSource = fs.readFileSync(ownershipPath, "utf8")
+    .replace(/^\.pragma library\s*\n/, "");
+const ownership = vm.createContext({});
+vm.runInContext(ownershipSource, ownership, { filename: ownershipPath });
+
+assert.equal(ownership.transitionOwner({ ownerScreenName: "DP-1",
+    exitingScreenName: "", mode: "banner" }, "DP-1"), true);
+assert.equal(ownership.transitionOwner({ ownerScreenName: "DP-1",
+    exitingScreenName: "", mode: "banner" }, "DP-2"), false);
+assert.equal(ownership.transitionOwner({ ownerScreenName: "",
+    exitingScreenName: "DP-1", mode: "closed" }, "DP-1"), true);
+assert.equal(ownership.transitionOwner({ ownerScreenName: "",
+    exitingScreenName: "DP-1", mode: "closed" }, "DP-2"), false);
+console.log("PASS Classic transition ownership follows only the owning or dismissing screen");
 
 let state = rules.initialState();
 let result = rules.transition(state, {
@@ -32,6 +48,17 @@ assert.deepEqual(plain(result.effects), [{
     to: { opacity: 1, scale: 1, y: 0 },
     duration: { opacity: 150, scale: 220, y: 220 },
 }]);
+
+const openingToken = state.token;
+result = rules.transition(state, {
+    mode: "banner", generation: 4, transitionOwner: true, reducedMotion: false,
+    visual: { opacity: 0.2, scale: 0.955, y: -8 }, contextId: "critical:1",
+    deadline: 9999,
+});
+assert.equal(result.state, state);
+assert.equal(result.state.token, openingToken);
+assert.deepEqual(plain(result.effects), []);
+console.log("PASS same-generation deadline updates do not interrupt popup entrance");
 
 result = rules.transition(state, {
     mode: "expanded", generation: 5, transitionOwner: true, reducedMotion: false,
@@ -95,8 +122,44 @@ assert.deepEqual(plain(result.effects), [
     { type: "emit-completion", generation: 8 },
 ]);
 assert.equal(state.phase, "idle");
+assert.equal(state.presentedMode, "");
+assert.equal(state.presentedContextId, "");
 assert.deepEqual(plain(rules.complete(state, 5).effects), []);
 console.log("PASS mid-flight Reduced Motion normalizes and completes once");
+
+state = rules.initialState();
+result = rules.transition(state, { mode: "banner", generation: 10,
+    transitionOwner: true, reducedMotion: false, contextId: "critical:10" });
+state = rules.complete(result.state, result.state.token).state;
+result = rules.transition(state, { mode: "compact", generation: 11,
+    transitionOwner: true, reducedMotion: false,
+    visual: { opacity: 1, scale: 1, y: 0 } });
+state = rules.complete(result.state, result.state.token).state;
+assert.equal(state.presentedMode, "");
+assert.equal(state.presentedContextId, "");
+result = rules.transition(state, { mode: "banner", generation: 12,
+    transitionOwner: true, reducedMotion: false, contextId: "critical:12" });
+assert.deepEqual(plain(result.effects), [{
+    type: "animate", phase: "opening", token: 3, generation: 12,
+    from: { opacity: 0, scale: 0.94, y: -12 },
+    to: { opacity: 1, scale: 1, y: 0 },
+    duration: { opacity: 150, scale: 220, y: 220 },
+}]);
+console.log("PASS completed close clears cached presentation for a fresh visible entrance");
+
+assert.deepEqual(plain(rules.bannerContextReplacement(
+    "critical:1", "critical:2", false)), {
+    kind: "crossfade", exitMs: 80, enterMs: 120,
+});
+assert.deepEqual(plain(rules.bannerContextReplacement(
+    "critical:1", "critical:2", true)), {
+    kind: "replace", exitMs: 0, enterMs: 0,
+});
+assert.deepEqual(plain(rules.bannerContextReplacement(
+    "critical:1", "critical:1", false)), {
+    kind: "unchanged", exitMs: 0, enterMs: 0,
+});
+console.log("PASS FIFO banner context replacement crossfades only the visible banner layer");
 
 assert.deepEqual(plain(rules.transformedBounds(
     { x: 720, y: 52, width: 480, height: 72 }, 0.94, -12)), {

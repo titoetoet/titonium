@@ -23,6 +23,8 @@ FocusScope {
     property var pendingContext: null
     property var popupContext: null
     property var popupActions: []
+    property var pendingPopupContext: null
+    property var pendingPopupActions: []
     readonly property var notificationIndicator: root.snapshot.indicators.find(
         item => item.id === "notification:unread") || null
     readonly property var contextTransitionPlan:
@@ -91,6 +93,31 @@ FocusScope {
             root.intentRequested(root.deadlineIntent("pause-timeout"));
     }
     function commitPendingContext(): void { root.displayedContext = root.pendingContext; }
+    function commitPendingPopupContext(): void {
+        root.popupContext = root.pendingPopupContext;
+        root.popupActions = root.pendingPopupActions;
+    }
+    function updatePopupContext(): void {
+        if (!root.popupMode)
+            return;
+        const nextContext = root.context;
+        const nextActions = root.snapshot.capabilities.actions.filter(
+            item => nextContext && item.contextId === nextContext.id);
+        const plan = PopupRules.bannerContextReplacement(
+            root.popupContext?.id || "", nextContext?.id || "", Motion.reduced);
+        root.pendingPopupContext = nextContext;
+        root.pendingPopupActions = nextActions;
+        if (root.viewState.mode === "banner" && plan.kind === "crossfade") {
+            bannerContextTransition.stop();
+            bannerContextTransition.restart();
+        } else if (plan.kind !== "unchanged" || root.viewState.mode === "expanded") {
+            bannerContextTransition.stop();
+            root.commitPendingPopupContext();
+            bannerContent.opacity = 1;
+        } else {
+            root.popupActions = nextActions;
+        }
+    }
     function stopPopupAnimations(): void { popupEntrance.stop(); popupExit.stop(); }
     function completeToken(token: int): void {
         const result = PopupRules.complete(root.transitionState, token);
@@ -127,11 +154,7 @@ FocusScope {
         }
     }
     function updatePopupTransition(): void {
-        if (root.popupMode) {
-            root.popupContext = root.context;
-            root.popupActions = root.snapshot.capabilities.actions.filter(
-                item => root.popupContext && item.contextId === root.popupContext.id);
-        }
+        root.updatePopupContext();
         const result = PopupRules.transition(root.transitionState, {
             mode: root.viewState.mode, generation: root.viewState.generation,
             transitionOwner: root.transitionOwner, reducedMotion: Motion.reduced,
@@ -143,7 +166,20 @@ FocusScope {
         root.applyEffects(result.effects);
     }
 
-    onContextChanged: root.replaceDisplayedContext(root.context)
+    onContextChanged: {
+        if (root.popupMode) root.updatePopupContext();
+        else root.replaceDisplayedContext(root.context);
+    }
+    onTransitionOwnerChanged: {
+        if (!root.transitionOwner) {
+            root.stopPopupAnimations();
+            bannerContextTransition.stop();
+            root.transitionState = PopupRules.initialState();
+            popupPanel.opacity = 1;
+            popupPanel.scale = 1;
+            popupEntranceOffset.y = 0;
+        }
+    }
     onViewStateChanged: {
         root.updatePopupTransition();
         if (root.viewState.mode !== "banner") root.replaceDisplayedContext(root.context);
@@ -341,6 +377,14 @@ FocusScope {
         NumberAnimation { target: standardContent; property: "opacity"; from: 0; to: 1;
             duration: root.contextTransitionPlan.enterMs }
     }
+    SequentialAnimation {
+        id: bannerContextTransition
+        NumberAnimation { target: bannerContent; property: "opacity"; from: 1; to: 0;
+            duration: 80 }
+        ScriptAction { script: root.commitPendingPopupContext() }
+        NumberAnimation { target: bannerContent; property: "opacity"; from: 0; to: 1;
+            duration: 120 }
+    }
     ParallelAnimation {
         id: popupEntrance
         NumberAnimation { target: popupPanel; property: "opacity";
@@ -375,7 +419,12 @@ FocusScope {
             const result = PopupRules.setReducedMotion(root.transitionState, Motion.reduced);
             root.transitionState = result.state;
             root.applyEffects(result.effects);
-            if (Motion.reduced) root.replaceDisplayedContext(root.context);
+            if (Motion.reduced) {
+                bannerContextTransition.stop();
+                root.commitPendingPopupContext();
+                bannerContent.opacity = 1;
+                root.replaceDisplayedContext(root.context);
+            }
         }
     }
 }
