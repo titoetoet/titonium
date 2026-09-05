@@ -151,7 +151,9 @@ def main() -> int:
         "id: inputMask",
         "function refreshInputMask(): void",
         "inputMask.changed()",
-        "onOwnsOverlayChanged: window.refreshInputMask()",
+        "onOwnsOverlayChanged:",
+        "window.refreshInputMask()",
+        "window.captureClassicOpenOwner()",
         "onDismissingChanged: window.refreshInputMask()",
         "onVisualBoundsChanged: window.refreshInputMask()",
     ), errors)

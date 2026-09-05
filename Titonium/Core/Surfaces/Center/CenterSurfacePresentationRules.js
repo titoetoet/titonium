@@ -24,6 +24,17 @@ function compactExitPending(viewState, screenName, lastOwnerScreenName,
         && generation !== Math.max(0, Number(completedGeneration) || 0);
 }
 
+function classicOpenOwner(profileId, viewState, screenName) {
+    var state = viewState && typeof viewState === "object" ? viewState : {};
+    var screen = String(screenName || "");
+    var generation = Math.max(0, Number(state.generation) || 0);
+    var popup = state.mode === "banner" || state.mode === "expanded";
+    if (String(profileId || "") !== "classic" || !screen || !popup
+            || String(state.ownerScreenName || "") !== screen || generation <= 0)
+        return null;
+    return Object.freeze({ screenName: screen, generation: generation });
+}
+
 function windowPlan(profileId, viewState, screenName) {
     var state = viewState && typeof viewState === "object" ? viewState : {};
     var profile = String(profileId || "");

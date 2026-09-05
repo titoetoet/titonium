@@ -43,6 +43,16 @@ PanelWindow {
         inputMask.changed();
     }
 
+    function captureClassicOpenOwner(): void {
+        const owner = PresentationRules.classicOpenOwner(
+            window.profile.id, window.viewState, window.screenModel.name);
+        if (!owner)
+            return;
+        window.lastClassicOwnerScreenName = owner.screenName;
+        window.lastClassicOwnerGeneration = owner.generation;
+        window.completedClassicExitGeneration = 0;
+    }
+
     function closeIntent(): var {
         if (window.viewState.mode === "banner"
                 && window.viewState.dismissalPolicy === "timed") {
@@ -70,6 +80,7 @@ PanelWindow {
         window.focusLease = FocusArbiter.newLease("center");
         FocusArbiter.request(window.focusOwnerId, window.focusLease,
             window.wantsInteractiveFocus);
+        window.captureClassicOpenOwner();
     }
 
     screen: window.screenModel
@@ -91,14 +102,13 @@ PanelWindow {
         Region { item: dismissingInput }
     }
 
-    onOwnsOverlayChanged: window.refreshInputMask()
+    onOwnsOverlayChanged: {
+        window.refreshInputMask();
+        window.captureClassicOpenOwner();
+    }
+    onProfileChanged: window.captureClassicOpenOwner()
     onViewStateChanged: {
-        if (window.profile.id === "classic" && window.ownsOverlay
-                && window.viewState.ownerScreenName === window.screenModel.name) {
-            window.lastClassicOwnerScreenName = window.screenModel.name;
-            window.lastClassicOwnerGeneration = window.viewState.generation;
-            window.completedClassicExitGeneration = 0;
-        }
+        window.captureClassicOpenOwner();
     }
     onDismissingChanged: window.refreshInputMask()
     onEffectiveInputModeChanged: window.refreshInputMask()

@@ -21,6 +21,57 @@ const ownershipSource = fs.readFileSync(ownershipPath, "utf8")
 const ownership = vm.createContext({});
 vm.runInContext(ownershipSource, ownership, { filename: ownershipPath });
 
+const activatedOwner = ownership.classicOpenOwner("classic", {
+    ownerScreenName: "DP-1", mode: "expanded", generation: 70,
+}, "DP-1");
+assert.deepEqual(plain(activatedOwner), { screenName: "DP-1", generation: 70 });
+assert.equal(ownership.compactExitPending({
+    ownerScreenName: "DP-1", mode: "compact", generation: 71,
+}, "DP-1", activatedOwner.screenName, activatedOwner.generation, 0), true,
+"a popup already open when Classic activates must retain its exact close generation");
+let activatedState = rules.initialState();
+let activatedOpen = rules.transition(activatedState, {
+    mode: "expanded", generation: activatedOwner.generation,
+    transitionOwner: true, reducedMotion: false, contextId: "focus",
+});
+activatedState = rules.complete(activatedOpen.state, activatedOpen.state.token).state;
+const activatedPending = ownership.compactExitPending({
+    ownerScreenName: "DP-1", mode: "compact", generation: 71,
+}, "DP-1", activatedOwner.screenName, activatedOwner.generation, 0);
+const activatedClose = rules.transition(activatedState, {
+    mode: "compact", generation: 71, transitionOwner: activatedPending,
+    reducedMotion: false, visual: { opacity: 1, scale: 1, y: 0 },
+});
+assert.equal(activatedClose.effects[0].phase, "closing");
+const activatedCompletion = rules.complete(
+    activatedClose.state, activatedClose.state.token);
+assert.deepEqual(plain(activatedCompletion.effects), [
+    { type: "normalize", opacity: 0, scale: 0.96, y: -8 },
+    { type: "emit-completion", generation: 71 },
+]);
+assert.equal(ownership.compactExitPending({
+    ownerScreenName: "DP-1", mode: "compact", generation: 71,
+}, "DP-1", "", 0, 71), false);
+assert.equal(ownership.classicOpenOwner("classic", {
+    ownerScreenName: "DP-1", mode: "expanded", generation: 70,
+}, "DP-2"), null);
+assert.equal(ownership.classicOpenOwner("connected", {
+    ownerScreenName: "DP-1", mode: "expanded", generation: 70,
+}, "DP-1"), null);
+assert.equal(ownership.classicOpenOwner("classic", {
+    ownerScreenName: "DP-1", mode: "compact", generation: 71,
+}, "DP-1"), null);
+
+const overlaySource = fs.readFileSync(path.join(__dirname, "..", "Titonium", "Core",
+    "Surfaces", "Center", "CenterOverlayWindow.qml"), "utf8");
+assert.match(overlaySource,
+    /function captureClassicOpenOwner\(\): void[\s\S]*?PresentationRules\.classicOpenOwner\(/);
+assert.match(overlaySource, /onOwnsOverlayChanged:[\s\S]*?window\.captureClassicOpenOwner\(\)/);
+assert.match(overlaySource, /onProfileChanged:\s*window\.captureClassicOpenOwner\(\)/);
+assert.match(overlaySource,
+    /Component\.onCompleted:[\s\S]*?window\.captureClassicOpenOwner\(\)/);
+console.log("PASS Classic activation captures an already-open exact owner generation");
+
 assert.doesNotMatch(rendererSource, /popupViewportReady|shouldReconcileViewport|viewportReady/,
     "the always-mapped Classic host must not defer transitions behind native viewport remapping");
 console.log("PASS Classic popup reconciles directly inside its always-mapped host");
