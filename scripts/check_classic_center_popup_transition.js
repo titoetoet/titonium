@@ -41,6 +41,46 @@ assert.equal(ownership.compactExitPending(
     "DP-1", "DP-1", 20, 0), false);
 console.log("PASS only the exact outgoing popup owner retains compact-exit generation");
 
+let dp1State = rules.initialState();
+let dp1Open = rules.transition(dp1State, { mode: "banner", generation: 40,
+    transitionOwner: ownership.transitionOwner({ ownerScreenName: "DP-1",
+        exitingScreenName: "", mode: "banner" }, "DP-1"),
+    reducedMotion: false, contextId: "critical:40" });
+dp1State = rules.complete(dp1Open.state, dp1Open.state.token).state;
+const dp1Pending = ownership.compactExitPending({ ownerScreenName: "DP-1",
+    exitingScreenName: "", mode: "compact", generation: 41 },
+"DP-1", "DP-1", 40, 0);
+let dp1Close = rules.transition(dp1State, { mode: "compact", generation: 41,
+    transitionOwner: dp1Pending, reducedMotion: false,
+    visual: { opacity: 1, scale: 1, y: 0 } });
+assert.deepEqual(plain(dp1Close.effects), [{
+    type: "animate", phase: "closing", token: 2, generation: 41,
+    from: { opacity: 1, scale: 1, y: 0 },
+    to: { opacity: 0, scale: 0.96, y: -8 },
+    duration: { opacity: 120, scale: 130, y: 130 },
+}]);
+let dp1Completion = rules.complete(dp1Close.state, dp1Close.state.token);
+assert.deepEqual(plain(dp1Completion.effects), [
+    { type: "normalize", opacity: 0, scale: 0.96, y: -8 },
+    { type: "emit-completion", generation: 41 },
+]);
+assert.deepEqual(plain(rules.complete(dp1Completion.state, 2).effects), []);
+assert.equal(ownership.compactExitPending({ ownerScreenName: "DP-1",
+    exitingScreenName: "", mode: "compact", generation: 41 },
+"DP-1", "DP-1", 40, 41), false);
+
+const dp2State = rules.initialState();
+const dp2Pending = ownership.compactExitPending({ ownerScreenName: "DP-1",
+    exitingScreenName: "", mode: "compact", generation: 41 },
+"DP-2", "", 0, 0);
+const dp2Close = rules.transition(dp2State, { mode: "compact", generation: 41,
+    transitionOwner: dp2Pending, reducedMotion: false,
+    visual: { opacity: 1, scale: 1, y: 0 } });
+assert.equal(dp2Pending, false);
+assert.equal(dp2Close.state, dp2State);
+assert.deepEqual(plain(dp2Close.effects), []);
+console.log("PASS composed DP-1 compact exit completes once while DP-2 stays inactive");
+
 let state = rules.initialState();
 let result = rules.transition(state, {
     mode: "banner", generation: 4, transitionOwner: false, reducedMotion: false,
