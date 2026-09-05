@@ -25,6 +25,10 @@ assert.equal(state.normalizeState(true), "menu");
 assert.equal(state.menuHeight(300, 900), 332);
 assert.equal(state.menuHeight(900, 900), 440);
 assert.equal(state.menuHeight(900, 360), 360);
+assert.equal(state.menuHeight(900, 100), 100,
+    "menu height must not exceed a 100px output");
+assert.equal(state.menuHeight(900, 80), 80,
+    "menu height must not exceed an 80px output");
 assert.equal(state.menuHeight(0, 900), 120);
 assert.equal(state.menuWidth(120, 80), 240,
     "short source and menu content keep the minimum usable width");

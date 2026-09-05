@@ -106,6 +106,10 @@ assert.equal(rightPillRules.menuHeight(notificationNaturalHeight, 1080), 440,
     "Connected history must grow to the stable host cap for tall notification content");
 assert.equal(rightPillRules.menuHeight(notificationNaturalHeight, 260), 260,
     "Connected history must clamp to a short output while retaining natural content height for scrolling");
+assert.equal(rightPillRules.menuHeight(notificationNaturalHeight, 100), 100,
+    "Connected history must never exceed an extremely short output");
+assert.equal(rightPillRules.menuHeight(notificationNaturalHeight, 80), 80,
+    "Connected history must keep an 80px output usable without overflowing its host");
 assert.match(notification,
     /readonly property string ownerId:[\s\S]*?RightPillCoordinator\.connectedDescriptor\?\.feature === "notifications"[\s\S]*?RightPillCoordinator\.connectedOwnerId/,
     "Connected history may mount only for the loaded notification owner");
