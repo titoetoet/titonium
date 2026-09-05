@@ -61,6 +61,29 @@ assert.equal(ownership.compactExitPending(
     "DP-1", "DP-1", 20, 0), false);
 console.log("PASS only the exact outgoing popup owner retains compact-exit generation");
 
+// The owning overlay can receive open and close requests before its first usable
+// viewport. There is no painted popup to animate, but the retained close still
+// needs one generation-scoped completion so the overlay can release ownership.
+let deferredState = rules.initialState();
+const deferredPending = ownership.compactExitPending({ ownerScreenName: "DP-1",
+    exitingScreenName: "", mode: "compact", generation: 51 },
+"DP-1", "DP-1", 50, 0);
+let deferredClose = rules.transition(deferredState, { mode: "compact", generation: 51,
+    transitionOwner: deferredPending, reducedMotion: false });
+assert.deepEqual(plain(deferredClose.effects), [
+    { type: "emit-completion", generation: 51 },
+]);
+deferredState = deferredClose.state;
+assert.deepEqual(plain(rules.transition(deferredState, {
+    mode: "compact", generation: 51, transitionOwner: deferredPending,
+    reducedMotion: false,
+}).effects), []);
+assert.deepEqual(plain(rules.transition(rules.initialState(), {
+    mode: "compact", generation: 51, transitionOwner: false,
+    reducedMotion: false,
+}).effects), []);
+console.log("PASS viewport-deferred owned close releases once while DP-2 stays inactive");
+
 let dp1State = rules.initialState();
 let dp1Open = rules.transition(dp1State, { mode: "banner", generation: 40,
     transitionOwner: ownership.transitionOwner({ ownerScreenName: "DP-1",

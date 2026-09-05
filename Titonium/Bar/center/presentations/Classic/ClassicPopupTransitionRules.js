@@ -114,6 +114,14 @@ function transition(state, event) {
             duration: Object.freeze({ opacity: 120, scale: 130, y: 130 }) }));
         return Object.freeze({ state: closing, effects: Object.freeze(effects) });
     }
+    if (mode === "compact") {
+        if (generation === current.generation)
+            return Object.freeze({ state: current, effects: Object.freeze([]) });
+        var deferredClose = stateValue(Object.assign({}, current,
+            { token: token, generation: generation }));
+        effects.push(Object.freeze({ type: "emit-completion", generation: generation }));
+        return Object.freeze({ state: deferredClose, effects: Object.freeze(effects) });
+    }
     return Object.freeze({ state: stateValue(Object.assign({}, current,
         { token: token, generation: generation })), effects: Object.freeze(effects) });
 }
