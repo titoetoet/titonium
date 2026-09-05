@@ -28,6 +28,19 @@ assert.equal(ownership.transitionOwner({ ownerScreenName: "",
     exitingScreenName: "DP-1", mode: "closed" }, "DP-2"), false);
 console.log("PASS Classic transition ownership follows only the owning or dismissing screen");
 
+const compactExitState = { ownerScreenName: "DP-1", exitingScreenName: "",
+    mode: "compact", generation: 21 };
+assert.equal(ownership.compactExitPending(
+    compactExitState, "DP-1", "DP-1", 20, 0), true);
+assert.equal(ownership.compactExitPending(
+    compactExitState, "DP-2", "", 0, 0), false);
+assert.equal(ownership.compactExitPending(
+    compactExitState, "DP-1", "DP-1", 20, 21), false);
+assert.equal(ownership.compactExitPending(
+    { ...compactExitState, ownerScreenName: "DP-2" },
+    "DP-1", "DP-1", 20, 0), false);
+console.log("PASS only the exact outgoing popup owner retains compact-exit generation");
+
 let state = rules.initialState();
 let result = rules.transition(state, {
     mode: "banner", generation: 4, transitionOwner: false, reducedMotion: false,
@@ -146,6 +159,33 @@ assert.deepEqual(plain(result.effects), [{
     duration: { opacity: 150, scale: 220, y: 220 },
 }]);
 console.log("PASS completed close clears cached presentation for a fresh visible entrance");
+
+state = rules.initialState();
+result = rules.transition(state, { mode: "banner", generation: 30,
+    transitionOwner: true, reducedMotion: false, contextId: "critical:30" });
+state = rules.complete(result.state, result.state.token).state;
+result = rules.transition(state, { mode: "compact", generation: 31,
+    transitionOwner: ownership.compactExitPending(
+        { ownerScreenName: "DP-1", mode: "compact", generation: 31 },
+        "DP-1", "DP-1", 30, 0),
+    reducedMotion: true, visual: { opacity: 1, scale: 1, y: 0 } });
+state = result.state;
+assert.deepEqual(plain(result.effects), [
+    { type: "normalize", opacity: 0, scale: 0.96, y: -8 },
+    { type: "emit-completion", generation: 31 },
+]);
+assert.equal(state.phase, "idle");
+assert.equal(state.completionPending, false);
+assert.equal(state.presentedMode, "");
+assert.equal(state.presentedContextId, "");
+assert.deepEqual(plain(rules.complete(state, state.token).effects), []);
+result = rules.transition(state, { mode: "banner", generation: 32,
+    transitionOwner: true, reducedMotion: false, contextId: "critical:32" });
+assert.equal(result.effects[0].type, "animate");
+assert.equal(result.effects[0].phase, "opening");
+assert.deepEqual(plain(result.effects[0].from),
+    { opacity: 0, scale: 0.94, y: -12 });
+console.log("PASS reduced compact close snaps once and later reopen enters normally");
 
 assert.deepEqual(plain(rules.bannerContextReplacement(
     "critical:1", "critical:2", false)), {

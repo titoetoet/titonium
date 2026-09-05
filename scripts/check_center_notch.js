@@ -70,9 +70,12 @@ assert.match(overlay, /CenterSurfaceController\.finishClose\(/);
 assert.doesNotMatch(overlay, /transitionOwner:\s*true/,
     "overlay transition ownership must never be unconditional");
 assert.match(overlay,
-    /transitionOwner:\s*PresentationRules\.transitionOwner\([\s\S]*?window\.viewState, window\.screenModel\.name\)/);
-assert.match(overlay, /presentationActive:\s*window\.ownsOverlay \|\| window\.dismissing/);
-assert.match(overlay, /visible:\s*window\.ownsOverlay \|\| window\.dismissing/);
+    /readonly property bool classicTransitionOwner:[\s\S]*?PresentationRules\.transitionOwner\(window\.viewState, window\.screenModel\.name\)[\s\S]*?window\.classicTransitionPending/);
+assert.match(overlay, /transitionOwner:\s*window\.classicTransitionOwner/);
+assert.match(overlay,
+    /presentationActive:\s*window\.ownsOverlay \|\| window\.dismissing[\s\S]*?window\.classicTransitionPending/);
+assert.match(overlay,
+    /visible:\s*window\.ownsOverlay \|\| window\.dismissing \|\| window\.classicTransitionPending/);
 assert.match(overlay,
     /function closeIntent\(\): var[\s\S]*?window\.viewState\.mode === "banner"[\s\S]*?window\.viewState\.dismissalPolicy === "timed"[\s\S]*?type: "user-dismiss-presentation"/,
     "timed banner Escape/outside dismissal must be distinct from compact navigation");

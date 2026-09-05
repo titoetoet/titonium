@@ -23,6 +23,17 @@ PanelWindow {
         && window.viewState.focusPolicy === "exclusive"
     readonly property bool effectiveInteractiveFocus: window.wantsInteractiveFocus
         && FocusArbiter.granted(window.focusOwnerId, window.focusLease)
+    property string lastClassicOwnerScreenName: ""
+    property int lastClassicOwnerGeneration: 0
+    property int completedClassicExitGeneration: 0
+    readonly property bool classicTransitionPending:
+        window.profile.id === "classic"
+        && PresentationRules.compactExitPending(window.viewState,
+            window.screenModel.name, window.lastClassicOwnerScreenName,
+            window.lastClassicOwnerGeneration, window.completedClassicExitGeneration)
+    readonly property bool classicTransitionOwner:
+        PresentationRules.transitionOwner(window.viewState, window.screenModel.name)
+        || window.classicTransitionPending
 
     function refreshInputMask(): void {
         inputMask.changed();
@@ -58,7 +69,7 @@ PanelWindow {
     }
 
     screen: window.screenModel
-    visible: window.ownsOverlay || window.dismissing
+    visible: window.ownsOverlay || window.dismissing || window.classicTransitionPending
     color: "transparent"
     aboveWindows: true
     exclusiveZone: 0
@@ -76,6 +87,14 @@ PanelWindow {
     }
 
     onOwnsOverlayChanged: window.refreshInputMask()
+    onViewStateChanged: {
+        if (window.profile.id === "classic" && window.ownsOverlay
+                && window.viewState.ownerScreenName === window.screenModel.name) {
+            window.lastClassicOwnerScreenName = window.screenModel.name;
+            window.lastClassicOwnerGeneration = window.viewState.generation;
+            window.completedClassicExitGeneration = 0;
+        }
+    }
     onDismissingChanged: window.refreshInputMask()
     onVisualBoundsChanged: window.refreshInputMask()
 
@@ -107,11 +126,17 @@ PanelWindow {
         snapshot: window.snapshot
         viewState: window.viewState
         profile: window.profile
-        transitionOwner: PresentationRules.transitionOwner(
-            window.viewState, window.screenModel.name)
+        transitionOwner: window.classicTransitionOwner
         presentationActive: window.ownsOverlay || window.dismissing
+            || window.classicTransitionPending
         onIntentRequested: intent => CenterSurfaceController.dispatch(intent)
         onTransitionFinished: generation => {
+            if (window.classicTransitionPending
+                    && generation === window.viewState.generation) {
+                window.completedClassicExitGeneration = generation;
+                window.lastClassicOwnerScreenName = "";
+                window.lastClassicOwnerGeneration = 0;
+            }
             CenterSurfaceController.dispatch({ type: "transition-finished", generation: generation });
             if (window.dismissing)
                 CenterSurfaceController.finishClose(window.screenModel.name, generation);

@@ -81,18 +81,24 @@ function transition(state, event) {
     }
     if (hadPopup) {
         var visual = value.visual || {};
-        var closing = stateValue({ phase: value.reducedMotion === true ? "idle" : "closing",
+        if (value.reducedMotion === true) {
+            var snappedClosed = stateValue({ phase: "idle", token: token,
+                generation: generation, presentedMode: "", presentedContextId: "",
+                completionPending: false });
+            effects.push(Object.freeze({ type: "normalize", opacity: 0,
+                scale: 0.96, y: -8 }));
+            effects.push(Object.freeze({ type: "emit-completion", generation: generation }));
+            return Object.freeze({ state: snappedClosed, effects: Object.freeze(effects) });
+        }
+        var closing = stateValue({ phase: "closing",
             token: token, generation: generation, presentedMode: current.presentedMode,
             presentedContextId: current.presentedContextId, completionPending: true });
         var from = Object.freeze({ opacity: visualValue(visual.opacity, 1),
             scale: visualValue(visual.scale, 1), y: visualValue(visual.y, 0) });
-        if (value.reducedMotion === true)
-            effects.push(Object.freeze({ type: "complete", token: token, generation: generation }));
-        else
-            effects.push(Object.freeze({ type: "animate", phase: "closing", token: token,
-                generation: generation, from: from,
-                to: Object.freeze({ opacity: 0, scale: 0.96, y: -8 }),
-                duration: Object.freeze({ opacity: 120, scale: 130, y: 130 }) }));
+        effects.push(Object.freeze({ type: "animate", phase: "closing", token: token,
+            generation: generation, from: from,
+            to: Object.freeze({ opacity: 0, scale: 0.96, y: -8 }),
+            duration: Object.freeze({ opacity: 120, scale: 130, y: 130 }) }));
         return Object.freeze({ state: closing, effects: Object.freeze(effects) });
     }
     return Object.freeze({ state: stateValue(Object.assign({}, current,
