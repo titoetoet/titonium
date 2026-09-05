@@ -35,8 +35,15 @@ function transition(state, event) {
     var hadPopup = isPopup(current.presentedMode);
     var generation = Math.max(0, Number(value.generation) || 0);
     if (nextPopup && hadPopup && mode === current.presentedMode
-            && generation === current.generation)
-        return Object.freeze({ state: current, effects: Object.freeze([]) });
+            && current.phase !== "closing") {
+        if (generation <= current.generation)
+            return Object.freeze({ state: current, effects: Object.freeze([]) });
+        var rebased = stateValue(Object.assign({}, current, {
+            generation: generation,
+            presentedContextId: value.contextId,
+        }));
+        return Object.freeze({ state: rebased, effects: Object.freeze([]) });
+    }
     var token = current.token + 1;
     var effects = [];
     if (current.phase === "opening" || current.phase === "closing")

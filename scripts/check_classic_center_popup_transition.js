@@ -194,21 +194,50 @@ assert.deepEqual(plain(result.effects), []);
 console.log("PASS same-generation deadline updates do not interrupt popup entrance");
 
 result = rules.transition(state, {
-    mode: "expanded", generation: 5, transitionOwner: true, reducedMotion: false,
+    mode: "banner", generation: 5, transitionOwner: true, reducedMotion: false,
+    visual: { opacity: 0.2, scale: 0.955, y: -8 }, contextId: "critical:2",
+});
+state = result.state;
+assert.equal(state.phase, "opening");
+assert.equal(state.token, openingToken);
+assert.equal(state.generation, 5);
+assert.equal(state.presentedContextId, "critical:2");
+assert.deepEqual(plain(result.effects), []);
+result = rules.complete(state, openingToken);
+state = result.state;
+assert.deepEqual(plain(result.effects), [
+    { type: "emit-completion", generation: 5 },
+]);
+assert.deepEqual(plain(rules.complete(state, openingToken).effects), []);
+console.log("PASS same-mode generation rebase preserves entrance and completes newest once");
+
+result = rules.transition(state, {
+    mode: "banner", generation: 6, transitionOwner: true, reducedMotion: false,
+    visual: { opacity: 1, scale: 1, y: 0 }, contextId: "critical:3",
+});
+state = result.state;
+assert.equal(state.phase, "idle");
+assert.equal(state.token, openingToken);
+assert.equal(state.generation, 6);
+assert.equal(state.presentedContextId, "critical:3");
+assert.deepEqual(plain(result.effects), []);
+console.log("PASS same-mode idle generation rebase preserves visible popup");
+
+result = rules.transition(state, {
+    mode: "expanded", generation: 7, transitionOwner: true, reducedMotion: false,
     visual: { opacity: 0.43, scale: 0.972, y: -5 }, contextId: "approval:1",
 });
 state = result.state;
 assert.equal(state.presentedMode, "expanded");
 assert.equal(state.presentedContextId, "approval:1");
 assert.deepEqual(plain(result.effects), [
-    { type: "cancel-animation", token: 1 },
-    { type: "complete", token: 2, generation: 5 },
+    { type: "complete", token: 2, generation: 7 },
 ]);
 assert.deepEqual(plain(rules.complete(state, 1).effects), [],
     "superseded opening callbacks must be stale");
 result = rules.complete(state, 2);
 state = result.state;
-assert.deepEqual(plain(result.effects), [{ type: "emit-completion", generation: 5 }]);
+assert.deepEqual(plain(result.effects), [{ type: "emit-completion", generation: 7 }]);
 assert.deepEqual(plain(rules.complete(state, 2).effects), [],
     "one transition token must complete exactly once");
 console.log("PASS popup-to-popup replacement completes its immutable generation exactly once");
