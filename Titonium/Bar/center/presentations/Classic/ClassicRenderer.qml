@@ -178,7 +178,8 @@ FocusScope {
             popupPanel.opacity = 1;
             popupPanel.scale = 1;
             popupEntranceOffset.y = 0;
-        }
+        } else
+            root.updatePopupTransition();
     }
     onViewStateChanged: {
         root.updatePopupTransition();

@@ -13,6 +13,7 @@ const compact = read("Titonium/Core/Surfaces/Center/CenterCompactWindow.qml");
 const overlay = read("Titonium/Core/Surfaces/Center/CenterOverlayWindow.qml");
 const renderer = read("Titonium/Bar/center/CenterRenderer.qml");
 const connected = read("Titonium/Bar/center/presentations/Connected/ConnectedRenderer.qml");
+const classic = read("Titonium/Bar/center/presentations/Classic/ClassicRenderer.qml");
 
 assert.match(controller, /readonly property string mode:/);
 assert.match(controller, /readonly property string selectedContextId:/);
@@ -94,6 +95,9 @@ assert.match(renderer, /required property bool presentationActive/);
 assert.match(renderer,
     /transitionOwner:\s*root\.transitionOwner && root\.profile\.id === "classic"/,
     "inactive Classic renderers must never receive transition ownership");
+assert.match(classic,
+    /onTransitionOwnerChanged:\s*\{[\s\S]*?if \(!root\.transitionOwner\)[\s\S]*?else\s+root\.updatePopupTransition\(\)/,
+    "Classic popup must reconcile a view-state update deferred until ownership becomes active");
 
 const router = read("Titonium/Orchestration/SurfaceRouter.qml");
 assert.match(router, /function automaticCenterPresentationAvailable\(\): bool/);
