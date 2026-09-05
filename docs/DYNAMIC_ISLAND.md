@@ -61,8 +61,9 @@ detached overlay shell. The panel marks history read only after it has mounted; 
 releases its owner, while stale or monitor-loss cleanup cannot close a newer panel. Standard actions,
 per-item dismissal and clear-all are user-only panel intents.
 
-The non-interactive Center secondary compact pill is the only notification bell presentation. It may
-show the unread bell and a bounded wobble when unread count increases; Reduced Motion removes that
+The non-interactive Center secondary compact pill is the only notification bell presentation. It is
+visually detached from the primary pill by an 8dp gap with four rounded corners. It may show the
+unread bell and a bounded wobble when unread count increases; Reduced Motion removes that
 motion without changing notification state. It is presentation data, not a satellite lifecycle mode,
 and does not redesign or change the behavior of the current primary pill. The critical FIFO Center
 banner path above remains unchanged.

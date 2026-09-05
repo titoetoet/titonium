@@ -84,7 +84,8 @@ For the themed Notification Center review, verify in Classic that compact, banne
 Center never show shoulders. In both styles, verify the rightmost Topbar control remains the fixed
 non-bell history glyph across unread changes, and that a new unread notification presents the bell
 and any wobble only in the non-interactive Center secondary pill. The primary pill must remain
-behaviorally unchanged and Center must not gain a satellite mode. In Connected, open history from
+behaviorally unchanged; the secondary pill must sit outside it with an 8dp gap and four rounded
+corners, and Center must not gain a satellite mode. In Connected, open history from
 that exact control and verify one continuous right-pill chassis; in Classic, verify the detached
 overlay. Check same-control, outside-click, and Escape close paths; switch styles while it is open
 to confirm no ghost surface or stale input mask remains; then enable Reduced Motion and confirm state

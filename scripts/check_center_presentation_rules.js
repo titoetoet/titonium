@@ -92,9 +92,9 @@ assert.equal(typeof rules.combinedVisualBounds, "function",
     "Center presentation rules must expose visible-secondary bounds composition");
 assert.deepEqual(plain(rules.combinedVisualBounds(
     { x: 850, y: 0, width: 220, height: 32 },
-    { x: 1070, y: 0, width: 52, height: 32 }, true)),
-{ x: 850, y: 0, width: 272, height: 32 },
-"Connected visual bounds must include the joined visible secondary pill");
+    { x: 1078, y: 0, width: 52, height: 32 }, true)),
+{ x: 850, y: 0, width: 280, height: 32 },
+"Connected visual bounds must include the detached visible secondary pill and gap");
 assert.deepEqual(plain(rules.combinedVisualBounds(
     { x: 850, y: 8, width: 220, height: 36 },
     { x: 1078, y: 8, width: 52, height: 36 }, true)),
@@ -224,7 +224,11 @@ for (const fragment of [
     'item => item.id === "notification:unread"',
     "indicator: root.notificationIndicator",
     "rendererVisible: root.visible",
-    "x: shape.x + shape.width",
+    "x: shape.x + shape.width + Metrics.spacingSmall",
+    "topLeftRadius: root.profile.compact.radius",
+    "bottomLeftRadius: root.profile.compact.radius",
+    "topRightRadius: root.profile.compact.radius",
+    "bottomRightRadius: root.profile.compact.radius",
     "readonly property rect primaryVisualBounds:",
     "PresentationRules.combinedVisualBounds(root.primaryVisualBounds,",
     "secondaryPill.visualBounds, secondaryPill.visible)",

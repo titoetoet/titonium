@@ -190,15 +190,15 @@ FocusScope {
 
     CenterSecondaryPill {
         id: secondaryPill
-        x: shape.x + shape.width
+        x: shape.x + shape.width + Metrics.spacingSmall
         y: shape.y
         width: implicitWidth
         height: root.profile.compact.height
         indicator: root.notificationIndicator
         rendererVisible: root.visible && root.viewState.mode === "compact"
         backgroundColor: Theme.light ? "#ffffff" : "#000000"
-        topLeftRadius: 0
-        bottomLeftRadius: 0
+        topLeftRadius: root.profile.compact.radius
+        bottomLeftRadius: root.profile.compact.radius
         topRightRadius: root.profile.compact.radius
         bottomRightRadius: root.profile.compact.radius
     }

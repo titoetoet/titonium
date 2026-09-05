@@ -3,8 +3,15 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
+const vm = require("node:vm");
 
 const root = path.join(__dirname, "..");
+const rightPillRulesPath = path.join(root, "Titonium", "Bar", "right",
+    "RightPillState.js");
+const rightPillRules = vm.createContext({ Math, Number });
+vm.runInContext(fs.readFileSync(rightPillRulesPath, "utf8")
+    .replace(/^\.pragma library\s*\n/, ""), rightPillRules,
+{ filename: rightPillRulesPath });
 const contents = [
     ["Network", "ConnectedNetworkPopupContent.qml"],
     ["Bluetooth", "ConnectedBluetoothPopupContent.qml"],
@@ -88,6 +95,17 @@ for (const fragment of [
     "Component.onDestruction: root.teardownPanelMount()",
 ]) assert.equal(notification.includes(fragment), true,
     `${notificationRelative} must expose ${fragment}`);
+assert.match(notification,
+    /readonly property real implicitContentHeight:\s*historyContent\.implicitContentHeight \+ 32/,
+    "Connected notification natural height must not depend on the animated branch viewport");
+assert.doesNotMatch(notification,
+    /implicitContentHeight:\s*Math\.min\([\s\S]*?availableViewportHeight/,
+    "Connected notification implicit height must not feed the current branch height back into host geometry");
+const notificationNaturalHeight = 508;
+assert.equal(rightPillRules.menuHeight(notificationNaturalHeight, 1080), 440,
+    "Connected history must grow to the stable host cap for tall notification content");
+assert.equal(rightPillRules.menuHeight(notificationNaturalHeight, 260), 260,
+    "Connected history must clamp to a short output while retaining natural content height for scrolling");
 assert.match(notification,
     /readonly property string ownerId:[\s\S]*?RightPillCoordinator\.connectedDescriptor\?\.feature === "notifications"[\s\S]*?RightPillCoordinator\.connectedOwnerId/,
     "Connected history may mount only for the loaded notification owner");

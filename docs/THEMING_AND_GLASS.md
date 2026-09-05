@@ -28,10 +28,11 @@ resting, hover or selected background; state is communicated through its glyph a
 rightmost Notification Center control is always present in both Bar styles and retains its fixed
 non-bell `history` glyph; only its unread badge is conditional. It never wobbles.
 
-The non-interactive Center secondary compact pill is the only notification bell presentation. When
-unread count increases it may run at most three wobble cycles; Reduced Motion suppresses that motion
-without changing the unread presentation. This is a compact presentation detail, not a satellite
-lifecycle mode, and it does not redesign or change the behavior of the current primary pill.
+The non-interactive Center secondary compact pill is the only notification bell presentation. It
+sits outside the primary Center pill with an 8dp gap and its own four rounded corners. When unread
+count increases it may run at most three wobble cycles; Reduced Motion suppresses that motion without
+changing the unread presentation. This is a compact presentation detail, not a satellite lifecycle
+mode, and it does not redesign or change the behavior of the current primary pill.
 
 Both edge pills animate their displayed width toward the latest content-derived implicit width in
 220ms with `Motion.springDamped`. Rapid Window Title or unread changes retarget the same animation

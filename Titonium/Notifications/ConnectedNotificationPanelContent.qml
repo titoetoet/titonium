@@ -11,8 +11,11 @@ Item {
     property real availableViewportHeight: 440
     readonly property real implicitContentWidth:
         historyContent.implicitContentWidth + 32
-    readonly property real implicitContentHeight: Math.min(
-        root.availableViewportHeight, historyContent.implicitContentHeight + 32)
+    // Keep the requested height independent from the animated branch viewport.
+    // EdgeMenuSurface clamps the final chassis; the fill-sized history ListView
+    // provides scrolling when that stable viewport is shorter than this content.
+    readonly property real implicitContentHeight:
+        historyContent.implicitContentHeight + 32
     implicitWidth: root.implicitContentWidth
     implicitHeight: root.implicitContentHeight
     readonly property string ownerId:
