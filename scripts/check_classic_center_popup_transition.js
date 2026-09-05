@@ -11,12 +11,32 @@ const source = fs.readFileSync(rulesPath, "utf8").replace(/^\.pragma library\s*\
 const rules = vm.createContext({});
 vm.runInContext(source, rules, { filename: rulesPath });
 const plain = value => JSON.parse(JSON.stringify(value));
+const rendererPath = path.join(__dirname, "..", "Titonium", "Bar", "center",
+    "presentations", "Classic", "ClassicRenderer.qml");
+const rendererSource = fs.readFileSync(rendererPath, "utf8");
 const ownershipPath = path.join(__dirname, "..", "Titonium", "Core", "Surfaces",
     "Center", "CenterSurfacePresentationRules.js");
 const ownershipSource = fs.readFileSync(ownershipPath, "utf8")
     .replace(/^\.pragma library\s*\n/, "");
 const ownership = vm.createContext({});
 vm.runInContext(ownershipSource, ownership, { filename: ownershipPath });
+
+assert.equal(rules.viewportReady(0, 1080, 52), false);
+assert.equal(rules.viewportReady(1920, 0, 52), false);
+assert.equal(rules.viewportReady(1920, 52, 52), false);
+assert.equal(rules.viewportReady(1920, 53, 52), true);
+assert.equal(rules.shouldReconcileViewport(false, true, "expanded"), false);
+assert.equal(rules.shouldReconcileViewport(true, false, "expanded"), false);
+assert.equal(rules.shouldReconcileViewport(true, true, "closed"), false);
+assert.equal(rules.shouldReconcileViewport(true, true, "compact"), true);
+assert.equal(rules.shouldReconcileViewport(true, true, "expanded"), true);
+assert.match(rendererSource,
+    /readonly property bool popupViewportReady:\s*PopupRules\.viewportReady\(/);
+assert.match(rendererSource,
+    /function updatePopupTransition\(\): void \{\s*if \(!root\.popupViewportReady\)\s*return;/);
+assert.match(rendererSource,
+    /onPopupViewportReadyChanged:\s*\{[\s\S]*?PopupRules\.shouldReconcileViewport\([\s\S]*?root\.updatePopupTransition\(\)/);
+console.log("PASS Classic popup waits for an owned usable viewport before reconciliation");
 
 assert.equal(ownership.transitionOwner({ ownerScreenName: "DP-1",
     exitingScreenName: "", mode: "banner" }, "DP-1"), true);

@@ -20,6 +20,19 @@ function isPopup(mode) {
     return mode === "banner" || mode === "expanded";
 }
 
+function viewportReady(width, height, popupTop) {
+    var availableWidth = Number(width) || 0;
+    var availableHeight = Number(height) || 0;
+    var top = Math.max(0, Number(popupTop) || 0);
+    return availableWidth > 0 && availableHeight > top;
+}
+
+function shouldReconcileViewport(transitionOwner, ready, mode) {
+    var value = String(mode || "");
+    return transitionOwner === true && ready === true
+        && (value === "compact" || isPopup(value));
+}
+
 function visualValue(value, fallback) {
     var number = Number(value);
     return Number.isFinite(number) ? number : fallback;

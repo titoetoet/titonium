@@ -37,6 +37,8 @@ FocusScope {
     readonly property bool popupPresented: root.popupMode || root.popupClosing
     readonly property bool popupInteractive: root.popupMode && !root.popupClosing
     readonly property real popupTop: Metrics.barHeight + Metrics.barSpacing
+    readonly property bool popupViewportReady: PopupRules.viewportReady(
+        root.width, root.height, root.popupTop)
     property var transitionState: PopupRules.initialState()
     property int animationToken: 0
     property real animationOpacityFrom: 1
@@ -154,6 +156,8 @@ FocusScope {
         }
     }
     function updatePopupTransition(): void {
+        if (!root.popupViewportReady)
+            return;
         root.updatePopupContext();
         const result = PopupRules.transition(root.transitionState, {
             mode: root.viewState.mode, generation: root.viewState.generation,
@@ -184,6 +188,11 @@ FocusScope {
     onViewStateChanged: {
         root.updatePopupTransition();
         if (root.viewState.mode !== "banner") root.replaceDisplayedContext(root.context);
+    }
+    onPopupViewportReadyChanged: {
+        if (PopupRules.shouldReconcileViewport(root.transitionOwner,
+                root.popupViewportReady, root.viewState.mode))
+            root.updatePopupTransition();
     }
     Component.onCompleted: { root.replaceDisplayedContext(root.context); root.updatePopupTransition(); }
 
