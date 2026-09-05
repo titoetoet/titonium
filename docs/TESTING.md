@@ -305,6 +305,14 @@ After the focused fixture (or its safe skip), manually verify the assigned Titon
 - secondary-click Center and confirm Connected contextual banners morph from the compact pill,
   while Classic banners appear as detached top-centered popups with the Wi-Fi/Bluetooth gap,
   surface color, padding, outline, and entrance/exit motion;
+- while a Classic popup opens, close and immediately reopen it; confirm opacity, scale, and
+  translation reverse from their current painted values with no jump, duplicate completion, or
+  stale Center teardown;
+- toggle Reduced Motion during both Classic entrance and exit; confirm motion stops immediately,
+  the popup lands on the correct endpoint, and Center remains responsive;
+- on a short output, confirm the Classic popup height clamps below the Topbar gap; during animation,
+  confirm outside-click follows the transformed painted bounds and the 72px banner keeps title,
+  subtitle, and actions inside its single padded row;
 - submit an AI approval and confirm Center opens directly to Expanded, advances queued requests
   in place, and collapses after the final decision;
 - with unread notifications, confirm the non-interactive Center secondary compact pill alone presents

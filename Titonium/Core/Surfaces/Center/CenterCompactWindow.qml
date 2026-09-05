@@ -50,6 +50,8 @@ PanelWindow {
         snapshot: window.snapshot
         viewState: window.viewState
         profile: window.profile
+        transitionOwner: false
+        presentationActive: window.ownsCompact
         onIntentRequested: intent => CenterSurfaceController.dispatch(intent)
         onTransitionFinished: generation => CenterSurfaceController.dispatch({
             type: "transition-finished", generation: generation })

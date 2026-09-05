@@ -58,12 +58,22 @@ assert.match(host,
     /Component\.onDestruction:[\s\S]*?CenterSurfaceController\.ownerScreenName === root\.screenModel\.name[\s\S]*?type: "surface-revoked"/,
     "losing the eligible Center host must revoke automatic presentation availability");
 assert.match(compact, /WlrLayershell\.keyboardFocus: WlrKeyboardFocus\.None/);
+assert.match(compact, /transitionOwner:\s*false/,
+    "compact Center window must never own Classic popup transitions");
+assert.match(compact, /presentationActive:\s*window\.ownsCompact/);
 assert.match(compact,
     /mask: Region \{[\s\S]*?id: inputMask[\s\S]*?Region \{ item: inputRegion \}[\s\S]*?\}/);
 assert.match(compact, /x: renderer\.interactiveBounds\.x/);
 assert.match(overlay,
     /window\.viewState\.focusPolicy === "exclusive"[\s\S]*?WlrKeyboardFocus\.Exclusive/);
 assert.match(overlay, /CenterSurfaceController\.finishClose\(/);
+assert.match(overlay, /transitionOwner:\s*true/,
+    "overlay Center window must be the sole Classic popup transition owner");
+assert.match(overlay,
+    /presentationActive:\s*window\.ownsOverlay \|\| window\.dismissing \|\| renderer\.transitionActive/);
+assert.match(overlay,
+    /visible:\s*window\.ownsOverlay \|\| window\.dismissing \|\| renderer\.transitionActive/,
+    "overlay window must remain mounted through the detached Classic exit");
 assert.match(overlay,
     /function closeIntent\(\): var[\s\S]*?window\.viewState\.mode === "banner"[\s\S]*?window\.viewState\.dismissalPolicy === "timed"[\s\S]*?type: "user-dismiss-presentation"/,
     "timed banner Escape/outside dismissal must be distinct from compact navigation");
@@ -77,6 +87,11 @@ assert.match(connected, /required property var viewState/);
 assert.match(connected, /required property var profile/);
 assert.match(connected, /signal intentRequested\(var intent\)/);
 assert.match(connected, /type: "invoke-action"/);
+assert.match(renderer, /required property bool transitionOwner/);
+assert.match(renderer, /required property bool presentationActive/);
+assert.match(renderer,
+    /transitionOwner:\s*root\.transitionOwner && root\.profile\.id === "classic"/,
+    "inactive Classic renderers must never receive transition ownership");
 
 const router = read("Titonium/Orchestration/SurfaceRouter.qml");
 assert.match(router, /function automaticCenterPresentationAvailable\(\): bool/);

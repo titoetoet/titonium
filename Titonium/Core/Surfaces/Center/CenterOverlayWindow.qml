@@ -57,7 +57,7 @@ PanelWindow {
     }
 
     screen: window.screenModel
-    visible: window.ownsOverlay || window.dismissing
+    visible: window.ownsOverlay || window.dismissing || renderer.transitionActive
     color: "transparent"
     aboveWindows: true
     exclusiveZone: 0
@@ -106,6 +106,8 @@ PanelWindow {
         snapshot: window.snapshot
         viewState: window.viewState
         profile: window.profile
+        transitionOwner: true
+        presentationActive: window.ownsOverlay || window.dismissing || renderer.transitionActive
         onIntentRequested: intent => CenterSurfaceController.dispatch(intent)
         onTransitionFinished: generation => {
             CenterSurfaceController.dispatch({ type: "transition-finished", generation: generation });

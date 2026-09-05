@@ -273,9 +273,9 @@ for (const fragment of [
     "id: popupEntranceOffset",
     "id: popupEntrance",
     "id: popupExit",
-    "PresentationRules.classicPopupMotion",
-    "property int transitionGeneration",
-    "root.transitionFinished(root.transitionGeneration)",
+    "PopupRules.transition",
+    "PopupRules.complete",
+    "required property bool transitionOwner",
     "rendererVisible: root.visible && root.viewState.mode === \"compact\"",
     "&& !root.popupClosing",
 ])
@@ -288,11 +288,8 @@ assert.doesNotMatch(classicRenderer,
     /Behavior on (width|height)/,
     "Classic must not morph popup geometry from the compact pill");
 assert.match(classicRenderer,
-    /function beginPopupExit\(generation: int\): void[\s\S]*?root\.transitionGeneration = generation[\s\S]*?popupExit\.restart\(\)/,
-    "Classic close must capture the controller generation before its detached exit");
-assert.match(classicRenderer,
-    /NumberAnimation\s*\{[\s\S]*?target:\s*popupPanel[\s\S]*?property:\s*"opacity"[\s\S]*?duration:\s*root\.closeMotion\.opacityMs/,
-    "Classic popup close must use the shared popup opacity timing");
+    /else if \(effect\.type === "emit-completion" && root\.transitionOwner\)/,
+    "only the explicit Classic transition owner may emit completion");
 for (const [source, label] of [[renderer, "Connected"], [classicRenderer, "Classic"]])
     assert.doesNotMatch(source, /readonly property rect interactiveBounds:\s*root\.visualBounds/,
         `${label} secondary visuals must not expand the primary-only input bounds`);
