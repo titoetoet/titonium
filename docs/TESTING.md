@@ -91,6 +91,11 @@ to confirm no ghost surface or stale input mask remains; then enable Reduced Mot
 remains unchanged while transition motion is removed. The critical FIFO Center-banner path is
 unchanged.
 
+For Classic Center, also verify the compact pill remains visible while a banner or expanded popup
+is open and that repeated compact ↔ popup transitions do not create, destroy, or remap a native
+Center window. Compact input must be limited to the combined pill bounds; an active popup uses
+fullscreen input only for outside dismissal, and closing input is limited to still-painted content.
+
 ## Native Dock + Bluetooth handoff (Task 8)
 
 The implementation has static contracts and read-only acceptance seams. The controller completed

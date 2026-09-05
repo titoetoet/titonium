@@ -14,6 +14,7 @@ FocusScope {
     required property var snapshot
     required property var viewState
     required property var profile
+    required property bool presentationActive
     required property bool transitionOwner
     signal intentRequested(var intent)
     signal transitionFinished(int generation)
@@ -37,8 +38,6 @@ FocusScope {
     readonly property bool popupPresented: root.popupMode || root.popupClosing
     readonly property bool popupInteractive: root.popupMode && !root.popupClosing
     readonly property real popupTop: Metrics.barHeight + Metrics.barSpacing
-    readonly property bool popupViewportReady: PopupRules.viewportReady(
-        root.width, root.height, root.popupTop)
     property var transitionState: PopupRules.initialState()
     property int animationToken: 0
     property real animationOpacityFrom: 1
@@ -64,17 +63,23 @@ FocusScope {
     readonly property var paintedPopupBounds: PopupRules.transformedBounds({
         x: popupPanel.x, y: popupPanel.y, width: popupPanel.width, height: popupPanel.height,
     }, popupPanel.scale, popupEntranceOffset.y)
-    readonly property rect primaryVisualBounds: root.popupPresented
-        ? Qt.rect(root.paintedPopupBounds.x, root.paintedPopupBounds.y,
-            root.paintedPopupBounds.width, root.paintedPopupBounds.height)
-        : Qt.rect(classicBody.x, classicBody.y, classicBody.width, classicBody.height)
-    readonly property var composedVisualBounds:
-        PresentationRules.combinedVisualBounds(root.primaryVisualBounds,
+    readonly property rect compactPrimaryBounds: Qt.rect(
+        classicBody.x, classicBody.y, classicBody.width, classicBody.height)
+    readonly property var composedCompactBounds:
+        PresentationRules.combinedVisualBounds(root.compactPrimaryBounds,
             secondaryPill.visualBounds, secondaryPill.visible)
+    readonly property rect popupVisualBounds: Qt.rect(
+        root.paintedPopupBounds.x, root.paintedPopupBounds.y,
+        root.paintedPopupBounds.width, root.paintedPopupBounds.height)
+    readonly property var composedVisualBounds: root.popupPresented
+        ? PresentationRules.combinedVisualBounds(root.composedCompactBounds,
+            root.popupVisualBounds, true) : root.composedCompactBounds
     readonly property rect visualBounds: Qt.rect(root.composedVisualBounds.x,
         root.composedVisualBounds.y, root.composedVisualBounds.width,
         root.composedVisualBounds.height)
-    readonly property rect interactiveBounds: root.primaryVisualBounds
+    readonly property rect interactiveBounds: Qt.rect(root.composedCompactBounds.x,
+        root.composedCompactBounds.y, root.composedCompactBounds.width,
+        root.composedCompactBounds.height)
 
     function deadlineIntent(type: string): var {
         return { type: type, generation: root.viewState.generation,
@@ -156,8 +161,6 @@ FocusScope {
         }
     }
     function updatePopupTransition(): void {
-        if (!root.popupViewportReady)
-            return;
         root.updatePopupContext();
         const result = PopupRules.transition(root.transitionState, {
             mode: root.viewState.mode, generation: root.viewState.generation,
@@ -189,16 +192,11 @@ FocusScope {
         root.updatePopupTransition();
         if (root.viewState.mode !== "banner") root.replaceDisplayedContext(root.context);
     }
-    onPopupViewportReadyChanged: {
-        if (PopupRules.shouldReconcileViewport(root.transitionOwner,
-                root.popupViewportReady, root.viewState.mode))
-            root.updatePopupTransition();
-    }
     Component.onCompleted: { root.replaceDisplayedContext(root.context); root.updatePopupTransition(); }
 
     Shared.Surface {
         id: classicBody
-        visible: !root.popupPresented
+        visible: root.presentationActive
         anchors.top: parent.top
         anchors.topMargin: root.profile.compact.inset
         anchors.horizontalCenter: parent.horizontalCenter
@@ -210,7 +208,7 @@ FocusScope {
     }
     Shared.Panel {
         id: popupPanel
-        visible: root.popupPresented
+        visible: root.presentationActive && root.popupPresented
         anchors.top: parent.top
         anchors.topMargin: root.popupTop
         anchors.horizontalCenter: parent.horizontalCenter
@@ -227,13 +225,12 @@ FocusScope {
 
     Item {
         id: standardContent
-        parent: root.displayedPopupMode === "expanded"
-            ? popupPanel.contentItem : classicBody.contentItem
+        parent: classicBody.contentItem
         anchors.fill: parent
-        visible: !root.popupPresented || root.displayedPopupMode === "expanded"
+        visible: root.presentationActive
         ColumnLayout {
             anchors.centerIn: parent
-            width: root.popupPresented ? parent.width : Math.max(0, parent.width - 32)
+            width: Math.max(0, parent.width - 32)
             spacing: Metrics.spacingSmall
             Item {
                 id: standardActivation
@@ -247,33 +244,53 @@ FocusScope {
                         Layout.fillWidth: true
                         Shared.SystemIcon {
                             Layout.preferredWidth: 18; Layout.preferredHeight: 18
-                            sourceName: (root.popupPresented ? root.popupContext
-                                : root.displayedContext)?.icon || ""
-                            fallbackName: (root.popupPresented ? root.popupContext
-                                : root.displayedContext)?.icon || "center_focus_strong"
+                            sourceName: root.displayedContext?.icon || ""
+                            fallbackName: root.displayedContext?.icon || "center_focus_strong"
                             size: 18
                         }
                         Shared.TextLabel {
                             Layout.fillWidth: true
-                            text: (root.popupPresented ? root.popupContext
-                                : root.displayedContext)?.title || I18n.tr("menubar.center.title")
+                            text: root.displayedContext?.title || I18n.tr("menubar.center.title")
                             elide: Text.ElideRight
                             horizontalAlignment: Text.AlignHCenter
                         }
                     }
-                    Shared.TextLabel {
-                        Layout.fillWidth: true
-                        visible: root.popupPresented
-                            && ((root.popupContext?.subtitle || "").length > 0)
-                        text: root.popupContext?.subtitle || ""
-                        variant: "caption"; tone: "secondary"
-                        horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight
-                    }
                 }
+            }
+        }
+    }
+
+    Item {
+        id: expandedContent
+        parent: popupPanel.contentItem
+        anchors.fill: parent
+        visible: root.popupPresented && root.displayedPopupMode === "expanded"
+        ColumnLayout {
+            anchors.centerIn: parent
+            width: parent.width
+            spacing: Metrics.spacingSmall
+            Shared.SystemIcon {
+                Layout.alignment: Qt.AlignHCenter
+                Layout.preferredWidth: 18; Layout.preferredHeight: 18
+                sourceName: root.popupContext?.icon || ""
+                fallbackName: root.popupContext?.icon || "center_focus_strong"
+                size: 18
+            }
+            Shared.TextLabel {
+                Layout.fillWidth: true
+                text: root.popupContext?.title || I18n.tr("menubar.center.title")
+                elide: Text.ElideRight
+                horizontalAlignment: Text.AlignHCenter
+            }
+            Shared.TextLabel {
+                Layout.fillWidth: true
+                visible: (root.popupContext?.subtitle || "").length > 0
+                text: root.popupContext?.subtitle || ""
+                variant: "caption"; tone: "secondary"
+                horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight
             }
             RowLayout {
                 Layout.alignment: Qt.AlignHCenter
-                visible: root.popupPresented && root.popupActions.length > 0
                 spacing: Metrics.spacingSmall
                 Repeater {
                     model: root.popupActions
@@ -341,10 +358,10 @@ FocusScope {
 
     TapHandler {
         parent: standardActivation
-        enabled: !root.popupClosing
+        enabled: root.presentationActive && root.viewState.mode === "compact"
         gesturePolicy: TapHandler.ReleaseWithinBounds
         onTapped: root.intentRequested({ type: "request-mode",
-            mode: root.viewState.mode === "expanded" ? "compact" : "expanded" })
+            mode: "expanded" })
     }
     TapHandler {
         parent: bannerActivation
@@ -370,7 +387,7 @@ FocusScope {
         width: implicitWidth
         height: root.profile.compact.height
         indicator: root.notificationIndicator
-        rendererVisible: root.visible && root.viewState.mode === "compact"
+        rendererVisible: root.presentationActive && root.viewState.mode === "compact"
             && !root.popupClosing
         backgroundColor: Theme.light ? "#ffffff" : "#000000"
         topLeftRadius: root.profile.compact.radius

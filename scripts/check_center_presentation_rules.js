@@ -254,12 +254,12 @@ assert.match(classicRenderer, /CenterSecondaryPill\s*\{/,
 for (const fragment of [
     'item => item.id === "notification:unread"',
     "indicator: root.notificationIndicator",
-    "rendererVisible: root.visible",
+    "rendererVisible: root.presentationActive",
     "x: classicBody.x + classicBody.width + Metrics.spacingSmall",
-    "readonly property rect primaryVisualBounds:",
-    "PresentationRules.combinedVisualBounds(root.primaryVisualBounds,",
+    "readonly property rect compactPrimaryBounds:",
+    "PresentationRules.combinedVisualBounds(root.compactPrimaryBounds,",
     "secondaryPill.visualBounds, secondaryPill.visible)",
-    "readonly property rect interactiveBounds: root.primaryVisualBounds",
+    "readonly property rect interactiveBounds: Qt.rect(root.composedCompactBounds.x,",
 ])
     assert.ok(classicRenderer.includes(fragment),
         `Classic secondary-pill composition missing: ${fragment}`);
@@ -276,8 +276,7 @@ for (const fragment of [
     "PopupRules.transition",
     "PopupRules.complete",
     "required property bool transitionOwner",
-    "rendererVisible: root.visible && root.viewState.mode === \"compact\"",
-    "&& !root.popupClosing",
+    "rendererVisible: root.presentationActive && root.viewState.mode === \"compact\"",
 ])
     assert.ok(classicRenderer.includes(fragment),
         `Classic detached popup contract missing: ${fragment}`);
@@ -296,9 +295,8 @@ assert.match(classicRenderer,
 assert.doesNotMatch(classicRenderer,
     /id:\s*bannerContextTransition[\s\S]*?target:\s*standardContent[\s\S]*?id:\s*popupEntrance/,
     "Classic banner crossfade must not target the hidden expanded/compact layer");
-for (const [source, label] of [[renderer, "Connected"], [classicRenderer, "Classic"]])
-    assert.doesNotMatch(source, /readonly property rect interactiveBounds:\s*root\.visualBounds/,
-        `${label} secondary visuals must not expand the primary-only input bounds`);
+assert.doesNotMatch(renderer, /readonly property rect interactiveBounds:\s*root\.visualBounds/,
+    "Connected secondary visuals must not expand the primary-only input bounds");
 console.log("PASS Classic renderer keeps the neutral contract without Connected shoulders");
 
 const topbarBell = fs.readFileSync(path.join(root, "Titonium", "Bar", "widgets",

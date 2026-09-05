@@ -3,6 +3,7 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
+const vm = require("node:vm");
 
 const root = path.join(__dirname, "..");
 const read = relative => fs.readFileSync(path.join(root, relative), "utf8");
@@ -14,6 +15,36 @@ const overlay = read("Titonium/Core/Surfaces/Center/CenterOverlayWindow.qml");
 const renderer = read("Titonium/Bar/center/CenterRenderer.qml");
 const connected = read("Titonium/Bar/center/presentations/Connected/ConnectedRenderer.qml");
 const classic = read("Titonium/Bar/center/presentations/Classic/ClassicRenderer.qml");
+const presentationRulesSource = read(
+    "Titonium/Core/Surfaces/Center/CenterSurfacePresentationRules.js")
+    .replace(/^\.pragma library\s*\n/, "");
+const presentationRules = vm.createContext({});
+vm.runInContext(presentationRulesSource, presentationRules);
+
+assert.deepEqual(JSON.parse(JSON.stringify(presentationRules.windowPlan("classic", {
+    ownerScreenName: "DP-1", exitingScreenName: "", mode: "compact",
+}, "DP-1"))), {
+    compactMapped: false, overlayMapped: true, presentationActive: true,
+    popupActive: false, inputMode: "compact", focusActive: false,
+}, "Classic compact must live in the always-mapped overlay host");
+assert.deepEqual(JSON.parse(JSON.stringify(presentationRules.windowPlan("classic", {
+    ownerScreenName: "DP-1", exitingScreenName: "", mode: "expanded",
+}, "DP-1"))), {
+    compactMapped: false, overlayMapped: true, presentationActive: true,
+    popupActive: true, inputMode: "fullscreen", focusActive: true,
+}, "Classic popup must keep the same native host and expand only its input mask");
+assert.deepEqual(JSON.parse(JSON.stringify(presentationRules.windowPlan("classic", {
+    ownerScreenName: "DP-1", exitingScreenName: "", mode: "expanded",
+}, "DP-2"))), {
+    compactMapped: false, overlayMapped: true, presentationActive: false,
+    popupActive: false, inputMode: "none", focusActive: false,
+}, "a non-owner Classic host must stay mapped but expose no content, input, or focus");
+assert.deepEqual(JSON.parse(JSON.stringify(presentationRules.windowPlan("connected", {
+    ownerScreenName: "DP-1", exitingScreenName: "", mode: "compact",
+}, "DP-1"))), {
+    compactMapped: true, overlayMapped: false, presentationActive: true,
+    popupActive: false, inputMode: "compact", focusActive: false,
+}, "Connected compact must retain the existing split-window lifecycle");
 
 assert.match(controller, /readonly property string mode:/);
 assert.match(controller, /readonly property string selectedContextId:/);
@@ -61,7 +92,8 @@ assert.match(host,
 assert.match(compact, /WlrLayershell\.keyboardFocus: WlrKeyboardFocus\.None/);
 assert.match(compact, /transitionOwner:\s*false/,
     "compact Center window must never own Classic popup transitions");
-assert.match(compact, /presentationActive:\s*window\.ownsCompact/);
+assert.match(compact, /visible:\s*window\.windowPlan\.compactMapped/);
+assert.match(compact, /presentationActive:\s*window\.windowPlan\.presentationActive/);
 assert.match(compact,
     /mask: Region \{[\s\S]*?id: inputMask[\s\S]*?Region \{ item: inputRegion \}[\s\S]*?\}/);
 assert.match(compact, /x: renderer\.interactiveBounds\.x/);
@@ -70,13 +102,20 @@ assert.match(overlay,
 assert.match(overlay, /CenterSurfaceController\.finishClose\(/);
 assert.doesNotMatch(overlay, /transitionOwner:\s*true/,
     "overlay transition ownership must never be unconditional");
+assert.match(overlay, /visible:\s*window\.windowPlan\.overlayMapped/,
+    "Classic must keep one fullscreen native Center host mapped across all modes");
+assert.match(overlay, /width:\s*window\.effectiveInputMode === "fullscreen"/,
+    "an active Classic popup must use fullscreen input for outside dismissal");
+assert.match(overlay, /width:\s*window\.effectiveInputMode === "compact"/,
+    "Classic compact must limit input to the combined pill bounds");
+assert.match(overlay,
+    /readonly property string effectiveInputMode:\s*window\.classicTransitionPending[\s\S]*?\? "painted" : window\.windowPlan\.inputMode/,
+    "Classic exit must keep input limited to the still-painted pill and popup");
 assert.match(overlay,
     /readonly property bool classicTransitionOwner:[\s\S]*?PresentationRules\.transitionOwner\(window\.viewState, window\.screenModel\.name\)[\s\S]*?window\.classicTransitionPending/);
 assert.match(overlay, /transitionOwner:\s*window\.classicTransitionOwner/);
 assert.match(overlay,
-    /presentationActive:\s*window\.ownsOverlay \|\| window\.dismissing[\s\S]*?window\.classicTransitionPending/);
-assert.match(overlay,
-    /visible:\s*window\.ownsOverlay \|\| window\.dismissing \|\| window\.classicTransitionPending/);
+    /presentationActive:\s*window\.profile\.id === "classic"[\s\S]*?window\.windowPlan\.presentationActive \|\| window\.classicTransitionPending/);
 assert.match(overlay,
     /function closeIntent\(\): var[\s\S]*?window\.viewState\.mode === "banner"[\s\S]*?window\.viewState\.dismissalPolicy === "timed"[\s\S]*?type: "user-dismiss-presentation"/,
     "timed banner Escape/outside dismissal must be distinct from compact navigation");
@@ -95,6 +134,12 @@ assert.match(renderer, /required property bool presentationActive/);
 assert.match(renderer,
     /transitionOwner:\s*root\.transitionOwner && root\.profile\.id === "classic"/,
     "inactive Classic renderers must never receive transition ownership");
+assert.match(classic, /visible:\s*root\.presentationActive/,
+    "a non-owner Classic host must not paint Center content");
+assert.match(classic, /id:\s*classicBody[\s\S]*?visible:\s*root\.presentationActive/,
+    "the Classic pill must remain painted while its detached popup is open");
+assert.match(classic, /readonly property rect interactiveBounds:[\s\S]*?composedCompactBounds/,
+    "Classic compact input must include its complete pill composition");
 assert.match(classic,
     /onTransitionOwnerChanged:\s*\{[\s\S]*?if \(!root\.transitionOwner\)[\s\S]*?else\s+root\.updatePopupTransition\(\)/,
     "Classic popup must reconcile a view-state update deferred until ownership becomes active");

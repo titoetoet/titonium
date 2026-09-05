@@ -72,7 +72,11 @@ manager allows one transient owner across the shell. Focused-monitor changes clo
 prevent a stranded exclusive-focus window.
 
 The eligible Bar scope composes one neutral `CenterSurfaceHost`. Its compact and overlay helpers are
-the only Center files allowed to own layer-shell windows, masks, stacking, or keyboard focus. The
+the only Center files allowed to own layer-shell windows, masks, stacking, or keyboard focus. In
+Classic, the fullscreen overlay helper stays mapped across compact, banner, and expanded modes and
+draws both the compact pill and detached popup; the compact helper remains unmapped. Only QML
+content, input regions, and focus policy change between modes, avoiding native Wayland exposure
+churn. The
 theme-neutral `CenterSurfaceController` owns screen, mode, selection, deadline, drag, and generation
 state. `SurfaceRouter` arbitrates Center against Settings, Spotlight, `SurfaceManager`, and Right
 Pill through `openCenter`, `presentCenterBanner`, and `closeCenter`; presentation code never performs
@@ -128,8 +132,9 @@ a prepared menu requests expanded Center instead. The frozen descriptor selects 
 anchor for the expanding right-pill branch until its exit animation completes. Classic restores
 detached `Shared.Surface` trees for launcher, Workspaces and Active Window on the left, plus
 separate pin, connectivity, and status surfaces on the right. Its centered reservation feeds the
-shared neutral Center owner. Compact Center stays in that reservation, while banner and expanded
-Center presentations use a detached, top-centered `Shared.Panel` popup with the same surface tokens,
+shared neutral Center owner. Compact Center stays visually aligned to that reservation inside the
+persistent host, while banner and expanded Center presentations add a detached, top-centered
+`Shared.Panel` popup without hiding the pill, using the same surface tokens,
 Topbar gap, and entrance/exit language as Classic Wi-Fi and Bluetooth. Its rightmost fixed-glyph
 Notification Center control routes history to the detached panel. Classic Network, Bluetooth, Audio, and System Tray
 popups use their existing OverlayHost surfaces rather than the Connected Edge window.

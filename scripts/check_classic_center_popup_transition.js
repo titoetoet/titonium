@@ -21,22 +21,9 @@ const ownershipSource = fs.readFileSync(ownershipPath, "utf8")
 const ownership = vm.createContext({});
 vm.runInContext(ownershipSource, ownership, { filename: ownershipPath });
 
-assert.equal(rules.viewportReady(0, 1080, 52), false);
-assert.equal(rules.viewportReady(1920, 0, 52), false);
-assert.equal(rules.viewportReady(1920, 52, 52), false);
-assert.equal(rules.viewportReady(1920, 53, 52), true);
-assert.equal(rules.shouldReconcileViewport(false, true, "expanded"), false);
-assert.equal(rules.shouldReconcileViewport(true, false, "expanded"), false);
-assert.equal(rules.shouldReconcileViewport(true, true, "closed"), false);
-assert.equal(rules.shouldReconcileViewport(true, true, "compact"), true);
-assert.equal(rules.shouldReconcileViewport(true, true, "expanded"), true);
-assert.match(rendererSource,
-    /readonly property bool popupViewportReady:\s*PopupRules\.viewportReady\(/);
-assert.match(rendererSource,
-    /function updatePopupTransition\(\): void \{\s*if \(!root\.popupViewportReady\)\s*return;/);
-assert.match(rendererSource,
-    /onPopupViewportReadyChanged:\s*\{[\s\S]*?PopupRules\.shouldReconcileViewport\([\s\S]*?root\.updatePopupTransition\(\)/);
-console.log("PASS Classic popup waits for an owned usable viewport before reconciliation");
+assert.doesNotMatch(rendererSource, /popupViewportReady|shouldReconcileViewport|viewportReady/,
+    "the always-mapped Classic host must not defer transitions behind native viewport remapping");
+console.log("PASS Classic popup reconciles directly inside its always-mapped host");
 
 assert.equal(ownership.transitionOwner({ ownerScreenName: "DP-1",
     exitingScreenName: "", mode: "banner" }, "DP-1"), true);
@@ -61,9 +48,8 @@ assert.equal(ownership.compactExitPending(
     "DP-1", "DP-1", 20, 0), false);
 console.log("PASS only the exact outgoing popup owner retains compact-exit generation");
 
-// The owning overlay can receive open and close requests before its first usable
-// viewport. There is no painted popup to animate, but the retained close still
-// needs one generation-scoped completion so the overlay can release ownership.
+// A close before an entrance has painted still needs one generation-scoped
+// completion so the controller can release the logical transition owner.
 let deferredState = rules.initialState();
 const deferredPending = ownership.compactExitPending({ ownerScreenName: "DP-1",
     exitingScreenName: "", mode: "compact", generation: 51 },
@@ -82,7 +68,7 @@ assert.deepEqual(plain(rules.transition(rules.initialState(), {
     mode: "compact", generation: 51, transitionOwner: false,
     reducedMotion: false,
 }).effects), []);
-console.log("PASS viewport-deferred owned close releases once while DP-2 stays inactive");
+console.log("PASS pre-paint owned close releases once while DP-2 stays inactive");
 
 let dp1State = rules.initialState();
 let dp1Open = rules.transition(dp1State, { mode: "banner", generation: 40,

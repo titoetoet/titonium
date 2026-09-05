@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import qs.Titonium.Bar.center
+import "CenterSurfacePresentationRules.js" as PresentationRules
 
 PanelWindow {
     id: window
@@ -13,6 +14,8 @@ PanelWindow {
     required property var profile
     readonly property bool ownsCompact: window.viewState.ownerScreenName === window.screenModel.name
         && window.viewState.mode === "compact"
+    readonly property var windowPlan: PresentationRules.windowPlan(
+        window.profile.id, window.viewState, window.screenModel.name)
     readonly property rect interactiveBounds: renderer.interactiveBounds
 
     function refreshInputMask(): void {
@@ -20,7 +23,7 @@ PanelWindow {
     }
 
     screen: window.screenModel
-    visible: window.ownsCompact
+    visible: window.windowPlan.compactMapped
     color: "transparent"
     aboveWindows: true
     exclusiveZone: 0
@@ -51,7 +54,7 @@ PanelWindow {
         viewState: window.viewState
         profile: window.profile
         transitionOwner: false
-        presentationActive: window.ownsCompact
+        presentationActive: window.windowPlan.presentationActive
         onIntentRequested: intent => CenterSurfaceController.dispatch(intent)
         onTransitionFinished: generation => CenterSurfaceController.dispatch({
             type: "transition-finished", generation: generation })

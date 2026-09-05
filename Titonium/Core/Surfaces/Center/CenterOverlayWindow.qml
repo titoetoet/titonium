@@ -16,10 +16,12 @@ PanelWindow {
     readonly property bool ownsOverlay: window.viewState.ownerScreenName === window.screenModel.name
         && (window.viewState.mode === "banner" || window.viewState.mode === "expanded")
     readonly property bool dismissing: window.viewState.exitingScreenName === window.screenModel.name
+    readonly property var windowPlan: PresentationRules.windowPlan(
+        window.profile.id, window.viewState, window.screenModel.name)
     readonly property rect visualBounds: renderer.visualBounds
     readonly property string focusOwnerId: "center:" + window.screenModel.name
     property string focusLease: ""
-    readonly property bool wantsInteractiveFocus: window.ownsOverlay
+    readonly property bool wantsInteractiveFocus: window.windowPlan.focusActive
         && window.viewState.focusPolicy === "exclusive"
     readonly property bool effectiveInteractiveFocus: window.wantsInteractiveFocus
         && FocusArbiter.granted(window.focusOwnerId, window.focusLease)
@@ -34,6 +36,8 @@ PanelWindow {
     readonly property bool classicTransitionOwner:
         PresentationRules.transitionOwner(window.viewState, window.screenModel.name)
         || window.classicTransitionPending
+    readonly property string effectiveInputMode: window.classicTransitionPending
+        ? "painted" : window.windowPlan.inputMode
 
     function refreshInputMask(): void {
         inputMask.changed();
@@ -69,7 +73,7 @@ PanelWindow {
     }
 
     screen: window.screenModel
-    visible: window.ownsOverlay || window.dismissing || window.classicTransitionPending
+    visible: window.windowPlan.overlayMapped
     color: "transparent"
     aboveWindows: true
     exclusiveZone: 0
@@ -83,6 +87,7 @@ PanelWindow {
     mask: Region {
         id: inputMask
         Region { item: overlayInput }
+        Region { item: compactInput }
         Region { item: dismissingInput }
     }
 
@@ -96,24 +101,36 @@ PanelWindow {
         }
     }
     onDismissingChanged: window.refreshInputMask()
+    onEffectiveInputModeChanged: window.refreshInputMask()
     onVisualBoundsChanged: window.refreshInputMask()
 
     Item {
         id: overlayInput
-        width: window.ownsOverlay ? window.width : 0
-        height: window.ownsOverlay ? window.height : 0
+        width: window.effectiveInputMode === "fullscreen" ? window.width : 0
+        height: window.effectiveInputMode === "fullscreen" ? window.height : 0
+    }
+    Item {
+        id: compactInput
+        x: renderer.interactiveBounds.x
+        y: renderer.interactiveBounds.y
+        width: window.effectiveInputMode === "compact"
+            ? renderer.interactiveBounds.width : 0
+        height: window.effectiveInputMode === "compact"
+            ? renderer.interactiveBounds.height : 0
     }
     Item {
         id: dismissingInput
         x: renderer.visualBounds.x
         y: renderer.visualBounds.y
-        width: window.dismissing ? renderer.visualBounds.width : 0
-        height: window.dismissing ? renderer.visualBounds.height : 0
+        width: window.effectiveInputMode === "painted"
+            ? renderer.visualBounds.width : 0
+        height: window.effectiveInputMode === "painted"
+            ? renderer.visualBounds.height : 0
     }
     TapHandler {
-        enabled: window.ownsOverlay
+        enabled: window.windowPlan.popupActive
         onTapped: eventPoint => {
-            const bounds = renderer.visualBounds;
+            const bounds = renderer.popupVisualBounds;
             const point = eventPoint.position;
             if (point.x < bounds.x || point.x > bounds.x + bounds.width
                     || point.y < bounds.y || point.y > bounds.y + bounds.height)
@@ -127,8 +144,9 @@ PanelWindow {
         viewState: window.viewState
         profile: window.profile
         transitionOwner: window.classicTransitionOwner
-        presentationActive: window.ownsOverlay || window.dismissing
-            || window.classicTransitionPending
+        presentationActive: window.profile.id === "classic"
+            ? (window.windowPlan.presentationActive || window.classicTransitionPending)
+            : (window.ownsOverlay || window.dismissing)
         onIntentRequested: intent => CenterSurfaceController.dispatch(intent)
         onTransitionFinished: generation => {
             if (window.classicTransitionPending
