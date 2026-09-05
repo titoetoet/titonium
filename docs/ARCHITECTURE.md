@@ -128,8 +128,10 @@ a prepared menu requests expanded Center instead. The frozen descriptor selects 
 anchor for the expanding right-pill branch until its exit animation completes. Classic restores
 detached `Shared.Surface` trees for launcher, Workspaces and Active Window on the left, plus
 separate pin, connectivity, and status surfaces on the right. Its centered reservation feeds the
-shared neutral Center owner; its rightmost fixed-glyph Notification Center control routes history to
-the detached panel. Classic Network, Bluetooth, Audio, and System Tray
+shared neutral Center owner. Compact Center stays in that reservation, while banner and expanded
+Center presentations use a detached, top-centered `Shared.Panel` popup with the same surface tokens,
+Topbar gap, and entrance/exit language as Classic Wi-Fi and Bluetooth. Its rightmost fixed-glyph
+Notification Center control routes history to the detached panel. Classic Network, Bluetooth, Audio, and System Tray
 popups use their existing OverlayHost surfaces rather than the Connected Edge window.
 
 ## State and presentation

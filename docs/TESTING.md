@@ -302,13 +302,16 @@ After the focused fixture (or its safe skip), manually verify the assigned Titon
 - confirm five Workspace slots and the naturally sized Active Window pill immediately after them;
 - open the Active Window pill on DP-1 scale 1.5;
 - confirm the popup remains centered, top-attached, keeps 48px rail proportions and closes on outside-click/Escape;
-- secondary-click Center and confirm non-AI contextual banners morph from the compact pill geometry;
+- secondary-click Center and confirm Connected contextual banners morph from the compact pill,
+  while Classic banners appear as detached top-centered popups with the Wi-Fi/Bluetooth gap,
+  surface color, padding, outline, and entrance/exit motion;
 - submit an AI approval and confirm Center opens directly to Expanded, advances queued requests
   in place, and collapses after the final decision;
 - with unread notifications, confirm the non-interactive Center secondary compact pill alone presents
   the bell and bounded wobble; the primary pill remains behaviorally unchanged and Center state does
   not gain a satellite mode;
-- click the media banner body (outside its buttons) and confirm it morphs to the expanded canvas;
+- click the media banner body (outside its buttons) and confirm Connected morphs to the expanded
+  canvas while Classic switches between detached popup geometries without compact-pill morphing;
 - request a retired page over IPC and confirm it normalizes safely to the expanded canvas.
 
 Audio remains awaiting visual approval. On DP-1 (scale 1.5), verify the Audio

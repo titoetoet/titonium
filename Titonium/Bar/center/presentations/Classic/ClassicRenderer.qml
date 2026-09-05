@@ -25,16 +25,25 @@ FocusScope {
         item => item.id === "notification:unread") || null
     readonly property var contextTransitionPlan:
         PresentationRules.contextTransition(root.profile, Motion.reduced)
-    readonly property real visualWidth: root.viewState.mode === "expanded"
-        ? Math.min(720, parent.width - 40)
-        : (root.viewState.mode === "banner" ? Math.min(480, parent.width - 24) : 220)
-    readonly property real bodyHeight: root.viewState.mode === "expanded" ? 440
-        : (root.viewState.mode === "banner" ? 72 : root.profile.compact.height)
-    readonly property real bodyRadius: root.viewState.mode === "expanded"
-        ? root.profile.expanded.radius : (root.viewState.mode === "banner"
-        ? root.profile.banner.radius : root.profile.compact.radius)
+    readonly property bool popupMode: root.viewState.mode === "banner"
+        || root.viewState.mode === "expanded"
+    readonly property real popupTop: Metrics.barHeight + Metrics.barSpacing
+    property string displayedPopupMode: ""
+    property string previousMode: "closed"
+    property bool popupClosing: false
+    property int transitionGeneration: 0
+    readonly property var popupGeometry: PresentationRules.classicPopupGeometry(
+        root.profile, { width: root.width, height: root.height },
+        root.displayedPopupMode || "banner", Metrics.barHeight, Metrics.barSpacing)
+    readonly property var openMotion:
+        PresentationRules.classicPopupMotion("open", Motion.reduced)
+    readonly property var closeMotion:
+        PresentationRules.classicPopupMotion("close", Motion.reduced)
     readonly property rect primaryVisualBounds: Qt.rect(
-        classicBody.x, classicBody.y, classicBody.width, classicBody.height)
+        root.popupMode || root.popupClosing ? popupPanel.x : classicBody.x,
+        root.popupMode || root.popupClosing ? popupPanel.y : classicBody.y,
+        root.popupMode || root.popupClosing ? popupPanel.width : classicBody.width,
+        root.popupMode || root.popupClosing ? popupPanel.height : classicBody.height)
     readonly property var composedVisualBounds:
         PresentationRules.combinedVisualBounds(root.primaryVisualBounds,
             secondaryPill.visualBounds, secondaryPill.visible)
@@ -70,32 +79,108 @@ FocusScope {
         root.displayedContext = root.pendingContext;
     }
 
+    function finishTransition(): void {
+        root.transitionFinished(root.transitionGeneration);
+    }
+
+    function beginPopupEntrance(generation: int): void {
+        root.transitionGeneration = generation;
+        root.popupClosing = false;
+        popupExit.stop();
+        if (Motion.reduced) {
+            popupPanel.opacity = 1;
+            popupPanel.scale = 1;
+            popupEntranceOffset.y = 0;
+            root.finishTransition();
+            return;
+        }
+        popupEntrance.restart();
+    }
+
+    function beginPopupExit(generation: int): void {
+        root.transitionGeneration = generation;
+        root.popupClosing = true;
+        popupEntrance.stop();
+        if (Motion.reduced) {
+            root.popupClosing = false;
+            root.finishTransition();
+            return;
+        }
+        popupExit.restart();
+    }
+
     onContextChanged: root.replaceDisplayedContext(root.context)
     onViewStateChanged: {
+        const nextMode = root.viewState.mode;
+        const wasPopup = root.previousMode === "banner" || root.previousMode === "expanded";
+        const isPopup = nextMode === "banner" || nextMode === "expanded";
+        if (isPopup) {
+            root.displayedPopupMode = nextMode;
+            if (!wasPopup)
+                root.beginPopupEntrance(root.viewState.generation);
+            else if (root.previousMode !== nextMode) {
+                root.transitionGeneration = root.viewState.generation;
+                Qt.callLater(root.finishTransition);
+            }
+        } else if (wasPopup) {
+            root.beginPopupExit(root.viewState.generation);
+        }
+        root.previousMode = nextMode;
         if (root.viewState.mode !== "banner")
             root.replaceDisplayedContext(root.context);
     }
-    Component.onCompleted: root.replaceDisplayedContext(root.context)
+    Component.onCompleted: {
+        root.previousMode = root.viewState.mode;
+        root.replaceDisplayedContext(root.context);
+        if (root.popupMode) {
+            root.displayedPopupMode = root.viewState.mode;
+            root.beginPopupEntrance(root.viewState.generation);
+        }
+    }
 
     Shared.Surface {
         id: classicBody
+        visible: !root.popupMode && !root.popupClosing
         anchors.top: parent.top
-        anchors.topMargin: root.viewState.mode === "compact" ? root.profile.compact.inset : 0
+        anchors.topMargin: root.profile.compact.inset
         anchors.horizontalCenter: parent.horizontalCenter
-        width: root.visualWidth
-        height: root.bodyHeight
-        radius: root.bodyRadius
+        width: 220
+        height: root.profile.compact.height
+        radius: root.profile.compact.radius
         customColor: Theme.light ? "#ffffff" : "#000000"
         clipContent: true
+    }
 
-        Item {
-            id: contentStage
-            anchors.fill: parent
+    Shared.Panel {
+        id: popupPanel
+        visible: root.popupMode || root.popupClosing
+        anchors.top: parent.top
+        anchors.topMargin: root.popupTop
+        anchors.horizontalCenter: parent.horizontalCenter
+        width: root.popupGeometry.width
+        height: root.popupGeometry.height
+        radius: root.popupGeometry.radius
+        customColor: Theme.surface
+        clipContent: true
+        transformOrigin: Item.Top
+        opacity: Motion.reduced ? 1 : 0
+        scale: Motion.reduced ? 1 : 0.94
+        transform: Translate {
+            id: popupEntranceOffset
+            y: Motion.reduced ? 0 : -12
+        }
+    }
 
-            ColumnLayout {
-                anchors.centerIn: parent
-                width: Math.max(0, parent.width - 32)
-                spacing: Metrics.spacingSmall
+    Item {
+        id: contentStage
+        parent: root.popupMode || root.popupClosing
+            ? popupPanel.contentItem : classicBody.contentItem
+        anchors.fill: parent
+
+        ColumnLayout {
+            anchors.centerIn: parent
+            width: Math.max(0, parent.width - 32)
+            spacing: Metrics.spacingSmall
 
                 Item {
                     id: activationArea
@@ -156,32 +241,24 @@ FocusScope {
                         }
                     }
                 }
-            }
         }
-        TapHandler {
-            parent: activationArea
-            gesturePolicy: TapHandler.ReleaseWithinBounds
-            onTapped: root.intentRequested({ type: "request-mode",
-                mode: root.viewState.mode === "expanded" ? "compact" : "expanded" })
-        }
-        HoverHandler {
-            id: bannerHover
-            enabled: root.viewState.mode === "banner"
-            onHoveredChanged: {
-                if (root.viewState.mode !== "banner")
-                    return;
-                if (bannerHover.hovered)
-                    root.intentRequested(root.deadlineIntent("pause-timeout"));
-                else
-                    root.intentRequested(root.deadlineIntent("resume-timeout"));
-            }
-        }
-        Behavior on width { NumberAnimation { duration: Motion.reduced ? 0 : 240 } }
-        Behavior on height {
-            NumberAnimation {
-                duration: Motion.reduced ? 0 : 240
-                onFinished: root.transitionFinished(root.viewState.generation)
-            }
+    }
+    TapHandler {
+        parent: activationArea
+        gesturePolicy: TapHandler.ReleaseWithinBounds
+        onTapped: root.intentRequested({ type: "request-mode",
+            mode: root.viewState.mode === "expanded" ? "compact" : "expanded" })
+    }
+    HoverHandler {
+        id: bannerHover
+        enabled: root.viewState.mode === "banner"
+        onHoveredChanged: {
+            if (root.viewState.mode !== "banner")
+                return;
+            if (bannerHover.hovered)
+                root.intentRequested(root.deadlineIntent("pause-timeout"));
+            else
+                root.intentRequested(root.deadlineIntent("resume-timeout"));
         }
     }
 
@@ -193,6 +270,7 @@ FocusScope {
         height: root.profile.compact.height
         indicator: root.notificationIndicator
         rendererVisible: root.visible && root.viewState.mode === "compact"
+            && !root.popupClosing
         backgroundColor: Theme.light ? "#ffffff" : "#000000"
         topLeftRadius: root.profile.compact.radius
         topRightRadius: root.profile.compact.radius
@@ -216,6 +294,67 @@ FocusScope {
             from: 0
             to: 1
             duration: root.contextTransitionPlan.enterMs
+        }
+    }
+
+    ParallelAnimation {
+        id: popupEntrance
+        NumberAnimation {
+            target: popupPanel
+            property: "opacity"
+            from: root.openMotion.opacityFrom
+            to: root.openMotion.opacityTo
+            duration: root.openMotion.opacityMs
+            easing.type: Easing.OutCubic
+        }
+        NumberAnimation {
+            target: popupPanel
+            property: "scale"
+            from: root.openMotion.scaleFrom
+            to: root.openMotion.scaleTo
+            duration: root.openMotion.scaleMs
+            easing.bezierCurve: [0.38, 1.21, 0.22, 1, 1, 1]
+        }
+        NumberAnimation {
+            target: popupEntranceOffset
+            property: "y"
+            from: root.openMotion.yFrom
+            to: root.openMotion.yTo
+            duration: root.openMotion.yMs
+            easing.bezierCurve: [0.2, 0.8, 0.2, 1, 1, 1]
+        }
+        onFinished: root.finishTransition()
+    }
+
+    ParallelAnimation {
+        id: popupExit
+        NumberAnimation {
+            target: popupPanel
+            property: "opacity"
+            from: root.closeMotion.opacityFrom
+            to: root.closeMotion.opacityTo
+            duration: root.closeMotion.opacityMs
+            easing.type: Easing.InCubic
+        }
+        NumberAnimation {
+            target: popupPanel
+            property: "scale"
+            from: root.closeMotion.scaleFrom
+            to: root.closeMotion.scaleTo
+            duration: root.closeMotion.scaleMs
+            easing.type: Easing.InCubic
+        }
+        NumberAnimation {
+            target: popupEntranceOffset
+            property: "y"
+            from: root.closeMotion.yFrom
+            to: root.closeMotion.yTo
+            duration: root.closeMotion.yMs
+            easing.type: Easing.InCubic
+        }
+        onFinished: {
+            root.popupClosing = false;
+            root.finishTransition();
         }
     }
 

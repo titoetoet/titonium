@@ -25,11 +25,34 @@ function profile(style) {
         banner: Object.freeze({ width: 480, height: 72, radius: notch ? 12 : 22 }),
         expanded: Object.freeze({ minWidth: 320, maxWidth: 720, height: 440,
             radius: notch ? 16 : 28 }),
-        transitions: Object.freeze({ open: pill ? "fade" : "morph",
-            close: pill ? "fade" : "morph", contextChange: "crossfade" }),
+        transitions: Object.freeze({ open: pill ? "fade" : (classic ? "popup" : "morph"),
+            close: pill ? "fade" : (classic ? "popup" : "morph"),
+            contextChange: "crossfade" }),
         capabilities: Object.freeze({ secondaryContext: !pill, dragToExpand: !classic,
             navigationRail: !pill, outsideDismiss: true })
     });
+}
+
+function classicPopupGeometry(profileValue, availableGeometry, mode, barHeight, barSpacing) {
+    var value = geometry(profileValue, availableGeometry, mode);
+    return Object.freeze({
+        x: value.x,
+        y: Math.max(0, Number(barHeight) || 0) + Math.max(0, Number(barSpacing) || 0),
+        width: value.width,
+        height: value.height,
+        radius: value.radius,
+    });
+}
+
+function classicPopupMotion(phase, reducedMotion) {
+    if (reducedMotion === true)
+        return Object.freeze({ opacityFrom: 1, opacityTo: 1, opacityMs: 0,
+            scaleFrom: 1, scaleTo: 1, scaleMs: 0, yFrom: 0, yTo: 0, yMs: 0 });
+    if (phase === "close")
+        return Object.freeze({ opacityFrom: 1, opacityTo: 0, opacityMs: 120,
+            scaleFrom: 1, scaleTo: 0.96, scaleMs: 130, yFrom: 0, yTo: -8, yMs: 130 });
+    return Object.freeze({ opacityFrom: 0, opacityTo: 1, opacityMs: 150,
+        scaleFrom: 0.94, scaleTo: 1, scaleMs: 220, yFrom: -12, yTo: 0, yMs: 220 });
 }
 
 function geometry(profileValue, availableGeometry, mode) {

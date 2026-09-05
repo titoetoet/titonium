@@ -40,11 +40,11 @@ the right edge; content stays edge-anchored and clipped while the chassis catche
 applies the target width immediately.
 
 The Center compact pill uses a 36dp standard or 42dp Ultrawide height, with bottom/shoulder radii
-equal to half that height. The screen-local visual owner
-morphs that same silhouette to the 480×72 banner or 720×440 expanded canvas. Closing reverses the
-geometry without releasing the owner. The background stays fully opaque throughout; compact and
-open content cross-fade from one reversible `transitionProgress` instead of switching visibility at
-the state boundary.
+equal to half that height. Connected morphs that same silhouette to the 480×72 banner or 720×440
+expanded canvas. Classic keeps the compact pill unchanged and presents both banner and expanded as
+detached, top-centered `Shared.Panel` popups at `Metrics.barHeight + Metrics.barSpacing`, using
+`Theme.surface`, the shared outline and panel padding. Critical notification banners use this same
+Classic popup path.
 
 Width tokens describe the complete visible connected silhouette. The `ShapePath` body width is
 derived by subtracting both shoulders (`visualWidth - 2 × shoulderSize`), preventing the connected
@@ -61,10 +61,13 @@ For a Left Pill application menu, the branch right edge is the direct vertical c
 pill's inner shoulder. Width is reduced before that alignment is sacrificed.
 
 `Motion.springDamped` is the shared damped Bezier curve for surface entrance and geometry morphs.
-Center uses a 240ms width/height expansion, 220ms radius transition and 190ms collapse. Compact
+Connected Center uses a 240ms width/height expansion, 220ms radius transition and 190ms collapse. Compact
 content fades over the opening's first 35%; open content enters from 15% through 65%, and the same
 curves reverse on close. A transition can reverse immediately when
-the user clicks during collapse. Approval cards, transient popups, Settings,
+the user clicks during collapse. Classic Center uses the detached-popup language shared with its
+Wi-Fi and Bluetooth panels: open opacity 150ms plus 220ms `0.94 → 1` scale and `-12 → 0`
+translation; close opacity 120ms plus 130ms `1 → 0.96` scale and `0 → -8` translation. Approval
+cards, other transient popups, Settings,
 Window Switcher and Spotlight use short opacity/scale/translation entrances built from the same
 tokens. Top Bar controls keep their chassis and text stationary: only the hovered icon lifts 1dp
 and scales to 1.08, then compresses to 0.96 while pressed. Center Compact content cross-fades

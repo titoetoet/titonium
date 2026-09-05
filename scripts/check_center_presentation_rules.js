@@ -51,6 +51,43 @@ assert.equal(rules.geometry(connected, { width: 360, height: 800 }, "expanded").
 assert.equal(rules.profile("invalid").id, "connected");
 console.log("PASS four Center presentation profiles provide frozen clamped geometry");
 
+const classic = rules.profile("classic");
+assert.deepEqual(plain(classic.transitions), {
+    open: "popup", close: "popup", contextChange: "crossfade",
+});
+assert.deepEqual(plain(rules.classicPopupGeometry(
+    classic, { width: 1920, height: 1080 }, "banner", 44, 8)), {
+    x: 720, y: 52, width: 480, height: 72, radius: 22,
+});
+assert.deepEqual(plain(rules.classicPopupGeometry(
+    classic, { width: 1920, height: 1080 }, "expanded", 44, 8)), {
+    x: 600, y: 52, width: 720, height: 440, radius: 28,
+});
+assert.deepEqual(plain(rules.classicPopupMotion("open", false)), {
+    opacityFrom: 0, opacityTo: 1, opacityMs: 150,
+    scaleFrom: 0.94, scaleTo: 1, scaleMs: 220,
+    yFrom: -12, yTo: 0, yMs: 220,
+});
+assert.deepEqual(plain(rules.classicPopupMotion("close", false)), {
+    opacityFrom: 1, opacityTo: 0, opacityMs: 120,
+    scaleFrom: 1, scaleTo: 0.96, scaleMs: 130,
+    yFrom: 0, yTo: -8, yMs: 130,
+});
+assert.deepEqual(plain(rules.classicPopupMotion("open", true)), {
+    opacityFrom: 1, opacityTo: 1, opacityMs: 0,
+    scaleFrom: 1, scaleTo: 1, scaleMs: 0,
+    yFrom: 0, yTo: 0, yMs: 0,
+});
+assert.deepEqual(plain(rules.geometry(classic,
+    { width: 1920, height: 1080 }, "compact")), {
+    x: 880, y: 8, width: 160, height: 36, radius: 16,
+});
+assert.deepEqual(plain(rules.geometry(connected,
+    { width: 1920, height: 1080 }, "banner")), {
+    x: 720, y: 0, width: 480, height: 72, radius: 22,
+});
+console.log("PASS Classic detaches every open mode while compact and Connected stay unchanged");
+
 assert.equal(typeof rules.combinedVisualBounds, "function",
     "Center presentation rules must expose visible-secondary bounds composition");
 assert.deepEqual(plain(rules.combinedVisualBounds(
@@ -228,6 +265,34 @@ for (const fragment of [
         `Classic secondary-pill composition missing: ${fragment}`);
 assert.doesNotMatch(classicRenderer, /secondary[\s\S]*?ConnectedPillShape/,
     "Classic secondary pill must remain detached and shoulder-free");
+for (const fragment of [
+    "readonly property bool popupMode:",
+    "readonly property real popupTop: Metrics.barHeight + Metrics.barSpacing",
+    "Shared.Panel {",
+    "customColor: Theme.surface",
+    "id: popupEntranceOffset",
+    "id: popupEntrance",
+    "id: popupExit",
+    "PresentationRules.classicPopupMotion",
+    "property int transitionGeneration",
+    "root.transitionFinished(root.transitionGeneration)",
+    "rendererVisible: root.visible && root.viewState.mode === \"compact\"",
+    "&& !root.popupClosing",
+])
+    assert.ok(classicRenderer.includes(fragment),
+        `Classic detached popup contract missing: ${fragment}`);
+assert.match(classicRenderer,
+    /anchors\.topMargin:\s*root\.popupTop/,
+    "Classic banner and expanded popup must share the detached Topbar gap");
+assert.doesNotMatch(classicRenderer,
+    /Behavior on (width|height)/,
+    "Classic must not morph popup geometry from the compact pill");
+assert.match(classicRenderer,
+    /function beginPopupExit\(generation: int\): void[\s\S]*?root\.transitionGeneration = generation[\s\S]*?popupExit\.restart\(\)/,
+    "Classic close must capture the controller generation before its detached exit");
+assert.match(classicRenderer,
+    /NumberAnimation\s*\{[\s\S]*?target:\s*popupPanel[\s\S]*?property:\s*"opacity"[\s\S]*?duration:\s*root\.closeMotion\.opacityMs/,
+    "Classic popup close must use the shared popup opacity timing");
 for (const [source, label] of [[renderer, "Connected"], [classicRenderer, "Classic"]])
     assert.doesNotMatch(source, /readonly property rect interactiveBounds:\s*root\.visualBounds/,
         `${label} secondary visuals must not expand the primary-only input bounds`);
