@@ -8,6 +8,7 @@ import qs.Titonium.Core.Screens
 import qs.Titonium.Services.Applications
 import "WindowRegistry.js" as WindowRegistry
 import "WindowRules.js" as WindowRules
+import "WindowEventRules.js" as WindowEventRules
 import "WorkspaceRules.js" as WorkspaceRules
 
 Singleton {
@@ -19,6 +20,7 @@ Singleton {
     property int policyActiveWorkspaceId: 1
     property int focusedWorkspaceIdValue: 1
     property bool focusInitialized: false
+    property bool windowRefreshQueued: false
 
     readonly property var windows: root.projectedWindows
     readonly property string activeToplevelId: root.nativeWindowId(Hyprland.activeToplevel)
@@ -126,6 +128,18 @@ Singleton {
         return 0;
     }
 
+    function scheduleWindowRefresh(): void {
+        if (root.windowRefreshQueued)
+            return;
+        root.windowRefreshQueued = true;
+        Qt.callLater(root.flushWindowRefresh);
+    }
+
+    function flushWindowRefresh(): void {
+        root.windowRefreshQueued = false;
+        root.recomputeWindows();
+    }
+
     function recomputeWindows(): void {
         const source = Hyprland.toplevels.values || [];
         const descriptors = [];
@@ -194,23 +208,95 @@ Singleton {
             const fields = event.parse(2);
             if (event.name === "focusedmon" || event.name === "focusedmonv2")
                 root.focusedMonitorName = fields[0] || "";
-            root.recomputeWindows();
+            if (WindowEventRules.requiresProjection(event.name))
+                root.scheduleWindowRefresh();
             const eventWorkspaceId = WorkspaceRules.focusedWorkspaceEventId(event.name, fields);
             if (eventWorkspaceId > 0) {
                 root.focusedWorkspaceIdValue = eventWorkspaceId;
                 root.focusInitialized = true;
             }
         }
-        function onActiveToplevelChanged(): void { root.recomputeWindows(); }
-        function onFocusedWorkspaceChanged(): void { root.recomputeWindows(); }
+        function onActiveToplevelChanged(): void { root.scheduleWindowRefresh(); }
+        function onFocusedWorkspaceChanged(): void { root.scheduleWindowRefresh(); }
     }
 
     property Connections monitorModelConnections: Connections {
         target: Hyprland.monitors
         function onValuesChanged(): void {
             root.bootstrapFocusedWorkspace();
-            root.recomputeWindows();
+            root.scheduleWindowRefresh();
         }
+    }
+
+    // Native refresh replies can arrive after rawEvent. Observe the facts used by
+    // projection so delayed title/class/workspace and Wayland changes are not lost.
+    property Instantiator toplevelConnections: Instantiator {
+        model: Hyprland.toplevels
+        delegate: QtObject {
+            id: toplevelObserver
+            required property var modelData
+            property Connections nativeConnection: Connections {
+                target: toplevelObserver.modelData
+                function onAddressChanged(): void { root.scheduleWindowRefresh(); }
+                function onTitleChanged(): void { root.scheduleWindowRefresh(); }
+                function onUrgentChanged(): void { root.scheduleWindowRefresh(); }
+                function onWorkspaceChanged(): void { root.scheduleWindowRefresh(); }
+                function onMonitorChanged(): void { root.scheduleWindowRefresh(); }
+                function onLastIpcObjectChanged(): void { root.scheduleWindowRefresh(); }
+                function onWaylandHandleChanged(): void { root.scheduleWindowRefresh(); }
+            }
+            property Connections waylandConnection: Connections {
+                target: toplevelObserver.modelData?.wayland || null
+                function onAppIdChanged(): void { root.scheduleWindowRefresh(); }
+                function onTitleChanged(): void { root.scheduleWindowRefresh(); }
+                function onMinimizedChanged(): void { root.scheduleWindowRefresh(); }
+            }
+        }
+    }
+
+    property Instantiator monitorConnections: Instantiator {
+        model: Hyprland.monitors
+        delegate: Connections {
+            required property var modelData
+            target: modelData
+            function onActiveWorkspaceChanged(): void { root.scheduleWindowRefresh(); }
+            function onLastIpcObjectChanged(): void { root.scheduleWindowRefresh(); }
+        }
+    }
+
+    property Instantiator workspaceConnections: Instantiator {
+        model: Hyprland.workspaces
+        delegate: QtObject {
+            id: workspaceObserver
+            required property var modelData
+            property Connections nativeConnection: Connections {
+                target: workspaceObserver.modelData
+                function onIdChanged(): void { root.scheduleWindowRefresh(); }
+                function onMonitorChanged(): void { root.scheduleWindowRefresh(); }
+                function onLastIpcObjectChanged(): void { root.scheduleWindowRefresh(); }
+            }
+            property Connections toplevelModelConnection: Connections {
+                target: workspaceObserver.modelData?.toplevels || null
+                function onValuesChanged(): void { root.scheduleWindowRefresh(); }
+            }
+        }
+    }
+
+    property Connections toplevelModelConnections: Connections {
+        target: Hyprland.toplevels
+        function onValuesChanged(): void { root.scheduleWindowRefresh(); }
+    }
+    property Connections workspaceModelConnections: Connections {
+        target: Hyprland.workspaces
+        function onValuesChanged(): void { root.scheduleWindowRefresh(); }
+    }
+    property Connections screenPolicyConnections: Connections {
+        target: ScreenPolicy
+        function onScreensChanged(): void { root.scheduleWindowRefresh(); }
+    }
+    property Connections applicationConnections: Connections {
+        target: ApplicationService
+        function onAllApplicationsChanged(): void { root.scheduleWindowRefresh(); }
     }
 
     Component.onCompleted: {
@@ -219,6 +305,6 @@ Singleton {
         Hyprland.refreshWorkspaces();
         Hyprland.refreshToplevels();
         Qt.callLater(root.bootstrapFocusedWorkspace);
-        Qt.callLater(root.recomputeWindows);
+        root.scheduleWindowRefresh();
     }
 }

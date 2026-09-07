@@ -1,0 +1,15 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const vm = require('node:vm');
+const context = vm.createContext({});
+const file = require('node:path').join(__dirname, '../Titonium/Dock/DockMenuGeometry.js');
+if (fs.existsSync(file)) vm.runInContext(fs.readFileSync(file, 'utf8').replace(/^\.pragma library\s*/, ''), context);
+assert.equal(typeof context.panelRect, 'function', 'Dock menu needs anchored, viewport-bounded geometry');
+const rect = (...args) => JSON.parse(JSON.stringify(context.panelRect(...args)));
+assert.deepEqual(rect(1000, 800, {y:736}, 300, 220, 180, false), {x:190,y:548,width:220,height:180});
+assert.deepEqual(rect(1000, 800, {y:736}, 300, 220, 180, true), {x:190,y:548,width:220,height:180});
+assert.equal(rect(1000, 800, {y:736}, 10, 220, 180, true).x, 24);
+assert.equal(rect(1000, 800, {y:736}, 990, 220, 180, true).x, 756);
+const small = rect(180, 150, {y:86}, 90, 220, 180, false);
+assert.deepEqual(small, {x:8,y:8,width:164,height:70});
+console.log('PASS Dock menu anchor, edge clamping and short viewport geometry');

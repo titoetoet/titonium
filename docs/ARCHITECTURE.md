@@ -42,15 +42,22 @@ Antigravity hook delegates review to Antigravity. This bypass never auto-approve
 Antigravity reaches that contract through its documented `PreToolUse` command hook. ChatGPT
 Desktop reaches the same contract through a local Codex JSON-RPC proxy selected by
 `CODEX_CLI_PATH`; the proxy forwards all non-approval traffic byte-for-byte and translates only
-Codex command, file-change and permission approval requests. The view receives normalized value
+Codex command and file-change approval requests. Permission requests retain native review and its
+method-specific response contract. The view receives normalized value
 descriptors and emits only `allow once`, `allow for session` or `deny` intents.
 
 For Antigravity, `allow for session` deliberately grants the whole conversation rather than one
-command binary or one file. The service records the conversation/scope key in the per-login
+command binary or one file. Grants require both the source and an explicit conversation/thread ID;
+directory paths never identify a session. The service records that key in the per-login
 runtime directory so a Quickshell reload does not silently revoke it; `clearGrants()` removes all
 such grants. `sudo` commands always require an explicit decision. File-change requests use the
-compact `AgentApprovalToastCard`, while command and general permission requests retain the modal
+compact `AgentApprovalToastCard`, while command requests retain the modal
 `AgentApprovalCard`.
+
+The proxy permits eight concurrent approval waits while continuing to forward unrelated output.
+Additional requests delegate to native review. Shared writers preserve complete JSON-RPC frames,
+and child shutdown cancels pending waits. Diagnostics contain only allowlisted event/outcome
+metadata on stderr, capped at 32 records per process; the bridge owns no persistent log file.
 
 The two adapters retain different failure policies. Antigravity falls back to its native review
 with an `ask` decision when Titonium is unavailable. An intercepted ChatGPT request fails closed
@@ -353,3 +360,32 @@ The historical `centerNotch` IPC target remains for deterministic lifecycle comp
 `open(page)`, `page(page)`, `close()` and `state()`. Results expose neutral `mode` vocabulary.
 Acceptance verifies banner/expanded transitions, mutual exclusion with Spotlight, clean runtime
 logs, repository isolation and unchanged Hyprland configuration hashes.
+
+## Compact priority and capture feedback (2026-09-06)
+
+`CompactActivityRules` ranks active Focus > Privacy/Recording > Media with stable ties.
+Both slots open their own Normal; no manual slot swapping remains. Selection of an
+open surface is independent of compact assignment.
+
+`CaptureFeedbackService` consumes ScreenRecordService state and the existing
+NotificationService descriptor signal. The current screenshot.sh producer emits
+`Screenshot saved` with a PNG path in `$HOME/Pictures/Screenshots`; only that local
+single-directory contract is accepted, and the path is URL-encoded before preview.
+No filesystem watcher, process, native listener or Hyprland configuration change is added.
+Other screenshot tools need an explicit producer contract before being supported.
+
+Capture feedback owns one 6000ms expiry timer. New events replace old feedback;
+Primary is temporarily the event, Satellite is the displaced active Primary, and a
+recording marker remains visible if its normal slot is displaced. Expiry recomputes
+priority. Only the current screenshot and a user-selected screenshot are retained;
+closing the selected preview releases it. Expiry does not change the surface deadline.
+Recording contexts include session start identity and reject stale Stop actions.
+Ending a selected recording session compacts its Normal instead of targeting a new one.
+Both themes load the same bounded screenshot preview only while it is presented.
+
+
+## Appearance ownership
+
+`Services/Appearance` resolves normalized preference data plus platform color-scheme state into a semantic snapshot. `Theme` exposes this snapshot through the existing token names; it has no process, file writer or platform listener. `Settings/AppearanceCoordinator` owns a local candidate and bounded runtime trial; `Core/Runtime/Preferences` owns v8 validation and atomic persistence. Appearance imports no Center views and does not reset the Center controller.
+
+`Services/Wallpapers` remains the single wallpaper owner for Center and Appearance. Its transaction lease serializes temporary previews, baseline restoration and committed application; its durable journal survives shell restart. Center's `setVisible`, `refresh` and `applyTo` API remains stable. Settings must stage and persist canonical Appearance data, then finalize the wallpaper journal. UI never writes native wallpaper state.

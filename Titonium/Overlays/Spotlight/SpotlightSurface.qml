@@ -21,6 +21,9 @@ FocusScope {
     property var screen: null
     property string loadedBodyMode: ""
     property int activeBodyTransitionDuration: 0
+    readonly property bool connected: Preferences.barStyle === "connected"
+    readonly property color panelColor: root.connected
+        ? (Theme.connectedSurface) : Theme.surface
     readonly property string ownerId: root.descriptor?.ownerId || ""
     readonly property var spotlightSettings: Preferences.spotlight
     readonly property var scopeActions: SpotlightHeader.scopeActions()
@@ -157,14 +160,18 @@ FocusScope {
             root.height, Metrics.spacingLarge)
         anchors.top: parent.top
         anchors.horizontalCenter: parent.horizontalCenter
-        anchors.topMargin: SpotlightGeometry.panelTop()
-        customColor: Theme.background
+        anchors.topMargin: root.connected ? 0 : SpotlightGeometry.panelTop()
+        customColor: root.panelColor
+        outlined: !root.connected
+        radius: root.connected ? 20 : Metrics.radiusLarge
+        topLeftRadius: root.connected ? 0 : radius
+        topRightRadius: root.connected ? 0 : radius
         transformOrigin: Item.Top
         opacity: Motion.reduced ? 1 : 0
-        scale: Motion.reduced ? 1 : 0.96
+        scale: Motion.reduced || root.connected ? 1 : 0.96
         transform: Translate {
             id: panelTranslate
-            y: Motion.reduced ? 0 : -14
+            y: Motion.reduced || root.connected ? 0 : -14
         }
 
         ParallelAnimation {
@@ -190,7 +197,7 @@ FocusScope {
             NumberAnimation {
                 target: panel
                 property: "scale"
-                from: 0.96
+                from: root.connected ? 1 : 0.96
                 to: 1
                 duration: 200
                 easing.type: Easing.BezierSpline
@@ -199,7 +206,7 @@ FocusScope {
             NumberAnimation {
                 target: panelTranslate
                 property: "y"
-                from: -10
+                from: root.connected ? 0 : -10
                 to: 0
                 duration: 200
                 easing.type: Easing.BezierSpline
@@ -230,7 +237,7 @@ FocusScope {
                 target: panel
                 property: "scale"
                 from: 1
-                to: 0.97
+                to: root.connected ? 1 : 0.97
                 duration: 130
                 easing.type: Easing.InCubic
             }
@@ -238,11 +245,23 @@ FocusScope {
                 target: panelTranslate
                 property: "y"
                 from: 0
-                to: -8
+                to: root.connected ? 0 : -8
                 duration: 130
                 easing.type: Easing.InCubic
             }
             onFinished: SurfaceManager.close(root.ownerId)
+        }
+
+        Controls.ConnectedPillShape {
+            x: -panel.padding - shoulderSize
+            y: -panel.padding
+            bodyWidth: panel.width
+            bodyHeight: panel.height
+            shoulderSize: 18
+            bottomRadius: 20
+            visible: root.connected
+            color: root.panelColor
+            z: -1
         }
 
         ColumnLayout {
@@ -281,11 +300,24 @@ FocusScope {
                 rightPadding: Metrics.spacingLarge
                 selectByMouse: true
 
-                background: Rectangle {
-                    radius: searchField.height / 2
-                    color: Theme.surfaceElevated
-                    border.width: Metrics.borderWidth
-                    border.color: searchField.activeFocus ? Theme.borderStrong : Theme.border
+                background: Item {
+                    Rectangle {
+                        anchors.fill: parent
+                        visible: Theme.legacy
+                        radius: searchField.height / 2
+                        color: Theme.surfaceElevated
+                        border.width: Metrics.borderWidth
+                        border.color: searchField.activeFocus ? Theme.borderStrong : Theme.border
+                    }
+                    Controls.StylePaint {
+                        anchors.fill: parent
+                        visible: !Theme.legacy
+                        tokens: Theme.tokens
+                        role: "field"
+                        radius: searchField.height / 2
+                        borderColor: searchField.activeFocus ? Theme.borderStrong : Theme.border
+                        interaction: ({ focused: searchField.activeFocus })
+                    }
                 }
 
                 Controls.Icon {

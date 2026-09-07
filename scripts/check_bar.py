@@ -35,7 +35,7 @@ def main():
     require(controller, "CenterSurfaceController.qml", ("readonly property var viewState",
         "function dispatch(intent: var): var", "CenterDomain.dispatch", "CenterSurfaceState.transition"), errors)
     require(center_host, "CenterSurfaceHost.qml", ("CenterCompactWindow {", "CenterOverlayWindow {",
-        "CenterDomain.snapshot"), errors)
+        "CenterDomain.presentationSnapshot"), errors)
     require(compact, "CenterCompactWindow.qml", ("PanelWindow {",
         "WlrLayershell.keyboardFocus: WlrKeyboardFocus.None", "renderer.interactiveBounds"), errors)
     require(overlay, "CenterOverlayWindow.qml", ("PanelWindow {",
@@ -45,7 +45,7 @@ def main():
         "Connected.ConnectedRenderer", "Classic.ClassicRenderer"), errors)
     require(connected, "ConnectedRenderer.qml", ("required property var snapshot",
         "required property var viewState", "required property var profile",
-        "signal intentRequested(var intent)", "type: \"invoke-action\""), errors)
+        "signal intentRequested(var intent)", "ExpandedContent {", "NormalBannerContent {"), errors)
     require(router, "SurfaceRouter.qml", ("function openCenter(", "function presentCenterBanner(",
         "function closeCenter("), errors)
     for relative in ("Titonium/Bar/islands/CenterIsland.qml",

@@ -80,7 +80,8 @@ codex_source = bridge_source.split("def codex_proxy", 1)[1].split("def main", 1)
 assert "CODEX AUTO-APPROVE" not in codex_source
 assert "requires_sudo" not in codex_source
 assert 'decision == "delegate"' in codex_source
-assert "sys.stdout.buffer.write(raw_line)" in codex_source
+# Byte-for-byte forwarding and non-blocking output are exercised by
+# check_approval_proxy.py with a real subprocess and isolated app-server fixture.
 for method in bridge.APPROVAL_METHODS:
     assert method in bridge.APPROVAL_METHODS
 
@@ -102,3 +103,66 @@ assert not forwarder.is_alive()
 os.close(destination_read_fd)
 
 print("agent approval bridge: ok")
+
+# Check transport cleanup/cancellation without depending on a native socket server.
+from types import SimpleNamespace
+from unittest.mock import patch
+import contextlib
+import io
+import time
+
+class FixtureSocket:
+    def __init__(self, refused=False, cancel=None):
+        self.closed = False
+        self.refused = refused
+        self.cancel = cancel
+    def settimeout(self, timeout):
+        pass
+    def connect(self, address):
+        if self.refused:
+            raise ConnectionRefusedError('fixture')
+    def close(self):
+        self.closed = True
+    def __enter__(self):
+        return self
+    def __exit__(self, *args):
+        self.close()
+    def sendall(self, data):
+        pass
+    def recv(self, count):
+        if self.cancel is not None:
+            self.cancel.set()
+        time.sleep(.01)
+        return b' '  # A trickling peer must not extend the absolute timeout.
+
+for mode in ('refused', 'cancel', 'deadline'):
+    cancel = threading.Event() if mode == 'cancel' else None
+    candidate = FixtureSocket(refused=mode == 'refused', cancel=cancel)
+    with patch.object(bridge.os, 'stat', return_value=SimpleNamespace(st_uid=os.getuid())), \
+         patch.object(bridge.socket, 'socket', return_value=candidate), \
+         patch.object(bridge, 'is_quickshell_running', return_value=False):
+        try:
+            bridge.exchange({'source': 'fixture'}, timeout=0 if mode == 'refused' else .05,
+                            stop_event=cancel)
+        except (ConnectionError, TimeoutError):
+            pass
+        else:
+            raise AssertionError('expected transport failure: ' + mode)
+        assert candidate.closed, 'transport failure leaked socket: ' + mode
+print('PASS approval transport closes failed sockets and honors cancellation/absolute deadlines')
+
+secret = 'PRIVATE_FIXTURE_ARGUMENT_NEVER_LOG'
+payload = {'toolCall': {'name': 'fixture', 'args': {'command': secret}}}
+for failure in (False, True):
+    stderr, stdout = io.StringIO(), io.StringIO()
+    fixture_input = SimpleNamespace(buffer=io.BytesIO(json.dumps(payload).encode()))
+    result = {'decision': 'allow', 'reason': secret}
+    with patch.dict(os.environ, {'TITONIUM_AGENT_APPROVAL_ENABLED': '1'}), \
+         patch.object(bridge.sys, 'stdin', fixture_input), \
+         patch.object(bridge, 'exchange', side_effect=ValueError(secret) if failure else None,
+                      return_value=result), \
+         contextlib.redirect_stderr(stderr), contextlib.redirect_stdout(stdout):
+        assert bridge.antigravity_hook() == 0
+    assert secret not in stderr.getvalue(), 'hook leaked payload/result/exception into diagnostics'
+    assert json.loads(stdout.getvalue())['decision'] == ('force_ask' if failure else 'allow')
+print('PASS hook integration preserves protocol results without logging payloads or exception text')

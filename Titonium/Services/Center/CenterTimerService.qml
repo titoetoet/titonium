@@ -112,6 +112,7 @@ QtObject {
         if (nextState === root.timerState)
             return false;
         CenterAttentionService.clear("timer:" + id.trim());
+        root.notificationRetired("internal:timer_finished:" + id.trim(), "source-cleared");
         root.replaceState(nextState);
         root.syncActivity(root.timerById(nextState, id), now);
         return true;
@@ -121,6 +122,8 @@ QtObject {
         const nextState = CenterTimerRules.cancel(root.timerState, id);
         const stateChanged = nextState !== root.timerState;
         const eventCleared = CenterAttentionService.clear("timer:" + id.trim());
+        if (id.trim())
+            root.notificationRetired("internal:timer_finished:" + id.trim(), "source-cleared");
         root.removeActivity(id);
         if (stateChanged)
             root.replaceState(nextState);

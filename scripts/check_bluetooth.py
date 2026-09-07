@@ -18,7 +18,7 @@ REQUIRED_FILES = (
 )
 PRESENTATION_ROOT = ROOT / "Titonium/Overlays/Bluetooth"
 COORDINATOR = PRESENTATION_ROOT / "BluetoothPopupCoordinator.qml"
-POPUP = PRESENTATION_ROOT / "BluetoothPopupSurface.qml"
+POPUP = PRESENTATION_ROOT / "ClassicBluetoothPopupSurface.qml"
 CLASSIC_POPUP = PRESENTATION_ROOT / "ClassicBluetoothPopupSurface.qml"
 DEVICE_ROW = PRESENTATION_ROOT / "BluetoothDeviceRow.qml"
 CONNECTIVITY_PILL = ROOT / "Titonium/Bar/islands/ConnectivityPill.qml"
@@ -26,7 +26,6 @@ APP = ROOT / "Titonium/App.qml"
 BLUETOOTH_ACCEPTANCE = ROOT / "scripts/bluetooth_acceptance.sh"
 PRESENTATION_FILES = (
     "Titonium/Overlays/Bluetooth/BluetoothPopupCoordinator.qml",
-    "Titonium/Overlays/Bluetooth/BluetoothPopupSurface.qml",
     "Titonium/Overlays/Bluetooth/ClassicBluetoothPopupSurface.qml",
     "Titonium/Overlays/Bluetooth/BluetoothDeviceRow.qml",
     "Titonium/Overlays/Bluetooth/qmldir",
@@ -96,12 +95,13 @@ PUBLIC_PROPERTIES = {
     "devices", "stateKey", "operationWarningLimit", "operationWarningCounts",
     "previousConnectedAudioAddresses", "pendingPairAddress", "pairingWasActive", "connectAttempted",
     "agentProcess", "pairWatchdog", "connectWatchdog",
+    "agentAttempts", "agentAttemptLimit", "agentRetry", "agentStable", "agentAdapterConnections",
 }
 PUBLIC_FUNCTIONS = {
     "warnOperation", "setPowered", "setDiscovering", "connectDevice", "disconnectDevice",
     "pairDevice", "cancelPair", "forgetDevice", "snapshot", "observeAudioConnections",
     "completeAudioConnection", "observePairProgress", "ensureAgent", "failPair",
-    "resetPairing", "nativeDeviceForAddress",
+    "resetPairing", "nativeDeviceForAddress", "resetAgentRetry",
 }
 
 
@@ -249,6 +249,11 @@ def public_native_exposure_errors(source: str) -> list[str]:
             continue
         if name == "devices" and "root.projection.devices" in block:
             continue
+        # The service's signal subscription owns no adapter/device descriptor.
+        # Permit only its bare module target, not additional native properties.
+        if (name == "agentAdapterConnections"
+                and re.match(r"\s*property Connections agentAdapterConnections: Connections\s*\{", block)):
+            block = re.sub(r"(?m)^\s*target: Bluetooth\s*$", "", block)
         if RAW_BLUETOOTH_REFERENCE.search(block):
             errors.append(f"public singleton property exposes native Bluetooth state: {name}")
     for match in ROOT_FUNCTION.finditer(source):
@@ -301,6 +306,19 @@ def validate_gate_fixtures(errors: list[str]) -> None:
                            ("native function", bad_native_function)):
         if not public_native_exposure_errors(fixture):
             errors.append(f"Bluetooth public-native matcher missed bad {label} fixture")
+
+    lifecycle_subscription = """QtObject {
+    property Connections agentAdapterConnections: Connections {
+        target: Bluetooth
+        function onDefaultAdapterChanged(): void { root.resetAgentRetry(); }
+    }
+}"""
+    if public_native_exposure_errors(lifecycle_subscription):
+        errors.append("Bluetooth matcher rejected its service-owned lifecycle subscription")
+    for native_target in ("Bluetooth.defaultAdapter", "Bluetooth.devices"):
+        fixture = lifecycle_subscription.replace("target: Bluetooth", "target: " + native_target)
+        if not public_native_exposure_errors(fixture):
+            errors.append("Bluetooth lifecycle subscription may not expose a native adapter target")
 
     bad_warning_cap = """QtObject {
     readonly property int operationWarningLimit: 3
@@ -517,7 +535,6 @@ def validate_presentation(errors: list[str]) -> None:
     if "module qs.Titonium.Overlays.Bluetooth" not in qmldir:
         errors.append("Bluetooth overlay qmldir module name is missing")
     for export in ("singleton BluetoothPopupCoordinator 1.0 BluetoothPopupCoordinator.qml",
-                   "BluetoothPopupSurface 1.0 BluetoothPopupSurface.qml",
                    "ClassicBluetoothPopupSurface 1.0 ClassicBluetoothPopupSurface.qml",
                    "BluetoothDeviceRow 1.0 BluetoothDeviceRow.qml"):
         if export not in qmldir:
@@ -561,10 +578,15 @@ def focus_return_errors(coordinator: str, popup: str) -> list[str]:
     if "readonly property var invoker:" not in popup:
         errors.append("Bluetooth popup must read its descriptor invoker")
     return_focus = function_block(popup, "returnFocus")
-    if "root.invoker && root.invoker.forceActiveFocus" not in return_focus:
+    if "const target = root.closingInvoker || root.invoker" not in return_focus or "target?.forceActiveFocus" not in return_focus:
         errors.append("Bluetooth popup focus return must guard the invoker")
-    if "root.returnFocus();" not in close_block:
-        errors.append("Bluetooth popup close must return focus before closing")
+    finish_close = function_block(popup, "finishClose")
+    return_index = finish_close.find("root.returnFocus();")
+    close_index = finish_close.find("SurfaceManager.closeOwned(")
+    if return_index < 0 or close_index < return_index:
+        errors.append("Bluetooth popup must return focus before releasing its owned surface")
+    if "root.closingInvoker = root.invoker" not in close_block or "root.finishClose();" not in close_block:
+        errors.append("Bluetooth popup must snapshot its invoker and finish synchronously with Reduced Motion")
     if "Component.onDestruction: root.returnFocus()" not in popup:
         errors.append("Bluetooth popup must return focus when destroyed")
     return errors
@@ -590,12 +612,17 @@ def validate_presentation_gate_fixtures(errors: list[str]) -> None:
     function open(screen: var): bool { return true; }
     function toggle(screen: var): bool { return true; }
 }"""
-    valid_popup = """FocusScope {
-    readonly property var invoker: descriptor?.invoker || null
-    function returnFocus(): void { if (root.invoker && root.invoker.forceActiveFocus) root.invoker.forceActiveFocus(Qt.PopupFocusReason); }
-    function close(): void { root.returnFocus(); SurfaceManager.close(ownerId); }
-    Component.onDestruction: root.returnFocus()
-}"""
+    valid_popup = POPUP.read_text(encoding="utf-8")
+    valid_coordinator = COORDINATOR.read_text(encoding="utf-8")
+    if focus_return_errors(valid_coordinator, valid_popup):
+        errors.append("Bluetooth focus-return matcher rejects the active Classic surface")
+    for broken_popup in (
+        valid_popup.replace("target?.forceActiveFocus", "target.forceActiveFocus"),
+        valid_popup.replace("root.returnFocus();", ""),
+        valid_popup.replace("root.closingInvoker = root.invoker", "root.closingInvoker = null"),
+    ):
+        if not focus_return_errors(valid_coordinator, broken_popup):
+            errors.append("Bluetooth focus-return matcher missed a broken Classic lifecycle")
     if not focus_return_errors(missing_invoker_coordinator, valid_popup):
         errors.append("Bluetooth focus-return matcher missed missing-invoker fixture")
 

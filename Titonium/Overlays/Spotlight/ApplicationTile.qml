@@ -19,16 +19,32 @@ FocusScope {
 
     activeFocusOnTab: true
 
-    Rectangle {
+    Item {
         id: tileFrame
         anchors.centerIn: parent
         width: Math.min(132, parent.width - Metrics.spacingSmall)
         height: Math.min(120, parent.height - Metrics.spacingSmall)
-        radius: Metrics.radiusLarge
-        color: root.selected || root.hovered || root.pressed || root.activeFocus
-            ? Theme.surfaceInteractive : "transparent"
-        border.width: 0
-        Behavior on color { ColorAnimation { duration: Motion.fast } }
+
+        Rectangle {
+            anchors.fill: parent
+            visible: Theme.legacy
+            radius: Metrics.radiusLarge
+            color: root.selected || root.hovered || root.pressed || root.activeFocus
+                ? Theme.surfaceInteractive : "transparent"
+            border.width: 0
+            Behavior on color { ColorAnimation { duration: Motion.fast } }
+        }
+
+        Controls.StylePaint {
+            anchors.fill: parent
+            visible: !Theme.legacy
+            tokens: Theme.tokens
+            role: "button"
+            radius: Metrics.radiusLarge
+            outlined: false
+            interaction: ({ hovered: root.hovered, pressed: root.pressed,
+                focused: root.activeFocus, selected: root.selected, quiet: true })
+        }
 
         Column {
             anchors.centerIn: parent

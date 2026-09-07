@@ -144,7 +144,7 @@ assert.match(workspacesSource,
 assert.match(workspacesSource,
     /workspaceSnapshotForId\(\s*root\.count, root\.activeWorkspaceId\)/);
 assert.match(hyprlandServiceSource,
-    /target: Hyprland\.monitors[\s\S]*function onValuesChanged\(\): void \{[\s\S]*root\.bootstrapFocusedWorkspace\(\);[\s\S]*root\.recomputeWindows\(\);/,
+    /target: Hyprland\.monitors[\s\S]*function onValuesChanged\(\): void \{[\s\S]*root\.bootstrapFocusedWorkspace\(\);[\s\S]*root\.scheduleWindowRefresh\(\);/,
     "startup focus must resync when the refreshed monitor model becomes available");
 assert.match(hyprlandServiceSource,
     /focusedWorkspaceEventId\(event\.name, fields\)[\s\S]*root\.focusedWorkspaceIdValue = eventWorkspaceId/,

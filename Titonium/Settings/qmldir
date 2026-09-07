@@ -4,3 +4,4 @@ SettingsHost 1.0 SettingsHost.qml
 SettingsWindow 1.0 SettingsWindow.qml
 SettingsCenter 1.0 SettingsCenter.qml
 SettingsWorkspace 1.0 SettingsWorkspace.qml
+singleton AppearanceCoordinator 1.0 AppearanceCoordinator.qml

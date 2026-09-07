@@ -1,12 +1,8 @@
 pragma ComponentBehavior: Bound
-
 import QtQuick
-import QtQuick.Layouts
-import qs.Titonium.Core.Runtime
 import qs.Titonium.Bar.center
 import qs.Titonium.Shared as Shared
 import qs.Titonium.Theme
-import "../../CenterPresentationRules.js" as PresentationRules
 
 FocusScope {
     id: root
@@ -15,218 +11,90 @@ FocusScope {
     required property var profile
     signal intentRequested(var intent)
     signal transitionFinished(int generation)
-    readonly property var context: root.snapshot.contexts.find(
-        item => item.id === root.viewState.selectedContextId) || root.snapshot.primary
-    property var displayedContext: null
-    property var pendingContext: null
-    readonly property var contextActions: root.snapshot.capabilities.actions.filter(
-        item => root.displayedContext && item.contextId === root.displayedContext.id)
-    readonly property var notificationIndicator: root.snapshot.indicators.find(
-        item => item.id === "notification:unread") || null
-    readonly property var contextTransitionPlan:
-        PresentationRules.contextTransition(root.profile, Motion.reduced)
+    readonly property bool popup: root.viewState.mode === "banner" || root.viewState.mode === "expanded"
+    readonly property var context: root.viewState.previewContext || root.snapshot.contexts.find(
+        item => item.id === root.viewState.selectedContextId) || null
     readonly property real shoulderSize: 18
-    readonly property real visualWidth: root.viewState.mode === "expanded"
-        ? Math.min(720, parent.width - 40)
-        : (root.viewState.mode === "banner" ? Math.min(480, parent.width - 24) : 220)
-    readonly property real bodyWidth: Math.max(1, root.visualWidth - root.shoulderSize * 2)
-    readonly property real bodyHeight: root.viewState.mode === "expanded" ? 440
-        : (root.viewState.mode === "banner" ? 72 : root.profile.compact.height)
-    readonly property real bodyRadius: root.viewState.mode === "expanded"
-        ? root.profile.expanded.radius : (root.viewState.mode === "banner"
-        ? root.profile.banner.radius : root.profile.compact.radius)
-    readonly property rect primaryVisualBounds: Qt.rect(
-        shape.x, shape.y, shape.width, shape.height)
-    readonly property var composedVisualBounds:
-        PresentationRules.combinedVisualBounds(root.primaryVisualBounds,
-            secondaryPill.visualBounds, secondaryPill.visible)
-    readonly property rect visualBounds: Qt.rect(
-        root.composedVisualBounds.x, root.composedVisualBounds.y,
-        root.composedVisualBounds.width, root.composedVisualBounds.height)
-    readonly property rect interactiveBounds: root.primaryVisualBounds
-
-    function deadlineIntent(type: string): var {
-        return {
-            type: type,
-            generation: root.viewState.generation,
-            contextId: root.viewState.selectedContextId,
-            deadline: root.viewState.deadlineToken,
-        };
-    }
-
-    function replaceDisplayedContext(nextContext: var): void {
-        root.pendingContext = nextContext;
-        if (!root.displayedContext || root.viewState.mode !== "banner"
-                || root.contextTransitionPlan.kind === "replace") {
-            contextTransition.stop();
-            root.displayedContext = root.pendingContext;
-            contentStage.opacity = 1;
-        } else {
-            contextTransition.restart();
-        }
-        if (root.viewState.mode === "banner" && bannerHover.hovered)
-            root.intentRequested(root.deadlineIntent("pause-timeout"));
-    }
-
-    function commitPendingContext(): void {
-        root.displayedContext = root.pendingContext;
-    }
-
-    onContextChanged: root.replaceDisplayedContext(root.context)
-    onViewStateChanged: {
-        if (root.viewState.mode !== "banner")
-            root.replaceDisplayedContext(root.context);
-    }
-    Component.onCompleted: root.replaceDisplayedContext(root.context)
+    readonly property real headerHeight: compactCapsule.y + compactCapsule.height + 12
+    readonly property real bodyWidth: Math.max(1, Math.min(root.viewState.mode === "expanded" ? 720 : 480,
+        root.width - 40 - root.shoulderSize * 2))
+    readonly property real bodyHeight: Math.max(1, Math.min(
+        root.headerHeight + (root.viewState.mode === "expanded" ? 500 : 88), root.height - 16))
+    readonly property rect visualBounds: root.popup
+        ? Qt.rect(shape.x, shape.y, shape.width, shape.height) : compactCapsule.visualBounds
+    readonly property rect interactiveBounds: root.visualBounds
 
     Shared.ConnectedPillShape {
         id: shape
+        objectName: "connectedCenterShell"
+        visible: root.popup
         anchors.top: parent.top
         anchors.horizontalCenter: parent.horizontalCenter
-        bodyWidth: root.bodyWidth
-        bodyHeight: root.bodyHeight
+        bodyWidth: root.popup ? root.bodyWidth : compactCapsule.width
+        bodyHeight: root.popup ? root.bodyHeight : compactCapsule.height + 4
         shoulderSize: root.shoulderSize
-        bottomRadius: root.bodyRadius
-        color: Theme.light ? "#ffffff" : "#000000"
-
-        Item {
-            id: contentStage
-            x: shape.bodyLeft
-            width: shape.bodyWidth
-            height: shape.bodyHeight
-
-            ColumnLayout {
-                anchors.centerIn: parent
-                width: Math.max(0, parent.width - 32)
-                spacing: Metrics.spacingSmall
-
-                Item {
-                    id: activationArea
-                    Layout.fillWidth: true
-                    implicitHeight: headingColumn.implicitHeight
-
-                    ColumnLayout {
-                        id: headingColumn
-                        anchors.fill: parent
-                        spacing: Metrics.spacingSmall
-
-                        RowLayout {
-                            Layout.fillWidth: true
-                            Shared.SystemIcon {
-                                Layout.preferredWidth: 18
-                                Layout.preferredHeight: 18
-                                sourceName: root.displayedContext?.icon || ""
-                                fallbackName: root.displayedContext?.icon || "center_focus_strong"
-                                size: 18
-                            }
-                            Shared.TextLabel {
-                                Layout.fillWidth: true
-                                text: root.displayedContext?.title
-                                    || I18n.tr("menubar.center.title")
-                                elide: Text.ElideRight
-                                horizontalAlignment: Text.AlignHCenter
-                            }
-                        }
-                        Shared.TextLabel {
-                            Layout.fillWidth: true
-                            visible: root.viewState.mode !== "compact"
-                                && (root.displayedContext?.subtitle || "").length > 0
-                            text: root.displayedContext?.subtitle || ""
-                            variant: "caption"
-                            tone: "secondary"
-                            horizontalAlignment: Text.AlignHCenter
-                            elide: Text.ElideRight
-                        }
-                    }
-                }
-
-                RowLayout {
-                    id: actionRow
-                    Layout.alignment: Qt.AlignHCenter
-                    visible: root.viewState.mode !== "compact" && root.contextActions.length > 0
-                    spacing: Metrics.spacingSmall
-                    Repeater {
-                        model: root.contextActions
-                        Shared.Button {
-                            required property var modelData
-                            size: "small"
-                            variant: modelData.role === "primary" ? "primary" : "quiet"
-                            iconName: modelData.icon
-                            accessibleName: modelData.label
-                            enabled: modelData.enabled
-                            onTriggered: root.intentRequested({ type: "invoke-action",
-                                actionId: modelData.id, contextId: modelData.contextId })
-                        }
-                    }
+        bottomRadius: root.viewState.mode === "expanded" ? root.profile.expanded.radius : root.profile.banner.radius
+        color: Theme.centerSurface
+        Loader {
+            x: shape.bodyLeft + 8
+            y: root.headerHeight
+            width: Math.max(0, shape.bodyWidth - 16)
+            height: Math.max(0, shape.bodyHeight - y - 8)
+            clip: true
+            active: root.visible && root.viewState.mode === "banner"
+            sourceComponent: Component {
+                NormalBannerContent {
+                    context: root.context
+                    onIntentRequested: intent => root.intentRequested(intent)
                 }
             }
         }
-        TapHandler {
-            parent: activationArea
-            gesturePolicy: TapHandler.ReleaseWithinBounds
-            onTapped: root.intentRequested({ type: "request-mode",
-                mode: root.viewState.mode === "expanded" ? "compact" : "expanded" })
-        }
-        HoverHandler {
-            id: bannerHover
-            enabled: root.viewState.mode === "banner"
-            onHoveredChanged: {
-                if (root.viewState.mode !== "banner")
-                    return;
-                if (bannerHover.hovered)
-                    root.intentRequested(root.deadlineIntent("pause-timeout"));
-                else
-                    root.intentRequested(root.deadlineIntent("resume-timeout"));
+        Loader {
+            objectName: "connectedExpandedContent"
+            x: shape.bodyLeft + 8
+            y: root.headerHeight
+            width: Math.max(0, shape.bodyWidth - 16)
+            height: Math.max(0, shape.bodyHeight - y - 8)
+            clip: true
+            active: root.visible && root.viewState.mode === "expanded"
+            sourceComponent: Component {
+                ExpandedContent {
+                    snapshot: root.snapshot
+                    viewState: root.viewState
+                    onIntentRequested: intent => root.intentRequested(intent)
+                }
             }
         }
-        Behavior on bodyWidth { NumberAnimation { duration: Motion.reduced ? 0 : 240 } }
+        Behavior on bodyWidth { NumberAnimation { duration: Motion.reduced ? 0 : Motion.normal; easing.type: Easing.OutCubic } }
         Behavior on bodyHeight {
             NumberAnimation {
-                duration: Motion.reduced ? 0 : 240
+                duration: Motion.reduced ? 0 : Motion.normal
+                easing.type: Easing.OutCubic
                 onFinished: root.transitionFinished(root.viewState.generation)
             }
         }
     }
-
-    CenterSecondaryPill {
-        id: secondaryPill
-        x: shape.x + shape.width + Metrics.spacingSmall
-        y: shape.y
-        width: implicitWidth
-        height: root.profile.compact.height
-        indicator: root.notificationIndicator
-        rendererVisible: root.visible && root.viewState.mode === "compact"
-        backgroundColor: Theme.light ? "#ffffff" : "#000000"
-        topLeftRadius: root.profile.compact.radius
-        bottomLeftRadius: root.profile.compact.radius
-        topRightRadius: root.profile.compact.radius
-        bottomRightRadius: root.profile.compact.radius
+    CenterCompactCapsule {
+        id: compactCapsule
+        objectName: "connectedCenterTitle"
+        connected: true
+        visible: root.viewState.mode !== "closed"
+        z: 2
+        backgroundVisible: !root.popup
+        color: Theme.legacy && root.popup ? Theme.surfaceElevated : "transparent"
+        border.width: Theme.legacy && root.popup ? Metrics.borderWidth : 0
+        border.color: Theme.border
+        interactionEnabled: root.viewState.mode === "compact"
+        anchors.horizontalCenter: parent.horizontalCenter
+        y: 4
+        snapshot: root.snapshot
+        monitorWidth: root.width
+        onIntentRequested: intent => root.intentRequested(intent)
     }
-
-    SequentialAnimation {
-        id: contextTransition
-        NumberAnimation {
-            target: contentStage
-            property: "opacity"
-            from: 1
-            to: 0
-            duration: root.contextTransitionPlan.exitMs
-        }
-        ScriptAction { script: root.commitPendingContext() }
-        NumberAnimation {
-            target: contentStage
-            property: "opacity"
-            from: 0
-            to: 1
-            duration: root.contextTransitionPlan.enterMs
-        }
-    }
-
-    Connections {
-        target: Motion
-        function onReducedChanged(): void {
-            if (Motion.reduced)
-                root.replaceDisplayedContext(root.context);
+    onViewStateChanged: {
+        if (Motion.reduced || !root.popup) {
+            const generation = root.viewState.generation;
+            Qt.callLater(() => root.transitionFinished(generation));
         }
     }
 }

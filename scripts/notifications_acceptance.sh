@@ -64,7 +64,39 @@ call_ipc() {
 }
 
 trigger_notification_control() {
-    hyprctl dispatch global titonium:notifications >/dev/null 2>&1
+    local status provider reply
+    # Match Quickshell's Hyprland.usingLua detection, rather than infer the active
+    # parser from the installed version or a config filename.
+    if ! status="$(hyprctl -j status 2>&1)"; then
+        if [[ "$status" != "unknown request" ]]; then
+            printf 'FAIL cannot query notification shortcut dispatcher: %s\n' "$status" >&2
+            return 1
+        fi
+    fi
+    if [[ "$status" == "unknown request" ]]; then
+        # Hyprland versions predating Lua have no status request.
+        provider="hyprlang"
+    elif ! provider="$(python3 -c '
+import json, sys
+try:
+    provider = json.loads(sys.argv[1]).get("configProvider")
+except (ValueError, AttributeError):
+    raise SystemExit(1)
+if provider not in ("lua", "hyprlang"):
+    raise SystemExit(1)
+print(provider)
+' "$status")"; then
+        printf 'FAIL unknown notification shortcut config provider: %s\n' "$status" >&2
+        return 1
+    fi
+    local -a command=(hyprctl dispatch global titonium:notifications)
+    if [[ "$provider" == "lua" ]]; then
+        command=(hyprctl dispatch 'hl.dsp.global("titonium:notifications")')
+    fi
+    if ! reply="$("${command[@]}" 2>&1)"; then
+        printf 'FAIL notification shortcut dispatch (%s): %s\n' "$provider" "$reply" >&2
+        return 1
+    fi
 }
 
 panel_matches() {

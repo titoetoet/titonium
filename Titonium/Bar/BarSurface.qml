@@ -15,17 +15,24 @@ PanelWindow {
     required property ShellScreen screenModel
     signal notificationsRequested(var screen, var invoker)
     readonly property int barHeight: Metrics.barHeight
+    // Connected edge pills are 36px tall; their transparent canvas is taller.
+    readonly property int occupiedHeight: RightPillCoordinator.presentedStyle === "connected"
+        ? Metrics.widgetHeight : root.barHeight
     readonly property int edgeRevealHeight: 2
+    property bool hoverRevealSuppressed: false
+    readonly property bool centerHovered: BarVisibilityState.centerHovered(root.screenModel.name)
+    readonly property bool pointerHovered: edgeRevealHover.hovered || root.barHovered
+        || RightPillCoordinator.hovered || root.centerHovered
     readonly property bool revealRequested: BarVisibilityRules.shouldReveal(
-        BarVisibilityState.pinned, edgeRevealHover.hovered, root.barHovered)
-        || CenterSurfaceController.active || RightPillCoordinator.active
-        || RightPillCoordinator.hovered
+        BarVisibilityState.pinned, edgeRevealHover.hovered,
+        root.barHovered || RightPillCoordinator.hovered || root.centerHovered, root.hoverRevealSuppressed)
+        || CenterSurfaceController.active || RightPillCoordinator.presentationActive
     property bool barRevealed: BarVisibilityState.pinned
     screen: root.screenModel
     color: "transparent"
     implicitHeight: root.barHeight
     exclusiveZone: BarVisibilityRules.exclusiveZone(
-        BarVisibilityState.pinned, root.barHeight)
+        BarVisibilityState.pinned, root.occupiedHeight)
     aboveWindows: true
     WlrLayershell.namespace: "titonium-menubar"
     WlrLayershell.layer: WlrLayer.Top
@@ -123,7 +130,9 @@ PanelWindow {
         x: 0
         y: 0
         width: parent.width
-        height: root.edgeRevealHeight
+        // Bridge gaps while revealed; hidden and pinned bars retain the 2px strip.
+        height: BarVisibilityRules.revealRegionHeight(BarVisibilityState.pinned,
+            root.barRevealed, root.barHeight, root.edgeRevealHeight)
 
         HoverHandler { id: edgeRevealHover }
     }
@@ -135,6 +144,21 @@ PanelWindow {
         onTriggered: {
             if (!root.revealRequested)
                 root.barRevealed = false;
+        }
+    }
+
+    // Ignore the hover that clicked unpin until the pointer leaves the bar.
+    onPointerHoveredChanged: {
+        if (!root.pointerHovered)
+            root.hoverRevealSuppressed = false;
+    }
+
+    Connections {
+        target: BarVisibilityState
+        function onHideRequested(): void {
+            root.hoverRevealSuppressed = root.pointerHovered;
+            hideDelay.stop();
+            root.barRevealed = false;
         }
     }
 

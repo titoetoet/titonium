@@ -163,6 +163,17 @@ QtObject {
             + SettingsCoordinator.requestedPage : "unavailable:busy";
     }
 
+    property Connections barVisibilityConnection: Connections {
+        target: BarVisibilityState
+        function onHideRequested(): void {
+            RightPillCoordinator.closeConnectedSurface();
+            RightPillCoordinator.close();
+            if (SurfaceManager.descriptor?.barConnected === true)
+                SurfaceManager.close("");
+            root.closeCenter("bar-unpinned");
+        }
+    }
+
     property Connections surfaceConnection: Connections {
         target: SurfaceManager
 
@@ -255,8 +266,11 @@ QtObject {
                     timeoutMs: request.timeoutMs, focusPolicy: request.focusPolicy,
                     presentationOwner: request.presentationOwner,
                     acquisitionPolicy: request.acquisitionPolicy });
-            else
+            else {
                 CenterSurfaceController.dispatch({ type: "request-mode", mode: request.mode });
+                if (request.mode === "expanded")
+                    CenterSurfaceController.dispatch({ type: "select-tab", tab: request.destination });
+            }
         }
     }
 

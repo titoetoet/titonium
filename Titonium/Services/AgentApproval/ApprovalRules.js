@@ -19,7 +19,13 @@ function unquote(value) {
 }
 
 function normalize(payload) {
-    const source = text(payload.source || "antigravity");
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)
+            || ["chatgpt", "antigravity"].indexOf(payload.source) < 0)
+        return null;
+    const requestId = typeof payload.requestId === "string" ? payload.requestId : payload.id;
+    if (typeof requestId !== "string" || !requestId.trim())
+        return null;
+    const source = payload.source;
     const toolCall = payload.toolCall || {};
     const toolArgs = toolCall.args || {};
     const params = payload.params || payload;
@@ -61,7 +67,7 @@ function normalize(payload) {
     }
 
     return Object.freeze({
-        requestId: text(payload.requestId || payload.id),
+        requestId: requestId,
         source: source,
         kind: toolName,
         title: source === "chatgpt" ? "ChatGPT" : "Antigravity",
@@ -71,7 +77,7 @@ function normalize(payload) {
         summary: summary,
         detail: detail,
         reason: text(params.reason || params.justification || detail || summary),
-        conversationId: text(payload.conversationId || ""),
+        conversationId: sessionId(source === "chatgpt" ? params.threadId : payload.conversationId),
         stepIdx: payload.stepIdx !== undefined ? Number(payload.stepIdx) : -1,
         workspacePaths: Array.isArray(payload.workspacePaths) ? payload.workspacePaths : [],
         raw: payload
@@ -122,56 +128,30 @@ function isFileChange(descriptor) {
         || Boolean(descriptor.targetFile);
 }
 
-function sessionScope(descriptor) {
-    if (!descriptor)
-        return "";
-    if (descriptor.conversationId)
-        return text(descriptor.conversationId);
-    if (Array.isArray(descriptor.workspacePaths) && descriptor.workspacePaths.length > 0 && descriptor.workspacePaths[0])
-        return text(descriptor.workspacePaths[0]);
-    if (descriptor.cwd)
-        return text(descriptor.cwd);
-    return "antigravity";
+function sessionId(value) {
+    return typeof value === "string" && value.trim() ? value : "";
 }
 
-function commandBinary(descriptor) {
-    if (!descriptor || !descriptor.command)
+function sessionScope(descriptor) {
+    if (!descriptor || ["chatgpt", "antigravity"].indexOf(descriptor.source) < 0
+            || !sessionId(descriptor.conversationId))
         return "";
-    const cmd = descriptor.command.trim();
-    return cmd ? cmd.split(/\s+/)[0] : "";
+    // Encode both fields to prevent delimiter collisions and cross-source grants.
+    return JSON.stringify([descriptor.source, descriptor.conversationId]);
 }
 
 function sessionGrantKey(descriptor) {
-    if (!descriptor || !descriptor.conversationId)
-        return "";
-    const binary = commandBinary(descriptor);
-    if (!binary)
-        return "";
-    return descriptor.conversationId + "\u0000command:" + binary;
+    const scope = sessionScope(descriptor);
+    return scope ? "session:" + scope : "";
 }
 
 function sessionKeys(descriptor) {
-    if (!descriptor)
-        return [];
-    const keys = [];
-    const standardKey = sessionGrantKey(descriptor);
-    if (standardKey)
-        keys.push(standardKey);
-    if (descriptor.conversationId)
-        keys.push("conv:" + descriptor.conversationId);
+    const key = sessionGrantKey(descriptor);
+    return key ? [key] : [];
+}
 
-    const scope = sessionScope(descriptor);
-    if (scope) {
-        if (isFileChange(descriptor)) {
-            keys.push(scope + "\u0000file_edit");
-        } else {
-            const binary = commandBinary(descriptor);
-            if (binary)
-                keys.push(scope + "\u0000command:" + binary);
-        }
-        keys.push("scope:" + scope);
-    }
-    return keys;
+function validDecision(decision) {
+    return ["allow_once", "allow_session", "deny", "ask"].indexOf(decision) >= 0;
 }
 
 function requiresExplicitApproval(descriptor) {
@@ -179,6 +159,10 @@ function requiresExplicitApproval(descriptor) {
 }
 
 function decisionPayload(source, decision, descriptor) {
+    if (!validDecision(decision))
+        return { decision: source === "chatgpt" ? "decline" : "deny" };
+    if (["chatgpt", "antigravity"].indexOf(source) < 0)
+        return { decision: "deny" };
     if (source === "chatgpt") {
         if (decision === "ask")
             return { decision: "delegate" };

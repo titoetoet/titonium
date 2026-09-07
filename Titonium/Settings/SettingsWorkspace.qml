@@ -46,7 +46,7 @@ Item {
             RowLayout {
                 anchors.fill: parent
                 anchors.leftMargin: Metrics.spacingLarge
-                anchors.rightMargin: Metrics.spacingMedium
+                anchors.rightMargin: 52
                 spacing: Metrics.spacingMedium
 
                 ColumnLayout {
@@ -66,13 +66,7 @@ Item {
                     }
                 }
 
-                Shared.Button {
-                    iconName: "close"
-                    variant: "quiet"
-                    accessibleName: I18n.tr("settings.close")
-                    enabled: !Preferences.savePending
-                    onTriggered: SettingsCoordinator.requestClose()
-                }
+
             }
         }
 
@@ -135,13 +129,43 @@ Item {
                 color: Theme.border
             }
 
-            Loader {
-                id: pageLoader
+            ColumnLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 Layout.margins: 24
-                active: SettingsCoordinator.active
-                sourceComponent: root.componentFor(SettingsCoordinator.requestedPage)
+                spacing: Metrics.spacingSmall
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: Metrics.spacingMedium
+
+                    Shared.TextLabel {
+                        Layout.fillWidth: true
+                        text: I18n.tr("settings." + SettingsCoordinator.requestedPage + ".title")
+                        variant: "titleLarge"
+                        elide: Text.ElideRight
+                    }
+
+                    Shared.Button {
+                        visible: SettingsCoordinator.requestedPage !== "about"
+                        iconName: "restart_alt"
+                        label: I18n.tr("settings.reset.page")
+                        size: "small"
+                        variant: "quiet"
+                        enabled: !SettingsCoordinator.busy && AppearanceCoordinator.editable()
+                        onTriggered: SettingsCoordinator.restoreDefaults(false)
+                    }
+                }
+
+                Loader {
+                    id: pageLoader
+                    objectName: "settingsPageLoader"
+                    enabled: !SettingsCoordinator.busy
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    active: SettingsCoordinator.active
+                    sourceComponent: root.componentFor(SettingsCoordinator.requestedPage)
+                }
             }
         }
 
@@ -161,30 +185,46 @@ Item {
                 anchors.rightMargin: Metrics.spacingLarge
                 spacing: Metrics.spacingSmall
 
+                Shared.Button {
+                    label: I18n.tr("settings.reset.all")
+                    iconName: "restart_alt"
+                    variant: "quiet"
+                    enabled: !SettingsCoordinator.busy && AppearanceCoordinator.editable()
+                    onTriggered: SettingsCoordinator.restoreDefaults(true)
+                }
+
                 Shared.TextLabel {
                     Layout.fillWidth: true
-                    text: Preferences.lastError.length > 0 ? Preferences.lastError
-                        : (Preferences.savePending ? I18n.tr("settings.saving")
-                            : (Preferences.dirty ? I18n.tr("settings.unsaved") : ""))
-                    tone: Preferences.lastError.length > 0 ? "danger" : "secondary"
+                    text: AppearanceCoordinator.error ? I18n.tr(AppearanceCoordinator.error)
+                        : Preferences.lastError.length > 0 ? Preferences.lastError
+                        : (SettingsCoordinator.busy ? I18n.tr("settings.saving")
+                            : (SettingsCoordinator.dirty ? I18n.tr("settings.unsaved") : ""))
+                    tone: AppearanceCoordinator.error || Preferences.lastError.length > 0 ? "danger" : "secondary"
                     elide: Text.ElideRight
                 }
 
                 Shared.Button {
-                    label: I18n.tr("settings.cancel")
-                    enabled: !Preferences.savePending
-                    onTriggered: SettingsCoordinator.discardAndClose()
-                }
-
-                Shared.Button {
-                    label: Preferences.savePending ? I18n.tr("settings.saving")
+                    label: SettingsCoordinator.busy ? I18n.tr("settings.saving")
                         : I18n.tr("settings.apply")
                     variant: "primary"
-                    enabled: Preferences.dirty && !Preferences.savePending
+                    enabled: SettingsCoordinator.dirty && !SettingsCoordinator.busy && !AppearanceCoordinator.trialActive
+                        && !AppearanceCoordinator.themeWallpaperMissing
                     onTriggered: SettingsCoordinator.apply()
                 }
             }
         }
+    }
+
+    Shared.Button {
+        anchors.top: parent.top
+        anchors.right: parent.right
+        anchors.margins: 6
+        iconName: "close"
+        size: "small"
+        variant: "quiet"
+        accessibleName: I18n.tr("settings.close")
+        enabled: !SettingsCoordinator.busy
+        onTriggered: SettingsCoordinator.requestClose()
     }
 
     Component {

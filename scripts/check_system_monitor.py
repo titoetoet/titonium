@@ -110,12 +110,10 @@ def main() -> int:
             errors.append(f"detached System Monitor retains unreachable Center view: {name}")
 
     coordinator_source = NOTCH_COORDINATOR.read_text(encoding="utf-8")
-    for forbidden in (
-        "qs.Titonium.Services.SystemMonitor",
-        "SystemMonitorService.start()", "SystemMonitorService.stop()",
-    ):
-        if forbidden in coordinator_source:
-            errors.append(f"System Monitor is still coupled to Center: {forbidden}")
+    for required in ('root.mode === "expanded"', 'root.expandedTab === "monitoring"',
+                     'onMonitoringVisibleChanged:', 'SystemMonitorService.start()', 'SystemMonitorService.stop()'):
+        if required not in coordinator_source:
+            errors.append(f"Monitoring lifecycle missing: {required}")
 
     notch_qmldir = NOTCH_ROOT / "qmldir"
     if notch_qmldir.is_file():

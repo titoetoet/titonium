@@ -70,12 +70,6 @@ FocusScope {
         root.rightSourceX, root.rightSourceWidth,
         RightPillCoordinator.rightCompactWidth, root.width, root.rightTargetMenuWidth,
         root.targetMenuHeight, 1)
-    readonly property real leftSourceOffset: root.presentedEdge === "left"
-        ? EdgeMenuGeometry.sourceOffset(root.leftSourceX, root.leftSourceWidth,
-            root.leftMenuBounds, root.presentedProgress) : 0
-    readonly property real rightSourceOffset: root.presentedEdge === "right"
-        ? EdgeMenuGeometry.sourceOffset(root.rightSourceX, root.rightSourceWidth,
-            root.rightMenuBounds, root.presentedProgress) : 0
     readonly property var leftBranch: EdgeMenuGeometry.branchRect("left",
         root.leftSourceX, root.leftSourceWidth,
         RightPillCoordinator.leftCompactWidth, root.width, root.leftTargetMenuWidth,
@@ -183,7 +177,7 @@ FocusScope {
         branchY: root.leftBranch.y
         branchWidth: root.leftBranch.width
         branchHeight: root.leftBranch.height
-        color: Theme.light ? "#ffffff" : "#0d0e12"
+        color: Theme.connectedSurface
     }
 
     Shared.AnchoredMenuPillShape {
@@ -198,20 +192,25 @@ FocusScope {
         branchY: root.rightBranch.y
         branchWidth: root.rightBranch.width
         branchHeight: root.rightBranch.height
-        color: Theme.light ? "#ffffff" : "#0d0e12"
+        color: Theme.connectedSurface
     }
 
-    // Keep the menu body independent from the shoulder path. The body overlaps
-    // the compact pill by 8px, so both pieces remain one connected surface even
-    // when the native Shape renderer drops the tall concave section.
-    Rectangle {
-        x: root.activeBranch.x
-        y: root.activeBranch.y
-        width: root.activeBranch.width
-        height: root.activeBranch.height
-        visible: root.presentedProgress > 0
-        radius: Math.max(0, Math.min(20, width / 2, height / 2))
-        color: Theme.light ? "#ffffff" : "#0d0e12"
+    // The shared contour paints both the rail and body once. A second rounded
+    // rectangle would overlap the shoulder and make translucent edges darker.
+    Repeater {
+        model: 4
+
+        Shared.ScreenCorner {
+            required property int index
+            readonly property bool onRight: index === 1 || index === 2
+            readonly property bool onBottom: index >= 2
+            width: 16
+            height: 16
+            x: onRight ? root.width - width : 0
+            y: onBottom ? root.height - height : root.compactY + 36
+            rotation: index * 90
+            color: Theme.connectedSurface
+        }
     }
 
     StartIsland {
@@ -222,7 +221,7 @@ FocusScope {
         width: Math.max(0, RightPillCoordinator.leftCompactWidth - 16)
         height: 36
         screen: root.screenModel
-        menuAnchorOffset: root.leftSourceOffset
+        menuAnchorOffset: 0
     }
 
     EndIsland {
@@ -233,8 +232,7 @@ FocusScope {
         width: Math.max(0, RightPillCoordinator.rightCompactWidth - 16)
         height: 36
         screen: root.screenModel
-        menuAnchorOffset: root.ownsConnectedSurface ? 0
-            : root.rightSourceOffset
+        menuAnchorOffset: 0
         onNotificationsRequested: (screen, invoker) =>
             root.notificationsRequested(screen, invoker)
     }

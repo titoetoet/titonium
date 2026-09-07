@@ -7,6 +7,7 @@ import qs.Titonium.Bar.center
 import qs.Titonium.Shared as Shared
 import qs.Titonium.Theme
 import "../../CenterPresentationRules.js" as PresentationRules
+import "../../MusicPlayerRules.js" as MusicRules
 import "ClassicPopupTransitionRules.js" as PopupRules
 
 FocusScope {
@@ -18,18 +19,12 @@ FocusScope {
     required property bool transitionOwner
     signal intentRequested(var intent)
     signal transitionFinished(int generation)
-    readonly property var context: root.snapshot.contexts.find(
-        item => item.id === root.viewState.selectedContextId) || root.snapshot.primary
-    property var displayedContext: null
-    property var pendingContext: null
+    readonly property var context: root.viewState.previewContext || root.snapshot.contexts.find(
+        item => item.id === root.viewState.selectedContextId) || null
     property var popupContext: null
     property var popupActions: []
     property var pendingPopupContext: null
     property var pendingPopupActions: []
-    readonly property var notificationIndicator: root.snapshot.indicators.find(
-        item => item.id === "notification:unread") || null
-    readonly property var contextTransitionPlan:
-        PresentationRules.contextTransition(root.profile, Motion.reduced)
     readonly property bool popupMode: root.viewState.mode === "banner"
         || root.viewState.mode === "expanded"
     readonly property bool popupClosing: root.transitionState.phase === "closing"
@@ -51,9 +46,11 @@ FocusScope {
     property int animationYDuration: 0
     readonly property string displayedPopupMode: root.transitionState.presentedMode
         || (root.popupMode ? root.viewState.mode : "banner")
-    readonly property var requestedPopupGeometry: PresentationRules.classicPopupGeometry(
-        root.profile, { width: root.width, height: root.height }, root.displayedPopupMode,
-        Metrics.barHeight, Metrics.barSpacing)
+    readonly property var requestedPopupGeometry: root.displayedPopupMode === "expanded"
+        ? ({width: Math.max(1, Math.min(720, root.width - 40)), height: Math.max(1, Math.min(500, root.height - root.popupTop - 16)), radius: root.profile.expanded.radius})
+        : PresentationRules.classicPopupGeometry(root.profile,
+            { width: root.width, height: root.height }, root.displayedPopupMode,
+            Metrics.barHeight, Metrics.barSpacing)
     readonly property var popupGeometry: PopupRules.popupGeometry(
         { width: root.requestedPopupGeometry.width,
             height: root.requestedPopupGeometry.height },
@@ -66,8 +63,7 @@ FocusScope {
     readonly property rect compactPrimaryBounds: Qt.rect(
         classicBody.x, classicBody.y, classicBody.width, classicBody.height)
     readonly property var composedCompactBounds:
-        PresentationRules.combinedVisualBounds(root.compactPrimaryBounds,
-            secondaryPill.visualBounds, secondaryPill.visible)
+        PresentationRules.normalizedBounds(root.compactPrimaryBounds)
     readonly property rect popupVisualBounds: Qt.rect(
         root.paintedPopupBounds.x, root.paintedPopupBounds.y,
         root.paintedPopupBounds.width, root.paintedPopupBounds.height)
@@ -86,20 +82,6 @@ FocusScope {
             contextId: root.viewState.selectedContextId,
             deadline: root.viewState.deadlineToken };
     }
-    function replaceDisplayedContext(nextContext: var): void {
-        root.pendingContext = nextContext;
-        if (!root.displayedContext || root.viewState.mode !== "banner"
-                || root.contextTransitionPlan.kind === "replace") {
-            contextTransition.stop();
-            root.displayedContext = root.pendingContext;
-            standardContent.opacity = 1;
-        } else {
-            contextTransition.restart();
-        }
-        if (root.viewState.mode === "banner" && bannerHover.hovered)
-            root.intentRequested(root.deadlineIntent("pause-timeout"));
-    }
-    function commitPendingContext(): void { root.displayedContext = root.pendingContext; }
     function commitPendingPopupContext(): void {
         root.popupContext = root.pendingPopupContext;
         root.popupActions = root.pendingPopupActions;
@@ -122,6 +104,7 @@ FocusScope {
             root.commitPendingPopupContext();
             bannerContent.opacity = 1;
         } else {
+            root.popupContext = nextContext;
             root.popupActions = nextActions;
         }
     }
@@ -175,7 +158,6 @@ FocusScope {
 
     onContextChanged: {
         if (root.popupMode) root.updatePopupContext();
-        else root.replaceDisplayedContext(root.context);
     }
     onTransitionOwnerChanged: {
         if (!root.transitionOwner) {
@@ -190,21 +172,18 @@ FocusScope {
     }
     onViewStateChanged: {
         root.updatePopupTransition();
-        if (root.viewState.mode !== "banner") root.replaceDisplayedContext(root.context);
     }
-    Component.onCompleted: { root.replaceDisplayedContext(root.context); root.updatePopupTransition(); }
+    Component.onCompleted: root.updatePopupTransition()
 
-    Shared.Surface {
+    CenterCompactCapsule {
         id: classicBody
         visible: root.presentationActive
-        anchors.top: parent.top
-        anchors.topMargin: root.profile.compact.inset
+        y: 4
         anchors.horizontalCenter: parent.horizontalCenter
-        width: 220
-        height: root.profile.compact.height
-        radius: root.profile.compact.radius
-        customColor: Theme.light ? "#ffffff" : "#000000"
-        clipContent: true
+        snapshot: root.snapshot
+        monitorWidth: root.width
+        interactionEnabled: root.presentationActive
+        onIntentRequested: intent => root.intentRequested(intent)
     }
     Shared.Panel {
         id: popupPanel
@@ -216,6 +195,7 @@ FocusScope {
         height: root.popupGeometry.height
         radius: root.requestedPopupGeometry.radius
         customColor: Theme.surface
+        padding: 0
         clipContent: true
         transformOrigin: Item.Top
         opacity: 1
@@ -223,187 +203,30 @@ FocusScope {
         transform: Translate { id: popupEntranceOffset; y: 0 }
     }
 
-    Item {
-        id: standardContent
-        parent: classicBody.contentItem
-        anchors.fill: parent
-        visible: root.presentationActive
-        ColumnLayout {
-            anchors.centerIn: parent
-            width: Math.max(0, parent.width - 32)
-            spacing: Metrics.spacingSmall
-            Item {
-                id: standardActivation
-                Layout.fillWidth: true
-                implicitHeight: standardHeading.implicitHeight
-                ColumnLayout {
-                    id: standardHeading
-                    anchors.fill: parent
-                    spacing: Metrics.spacingSmall
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Shared.SystemIcon {
-                            Layout.preferredWidth: 18; Layout.preferredHeight: 18
-                            sourceName: root.displayedContext?.icon || ""
-                            fallbackName: root.displayedContext?.icon || "center_focus_strong"
-                            size: 18
-                        }
-                        Shared.TextLabel {
-                            Layout.fillWidth: true
-                            text: root.displayedContext?.title || I18n.tr("menubar.center.title")
-                            elide: Text.ElideRight
-                            horizontalAlignment: Text.AlignHCenter
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    Item {
-        id: expandedContent
+    Loader {
+        objectName: "classicExpandedContent"
         parent: popupPanel.contentItem
         anchors.fill: parent
-        visible: root.popupPresented && root.displayedPopupMode === "expanded"
-        ColumnLayout {
-            anchors.centerIn: parent
-            width: parent.width
-            spacing: Metrics.spacingSmall
-            Shared.SystemIcon {
-                Layout.alignment: Qt.AlignHCenter
-                Layout.preferredWidth: 18; Layout.preferredHeight: 18
-                sourceName: root.popupContext?.icon || ""
-                fallbackName: root.popupContext?.icon || "center_focus_strong"
-                size: 18
-            }
-            Shared.TextLabel {
-                Layout.fillWidth: true
-                text: root.popupContext?.title || I18n.tr("menubar.center.title")
-                elide: Text.ElideRight
-                horizontalAlignment: Text.AlignHCenter
-            }
-            Shared.TextLabel {
-                Layout.fillWidth: true
-                visible: (root.popupContext?.subtitle || "").length > 0
-                text: root.popupContext?.subtitle || ""
-                variant: "caption"; tone: "secondary"
-                horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight
-            }
-            RowLayout {
-                Layout.alignment: Qt.AlignHCenter
-                spacing: Metrics.spacingSmall
-                Repeater {
-                    model: root.popupActions
-                    Shared.Button {
-                        required property var modelData
-                        size: "small"
-                        variant: modelData.role === "primary" ? "primary" : "quiet"
-                        iconName: modelData.icon; accessibleName: modelData.label
-                        enabled: root.popupInteractive && modelData.enabled
-                        onTriggered: root.intentRequested({ type: "invoke-action",
-                            actionId: modelData.id, contextId: modelData.contextId })
-                    }
-                }
+        active: root.visible && root.popupPresented && root.displayedPopupMode === "expanded"
+        sourceComponent: Component {
+            ExpandedContent {
+                snapshot: root.snapshot
+                viewState: root.viewState
+                enabled: root.popupInteractive
+                onIntentRequested: intent => root.intentRequested(intent)
             }
         }
     }
-
-    RowLayout {
+    NormalBannerContent {
         id: bannerContent
         parent: popupPanel.contentItem
         anchors.fill: parent
         visible: root.popupPresented && root.displayedPopupMode === "banner"
-        spacing: Metrics.spacingSmall
-        Shared.SystemIcon {
-            Layout.preferredWidth: root.bannerLayout.iconSize
-            Layout.preferredHeight: root.bannerLayout.iconSize
-            sourceName: root.popupContext?.icon || ""
-            fallbackName: root.popupContext?.icon || "center_focus_strong"
-            size: root.bannerLayout.iconSize
-        }
-        Item {
-            id: bannerActivation
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            ColumnLayout {
-                anchors.fill: parent
-                spacing: 0
-                Shared.TextLabel {
-                    Layout.fillWidth: true
-                    text: root.popupContext?.title || I18n.tr("menubar.center.title")
-                    elide: Text.ElideRight
-                }
-                Shared.TextLabel {
-                    Layout.fillWidth: true
-                    visible: (root.popupContext?.subtitle || "").length > 0
-                    text: root.popupContext?.subtitle || ""
-                    variant: "caption"; tone: "secondary"; elide: Text.ElideRight
-                }
-            }
-        }
-        Repeater {
-            model: root.popupActions
-            Shared.Button {
-                required property var modelData
-                Layout.preferredHeight: root.bannerLayout.actionHeight
-                size: "small"
-                variant: modelData.role === "primary" ? "primary" : "quiet"
-                iconName: modelData.icon; accessibleName: modelData.label
-                enabled: root.popupInteractive && modelData.enabled
-                onTriggered: root.intentRequested({ type: "invoke-action",
-                    actionId: modelData.id, contextId: modelData.contextId })
-            }
-        }
+        enabled: root.popupInteractive && visible
+        context: root.popupContext
+        onIntentRequested: intent => root.intentRequested(intent)
     }
 
-    TapHandler {
-        parent: standardActivation
-        enabled: root.presentationActive && root.viewState.mode === "compact"
-        gesturePolicy: TapHandler.ReleaseWithinBounds
-        onTapped: root.intentRequested({ type: "request-mode",
-            mode: "expanded" })
-    }
-    TapHandler {
-        parent: bannerActivation
-        enabled: root.popupInteractive
-        gesturePolicy: TapHandler.ReleaseWithinBounds
-        onTapped: root.intentRequested({ type: "request-mode", mode: "expanded" })
-    }
-    HoverHandler {
-        id: bannerHover
-        parent: popupPanel
-        enabled: root.popupInteractive && root.viewState.mode === "banner"
-        onHoveredChanged: {
-            if (root.viewState.mode !== "banner") return;
-            root.intentRequested(root.deadlineIntent(
-                bannerHover.hovered ? "pause-timeout" : "resume-timeout"));
-        }
-    }
-
-    CenterSecondaryPill {
-        id: secondaryPill
-        x: classicBody.x + classicBody.width + Metrics.spacingSmall
-        y: classicBody.y
-        width: implicitWidth
-        height: root.profile.compact.height
-        indicator: root.notificationIndicator
-        rendererVisible: root.presentationActive && root.viewState.mode === "compact"
-            && !root.popupClosing
-        backgroundColor: Theme.light ? "#ffffff" : "#000000"
-        topLeftRadius: root.profile.compact.radius
-        topRightRadius: root.profile.compact.radius
-        bottomLeftRadius: root.profile.compact.radius
-        bottomRightRadius: root.profile.compact.radius
-    }
-
-    SequentialAnimation {
-        id: contextTransition
-        NumberAnimation { target: standardContent; property: "opacity"; from: 1; to: 0;
-            duration: root.contextTransitionPlan.exitMs }
-        ScriptAction { script: root.commitPendingContext() }
-        NumberAnimation { target: standardContent; property: "opacity"; from: 0; to: 1;
-            duration: root.contextTransitionPlan.enterMs }
-    }
     SequentialAnimation {
         id: bannerContextTransition
         NumberAnimation { target: bannerContent; property: "opacity"; from: 1; to: 0;
@@ -450,7 +273,6 @@ FocusScope {
                 bannerContextTransition.stop();
                 root.commitPendingPopupContext();
                 bannerContent.opacity = 1;
-                root.replaceDisplayedContext(root.context);
             }
         }
     }

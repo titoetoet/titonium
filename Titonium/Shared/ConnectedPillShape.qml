@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Shapes
+import qs.Titonium.Theme
 
 Item {
     id: root
@@ -23,13 +24,29 @@ Item {
     width: root.totalWidth
     height: root.bodyHeight
 
+    readonly property color materialColor: Qt.alpha(root.color, root.color.a * Theme.material.backgroundOpacity)
+    readonly property real materialEdge: Theme.chassis.edge
+    // One continuous path remains the sole chassis. Its gradient supplies sheen
+    // and bottom-edge depth without duplicating silhouettes or input geometry.
+    property LinearGradient materialGradient: LinearGradient {
+        x1: 0; y1: 0; x2: Theme.chassis.diagonal ? root.width : 0; y2: root.height
+        GradientStop { position: 0; color: Qt.tint(root.materialColor, Qt.alpha("#ffffff", Theme.chassis.top)) }
+        GradientStop { position: Theme.chassis.shoulder; color: root.materialColor }
+        GradientStop { position: Theme.chassis.foot; color: root.materialColor }
+        GradientStop { position: 1; color: Qt.tint(root.materialColor, Qt.alpha("#000000", Theme.chassis.bottom)) }
+    }
+
     Shape {
         anchors.fill: parent
         preferredRendererType: Shape.CurveRenderer
 
         ShapePath {
-            strokeWidth: 0
-            fillColor: root.color
+            objectName: "appearancePath"
+            strokeWidth: root.materialEdge > 0 ? 1 : 0
+            strokeColor: Qt.alpha(Theme.borderStrong, root.materialEdge)
+            fillColor: root.materialColor
+            fillGradient: Theme.chassis.gradient
+                ? root.materialGradient : null
             pathHints: ShapePath.PathSolid | ShapePath.PathNonIntersecting
             startX: 0
             startY: 0

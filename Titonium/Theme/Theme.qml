@@ -2,31 +2,48 @@ pragma Singleton
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import qs.Titonium.Core.Runtime
+import qs.Titonium.Services.Appearance
 
 QtObject {
     id: root
 
-    readonly property bool light: Preferences.settings.appearance?.mode === "light"
-    readonly property color background: light ? "#f3f5f7" : "#111318"
-    readonly property color surface: light ? "#ffffff" : "#181b20"
-    readonly property color surfaceElevated: light ? "#f8f9fb" : "#20242b"
-    readonly property color surfaceInteractive: light ? "#eceff3" : "#292e37"
-    readonly property color textPrimary: light ? "#1b1f24" : "#f2f4f7"
-    readonly property color textSecondary: light ? "#5e6773" : "#a9b0ba"
-    readonly property color textDisabled: light ? "#929aa5" : "#707985"
-    readonly property color border: light ? "#d7dce2" : "#343a44"
-    readonly property color borderStrong: light ? "#b7bec8" : "#4a5360"
-    readonly property color accent: light ? "#1769e0" : "#5b9cff"
-    readonly property color accentText: light ? "#ffffff" : "#07111f"
-    readonly property color focus: light ? "#0f5fcf" : "#8bb8ff"
-    readonly property color success: light ? "#16825d" : "#3ccb8e"
-    readonly property color warning: light ? "#a76000" : "#e8b44f"
-    readonly property color danger: light ? "#c43145" : "#f06a75"
-    readonly property var workspacePalette: light
-        ? ["#dbeafe", "#dcfce7", "#fef3c7", "#f3e8ff", "#ffe4e6", "#cffafe", "#e0e7ff", "#ede0d4"]
-        : ["#233a5e", "#1f4a3b", "#58451d", "#49305f", "#5a2934", "#1f4650", "#303b5f", "#4b382b"]
-    readonly property var workspaceActivePalette: light
-        ? ["#93c5fd", "#86efac", "#fcd34d", "#d8b4fe", "#fda4af", "#67e8f9", "#a5b4fc", "#c4a484"]
-        : ["#5b8fce", "#479a72", "#aa7d2d", "#8a5fb0", "#ad5265", "#458998", "#6578b0", "#8c6b52"]
+    readonly property var tokens: AppearanceService.tokens
+    readonly property var design: AppearanceService.tokens.design || ({})
+    readonly property bool legacy: AppearanceService.tokens.legacy !== false
+    // Paint coefficients for the layout-owned continuous silhouette.
+    readonly property var chassis: {
+        const id = root.design.renderer;
+        const m = root.material;
+        if (root.legacy) return {gradient:m.sheenStrength > 0 || m.shadowStrength > 0,
+            diagonal:false,top:.10*m.sheenStrength,bottom:.10*m.shadowStrength,
+            shoulder:.35,foot:.35,edge:m.borderStrength*Math.max(m.sheenStrength,m.shadowStrength)};
+        if (id === "modern-flat") return {gradient:false,diagonal:false,top:0,bottom:0,shoulder:.35,foot:1,edge:m.borderStrength};
+        if (id === "neumorphism") return {gradient:true,diagonal:true,top:.24*m.shadowStrength,bottom:.32*m.shadowStrength,shoulder:.045,foot:.955,edge:0};
+        if (id === "material") return {gradient:true,diagonal:false,top:.025,bottom:.09*m.shadowStrength,shoulder:.15,foot:.94,edge:.4*m.borderStrength};
+        if (id === "liquid-glass") return {gradient:true,diagonal:true,top:.26*m.sheenStrength,bottom:.24*m.shadowStrength,shoulder:.035,foot:.95,edge:.65*m.borderStrength};
+        return {gradient:true,diagonal:false,top:.14*m.sheenStrength,bottom:.07*m.shadowStrength,shoulder:.28,foot:.94,edge:.45*m.borderStrength};
+    }
+    readonly property var material: AppearanceService.tokens.material
+    readonly property string themeId: AppearanceService.tokens.themeId
+    readonly property color centerSurface: root.themeId === "neutral" ? (root.light ? "#ffffff" : "#000000") : root.surface
+    readonly property color connectedSurface: root.themeId === "neutral" ? (root.light ? "#ffffff" : "#0d0e12") : root.surface
+    readonly property bool light: AppearanceService.tokens.mode === "light"
+    readonly property color background: AppearanceService.tokens.colors.background
+    readonly property color surface: AppearanceService.tokens.colors.surface
+    readonly property color surfaceElevated: AppearanceService.tokens.colors.surfaceElevated
+    readonly property color surfaceInteractive: AppearanceService.tokens.colors.surfaceInteractive
+    readonly property color textPrimary: AppearanceService.tokens.colors.textPrimary
+    readonly property color textSecondary: AppearanceService.tokens.colors.textSecondary
+    readonly property color textDisabled: AppearanceService.tokens.colors.textDisabled
+    readonly property color border: AppearanceService.tokens.colors.border
+    readonly property color borderStrong: AppearanceService.tokens.colors.borderStrong
+    readonly property color accent: AppearanceService.tokens.colors.accent
+    readonly property color accentForeground: AppearanceService.tokens.colors.accentForeground
+    readonly property color accentText: AppearanceService.tokens.colors.accentText
+    readonly property color focus: AppearanceService.tokens.colors.focus
+    readonly property color success: AppearanceService.tokens.colors.success
+    readonly property color warning: AppearanceService.tokens.colors.warning
+    readonly property color danger: AppearanceService.tokens.colors.danger
+    readonly property var workspacePalette: AppearanceService.tokens.colors.workspacePalette
+    readonly property var workspaceActivePalette: AppearanceService.tokens.colors.workspaceActivePalette
 }

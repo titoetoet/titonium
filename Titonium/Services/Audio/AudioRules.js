@@ -170,3 +170,20 @@ function presentationEvent(previous, current) {
         && (previous.volume !== next.volume || previous.muted !== next.muted);
     return { emit: emit, next: next };
 }
+
+function isCaptureStream(node) {
+    var props = node?.properties || {};
+    return node?.ready === true && node.isStream === true && !!node.audio
+        && props['media.class'] === 'Stream/Input/Audio'
+        && String(props['stream.monitor']) !== 'true'
+        && String(props['stream.capture.sink']) !== 'true'
+        && props['media.category'] !== 'Monitor';
+}
+function captureSessions(previous, facts, now) {
+    return facts.filter(isCaptureStream).map(function(node) {
+        var key = String(node.id) + ':' + String(node.properties['object.serial'] || node.id);
+        var old = previous.find(function(item) { return item.key === key; });
+        return Object.freeze({key: key, nodeId: node.id, startedAt: old ? old.startedAt : now,
+            title: node.description || node.name || '', muted: node.audio.muted === true});
+    });
+}

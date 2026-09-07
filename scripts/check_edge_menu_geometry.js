@@ -15,31 +15,34 @@ vm.runInContext(source, context);
 assert.deepEqual({...context.branchRect("left", 180, 120, 620, 1920, 420, 240, 0)},
     {x: 180, y: 28, width: 120, height: 8});
 assert.deepEqual({...context.branchRect("left", 180, 120, 620, 1920, 420, 240, 1)},
-    {x: 30, y: 28, width: 420, height: 212});
+    {x: 48, y: 28, width: 420, height: 212});
 assert.deepEqual({...context.branchRect("right", 1850, 36, 220, 1920, 420, 240, 1)},
-    {x: 1488, y: 28, width: 420, height: 212});
+    {x: 1452, y: 28, width: 420, height: 212});
 assert.deepEqual({...context.branchRect("left", 120, 100, 360, 1920, 420, 240, 1)},
-    {x: 12, y: 28, width: 420, height: 212});
+    {x: 48, y: 28, width: 420, height: 212});
 assert.deepEqual({...context.branchRect("right", 1600, 80, 220, 1920, 420, 240, 1)},
-    {x: 1430, y: 28, width: 420, height: 212});
-assert.equal(context.branchRect("right", 4, 36, 220, 1920, 420, 240, 1).x, 12);
+    {x: 1452, y: 28, width: 420, height: 212});
+assert.equal(context.branchRect("right", 4, 36, 220, 1920, 420, 240, 1).x, 1452);
 assert.equal(context.branchRect("left", 180, 120, 620, 1920, 420, 240, 1).x
-    + context.branchRect("left", 180, 120, 620, 1920, 420, 240, 1).width / 2, 240);
+    + context.branchRect("left", 180, 120, 620, 1920, 420, 240, 1).width / 2, 258);
 assert.equal(context.branchRect("right", 1850, 36, 220, 1920, 420, 240, 1).x
-    + context.branchRect("right", 1850, 36, 220, 1920, 420, 240, 1).width, 1908,
+    + context.branchRect("right", 1850, 36, 220, 1920, 420, 240, 1).width, 1872,
     "edge-adjacent Input Method menu keeps full width at the output margin");
 assert.equal(Object.isFrozen(context.branchRect("left", 0, 0, 0, 0, 0, 0, 1)), true);
 
-const centeredMenu = context.branchRect("left", 180, 120, 620, 1920, 420, 240, 1);
-assert.equal(context.sourceOffset(180, 120, centeredMenu, 0), 0,
-    "source pill starts at its compact position");
-assert.equal(context.sourceOffset(180, 120, centeredMenu, 0.5), 0,
-    "already-centered app title stays stationary");
-const clampedInputMenu = context.branchRect("right", 1850, 36, 220, 1920, 420, 240, 1);
-assert.equal(context.sourceOffset(1850, 36, clampedInputMenu, 0.5), -85,
-    "Input Method pill follows halfway toward the clamped menu centre");
-assert.equal(context.sourceOffset(1850, 36, clampedInputMenu, 1), -170,
-    "Input Method pill ends at the clamped menu centre");
+// Inset remains stable for both narrow and wide popups and different controls.
+for (const popupWidth of [240, 380, 452]) {
+    for (const sourceX of [1600, 1750, 1880]) {
+        const rect = context.branchRect("right", sourceX, 28, 220, 1920, popupWidth, 440, 1);
+        assert.equal(rect.x + rect.width, 1872);
+        assert.equal(rect.width, popupWidth);
+    }
+}
+for (const output of [32, 80, 320]) {
+    const rect = context.branchRect("right", 20, 28, 220, output, 452, 440, 1);
+    assert.ok(rect.x >= 0 && rect.x + rect.width <= output);
+    assert.ok(rect.width > 0);
+}
 
 const connectivityControls = [
     {name: "network", x: 1792, width: 28, center: 1806},
@@ -51,8 +54,8 @@ assert.deepEqual(connectivityControls.map(control => control.center), [1806, 183
 for (const control of connectivityControls) {
     const branch = context.branchRect("right", control.x, control.width,
         220, 1920, 380, 440, 1);
-    assert.deepEqual({...branch}, {x: 1528, y: 28, width: 380, height: 412},
-        `${control.name} 380px branch clamps to the 12px output margin`);
+    assert.deepEqual({...branch}, {x: 1492, y: 28, width: 380, height: 412},
+        `${control.name} 380px branch reserves the same 48px shoulder gutter`);
 }
 
 const leftAnchor = context.anchorSnapshot("left", "DP-1", 96, 4, 260, 28);

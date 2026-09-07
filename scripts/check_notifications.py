@@ -10,7 +10,6 @@ SERVICE_ROOT = ROOT / "Titonium/Services/Notifications"
 SERVICE = SERVICE_ROOT / "NotificationService.qml"
 QMLDIR = SERVICE_ROOT / "qmldir"
 PRESENTATION_ROOT = ROOT / "Titonium/Notifications"
-CENTER_SECONDARY = ROOT / "Titonium/Bar/center/CenterSecondaryPill.qml"
 CENTER_NOTIFICATION_ADAPTER = (ROOT / "Titonium/Services/Center/adapters"
                                / "NotificationCenterAdapter.qml")
 TOPBAR_NOTIFICATION = ROOT / "Titonium/Bar/widgets/NotificationBell.qml"
@@ -357,29 +356,6 @@ def validate_presentation(errors: list[str]) -> None:
         ):
             if not isinstance(catalog.get(key), str) or not catalog[key]:
                 errors.append(f"{locale} catalog missing notification key: {key}")
-
-    secondary = CENTER_SECONDARY.read_text(encoding="utf-8") \
-        if CENTER_SECONDARY.is_file() else ""
-    if not secondary:
-        errors.append("missing Center notification secondary pill")
-    else:
-        for fragment in (
-            "required property var indicator",
-            'name: "notifications"',
-            "root.displayedIndicator.count",
-            "loops: 3",
-            "wobble.stop()",
-            "PresentationRules.secondaryIndicatorTransition",
-            "property var indicatorObservation",
-        ):
-            if fragment not in secondary:
-                errors.append(f"Center notification pill missing contract: {fragment}")
-        for forbidden in (
-            "Services.Notifications", "NotificationCoordinator", "NotificationService",
-            "TapHandler", "MouseArea", "intentRequested",
-        ):
-            if forbidden in secondary:
-                errors.append(f"Center notification pill has forbidden behavior: {forbidden}")
 
     adapter = CENTER_NOTIFICATION_ADAPTER.read_text(encoding="utf-8") \
         if CENTER_NOTIFICATION_ADAPTER.is_file() else ""

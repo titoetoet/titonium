@@ -9,9 +9,8 @@ function cleanTitle(app, context) {
         return context;
     const escapedApp = app.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const middlePattern = new RegExp(`\\s+-\\s+${escapedApp}\\s+-\\s+`, "i");
-    if (middlePattern.test(context))
-        return context.replace(middlePattern, " - ");
-    return context;
+    const suffixPattern = new RegExp(`\\s+[-–—|·]\\s+${escapedApp}$`, "i");
+    return context.replace(middlePattern, " - ").replace(suffixPattern, "").trim();
 }
 
 function contextText(app, context) {

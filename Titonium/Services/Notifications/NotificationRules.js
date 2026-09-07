@@ -252,7 +252,9 @@ function refreshState(state, item, toastsEnabled) {
                 ? source.toastKeys.slice() : []),
         });
     const notifications = upsert(source.notifications, item, historyLimit());
-    const unreadKeys = markUnread(source.unreadKeys, item.key);
+    const retainedKeys = new Set(notifications.map(notification => stableKey(notification.key)));
+    const unreadKeys = Object.freeze(markUnread(source.unreadKeys, item.key)
+        .filter(key => retainedKeys.has(stableKey(key))));
     const toastKeys = item.route === "toast" && toastsEnabled === true
         ? addToast(source.toastKeys, item.key, toastLimit())
         : removeKey(source.toastKeys, item.key);
@@ -350,4 +352,20 @@ function relativeAge(receivedAt, now) {
     if (age < 86400000)
         return Object.freeze({ unit: "hours", count: Math.floor(age / 3600000) });
     return Object.freeze({ unit: "days", count: Math.floor(age / 86400000) });
+}
+
+// Presentation grouping leaves coordinator history, unread state and actions intact.
+function historyGroups(history) {
+    const groups = [];
+    const indices = Object.create(null);
+    for (const item of (Array.isArray(history) ? history : [])) {
+        const identity = item.appId || item.appName || item.key;
+        const key = JSON.stringify([item.source || "native", identity]);
+        if (indices[key] === undefined) {
+            indices[key] = groups.length;
+            groups.push({key: key, appName: item.appName || "", appIcon: item.appIcon || "", items: []});
+        }
+        groups[indices[key]].items.push(item);
+    }
+    return groups.map(group => Object.freeze(Object.assign({}, group, {items: Object.freeze(group.items)})));
 }

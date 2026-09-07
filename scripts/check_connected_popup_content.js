@@ -58,8 +58,8 @@ const audioPath = path.join(root, "Titonium", "Overlays", "Audio",
 const audio = fs.readFileSync(audioPath, "utf8");
 assert.match(audio, /property real availableViewportHeight:\s*440/,
     "Audio content must accept a safe bounded Edge viewport height");
-assert.match(audio, /Math\.min\(root\.maximumHeight, root\.availableViewportHeight\)/,
-    "Audio stream sizing must be bounded by the host-provided viewport height");
+assert.match(audio, /AudioGeometry\.streamListHeight/,
+    "Audio must request complete rows independently of the animated viewport");
 assert.doesNotMatch(audio, /root\.height\s*-\s*root\.panelTop/,
     "Audio content must not derive viewport height from a full-screen surface");
 assert.match(audio, /Flickable\s*\{\s*id:\s*contentViewport[\s\S]*?anchors\.fill:\s*parent[\s\S]*?contentHeight:\s*Math\.max\(height, root\.implicitContentHeight\)/,
@@ -102,7 +102,7 @@ assert.doesNotMatch(notification,
     /implicitContentHeight:\s*Math\.min\([\s\S]*?availableViewportHeight/,
     "Connected notification implicit height must not feed the current branch height back into host geometry");
 const notificationNaturalHeight = 508;
-assert.equal(rightPillRules.menuHeight(notificationNaturalHeight, 1080), 440,
+assert.equal(rightPillRules.menuHeight(notificationNaturalHeight, 1080), 540,
     "Connected history must grow to the stable host cap for tall notification content");
 assert.equal(rightPillRules.menuHeight(notificationNaturalHeight, 260), 260,
     "Connected history must clamp to a short output while retaining natural content height for scrolling");

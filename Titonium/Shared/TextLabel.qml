@@ -9,7 +9,7 @@ Text {
     property string tone: root.enabled ? "primary" : "disabled"
     property bool strong: false
     readonly property color resolvedColor: ({ primary: Theme.textPrimary,
-        secondary: Theme.textSecondary, disabled: Theme.textDisabled, accent: Theme.accent,
+        secondary: Theme.textSecondary, disabled: Theme.textDisabled, accent: Theme.accentForeground,
         success: Theme.success, warning: Theme.warning, danger: Theme.danger })[root.tone]
         || Theme.textPrimary
 

@@ -12,9 +12,11 @@ import qs.Titonium.Notifications
 import qs.Titonium.Orchestration
 import qs.Titonium.Osd.Audio
 import qs.Titonium.Settings
+import qs.Titonium.Theme
 
 Scope {
     id: root
+    Binding { target: Metrics; property: "barHeight"; value: Preferences.bar.height || 44 }
 
     ServiceBootstrap { id: serviceBootstrap }
     BluetoothAudioBridge {}

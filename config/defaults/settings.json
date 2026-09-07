@@ -1,22 +1,37 @@
 {
-  "$schema": "titonium.settings/v7",
-  "schemaVersion": 7,
+  "$schema": "titonium.settings/v8",
+  "schemaVersion": 8,
   "locale": "vi",
-  "appearance": { "mode": "dark" },
-  "accessibility": { "reducedMotion": false },
-  "applications": { "hiddenIds": [] },
+  "appearance": {
+    "mode": "dark",
+    "themeId": "modern-flat",
+    "themeOverrides": {},
+    "wallpaper": {
+      "policy": "keep",
+      "customPath": ""
+    }
+  },
+  "accessibility": {
+    "reducedMotion": false
+  },
+  "applications": {
+    "hiddenIds": []
+  },
   "modules": {
     "spotlight": {
       "pageTransition": "slide-fade",
       "transitionDuration": 220
     },
     "bar": {
+      "height": 44,
+      "mascot": "pig",
       "workspaceCount": 5,
       "autoHide": false,
       "mascotEnabled": true,
       "style": "connected"
     },
     "dock": {
+      "style": "follow-topbar",
       "visibilityMode": "auto-hide",
       "pinnedIds": []
     },
@@ -28,7 +43,11 @@
       "keepCriticalUnread": true,
       "applicationOverrides": {}
     },
-    "clock": { "use24Hour": true },
-    "audio": { "allowAmplification": false }
+    "clock": {
+      "use24Hour": true
+    },
+    "audio": {
+      "allowAmplification": false
+    }
   }
 }

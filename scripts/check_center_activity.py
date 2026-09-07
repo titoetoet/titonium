@@ -16,7 +16,6 @@ EN = ROOT / "config/i18n/en.json"
 VI = ROOT / "config/i18n/vi.json"
 CENTER_VIEW = ROOT / "Titonium/Bar/center/presentations/Connected/ConnectedRenderer.qml"
 CLASSIC_CENTER_VIEW = ROOT / "Titonium/Bar/center/presentations/Classic/ClassicRenderer.qml"
-SECONDARY_CENTER_VIEW = ROOT / "Titonium/Bar/center/CenterSecondaryPill.qml"
 JOB_ADAPTER = CENTER / "adapters/JobCenterAdapter.qml"
 TIMER_ADAPTER = CENTER / "adapters/TimerCenterAdapter.qml"
 ACCEPTANCE = ROOT / "scripts/center_activity_acceptance.sh"
@@ -105,11 +104,9 @@ def main() -> int:
         for fragment in (
             "required property var snapshot",
             "root.snapshot.contexts.find",
-            "root.snapshot.primary",
-            "root.displayedContext?.title",
-            "root.displayedContext?.subtitle",
-            "root.snapshot.capabilities.actions.filter",
-            'type: "invoke-action"',
+            "NormalBannerContent {",
+            "ExpandedContent {",
+            "onIntentRequested: intent => root.intentRequested(intent)",
         ):
             if fragment not in source:
                 errors.append(f"Center renderer missing semantic projection: {fragment}")
@@ -128,30 +125,11 @@ def main() -> int:
     for renderer in (CENTER_VIEW, CLASSIC_CENTER_VIEW):
         source = renderer.read_text(encoding="utf-8") if renderer.is_file() else ""
         for fragment in (
-            "CenterSecondaryPill {",
-            'item => item.id === "notification:unread"',
-            "indicator: root.notificationIndicator",
+            "CenterCompactCapsule {",
+            "snapshot: root.snapshot",
         ):
             if fragment not in source:
                 errors.append(f"{renderer.name} missing frozen secondary indicator: {fragment}")
-
-    if not SECONDARY_CENTER_VIEW.is_file():
-        errors.append("missing CenterSecondaryPill.qml")
-    else:
-        source = SECONDARY_CENTER_VIEW.read_text(encoding="utf-8")
-        for fragment in (
-            "required property var indicator",
-            "root.displayedIndicator.count",
-            "loops: 3",
-        ):
-            if fragment not in source:
-                errors.append(f"CenterSecondaryPill missing semantic presentation: {fragment}")
-        for forbidden in (
-            "NotificationCoordinator", "NotificationService",
-            "Services.Notifications", "Process {", "FileView {", "Timer {",
-        ):
-            if forbidden in source:
-                errors.append(f"CenterSecondaryPill owns forbidden runtime behavior: {forbidden}")
 
     for adapter, fragments in (
         (JOB_ADAPTER, ('source: "job"', 'id: "job:" + item.id', '"job.clear"')),

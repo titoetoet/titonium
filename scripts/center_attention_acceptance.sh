@@ -106,8 +106,8 @@ if [[ "$dp1_bar_count" -ne 1 ]]; then
     printf 'FAIL expected one DP-1 Titonium Bar, found %s in %q\n' "$dp1_bar_count" "$dp1_layers" >&2
     exit 1
 fi
-if [[ "$dp1_layers" != *"titonium-center-compact"* ]]; then
-    echo "FAIL Center attention acceptance missing the neutral compact host" >&2
+if [[ "$dp1_layers" != *"titonium-center-overlay"* || "$dp1_layers" == *"titonium-center-compact"* ]]; then
+    echo "FAIL Connected Center must use one persistent overlay for compact and open states" >&2
     exit 1
 fi
 if [[ "$dp3_layers" == *"titonium-"* ]]; then

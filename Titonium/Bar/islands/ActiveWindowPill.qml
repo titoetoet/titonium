@@ -4,6 +4,7 @@ import QtQuick
 import qs.Titonium.Core.Surfaces.Center
 import QtQuick.Layouts
 import qs.Titonium.Bar.right
+import qs.Titonium.Core.Surfaces
 import qs.Titonium.Core.Runtime
 import qs.Titonium.Services.Applications
 import qs.Titonium.Services.Hyprland
@@ -44,7 +45,15 @@ FocusScope {
     readonly property real menuAnchorWidth: Math.max(1,
         root.menuAnchorRight - root.menuAnchorX)
 
-    implicitWidth: Math.min(520, activityRow.implicitWidth + Metrics.spacingLarge * 2)
+    implicitWidth: Math.min(380, activityRow.implicitWidth + Metrics.spacingLarge * 2)
+    Behavior on implicitWidth {
+        NumberAnimation {
+            duration: Motion.slow
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Motion.springDamped
+        }
+    }
+
     implicitHeight: Metrics.controlHeight
     activeFocusOnTab: true
     Component.onCompleted: root.syncTraySelection()
@@ -69,6 +78,19 @@ FocusScope {
             screenName: root.screen.name, mode: "expanded" });
     }
 
+    Shared.InteractionFeedback {
+        anchors.fill: parent
+        anchors.margins: 2
+        radius: height / 2
+        hovered: centerHover.hovered
+        pressed: activeTap.pressed
+        selected: (root.notchOpen && CenterSurfaceController.active)
+            || (RightPillCoordinator.menuActive && RightPillCoordinator.activeEdge === "left"
+                && RightPillCoordinator.ownerScreenName === root.screen.name)
+            || SurfaceManager.ownerId === RightPillCoordinator.systemTrayOwnerFor(root.screen, "app")
+        focused: root.activeFocus
+    }
+
     RowLayout {
         id: activityRow
         anchors.fill: parent
@@ -84,17 +106,6 @@ FocusScope {
             fallbackName: "deployed_code"
             size: 20
             tone: root.notchOpen ? "accent" : "secondary"
-            scale: Motion.reduced ? 1 : (activeTap.pressed ? 0.96
-                : (centerHover.hovered ? 1.08 : 1))
-            transform: Translate { y: !Motion.reduced && centerHover.hovered ? -1 : 0 }
-
-            Behavior on scale {
-                NumberAnimation {
-                    duration: Motion.reduced ? 0 : 140
-                    easing.type: Easing.BezierSpline
-                    easing.bezierCurve: Motion.springDamped
-                }
-            }
         }
 
         Shared.TextLabel {
@@ -117,7 +128,9 @@ FocusScope {
 
         Shared.TextLabel {
             id: titleLabel
-            Layout.maximumWidth: 320
+            Layout.minimumWidth: 0
+            Layout.fillWidth: true
+            Layout.maximumWidth: 220
             visible: root.presentation.hasContext
             text: root.presentation.title
             variant: "label"

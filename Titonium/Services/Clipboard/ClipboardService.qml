@@ -17,6 +17,12 @@ QtObject {
     property bool available: true
     property string error: ""
     property bool warnedMalformed: false
+    property bool writing: false
+    property bool dirty: false
+    property var retiredPaths: []
+    property var cleanupPaths: []
+    readonly property string ioScript: decodeURIComponent(Qt.resolvedUrl("clipboard_io.py").toString().replace(/^file:\/\//, ""))
+    readonly property string imageCachePath: (Quickshell.env("XDG_DATA_HOME") || (Quickshell.env("HOME") + "/.local/share")) + "/titonium/clipboard-images"
     property var centerState: ClipboardCenterRules.initialState()
     readonly property string runtimePath: Quickshell.dataPath("clipboard-history.json")
 
@@ -36,35 +42,69 @@ QtObject {
         }
     }
 
+    function commitItems(next): void {
+        root.retiredPaths = root.retiredPaths.concat(ClipboardHistory.removedImagePaths(root.items, next));
+        root.items = next;
+        root.persist();
+    }
     function persist(): void {
+        if (root.writing) { root.dirty = true; return; }
+        root.writing = true;
+        root.dirty = false;
         historyFile.setText(JSON.stringify({ schemaVersion: 1, items: root.items }));
     }
+    function finishSave(success: bool, failure: string): void {
+        root.writing = false;
+        if (!success) {
+            Logger.error("clipboard", "history save failed: " + failure);
+            if (root.dirty) root.persist();
+            return;
+        }
+        if (root.dirty) { root.persist(); return; }
+        // Keep files referenced by either pending state or a failed persisted snapshot.
+        const retained = root.items.filter(item => item.kind === "image").map(item => item.imagePath);
+        root.cleanupPaths = root.cleanupPaths.concat(root.retiredPaths.filter(path => retained.indexOf(path) < 0));
+        root.retiredPaths = [];
+        root.startCleanup();
+    }
+    function startCleanup(): void {
+        if (cleanupProcess.running || root.cleanupPaths.length === 0) return;
+        const retained = root.items.filter(item => item.kind === "image").map(item => item.imagePath);
+        const paths = root.cleanupPaths.filter(path => retained.indexOf(path) < 0);
+        root.cleanupPaths = [];
+        if (paths.length === 0) return;
+        cleanupProcess.command = ["python3", root.ioScript, "cleanup", root.imageCachePath, JSON.stringify(paths)];
+        cleanupProcess.running = true;
+    }
+    property Process cleanupProcess: Process {
+        running: false
+        onExited: exitCode => {
+            if (exitCode !== 0) Logger.warn("clipboard", "image cache cleanup failed");
+            root.startCleanup();
+        }
+    }
     function record(text: string, sourceApp: string, sourceTitle: string): void {
-        if (!text) return;
+        if (!text || ClipboardHistory.utf8Bytes(text) > ClipboardHistory.MAX_TEXT_BYTES) return;
         const active = HyprlandService.activeWindow;
         const app = sourceApp || active?.appId || "";
         const title = sourceTitle || active?.title || "";
-        root.items = ClipboardHistory.record(root.items, text, Date.now(), app, title);
-        root.persist();
+        root.commitItems(ClipboardHistory.record(root.items, text, Date.now(), app, title));
     }
     function recordImage(imagePath: string, width: int, height: int, bytes: int, md5: string, sourceApp: string, sourceTitle: string): void {
         if (!imagePath) return;
         const active = HyprlandService.activeWindow;
         const app = sourceApp || active?.appId || "";
         const title = sourceTitle || active?.title || "";
-        root.items = ClipboardHistory.recordImage(root.items, imagePath, width, height, bytes, md5, Date.now(), app, title);
-        root.persist();
+        root.commitItems(ClipboardHistory.recordImage(root.items, imagePath, width, height, bytes, md5, Date.now(), app, title));
     }
     function remove(id: string): void {
         const next = ClipboardHistory.remove(root.items, id);
         if (next.length === root.items.length) return;
-        root.items = next;
-        root.persist();
+        root.commitItems(next);
     }
     function clear(): void {
         if (root.items.length === 0) return;
-        root.items = [];
-        root.persist();
+        root.commitItems([]);
     }
     function copyText(text: string): bool {
         if (!text) return false;
@@ -76,12 +116,25 @@ QtObject {
     property Process copyImageProcess: Process {
         command: []
         running: false
+        stderr: StdioCollector {}
+        onExited: exitCode => root.finishImageCopy(exitCode)
+    }
+    function finishImageCopy(exitCode: int): void {
+        root.available = exitCode === 0;
+        root.error = exitCode === 0 ? "" : "clipboard.error.unavailable";
+        if (exitCode !== 0) Logger.error("clipboard", "image copy failed");
     }
     function copyImage(path: string): bool {
-        if (!path) return false;
-        copyImageProcess.command = ["sh", "-c", "wl-copy -t image/png < \"$1\"", "--", path];
-        copyImageProcess.running = true;
-        return true;
+        if (!path || copyImageProcess.running) return false;
+        try {
+            copyImageProcess.command = ["python3", root.ioScript, "copy", path];
+            copyImageProcess.running = true;
+            // Accepted for asynchronous execution; completion updates availability/error.
+            return true;
+        } catch (failure) {
+            root.finishImageCopy(1);
+            return false;
+        }
     }
     function copy(id: string): bool {
         const item = ClipboardHistory.itemForId(root.items, id);
@@ -91,6 +144,7 @@ QtObject {
         return root.copyText(item.text);
     }
     function observeText(text: string): bool {
+        if (ClipboardHistory.utf8Bytes(text) > ClipboardHistory.MAX_TEXT_BYTES) return false;
         root.available = true;
         root.error = "";
         const centerResult = ClipboardCenterRules.observe(
@@ -127,8 +181,7 @@ QtObject {
     function activate(): void {}
 
     property Process clipboardWatcher: Process {
-        command: ["wl-paste", "--type", "text", "--watch", "python3", "-c",
-            "import json, sys; print(json.dumps(sys.stdin.read(), ensure_ascii=False))"]
+        command: ["wl-paste", "--type", "text", "--watch", "python3", root.ioScript, "text"]
         running: false
         stdout: SplitParser {
             onRead: data => root.observeWatchLine(data)
@@ -142,18 +195,7 @@ QtObject {
     }
 
     property Process imageWatcher: Process {
-        command: ["wl-paste", "--type", "image/png", "--watch", "python3", "-c",
-            "import sys, os, hashlib, struct, json, subprocess\n"
-            + "cache_dir = os.path.expanduser('~/.local/share/titonium/clipboard-images')\n"
-            + "os.makedirs(cache_dir, exist_ok=True)\n"
-            + "p = subprocess.run(['wl-paste', '--type', 'image/png'], capture_output=True)\n"
-            + "if p.returncode == 0 and len(p.stdout) > 24 and p.stdout[:8] == b'\\x89PNG\\r\\n\\x1a\\n':\n"
-            + "    w, h = struct.unpack('>II', p.stdout[16:24])\n"
-            + "    md5 = hashlib.md5(p.stdout).hexdigest()\n"
-            + "    out_path = os.path.join(cache_dir, f'{md5}.png')\n"
-            + "    with open(out_path, 'wb') as f: f.write(p.stdout)\n"
-            + "    print(json.dumps({'path': out_path, 'width': w, 'height': h, 'bytes': len(p.stdout), 'md5': md5}))\n"
-        ]
+        command: ["wl-paste", "--type", "image/png", "--watch", "python3", root.ioScript, "capture", root.imageCachePath]
         running: false
         stdout: SplitParser {
             onRead: data => root.observeImageWatchLine(data)
@@ -181,7 +223,8 @@ QtObject {
         blockLoading: true
         printErrors: false
         atomicWrites: true
-        onSaveFailed: failure => Logger.error("clipboard", "history save failed: " + failure)
+        onSaved: root.finishSave(true, "")
+        onSaveFailed: failure => root.finishSave(false, String(failure))
     }
     Component.onCompleted: {
         root.initialize();

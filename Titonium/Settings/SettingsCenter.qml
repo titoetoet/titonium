@@ -46,7 +46,8 @@ FocusScope {
     }
 
     Keys.onEscapePressed: event => {
-        SettingsCoordinator.requestClose();
+        if (AppearanceCoordinator.trialActive) AppearanceCoordinator.cancelTrial();
+        else SettingsCoordinator.requestClose();
         event.accepted = true;
     }
 }

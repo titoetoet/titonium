@@ -200,13 +200,13 @@ FocusScope {
                     anchors.fill: parent
                     clip: true
                     spacing: Metrics.spacingSmall
-                    model: AudioService.playbackStreams
+                    model: AudioService.playbackStreamIds
                     boundsBehavior: Flickable.StopAtBounds
 
                     delegate: AudioStreamRow {
                         required property var modelData
                         width: streamList.width
-                        stream: modelData
+                        stream: AudioService.playbackStreams.find(item => item.id === modelData) || null
                     }
                 }
             }

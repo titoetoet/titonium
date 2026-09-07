@@ -3,7 +3,10 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Titonium.Services.Center.adapters as Adapters
+import qs.Titonium.Services.Capture
+import "../Capture/CaptureFeedbackRules.js" as CaptureFeedbackRules
 import "CenterDomainRules.js" as CenterDomainRules
+import "CompactActivityRules.js" as CompactActivityRules
 
 QtObject {
     id: root
@@ -11,7 +14,14 @@ QtObject {
     signal presentationRequested(var request)
     signal presentationEnded(var request)
 
-    property var storedSnapshot: null
+    property var storedSnapshot: CenterDomainRules.snapshot(null, {}, 0)
+    property var compactSelection: CompactActivityRules.reconcile(null, [])
+    readonly property var presentationSnapshot: Object.freeze(Object.assign({}, root.snapshot, {
+        compact: CaptureFeedbackRules.project(root.compactSelection, root.snapshot.contexts,
+            CaptureFeedbackService.feedback)
+    }))
+
+    function selectCaptureContext(contextId: string): void { CaptureFeedbackService.select(contextId); }
     property string activePresentationId: ""
     property string activePresentationOwnerId: ""
     property string activePresentationContextId: ""
@@ -23,12 +33,13 @@ QtObject {
         actions: capture.actions.concat(media.actions, notifications.actions,
             approval.actions, focus.actions, timers.actions, jobs.actions)
     })
-    readonly property var snapshot: root.storedSnapshot || CenterDomainRules.snapshot(
-        null, root.rawProjection, Date.now())
+    readonly property var snapshot: root.storedSnapshot
 
     function rebuild(): void {
         root.storedSnapshot = CenterDomainRules.snapshot(
             root.storedSnapshot, root.rawProjection, Date.now());
+        root.compactSelection = CompactActivityRules.reconcile(
+            root.compactSelection, root.storedSnapshot.contexts);
     }
 
     function dispatch(intent: var): var {
@@ -106,7 +117,8 @@ QtObject {
     function publishCurrentPresentation(): void {
         const presentation = CenterAttentionService.presentation;
         const contextId = root.contextIdForPresentation(presentation);
-        if (!presentation || !contextId)
+        if (!presentation || !contextId
+                || (presentation.source === "capture" && ["recording_started", "screenshot_saved"].includes(presentation.kind)))
             return;
         root.presentationRequested(Object.freeze({
             id: String(presentation.id || contextId) + ":presentation",

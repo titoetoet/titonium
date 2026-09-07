@@ -21,12 +21,6 @@ Item {
 
         Shared.TextLabel {
             Layout.fillWidth: true
-            text: I18n.tr("settings.general.title")
-            variant: "titleLarge"
-        }
-
-        Shared.TextLabel {
-            Layout.fillWidth: true
             text: I18n.tr("settings.general.description")
             tone: "secondary"
             wrapMode: Text.WordWrap

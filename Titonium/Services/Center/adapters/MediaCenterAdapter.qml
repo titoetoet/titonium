@@ -21,7 +21,9 @@ QtObject {
         details: Object.freeze({
             identity: root.player.identity || "", trackArtUrl: root.player.trackArtUrl || "",
             trackLength: root.player.trackLength || 0, trackPosition: root.player.trackPosition || 0,
-            playing: MprisService.playing
+            playing: MprisService.playing,
+            playback: MprisService.playbackDetails,
+            playbackState: root.player.playbackState || "stopped"
         }), actionIds: root.actionIds
     })])
     readonly property var indicators: Object.freeze([Object.freeze({
@@ -33,7 +35,7 @@ QtObject {
         root.capability("media.toggle", "primary", MprisService.playing ? "Pause" : "Play",
             MprisService.playing ? "pause" : "play_arrow", root.player.canTogglePlaying),
         root.capability("media.next", "secondary", "Next", "skip_next", root.player.canGoNext),
-        root.capability("media.raise", "secondary", "Open source", "open_in_new", true)
+        root.capability("media.raise", "secondary", "Open source", "open_in_new", MprisService.playbackDetails.canRaise === true)
     ])
 
     function capability(id: string, role: string, label: string, icon: string, enabled: bool): var {

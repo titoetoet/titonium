@@ -10,6 +10,9 @@ import "AudioRules.js" as AudioRules
 QtObject {
     id: root
 
+    readonly property string outputMonitorName: root.outputAvailable && root.outputNode.name
+        ? root.outputNode.name + ".monitor" : ""
+
     readonly property var outputNode: Pipewire.defaultAudioSink
     readonly property var inputNode: Pipewire.defaultAudioSource
     readonly property bool ready: Pipewire.ready
@@ -56,9 +59,27 @@ QtObject {
         name: node?.name || "",
         properties: node?.properties || ({}),
     }))
+    property var captureStreams: []
+    onAudioNodeFactsChanged: root.captureStreams = AudioRules.captureSessions(
+        root.captureStreams, root.audioNodeFacts, Date.now())
+
+    function toggleCaptureMute(nodeId: int, key: string): bool {
+        const session = root.captureStreams.find(item => item.nodeId === nodeId && item.key === key);
+        const node = root.mutableNode(nodeId);
+        if (!session || !AudioRules.isCaptureStream(node)
+                || String(node.id) + ":" + String(node.properties["object.serial"] || node.id) !== key)
+            return false;
+        node.audio.muted = node.audio.muted !== true;
+        return true;
+    }
+
     readonly property var playbackStreams:
         AudioRules.normalizedStreams(root.audioNodeFacts,
             I18n.tr("audio.stream.fallback"), root.ready)
+    // A scalar identity signature stays unchanged during volume/mute updates.
+    // ListView models can then retain the delegate holding an active pointer grab.
+    readonly property string playbackStreamIdentity: JSON.stringify(root.playbackStreams.map(stream => stream.id))
+    readonly property var playbackStreamIds: JSON.parse(root.playbackStreamIdentity)
     readonly property var outputDevices: root.ready
         ? AudioRules.normalizedOutputDevices(root.audioNodeFacts,
             root.outputNode?.id, I18n.tr("audio.output")) : []
@@ -208,24 +229,30 @@ QtObject {
     }
 
     function observeCenterDeviceChanges(): void {
-        const output = root.outputName;
-        const input = root.inputName;
-        if (root.previousOutputName.length > 0 && output !== root.previousOutputName) {
+        const outputUsable = root.nodeUsable(root.outputNode);
+        const inputUsable = root.nodeUsable(root.inputNode);
+        const output = outputUsable ? root.nodeName(root.outputNode, I18n.tr("audio.output")) : "";
+        const input = inputUsable ? root.nodeName(root.inputNode, I18n.tr("audio.microphone")) : "";
+        if (outputUsable && root.previousOutputName.length > 0 && output !== root.previousOutputName) {
             CenterAttentionService.publish({
                 id: "audio:output", source: "audio", kind: "output_changed",
                 title: I18n.tr("audio.center.output_changed", { "name": output }),
                 icon: "volume_up"
             });
         }
-        if (root.previousInputName.length > 0 && input !== root.previousInputName) {
+        if (inputUsable && root.previousInputName.length > 0 && input !== root.previousInputName) {
             CenterAttentionService.publish({
                 id: "audio:input", source: "audio", kind: "input_changed",
                 title: I18n.tr("audio.center.input_changed", { "name": input }),
                 icon: "mic"
             });
         }
-        root.previousOutputName = output;
-        root.previousInputName = input;
+        // Discovery is a baseline, not a device change. Keep the last usable names
+        // through readiness gaps so fallback labels never become observed devices.
+        if (outputUsable)
+            root.previousOutputName = output;
+        if (inputUsable)
+            root.previousInputName = input;
     }
 
     function syncCenterIndicators(): void {
@@ -267,7 +294,14 @@ QtObject {
         root.observeOutputPresentation();
     }
 
-    function onOutputAvailableChanged(): void { root.resetOutputPresentation(); }
+    onOutputAvailableChanged: root.resetOutputPresentation()
+
+    // Input and stream projections change independently of output presentation.
+    // Publish their passive state without emitting output volume feedback.
+    onInputAvailableChanged: root.syncCenterIndicators()
+    onInputMutedChanged: root.syncCenterIndicators()
+    onInputNameChanged: root.syncCenterIndicators()
+    onPlaybackStreamsChanged: root.syncCenterIndicators()
 
     property Connections pipewireConnections: Connections {
         target: Pipewire

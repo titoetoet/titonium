@@ -1,0 +1,2 @@
+module qs.Titonium.Services.Wallpapers
+singleton WallpapersService 1.0 WallpapersService.qml

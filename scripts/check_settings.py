@@ -59,7 +59,7 @@ def main() -> int:
         "Variants {", "model: ScreenPolicy.screens", "SettingsWindow {",
     ), errors)
     window = require(SETTINGS / "SettingsWindow.qml", (
-        "PanelWindow {", "implicitWidth: 980", "implicitHeight: 700",
+        "PanelWindow {", "implicitWidth: Math.min(980, window.screenModel.width - 48)", "implicitHeight: Math.min(700, window.screenModel.height - 48)",
         'WlrLayershell.namespace: "titonium-settings"',
         "WlrLayershell.exclusionMode: ExclusionMode.Ignore",
         "WlrLayershell.keyboardFocus:", "WlrKeyboardFocus.Exclusive",
@@ -72,7 +72,7 @@ def main() -> int:
         "Layout.preferredHeight: 64", "Layout.preferredWidth: 208",
         "Loader {", "id: pageLoader", "active: SettingsCoordinator.active",
         "GeneralPage {", "sourceComponent: root.componentFor(SettingsCoordinator.requestedPage)",
-        "Preferences.dirty && !Preferences.savePending",
+        "SettingsCoordinator.dirty && !SettingsCoordinator.busy",
         "SettingsCoordinator.discardAndClose()", "SettingsCoordinator.apply()",
         "SettingsCoordinator.requestClose()", "SettingsCoordinator.discardConfirmationVisible",
     ), errors)

@@ -61,7 +61,6 @@ def main() -> int:
     router = read("Titonium/Orchestration/SurfaceRouter.qml", errors)
     coordinator = read("Titonium/Services/Notifications/NotificationCoordinator.qml", errors)
     overlay_host = read("Titonium/Core/Surfaces/OverlayHost.qml", errors)
-    panel = read("Titonium/Notifications/NotificationPanel.qml", errors)
     classic_panel = read("Titonium/Notifications/ClassicNotificationPanel.qml", errors)
     connected_panel = read(
         "Titonium/Notifications/ConnectedNotificationPanelContent.qml", errors)
@@ -280,29 +279,21 @@ def main() -> int:
         "readonly property real implicitContentWidth:",
         "readonly property real implicitContentHeight:",
         "signal dismissRequested()",
-        "model: NotificationCoordinator.history", "NotificationHistoryRow {",
+        "model: root.groups", "NotificationHistoryGroup {",
         "visible: NotificationCoordinator.history.length === 0",
         'I18n.tr("notification.panel.empty")',
         'I18n.tr("notification.panel.title")',
         'I18n.tr("notification.panel.clear_all")',
-        "NotificationCoordinator.dismissAll()", "root.dismissRequested()",
+        "NotificationCoordinator.dismissAll()",
     ), errors)
     for forbidden in ("SurfaceManager", "PanelWindow", "property var descriptor",
             "property var screen", "NotificationService"):
         if forbidden in content:
             errors.append(f"NotificationHistoryContent must not own shell or native API: {forbidden}")
-    require(panel, "NotificationPanel compatibility wrapper", (
-        "ClassicNotificationPanel {",
-    ), errors)
-    for forbidden in ("NotificationPanelLifecycle", "SurfaceManager", "NotificationCoordinator",
-            "property var descriptor", "property var screen"):
-        if forbidden in panel:
-            errors.append(f"NotificationPanel compatibility wrapper must delegate lifecycle: {forbidden}")
     presentation = content + row
     if "NotificationService" in presentation:
         errors.append("Notification panel presentation must not consume NotificationService")
     require(qmldir, "Notifications qmldir", (
-        "NotificationPanel 1.0 NotificationPanel.qml",
         "ClassicNotificationPanel 1.0 ClassicNotificationPanel.qml",
         "NotificationHistoryContent 1.0 NotificationHistoryContent.qml",
         "ConnectedNotificationPanelContent 1.0 ConnectedNotificationPanelContent.qml",

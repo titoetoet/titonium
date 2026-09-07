@@ -65,12 +65,26 @@ FocusScope {
 
                     Rectangle {
                         anchors.fill: parent
-                        visible: !menuRow.modelData.separator
+                        visible: Theme.legacy && !menuRow.modelData.separator
                         radius: Metrics.radiusSmall
                         color: rowHover.hovered && menuRow.modelData.enabled
                             ? Theme.surfaceInteractive : "transparent"
                         border.width: menuRow.activeFocus ? Metrics.borderWidth : 0
                         border.color: Theme.focus
+                    }
+
+
+                    Shared.StylePaint {
+                        anchors.fill: parent
+                        visible: !Theme.legacy && !menuRow.modelData.separator
+                        tokens: Theme.tokens
+                        role: "menu-row"
+                        radius: Metrics.radiusSmall
+                        outlined: false
+                        interaction: ({ hovered: rowHover.hovered,
+                            focused: menuRow.activeFocus,
+                            selected: menuRow.inputPresentation.selected,
+                            enabled: menuRow.modelData.enabled })
                     }
 
                     RowLayout {

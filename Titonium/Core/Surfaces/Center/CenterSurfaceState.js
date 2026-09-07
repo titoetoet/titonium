@@ -11,6 +11,7 @@ function stateValue(values) {
         acquisitionPolicy: values.acquisitionPolicy === "non-preemptive"
             ? "non-preemptive" : "preemptive",
         destination: values.destination || "overview",
+        expandedTab: ["dashboard", "tasks", "monitoring", "wallpapers"].indexOf(values.expandedTab) >= 0 ? values.expandedTab : "dashboard",
         dragProgress: Math.max(0, Math.min(1, Number(values.dragProgress) || 0)),
         focusPolicy: values.focusPolicy === "exclusive" ? "exclusive" : "none",
         dismissalPolicy: ["outside", "timed"].indexOf(values.dismissalPolicy) >= 0
@@ -75,6 +76,11 @@ function transition(state, snapshot, intent, now) {
     if (!intent || typeof intent !== "object")
         return current;
     var type = String(intent.type || "");
+    if (type === "select-tab") {
+        if (["dashboard", "tasks", "monitoring", "wallpapers"].indexOf(intent.tab) < 0)
+            return current;
+        return nextState(current, { expandedTab: intent.tab }, false);
+    }
     if (type === "surface-granted") {
         var screenName = String(intent.screenName || "").trim();
         if (!screenName)
@@ -107,7 +113,8 @@ function transition(state, snapshot, intent, now) {
         }, true);
     }
     if (type === "present") {
-        var context = contextById(snapshot, String(intent.contextId || ""));
+        var context = contextById(snapshot, String(intent.contextId || ""))
+            || (intent.presentationOwner === "hover" && !intent.contextId ? { id: "", attention: "ambient" } : null);
         if (!context || current.mode === "closed" || current.mode === "expanded"
                 || intent.requestedMode !== "banner")
             return current;
@@ -154,6 +161,15 @@ function transition(state, snapshot, intent, now) {
     if (type === "snapshot-changed") {
         if (!current.selectedContextId || contextById(snapshot, current.selectedContextId))
             return current;
+        // A recording view belongs to one session; never retarget its controls
+        // to a newly discovered recorder after the selected session disappears.
+        if ((current.mode === "banner" || current.mode === "expanded")
+                && current.selectedContextId.indexOf("capture:recording:") === 0)
+            return nextState(transition(current, snapshot,
+                { type: "request-mode", mode: "compact" }, now),
+                { selectedContextId: "" }, false);
+        // Keep a shown banner tied to its original content, even after it expires.
+        if (current.mode === "banner") return current;
         return nextState(current, { selectedContextId: fallbackId(snapshot) }, false);
     }
     if (type === "drag-update")

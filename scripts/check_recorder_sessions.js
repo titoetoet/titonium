@@ -1,0 +1,11 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const source=fs.readFileSync('Titonium/Services/Capture/ScreenRecordService.qml','utf8');
+const match=source.match(/function applySessions\(next: var\): void \{([\s\S]*?)\n    \}/);
+assert.ok(match,'recorder lifecycle needs occurrence-aware updates');
+const a={pid:1,start:'10'}, b={pid:2,start:'20'};
+const root={recorderSessions:[a,b],startedAt:100,sync:()=>{}};
+const ctx=vm.createContext({root,Date:{now:()=>200}});
+vm.runInContext('function applySessions(next){'+match[1]+'\n}',ctx);
+ctx.applySessions([a]); assert.equal(root.startedAt,100,'removing another recording does not start a session');
+ctx.applySessions([a,b]); assert.equal(root.startedAt,200,'new recording creates an occurrence');
+console.log('PASS overlapping recording lifecycle');

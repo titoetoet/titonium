@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import "../../Titonium/Shared/Mascots/Pig" as Pig
 import QtQuick.Controls
 import QtQuick.Layouts
 
@@ -474,7 +475,7 @@ Window {
                     visible: window.currentViewAngle !== "island_roam" && window.currentViewAngle !== "island_cling"
 
                     // 0. Sleepy Pig
-                    SleepyPig {
+                    Pig.SleepyPig {
                         anchors.centerIn: parent
                         scale: window.displayScale
                         visible: window.currentTab === 0
@@ -484,7 +485,7 @@ Window {
                     }
 
                     // 1. Coder Pig
-                    CoderPig {
+                    Pig.CoderPig {
                         anchors.centerIn: parent
                         scale: window.displayScale
                         visible: window.currentTab === 1
@@ -494,7 +495,7 @@ Window {
                     }
 
                     // 2. Coffee Pig
-                    CoffeePig {
+                    Pig.CoffeePig {
                         anchors.centerIn: parent
                         scale: window.displayScale
                         visible: window.currentTab === 2
@@ -514,7 +515,7 @@ Window {
                     }
 
                     // 4. Walking Pig
-                    WalkingPig {
+                    Pig.WalkingPig {
                         anchors.centerIn: parent
                         scale: window.displayScale
                         visible: window.currentTab === 4
@@ -576,7 +577,7 @@ Window {
                         color: "#1E1A31"
                         border.color: "#352A54"
                         Text { anchors.top: parent.top; anchors.left: parent.left; anchors.margins: 6; text: "😴 Sleepy"; color: "#A0AEC0"; font.bold: true; font.pixelSize: 10 }
-                        SleepyPig { anchors.centerIn: parent; scale: 0.6; pigColor: window.selectedPigColor; paused: window.isPaused; viewAngle: window.currentViewAngle }
+                        Pig.SleepyPig { anchors.centerIn: parent; scale: 0.6; pigColor: window.selectedPigColor; paused: window.isPaused; viewAngle: window.currentViewAngle }
                     }
 
                     // 2. Coder
@@ -587,7 +588,7 @@ Window {
                         color: "#1E1A31"
                         border.color: "#352A54"
                         Text { anchors.top: parent.top; anchors.left: parent.left; anchors.margins: 6; text: "💻 Coder"; color: "#A0AEC0"; font.bold: true; font.pixelSize: 10 }
-                        CoderPig { anchors.centerIn: parent; scale: 0.6; pigColor: window.selectedPigColor; paused: window.isPaused; viewAngle: window.currentViewAngle }
+                        Pig.CoderPig { anchors.centerIn: parent; scale: 0.6; pigColor: window.selectedPigColor; paused: window.isPaused; viewAngle: window.currentViewAngle }
                     }
 
                     // 3. Boba
@@ -598,7 +599,7 @@ Window {
                         color: "#1E1A31"
                         border.color: "#352A54"
                         Text { anchors.top: parent.top; anchors.left: parent.left; anchors.margins: 6; text: "🧋 Boba"; color: "#A0AEC0"; font.bold: true; font.pixelSize: 10 }
-                        CoffeePig { anchors.centerIn: parent; scale: 0.6; pigColor: window.selectedPigColor; paused: window.isPaused; viewAngle: window.currentViewAngle }
+                        Pig.CoffeePig { anchors.centerIn: parent; scale: 0.6; pigColor: window.selectedPigColor; paused: window.isPaused; viewAngle: window.currentViewAngle }
                     }
 
                     // 4. Detective
@@ -620,7 +621,7 @@ Window {
                         color: "#1E1A31"
                         border.color: "#352A54"
                         Text { anchors.top: parent.top; anchors.left: parent.left; anchors.margins: 6; text: "🚶 Đi bộ"; color: "#A0AEC0"; font.bold: true; font.pixelSize: 10 }
-                        WalkingPig { anchors.centerIn: parent; scale: 0.6; pigColor: window.selectedPigColor; paused: window.isPaused; viewAngle: window.currentViewAngle }
+                        Pig.WalkingPig { anchors.centerIn: parent; scale: 0.6; pigColor: window.selectedPigColor; paused: window.isPaused; viewAngle: window.currentViewAngle }
                     }
 
                     // 6. Running

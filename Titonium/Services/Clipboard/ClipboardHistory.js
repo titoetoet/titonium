@@ -1,6 +1,42 @@
 .pragma library
 
 var MAX_ITEMS = 60;
+var MAX_TEXT_BYTES = 64 * 1024;
+var MAX_HISTORY_BYTES = 1024 * 1024;
+
+function utf8Bytes(text) {
+    var bytes = 0;
+    for (var i = 0; i < text.length; i++) {
+        var code = text.charCodeAt(i);
+        if (code < 128) bytes++;
+        else if (code < 2048) bytes += 2;
+        else if (code >= 0xd800 && code <= 0xdbff && i + 1 < text.length
+                 && text.charCodeAt(i + 1) >= 0xdc00 && text.charCodeAt(i + 1) <= 0xdfff) { bytes += 4; i++; }
+        else bytes += 3;
+    }
+    return bytes;
+}
+function bounded(items) {
+    var result = [], bytes = utf8Bytes(JSON.stringify({ schemaVersion: 1, items: [] }));
+    for (var i = 0; i < items.length && result.length < MAX_ITEMS; i++) {
+        var item = items[i];
+        if (!item || typeof item.text !== "string" || utf8Bytes(item.text) > MAX_TEXT_BYTES) continue;
+        var size = utf8Bytes(JSON.stringify(item)) + (result.length ? 1 : 0);
+        if (bytes + size > MAX_HISTORY_BYTES) break;
+        bytes += size;
+        result.push(item);
+    }
+    return result;
+}
+function removedImagePaths(previous, next) {
+    var retained = {}, removed = [];
+    next.forEach(function(item) { if (item.kind === "image") retained[item.imagePath] = true; });
+    previous.forEach(function(item) {
+        if (item.kind === "image" && item.imagePath && !retained[item.imagePath]
+                && removed.indexOf(item.imagePath) < 0) removed.push(item.imagePath);
+    });
+    return removed;
+}
 var PREVIEW_LENGTH = 80;
 var VALID_KINDS = ["url", "color", "code", "plain", "image"];
 
@@ -38,7 +74,9 @@ function normalizeDocument(document) {
     var normalized = [], seen = {};
     for (var index = 0; index < document.items.length && normalized.length < MAX_ITEMS; index++) {
         var item = document.items[index];
-        var key = "$text:" + (item && typeof item.text === "string" ? item.text : "");
+        var key = item && item.kind === "image"
+            ? "$image:" + (item.md5 || item.imagePath || item.id)
+            : "$text:" + (item && typeof item.text === "string" ? item.text : "");
         if (!isRecord(item) || seen[key] === true) continue;
         seen[key] = true;
         normalized.push({ id: item.id, text: item.text, preview: item.preview, kind: item.kind,
@@ -52,7 +90,7 @@ function normalizeDocument(document) {
             sourceApp: typeof item.sourceApp === "string" ? item.sourceApp : "",
             sourceTitle: typeof item.sourceTitle === "string" ? item.sourceTitle : "" });
     }
-    return normalized;
+    return bounded(normalized);
 }
 function stableHash(text) {
     var hash = 2166136261;
@@ -87,7 +125,7 @@ function recordImage(items, imagePath, width, height, bytes, md5, timestamp, sou
     if (typeof imagePath !== "string" || imagePath.length === 0) return source.slice(0, MAX_ITEMS);
     var observedAt = isFiniteNumber(timestamp) ? timestamp : Date.now(), next = [], existing = null;
     for (var index = 0; index < source.length; index++) {
-        if (source[index].kind === "image" && (source[index].md5 === md5 || source[index].imagePath === imagePath))
+        if (source[index].kind === "image" && ((md5 && source[index].md5 === md5) || source[index].imagePath === imagePath))
             existing = source[index];
         else
             next.push(source[index]);
@@ -101,14 +139,14 @@ function recordImage(items, imagePath, width, height, bytes, md5, timestamp, sou
         sourceTitle: typeof sourceTitle === "string" ? sourceTitle : (existing.sourceTitle || "")
     };
     next.unshift(newest);
-    return next.slice(0, MAX_ITEMS);
+    return bounded(next);
 }
 function record(items, text, timestamp, sourceApp, sourceTitle) {
     var source = Array.isArray(items) ? items : [];
-    if (typeof text !== "string" || text.length === 0) return source.slice(0, MAX_ITEMS);
+    if (typeof text !== "string" || text.length === 0 || utf8Bytes(text) > MAX_TEXT_BYTES) return bounded(source);
     var observedAt = isFiniteNumber(timestamp) ? timestamp : Date.now(), next = [], existing = null;
     for (var index = 0; index < source.length; index++) {
-        if (source[index].text === text && existing === null) existing = source[index];
+        if (source[index].kind !== "image" && source[index].text === text && existing === null) existing = source[index];
         else next.push(source[index]);
     }
     var newest = existing === null ? createRecord(text, observedAt, sourceApp, sourceTitle) : {
@@ -121,7 +159,7 @@ function record(items, text, timestamp, sourceApp, sourceTitle) {
         sourceApp: typeof sourceApp === "string" ? sourceApp : (existing.sourceApp || ""),
         sourceTitle: typeof sourceTitle === "string" ? sourceTitle : (existing.sourceTitle || "") };
     next.unshift(newest);
-    return next.slice(0, MAX_ITEMS);
+    return bounded(next);
 }
 function remove(items, id) {
     if (!Array.isArray(items) || typeof id !== "string") return [];

@@ -5,6 +5,9 @@ import qs.Titonium.Theme
 
 FocusScope {
     id: root
+    property var tokens: Theme.tokens
+    readonly property int interactionDuration: tokens.reducedMotion ? 0 : Math.round((tokens.design?.controlMotion?.durationMs || 100) * (tokens.motionScale || 1))
+    readonly property bool legacyPaint: tokens.legacy !== false
 
     property bool checked: false
     property string accessibleName: ""
@@ -25,22 +28,43 @@ FocusScope {
 
     Rectangle {
         anchors.fill: parent
+        visible: root.legacyPaint
         radius: height / 2
-        color: root.checked ? Theme.accent
-            : (root.hovered ? Theme.surfaceInteractive : Theme.surfaceElevated)
+        color: root.checked ? root.tokens.colors.accent
+            : (root.hovered ? root.tokens.colors.surfaceInteractive : root.tokens.colors.surfaceElevated)
         border.width: root.activeFocus ? Metrics.borderWidth : 0
-        border.color: root.activeFocus ? Theme.focus : "transparent"
-        Behavior on color { ColorAnimation { duration: Motion.fast } }
+        border.color: root.activeFocus ? root.tokens.colors.focus : "transparent"
+        Behavior on color { ColorAnimation { duration: root.legacyPaint ? Motion.fast : root.interactionDuration } }
+    }
+
+    StylePaint {
+        objectName: "toggleStyleTrack"
+        anchors.fill: parent
+        visible: !root.legacyPaint
+        tokens: root.tokens
+        role: "toggle-track"
+        radius: root.tokens.design.renderer === "modern-flat" ? 5 : height / 2
+        interaction: ({enabled:root.enabled,hovered:root.hovered,pressed:root.pressed,primary:root.checked,focused:root.activeFocus})
     }
 
     Rectangle {
+        id: thumb
         width: 16
         height: 16
         radius: width / 2
         y: 3
         x: root.checked ? root.width - width - 3 : 3
-        color: root.checked ? Theme.accentText : Theme.textSecondary
-        Behavior on x { NumberAnimation { duration: Motion.fast; easing.type: Easing.OutCubic } }
+        color: root.legacyPaint ? (root.checked ? root.tokens.colors.accentText : root.tokens.colors.textSecondary) : "transparent"
+        StylePaint {
+            anchors.fill: parent
+            visible: !root.legacyPaint
+            tokens: root.tokens
+            role: "toggle-thumb"
+            radius: root.tokens.design.renderer === "modern-flat" ? 3 : width / 2
+            customColor: root.checked ? root.tokens.colors.accentText : root.tokens.colors.textSecondary
+            outlined: false
+        }
+        Behavior on x { NumberAnimation { duration: root.legacyPaint ? Motion.fast : root.interactionDuration; easing.type: Easing.OutCubic } }
     }
 
     HoverHandler {

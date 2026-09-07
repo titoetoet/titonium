@@ -29,12 +29,6 @@ Item {
 
         Shared.TextLabel {
             Layout.fillWidth: true
-            text: I18n.tr("settings.spotlight.title")
-            variant: "titleLarge"
-        }
-
-        Shared.TextLabel {
-            Layout.fillWidth: true
             text: I18n.tr("settings.spotlight.description")
             tone: "secondary"
             wrapMode: Text.WordWrap

@@ -2,3 +2,6 @@ module qs.Titonium.Settings.components
 SettingRow 1.0 SettingRow.qml
 ApplicationVisibilityList 1.0 ApplicationVisibilityList.qml
 DockApplicationEditor 1.0 DockApplicationEditor.qml
+ThemeCard 1.0 ThemeCard.qml
+ThemePreview 1.0 ThemePreview.qml
+AppearanceAdvanced 1.0 AppearanceAdvanced.qml

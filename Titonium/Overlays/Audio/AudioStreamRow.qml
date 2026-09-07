@@ -15,7 +15,7 @@ Item {
     readonly property real volume: root.stream?.volume || 0
     readonly property bool muted: root.stream?.muted === true
 
-    implicitHeight: row.implicitHeight
+    implicitHeight: Math.max(72, row.implicitHeight + 16)
     implicitWidth: row.implicitWidth
 
     function setVolume(value: real): void {
@@ -31,6 +31,7 @@ Item {
     RowLayout {
         id: row
         width: parent.width
+        anchors.verticalCenter: parent.verticalCenter
         spacing: Metrics.spacingMedium
 
         Shared.SystemIcon {
@@ -61,7 +62,7 @@ Item {
                 enabled: root.available
                 serviceValue: root.volume
                 maximumValue: 1
-                liveUpdate: false
+                liveUpdate: true
                 accessibleName: I18n.tr("audio.volume.accessible", {
                     "percentage": Math.round(root.volume * 100)
                 })

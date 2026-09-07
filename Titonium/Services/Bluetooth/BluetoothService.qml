@@ -56,22 +56,56 @@ QtObject {
     property string pendingPairAddress: ""
     property bool pairingWasActive: false
     property bool connectAttempted: false
+    property int agentAttempts: 0
+    readonly property int agentAttemptLimit: 6
 
     signal audioDeviceConnected(string address)
 
     // Persistent BlueZ pairing agent. Native device.pair() only initiates the
     // pairing request; a registered agent is what completes it on this
     // agent-less (bare Hyprland) system. The process stays alive while its
-    // stdin pipe is open and is restarted if it exits.
+    // stdin pipe is open. Crashes get five delayed retries; a stable run,
+    // adapter change, or an explicit pairing request restores the retry budget.
     property Process agentProcess: Process {
         command: ["bluetoothctl", "--agent", "NoInputNoOutput"]
         stdinEnabled: true
         stdout: StdioCollector { waitForEnd: false }
         stderr: StdioCollector { waitForEnd: false }
+        onStarted: root.agentStable.restart()
         onExited: exitCode => {
-            Logger.warn("bluetooth", "agent process exited: " + exitCode);
-            if (root.available)
-                Qt.callLater(root.ensureAgent);
+            root.agentStable.stop();
+            if (!root.available)
+                return;
+            root.warnOperation("agent.exit", "agent process exited: " + exitCode);
+            if (root.agentAttempts >= root.agentAttemptLimit) {
+                root.warnOperation("agent.exhausted", "pairing agent retries exhausted");
+                return;
+            }
+            root.agentRetry.interval = Math.min(16000,
+                1000 * Math.pow(2, Math.max(0, root.agentAttempts - 1)));
+            root.agentRetry.restart();
+        }
+    }
+
+    property Timer agentRetry: Timer {
+        repeat: false
+        onTriggered: root.ensureAgent()
+    }
+
+    property Timer agentStable: Timer {
+        interval: 30000
+        repeat: false
+        onTriggered: {
+            if (root.agentProcess.running)
+                root.agentAttempts = 1;
+        }
+    }
+
+    property Connections agentAdapterConnections: Connections {
+        target: Bluetooth
+        function onDefaultAdapterChanged(): void {
+            root.resetAgentRetry();
+            root.ensureAgent();
         }
     }
 
@@ -98,9 +132,19 @@ QtObject {
         }
     }
 
+    function resetAgentRetry(): void {
+        root.agentRetry.stop();
+        root.agentStable.stop();
+        root.agentAttempts = root.agentProcess.running ? 1 : 0;
+        if (root.available && root.agentProcess.running)
+            root.agentStable.restart();
+    }
+
     function ensureAgent(): void {
-        if (!root.available || root.agentProcess.running)
+        if (!root.available || root.agentProcess.running || root.agentRetry.running
+                || root.agentAttempts >= root.agentAttemptLimit)
             return;
+        root.agentAttempts += 1;
         Logger.info("bluetooth", "starting pairing agent");
         root.agentProcess.running = true;
     }
@@ -306,6 +350,8 @@ QtObject {
         try {
             if (root.pendingPairAddress)
                 return false;
+            if (root.agentRetry.running || root.agentAttempts >= root.agentAttemptLimit)
+                root.resetAgentRetry();
             root.ensureAgent();
             root.pendingPairAddress = BluetoothRules.normalizedAddress(address);
             root.pairWatchdog.restart();
@@ -384,10 +430,6 @@ QtObject {
         });
     }
 
-    onAvailableChanged: {
-        if (root.available)
-            root.ensureAgent();
-    }
     onProjectionChanged: {
         root.observeAudioConnections();
         root.observePairProgress();

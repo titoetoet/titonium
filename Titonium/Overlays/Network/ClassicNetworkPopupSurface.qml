@@ -207,11 +207,13 @@ FocusScope {
                             Accessible.name: section.sectionTitle
                         }
                         Repeater {
-                            model: section.sectionNetworks
+                            model: WifiNetworkModel {
+                                networks: section.sectionNetworks
+                            }
                             delegate: WifiNetworkRow {
-                                required property var modelData
+                                required property var descriptor
                                 Layout.fillWidth: true
-                                network: modelData
+                                network: descriptor
                             }
                         }
                     }

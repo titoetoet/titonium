@@ -28,7 +28,7 @@ Item {
     Connected.ConnectedRenderer {
         id: connected
         anchors.fill: parent
-        visible: root.profile.id === "connected"
+        visible: root.profile.id === "connected" && root.presentationActive
         snapshot: root.snapshot
         viewState: root.viewState
         profile: root.profile

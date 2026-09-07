@@ -336,12 +336,6 @@ const interactiveWindows = [
         wants: /wantsInteractiveFocus:\s*window\.ownsSettings/,
         focusMode: "Exclusive",
     },
-    {
-        relative: "AgentApproval/AgentApprovalWindow.qml",
-        ownerPrefix: "agent-approval:",
-        wants: /!window\.isFileChange\s*&&\s*window\.ownsApproval/,
-        focusMode: "OnDemand",
-    },
 ];
 
 for (const contract of interactiveWindows) {

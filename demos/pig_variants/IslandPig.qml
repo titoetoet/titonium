@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import "../../Titonium/Shared/Mascots/Pig" as Pig
 
 Item {
     id: root
@@ -466,7 +467,7 @@ Item {
                 }
 
                 // 1. Walking Mini
-                WalkingPig {
+                Pig.WalkingPig {
                     anchors.centerIn: parent
                     scale: 0.22
                     visible: root.activeRoamAction === "walking"
@@ -486,7 +487,7 @@ Item {
                 }
 
                 // 3. Coffee / Boba Mini
-                CoffeePig {
+                Pig.CoffeePig {
                     anchors.centerIn: parent
                     scale: 0.22
                     visible: root.activeRoamAction === "coffee"
@@ -496,7 +497,7 @@ Item {
                 }
 
                 // 4. Coder Mini
-                CoderPig {
+                Pig.CoderPig {
                     anchors.centerIn: parent
                     scale: 0.22
                     visible: root.activeRoamAction === "coder"
@@ -536,7 +537,7 @@ Item {
                 }
 
                 // 8. Sleepy Mini
-                SleepyPig {
+                Pig.SleepyPig {
                     anchors.centerIn: parent
                     scale: 0.22
                     visible: root.activeRoamAction === "sleepy"

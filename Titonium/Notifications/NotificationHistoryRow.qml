@@ -11,6 +11,9 @@ Item {
     id: root
 
     required property var notification
+    property bool showSource: true
+    property bool collapsedGroup: false
+    signal expandRequested()
 
     implicitHeight: contentColumn.implicitHeight + Metrics.spacingMedium * 2
 
@@ -18,6 +21,13 @@ Item {
         anchors.fill: parent
         tone: "elevated"
         radius: Metrics.radiusMedium
+    }
+
+    MouseArea {
+        anchors.fill: parent
+        enabled: root.collapsedGroup
+        cursorShape: Qt.PointingHandCursor
+        onClicked: root.expandRequested()
     }
 
     ColumnLayout {
@@ -32,12 +42,12 @@ Item {
 
             Shared.SystemIcon {
                 Layout.alignment: Qt.AlignTop
-                Layout.preferredWidth: 30
-                Layout.preferredHeight: 30
+                Layout.preferredWidth: 24
+                Layout.preferredHeight: 24
                 sourceName: root.notification.appIcon || ""
                 fallbackName: root.notification.category === "timer" ? "timer"
                     : (root.notification.category === "job" ? "work" : "notifications")
-                size: 30
+                size: 24
                 tone: root.notification.severity === "critical" ? "danger" : "accent"
             }
 
@@ -47,6 +57,7 @@ Item {
 
                 Shared.TextLabel {
                     Layout.fillWidth: true
+                    visible: root.showSource
                     text: root.notification.appName
                         || I18n.tr("notification.toast.fallback_app")
                     variant: "caption"
@@ -73,7 +84,7 @@ Item {
                     variant: "bodySmall"
                     tone: "secondary"
                     wrapMode: Text.Wrap
-                    maximumLineCount: 4
+                    maximumLineCount: root.collapsedGroup ? 2 : 4
                     elide: Text.ElideRight
                 }
             }

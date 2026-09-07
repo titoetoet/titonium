@@ -6,13 +6,21 @@ import qs.Titonium.Core.Runtime
 import qs.Titonium.Services.Notifications
 import qs.Titonium.Shared as Shared
 import qs.Titonium.Theme
+import "../Services/Notifications/NotificationRules.js" as NotificationRules
 
 Item {
     id: root
 
     readonly property real implicitContentWidth: 420
+    readonly property var groups: NotificationRules.historyGroups(NotificationCoordinator.history)
+    property var expandedGroups: ({})
+    function toggleGroup(key: string): void {
+        const next = Object.assign({}, root.expandedGroups);
+        next[key] = !next[key];
+        root.expandedGroups = next;
+    }
     readonly property real listHeight: NotificationCoordinator.history.length === 0
-        ? 112 : Math.min(historyList.contentHeight, 460)
+        ? 112 : 560
     readonly property real implicitContentHeight: headerRow.implicitHeight + Metrics.borderWidth
         + root.listHeight + Metrics.spacingMedium * 2
     implicitWidth: root.implicitContentWidth
@@ -39,19 +47,11 @@ Item {
 
             Shared.Button {
                 visible: NotificationCoordinator.history.length > 0
-                label: I18n.tr("notification.panel.clear_all")
+                accessibleName: I18n.tr("notification.panel.clear_all")
                 iconName: "clear_all"
                 variant: "quiet"
                 size: "small"
                 onTriggered: NotificationCoordinator.dismissAll()
-            }
-
-            Shared.Button {
-                iconName: "close"
-                variant: "quiet"
-                size: "small"
-                accessibleName: I18n.tr("notification.panel.close")
-                onTriggered: root.dismissRequested()
             }
         }
 
@@ -69,16 +69,18 @@ Item {
             ListView {
                 id: historyList
                 anchors.fill: parent
-                model: NotificationCoordinator.history
+                model: root.groups
                 clip: true
                 spacing: Metrics.spacingSmall
                 boundsBehavior: Flickable.StopAtBounds
                 reuseItems: true
 
-                delegate: NotificationHistoryRow {
+                delegate: NotificationHistoryGroup {
                     required property var modelData
                     width: historyList.width
-                    notification: modelData
+                    group: modelData
+                    expanded: root.expandedGroups[modelData.key] === true
+                    onToggleRequested: root.toggleGroup(modelData.key)
                 }
             }
 

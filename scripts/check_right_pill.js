@@ -255,9 +255,9 @@ assert.match(activeWindow, /Translate \{ x: root\.menuAnchorOffset \}/);
 assert.match(inputMethod, /toggleInput\(root\.screen\.name, "right"\)/);
 assert.match(endIsland, /property real menuAnchorOffset:/);
 assert.match(inputMethod, /Translate \{ x: root\.menuAnchorOffset \}/);
-assert.match(surfaceSource, /StartIsland\s*\{[\s\S]*?menuAnchorOffset: root\.leftSourceOffset/);
+assert.match(surfaceSource, /StartIsland\s*\{[\s\S]*?menuAnchorOffset: 0/);
 assert.match(surfaceSource,
-    /EndIsland\s*\{[\s\S]*?menuAnchorOffset: root\.ownsConnectedSurface \? 0\s*:\s*root\.rightSourceOffset/,
+    /EndIsland\s*\{[\s\S]*?menuAnchorOffset: 0/,
     "connectivity popups must keep unrelated EndIsland controls stationary");
 assert.match(surfaceSource, /StartIsland\s*\{[\s\S]*?z:\s*2/,
     "window-title controls must stay above the overlapping menu clip");
@@ -305,3 +305,8 @@ const trayQmldir = fs.readFileSync(path.join(root, "Titonium", "Overlays", "Syst
 assert.match(trayQmldir, /ClassicSystemTrayPopupSurface 1\.0 ClassicSystemTrayPopupSurface\.qml/);
 
 console.log("PASS Right Pill coordinator lifecycle and menu preparation contract");
+
+assert.equal((surfaceSource.match(/menuAnchorOffset:\s*0/g) || []).length, 2,
+    "opening either edge menu must keep every source control in its original row slot");
+assert.doesNotMatch(surfaceSource, /EdgeMenuGeometry\.sourceOffset\(/,
+    "moving only Input Method toward its popup centre overlaps neighboring icons");

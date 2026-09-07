@@ -57,6 +57,7 @@ FocusScope {
 
     Rectangle {
         anchors.fill: parent
+        visible: Theme.legacy
         radius: Metrics.radiusMedium
         color: root.dockItem?.active && root.workspaceColorIndex >= 0
             ? root.workspaceBackground
@@ -64,6 +65,20 @@ FocusScope {
         border.width: root.activeFocus ? Metrics.borderWidth : 0
         border.color: root.activeFocus ? Theme.focus : "transparent"
         Behavior on color { ColorAnimation { duration: Motion.fast } }
+    }
+
+
+    Shared.StylePaint {
+        anchors.fill: parent
+        visible: !Theme.legacy
+        tokens: Theme.tokens
+        role: "button"
+        radius: Metrics.radiusMedium
+        customColor: root.dockItem?.active && root.workspaceColorIndex >= 0
+            ? root.workspaceBackground : "transparent"
+        outlined: false
+        interaction: ({ hovered: root.hovered, focused: root.activeFocus,
+            selected: root.dockItem?.active === true, quiet: true })
     }
 
     Shared.SystemIcon {

@@ -14,12 +14,6 @@ Item {
 
         Shared.TextLabel {
             Layout.fillWidth: true
-            text: I18n.tr("settings.audio.title")
-            variant: "titleLarge"
-        }
-
-        Shared.TextLabel {
-            Layout.fillWidth: true
             text: I18n.tr("settings.audio.description")
             tone: "secondary"
             wrapMode: Text.WordWrap

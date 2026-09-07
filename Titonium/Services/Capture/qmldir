@@ -1,2 +1,3 @@
 module qs.Titonium.Services.Capture
 singleton ScreenRecordService 1.0 ScreenRecordService.qml
+singleton CaptureFeedbackService 1.0 CaptureFeedbackService.qml

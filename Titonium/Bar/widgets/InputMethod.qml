@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.Titonium.Core.Surfaces
 import qs.Titonium.Core.Runtime
 import qs.Titonium.Bar.right
 import qs.Titonium.Services.InputMethod
@@ -30,6 +31,17 @@ Item {
         }
     }
 
+    Shared.InteractionFeedback {
+        anchors.centerIn: parent
+        width: parent.width
+        height: 28
+        hovered: inputHover.containsMouse
+        pressed: inputHover.pressed
+        selected: (RightPillCoordinator.menuActive && RightPillCoordinator.menuSource === "input"
+                && RightPillCoordinator.ownerScreenName === root.screen.name)
+            || SurfaceManager.ownerId === RightPillCoordinator.systemTrayOwnerFor(root.screen, "input")
+    }
+
     Shared.Icon {
         id: inputIcon
         anchors.centerIn: parent
@@ -40,16 +52,5 @@ Item {
         accessibleName: I18n.tr("menubar.input_method.accessible", {
             name: InputMethodService.displayName
         })
-        scale: Motion.reduced ? 1 : (inputHover.pressed ? 0.96
-            : (inputHover.containsMouse ? 1.08 : 1))
-        transform: Translate { y: !Motion.reduced && inputHover.containsMouse ? -1 : 0 }
-
-        Behavior on scale {
-            NumberAnimation {
-                duration: Motion.reduced ? 0 : 140
-                easing.type: Easing.BezierSpline
-                easing.bezierCurve: Motion.springDamped
-            }
-        }
     }
 }

@@ -4,6 +4,10 @@ function normalizedId(value) {
     return typeof value === "string" ? value.trim() : "";
 }
 
+function canonicalAppId(appId, entry) {
+    return normalizedId(entry?.id) || normalizedId(appId);
+}
+
 function keyForId(value) {
     return normalizedId(value).toLocaleLowerCase();
 }
@@ -169,6 +173,48 @@ function nextCycleIndex(previousIndex, count) {
     const previous = Math.floor(Number(previousIndex));
     return Number.isFinite(previous) && previous >= 0 && previous < safeCount
         ? (previous + 1) % safeCount : 0;
+}
+
+// Reconcile compositor observations separately from click intents. A still-pending
+// focus request must not be mistaken for a user focusing a different window.
+function observeCycleFocus(previous, activeId) {
+    const active = normalizedId(activeId);
+    if (active === previous.observedActiveId)
+        return previous;
+    let pending = Array.isArray(previous.pendingIds) ? previous.pendingIds : [];
+    let lastId = previous.lastId;
+    if (active === lastId)
+        pending = [];
+    else if (pending.indexOf(active) >= 0)
+        pending = pending.filter(id => id !== active);
+    else if (active !== previous.observedActiveId) {
+        lastId = "";
+        pending = [];
+    }
+    return { order: previous.order, lastId: lastId,
+        observedActiveId: active, pendingIds: pending };
+}
+
+// Preserve a window-ID ring across MRU changes, appending newly opened windows.
+function nextWindowCycle(previous, windows) {
+    const source = Array.isArray(windows) ? windows : [];
+    const liveIds = source.map(window => normalizedId(window?.id)).filter(id => id);
+    const oldOrder = previous && Array.isArray(previous.order) ? previous.order : [];
+    const order = oldOrder.filter(id => liveIds.indexOf(id) >= 0);
+    for (let index = 0; index < liveIds.length; index++) {
+        if (order.indexOf(liveIds[index]) < 0)
+            order.push(liveIds[index]);
+    }
+    const activeId = normalizedId(source.find(window => window?.active === true)?.id);
+    const lastIndex = order.indexOf(normalizedId(previous?.lastId));
+    const selectedId = lastIndex >= 0 ? order[(lastIndex + 1) % order.length]
+        : (activeId || liveIds[0] || "");
+    const pending = previous && Array.isArray(previous.pendingIds)
+        ? previous.pendingIds.filter(id => liveIds.indexOf(id) >= 0) : [];
+    if (selectedId && selectedId !== activeId && pending.indexOf(selectedId) < 0)
+        pending.push(selectedId);
+    return { order: order, lastId: selectedId,
+        observedActiveId: activeId, pendingIds: pending };
 }
 
 function shouldReveal(autoHide, pinnedOpen, activeWorkspaceWindowCount, edgeHovered, dockHovered) {

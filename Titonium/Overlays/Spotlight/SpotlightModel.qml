@@ -34,6 +34,13 @@ QtObject {
     }
     readonly property var pages: SpotlightLayout.pages(root.visibleApps, SpotlightLayout.pageSize())
     readonly property var results: root.searchResults()
+    onResultsChanged: root.clampResultSelection()
+
+    function clampResultSelection(): void {
+        if (root.mode !== "results")
+            return;
+        root.selectedIndex = Math.max(0, Math.min(root.selectedIndex, root.results.length - 1));
+    }
 
     function open(descriptorMode: string): void {
         root.scope = SpotlightScope.normalize(descriptorMode);
@@ -133,6 +140,8 @@ QtObject {
             return false;
         const index = root.selectionMoved ? root.selectedIndex : 0;
         const result = root.results[index];
+        if (!result)
+            return false;
         if (result.type === "calculator")
             return ClipboardService.copyText(result.value);
         return ApplicationService.launch(result.executionId);

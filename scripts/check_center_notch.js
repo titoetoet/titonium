@@ -42,9 +42,9 @@ assert.deepEqual(JSON.parse(JSON.stringify(presentationRules.windowPlan("classic
 assert.deepEqual(JSON.parse(JSON.stringify(presentationRules.windowPlan("connected", {
     ownerScreenName: "DP-1", exitingScreenName: "", mode: "compact",
 }, "DP-1"))), {
-    compactMapped: true, overlayMapped: false, presentationActive: true,
+    compactMapped: false, overlayMapped: true, presentationActive: true,
     popupActive: false, inputMode: "compact", focusActive: false,
-}, "Connected compact must retain the existing split-window lifecycle");
+}, "Connected compact and expanded must share a mapped window for continuous motion");
 
 assert.match(controller, /readonly property string mode:/);
 assert.match(controller, /readonly property string selectedContextId:/);
@@ -85,7 +85,7 @@ assert.doesNotMatch(controller, /["']notification["']|criticalPresentationEligib
     "Core Center controller must not branch on notification source identity");
 assert.match(host, /CenterCompactWindow\s*\{/);
 assert.match(host, /CenterOverlayWindow\s*\{/);
-assert.match(host, /snapshot: CenterDomain\.snapshot/);
+assert.match(host, /snapshot: CenterDomain\.presentationSnapshot/);
 assert.match(host,
     /Component\.onDestruction:[\s\S]*?CenterSurfaceController\.ownerScreenName === root\.screenModel\.name[\s\S]*?type: "surface-revoked"/,
     "losing the eligible Center host must revoke automatic presentation availability");
@@ -128,7 +128,8 @@ assert.match(connected, /required property var snapshot/);
 assert.match(connected, /required property var viewState/);
 assert.match(connected, /required property var profile/);
 assert.match(connected, /signal intentRequested\(var intent\)/);
-assert.match(connected, /type: "invoke-action"/);
+assert.match(connected, /ExpandedContent \{/);
+assert.match(read("Titonium/Bar/center/DashboardContent.qml"), /type: "invoke-action"/);
 assert.match(renderer, /required property bool transitionOwner/);
 assert.match(renderer, /required property bool presentationActive/);
 assert.match(renderer,
@@ -169,3 +170,13 @@ for (const legacy of [
 }
 
 console.log("PASS neutral Center host and renderer integration");
+
+for (const style of ["connected", "classic", "pill", "notch"]) {
+    const hidden = presentationRules.windowPlan(style,
+        { mode: "compact", ownerScreenName: "DP-1" }, "DP-1", false);
+    assert.equal(hidden.presentationActive, false, "unpinned hidden Topbar hides compact Center");
+    assert.equal(hidden.inputMode, "none", "hidden Center does not intercept input");
+    const banner = presentationRules.windowPlan(style,
+        { mode: "banner", ownerScreenName: "DP-1" }, "DP-1", false);
+    assert.equal(banner.popupActive, true, "auto-hide preserves temporary attention banners");
+}

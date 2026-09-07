@@ -20,7 +20,15 @@ Item {
     implicitWidth: content.implicitWidth
     implicitHeight: content.implicitHeight
 
-    onNetworkChanged: root.clearPassword()
+    property string passwordNetworkId: ""
+
+    onNetworkChanged: {
+        const nextId = root.network?.id || "";
+        if (nextId !== root.passwordNetworkId || root.network?.secure !== true
+                || root.network?.known === true || root.network?.connected === true)
+            root.clearPassword();
+        root.passwordNetworkId = nextId;
+    }
 
     function clearPassword(): void {
         root.password = "";
@@ -130,13 +138,28 @@ Item {
             visible: root.passwordPromptOpen
             spacing: Metrics.spacingSmall
 
-            Rectangle {
+            Item {
                 Layout.fillWidth: true
                 Layout.preferredHeight: Metrics.controlHeightSmall
-                radius: Metrics.radiusSmall
-                color: Theme.surfaceElevated
-                border.width: Metrics.borderWidth
-                border.color: passwordInput.activeFocus ? Theme.focus : Theme.border
+
+                Rectangle {
+                    anchors.fill: parent
+                    visible: Theme.legacy
+                    radius: Metrics.radiusSmall
+                    color: Theme.surfaceElevated
+                    border.width: Metrics.borderWidth
+                    border.color: passwordInput.activeFocus ? Theme.focus : Theme.border
+                }
+
+                Shared.StylePaint {
+                    anchors.fill: parent
+                    visible: !Theme.legacy
+                    tokens: Theme.tokens
+                    role: "field"
+                    radius: Metrics.radiusSmall
+                    borderColor: passwordInput.activeFocus ? Theme.focus : Theme.border
+                    interaction: ({ focused: passwordInput.activeFocus, enabled: root.actionable })
+                }
 
                 TextInput {
                     id: passwordInput

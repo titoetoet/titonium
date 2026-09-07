@@ -1,106 +1,669 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "titonium.settings/v7",
+  "$id": "titonium.settings/v8",
+  "$defs": {
+    "appearanceOverride": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "accent": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"},
+        "backgroundOpacity": {"type": "number", "minimum": 0.85, "maximum": 1},
+        "borderStrength": {"type": "number", "minimum": 0, "maximum": 1},
+        "shadowStrength": {"type": "number", "minimum": 0, "maximum": 1},
+        "sheenStrength": {"type": "number", "minimum": 0, "maximum": 1},
+        "radiusScale": {"type": "number", "minimum": 0.75, "maximum": 1.25},
+        "motionScale": {"type": "number", "minimum": 0.5, "maximum": 1.5}
+      }
+    }
+  },
   "type": "object",
-  "required": ["$schema", "schemaVersion", "locale", "appearance", "accessibility", "applications", "modules"],
+  "required": [
+    "$schema",
+    "schemaVersion",
+    "locale",
+    "appearance",
+    "accessibility",
+    "applications",
+    "modules"
+  ],
   "additionalProperties": false,
   "properties": {
-    "$schema": { "const": "titonium.settings/v7" },
-    "schemaVersion": { "const": 7 },
-    "locale": { "enum": ["vi", "en"] },
+    "$schema": {
+      "const": "titonium.settings/v8"
+    },
+    "schemaVersion": {
+      "const": 8
+    },
+    "locale": {
+      "enum": [
+        "vi",
+        "en"
+      ]
+    },
     "appearance": {
       "type": "object",
-      "required": ["mode"],
+      "required": [
+        "mode",
+        "themeId",
+        "themeOverrides",
+        "wallpaper"
+      ],
       "additionalProperties": false,
-      "properties": { "mode": { "enum": ["dark", "light"] } }
+      "properties": {
+        "mode": {
+          "enum": [
+            "dark",
+            "light",
+            "system"
+          ]
+        },
+        "themeId": {
+          "enum": [
+            "glassmorphism",
+            "material",
+            "liquid-glass",
+            "modern-flat",
+            "neumorphism",
+            "neutral",
+            "glass",
+            "soft",
+            "graphite"
+          ]
+        },
+        "themeOverrides": {
+          "type": "object",
+          "propertyNames": {
+            "enum": ["glassmorphism", "material", "liquid-glass", "modern-flat", "neumorphism",
+              "neutral", "glass", "soft", "graphite"]
+          },
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "light": {"$ref": "#/$defs/appearanceOverride"},
+              "dark": {"$ref": "#/$defs/appearanceOverride"}
+            }
+          },
+          "properties": {
+            "neutral": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "light": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "accent": {
+                      "type": "string",
+                      "pattern": "^#[0-9a-fA-F]{6}$"
+                    },
+                    "backgroundOpacity": {
+                      "type": "number",
+                      "minimum": 0.85,
+                      "maximum": 1
+                    },
+                    "borderStrength": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "shadowStrength": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "sheenStrength": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "radiusScale": {
+                      "type": "number",
+                      "minimum": 0.75,
+                      "maximum": 1.25
+                    },
+                    "motionScale": {
+                      "type": "number",
+                      "minimum": 0.5,
+                      "maximum": 1.5
+                    }
+                  }
+                },
+                "dark": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "accent": {
+                      "type": "string",
+                      "pattern": "^#[0-9a-fA-F]{6}$"
+                    },
+                    "backgroundOpacity": {
+                      "type": "number",
+                      "minimum": 0.85,
+                      "maximum": 1
+                    },
+                    "borderStrength": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "shadowStrength": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "sheenStrength": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "radiusScale": {
+                      "type": "number",
+                      "minimum": 0.75,
+                      "maximum": 1.25
+                    },
+                    "motionScale": {
+                      "type": "number",
+                      "minimum": 0.5,
+                      "maximum": 1.5
+                    }
+                  }
+                }
+              }
+            },
+            "glass": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "light": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "accent": {
+                      "type": "string",
+                      "pattern": "^#[0-9a-fA-F]{6}$"
+                    },
+                    "backgroundOpacity": {
+                      "type": "number",
+                      "minimum": 0.85,
+                      "maximum": 1
+                    },
+                    "borderStrength": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "shadowStrength": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "sheenStrength": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "radiusScale": {
+                      "type": "number",
+                      "minimum": 0.75,
+                      "maximum": 1.25
+                    },
+                    "motionScale": {
+                      "type": "number",
+                      "minimum": 0.5,
+                      "maximum": 1.5
+                    }
+                  }
+                },
+                "dark": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "accent": {
+                      "type": "string",
+                      "pattern": "^#[0-9a-fA-F]{6}$"
+                    },
+                    "backgroundOpacity": {
+                      "type": "number",
+                      "minimum": 0.85,
+                      "maximum": 1
+                    },
+                    "borderStrength": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "shadowStrength": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "sheenStrength": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "radiusScale": {
+                      "type": "number",
+                      "minimum": 0.75,
+                      "maximum": 1.25
+                    },
+                    "motionScale": {
+                      "type": "number",
+                      "minimum": 0.5,
+                      "maximum": 1.5
+                    }
+                  }
+                }
+              }
+            },
+            "soft": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "light": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "accent": {
+                      "type": "string",
+                      "pattern": "^#[0-9a-fA-F]{6}$"
+                    },
+                    "backgroundOpacity": {
+                      "type": "number",
+                      "minimum": 0.85,
+                      "maximum": 1
+                    },
+                    "borderStrength": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "shadowStrength": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "sheenStrength": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "radiusScale": {
+                      "type": "number",
+                      "minimum": 0.75,
+                      "maximum": 1.25
+                    },
+                    "motionScale": {
+                      "type": "number",
+                      "minimum": 0.5,
+                      "maximum": 1.5
+                    }
+                  }
+                },
+                "dark": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "accent": {
+                      "type": "string",
+                      "pattern": "^#[0-9a-fA-F]{6}$"
+                    },
+                    "backgroundOpacity": {
+                      "type": "number",
+                      "minimum": 0.85,
+                      "maximum": 1
+                    },
+                    "borderStrength": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "shadowStrength": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "sheenStrength": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "radiusScale": {
+                      "type": "number",
+                      "minimum": 0.75,
+                      "maximum": 1.25
+                    },
+                    "motionScale": {
+                      "type": "number",
+                      "minimum": 0.5,
+                      "maximum": 1.5
+                    }
+                  }
+                }
+              }
+            },
+            "graphite": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "light": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "accent": {
+                      "type": "string",
+                      "pattern": "^#[0-9a-fA-F]{6}$"
+                    },
+                    "backgroundOpacity": {
+                      "type": "number",
+                      "minimum": 0.85,
+                      "maximum": 1
+                    },
+                    "borderStrength": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "shadowStrength": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "sheenStrength": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "radiusScale": {
+                      "type": "number",
+                      "minimum": 0.75,
+                      "maximum": 1.25
+                    },
+                    "motionScale": {
+                      "type": "number",
+                      "minimum": 0.5,
+                      "maximum": 1.5
+                    }
+                  }
+                },
+                "dark": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "accent": {
+                      "type": "string",
+                      "pattern": "^#[0-9a-fA-F]{6}$"
+                    },
+                    "backgroundOpacity": {
+                      "type": "number",
+                      "minimum": 0.85,
+                      "maximum": 1
+                    },
+                    "borderStrength": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "shadowStrength": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "sheenStrength": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "radiusScale": {
+                      "type": "number",
+                      "minimum": 0.75,
+                      "maximum": 1.25
+                    },
+                    "motionScale": {
+                      "type": "number",
+                      "minimum": 0.5,
+                      "maximum": 1.5
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "wallpaper": {
+          "type": "object",
+          "required": [
+            "policy",
+            "customPath"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "policy": {
+              "enum": [
+                "keep",
+                "theme",
+                "custom"
+              ]
+            },
+            "customPath": {
+              "type": "string"
+            }
+          }
+        }
+      }
     },
     "accessibility": {
       "type": "object",
-      "required": ["reducedMotion"],
+      "required": [
+        "reducedMotion"
+      ],
       "additionalProperties": false,
-      "properties": { "reducedMotion": { "type": "boolean" } }
+      "properties": {
+        "reducedMotion": {
+          "type": "boolean"
+        }
+      }
     },
     "applications": {
       "type": "object",
-      "required": ["hiddenIds"],
+      "required": [
+        "hiddenIds"
+      ],
       "additionalProperties": false,
       "properties": {
         "hiddenIds": {
           "type": "array",
           "uniqueItems": true,
-          "items": { "type": "string", "minLength": 1 }
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         }
       }
     },
     "modules": {
       "type": "object",
-      "required": ["spotlight", "bar", "dock", "notifications", "clock", "audio"],
+      "required": [
+        "spotlight",
+        "bar",
+        "dock",
+        "notifications",
+        "clock",
+        "audio"
+      ],
       "additionalProperties": false,
       "properties": {
         "spotlight": {
           "type": "object",
-          "required": ["pageTransition", "transitionDuration"],
+          "required": [
+            "pageTransition",
+            "transitionDuration"
+          ],
           "additionalProperties": false,
           "properties": {
-            "pageTransition": { "enum": ["slide-fade", "fade", "none"] },
-            "transitionDuration": { "type": "integer", "minimum": 0, "maximum": 500 }
+            "pageTransition": {
+              "enum": [
+                "slide-fade",
+                "fade",
+                "none"
+              ]
+            },
+            "transitionDuration": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 500
+            }
           }
         },
         "bar": {
           "type": "object",
-          "required": ["workspaceCount", "autoHide", "mascotEnabled", "style"],
+          "required": [
+            "workspaceCount",
+            "autoHide",
+            "mascotEnabled",
+            "style"
+          ],
           "additionalProperties": false,
           "properties": {
-            "workspaceCount": { "type": "integer", "minimum": 1, "maximum": 8 },
-            "autoHide": { "type": "boolean" },
-            "mascotEnabled": { "type": "boolean" },
-            "style": { "enum": ["connected", "classic"] }
+            "workspaceCount": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 8
+            },
+            "autoHide": {
+              "type": "boolean"
+            },
+            "mascotEnabled": {
+              "type": "boolean"
+            },
+            "height": {
+              "type": "integer",
+              "minimum": 40,
+              "maximum": 64
+            },
+            "mascot": {
+              "type": "string",
+              "enum": [
+                "pig",
+                "pig-lavender",
+                "dog"
+              ]
+            },
+            "style": {
+              "enum": [
+                "connected",
+                "classic"
+              ]
+            }
           }
         },
         "dock": {
           "type": "object",
-          "required": ["visibilityMode", "pinnedIds"],
+          "required": [
+            "visibilityMode",
+            "pinnedIds"
+          ],
           "additionalProperties": false,
           "properties": {
-            "visibilityMode": { "enum": ["auto-hide", "always-visible", "reserve-space", "hidden"] },
+            "style": {
+              "enum": [
+                "follow-topbar",
+                "connected",
+                "classic"
+              ]
+            },
+            "visibilityMode": {
+              "enum": [
+                "auto-hide",
+                "always-visible",
+                "reserve-space",
+                "hidden"
+              ]
+            },
             "pinnedIds": {
               "type": "array",
               "uniqueItems": true,
-              "items": { "type": "string", "minLength": 1 }
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
             }
           }
         },
         "notifications": {
           "type": "object",
-          "required": ["toastsEnabled", "toastDuration", "policyMode", "allowCriticalOnIsland", "keepCriticalUnread", "applicationOverrides"],
+          "required": [
+            "toastsEnabled",
+            "toastDuration",
+            "policyMode",
+            "allowCriticalOnIsland",
+            "keepCriticalUnread",
+            "applicationOverrides"
+          ],
           "additionalProperties": false,
           "properties": {
-            "toastsEnabled": { "type": "boolean" },
-            "toastDuration": { "type": "integer", "minimum": 2000, "maximum": 10000 },
-            "policyMode": { "enum": ["automatic", "custom"] },
-            "allowCriticalOnIsland": { "type": "boolean" },
-            "keepCriticalUnread": { "type": "boolean" },
+            "toastsEnabled": {
+              "type": "boolean"
+            },
+            "toastDuration": {
+              "type": "integer",
+              "minimum": 2000,
+              "maximum": 10000
+            },
+            "policyMode": {
+              "enum": [
+                "automatic",
+                "custom"
+              ]
+            },
+            "allowCriticalOnIsland": {
+              "type": "boolean"
+            },
+            "keepCriticalUnread": {
+              "type": "boolean"
+            },
             "applicationOverrides": {
               "type": "object",
               "propertyNames": {
                 "type": "string",
                 "pattern": "^(?!\\s*$)(?!\\s*(?:__proto__|prototype|constructor)\\s*$).+$"
               },
-              "additionalProperties": { "enum": ["follow", "quiet", "normal", "critical", "block"] }
+              "additionalProperties": {
+                "enum": [
+                  "follow",
+                  "quiet",
+                  "normal",
+                  "critical",
+                  "block"
+                ]
+              }
             }
           }
         },
         "clock": {
           "type": "object",
-          "required": ["use24Hour"],
+          "required": [
+            "use24Hour"
+          ],
           "additionalProperties": false,
-          "properties": { "use24Hour": { "type": "boolean" } }
+          "properties": {
+            "use24Hour": {
+              "type": "boolean"
+            }
+          }
         },
         "audio": {
           "type": "object",
-          "required": ["allowAmplification"],
+          "required": [
+            "allowAmplification"
+          ],
           "additionalProperties": false,
-          "properties": { "allowAmplification": { "type": "boolean" } }
+          "properties": {
+            "allowAmplification": {
+              "type": "boolean"
+            }
+          }
         }
       }
     }

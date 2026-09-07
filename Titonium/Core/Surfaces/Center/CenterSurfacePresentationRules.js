@@ -35,7 +35,7 @@ function classicOpenOwner(profileId, viewState, screenName) {
     return Object.freeze({ screenName: screen, generation: generation });
 }
 
-function windowPlan(profileId, viewState, screenName) {
+function windowPlan(profileId, viewState, screenName, barRevealed) {
     var state = viewState && typeof viewState === "object" ? viewState : {};
     var profile = String(profileId || "");
     var screen = String(screenName || "");
@@ -43,13 +43,14 @@ function windowPlan(profileId, viewState, screenName) {
     var dismissing = !!screen && String(state.exitingScreenName || "") === screen;
     var compact = owns && state.mode === "compact";
     var popup = owns && (state.mode === "banner" || state.mode === "expanded");
-    if (profile === "classic") {
+    var compactVisible = compact && barRevealed !== false;
+    if (profile === "classic" || profile === "connected") {
         return Object.freeze({
             compactMapped: false,
             overlayMapped: true,
-            presentationActive: owns || dismissing,
+            presentationActive: compactVisible || popup || dismissing,
             popupActive: popup,
-            inputMode: popup ? "fullscreen" : (compact ? "compact"
+            inputMode: popup ? "fullscreen" : (compactVisible ? "compact"
                 : (dismissing ? "painted" : "none")),
             focusActive: popup,
         });
@@ -57,9 +58,9 @@ function windowPlan(profileId, viewState, screenName) {
     return Object.freeze({
         compactMapped: compact,
         overlayMapped: popup || dismissing,
-        presentationActive: compact || popup || dismissing,
+        presentationActive: compactVisible || popup || dismissing,
         popupActive: popup,
-        inputMode: popup ? "fullscreen" : (compact ? "compact"
+        inputMode: popup ? "fullscreen" : (compactVisible ? "compact"
             : (dismissing ? "painted" : "none")),
         focusActive: popup,
     });

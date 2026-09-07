@@ -87,7 +87,7 @@ requireFragments("surface", [
   "readonly property real hoverScale: 1.12", "readonly property int hoverLift: 4",
   "Motion.fast", "Behavior on opacity", "Behavior on y", "applicationsRequested",
   "DockAppButton", "DockItemMenuCoordinator", "DockStore.setPinnedOpen", "itemMenu.active",
-  "name: \"rocket_launch\"", "id: dockPanel", "x: 12", "y: 8",
+  "name: \"rocket_launch\"", "id: dockPanel", "x: 12", "y: root.connected ? 8 : 0",
   "width: dockRow.implicitWidth + 24", "implicitWidth: dockRow.implicitWidth + 48",
   "readonly property alias pinHitbox: pinControl", "id: pinControl", "width: 22", "height: 22",
   "opacity: root.hovered || pinHover.hovered ? 1 : 0", "x: dockPanel.x - width / 2",
@@ -113,7 +113,7 @@ requireFragments("coordinator", [
 requireFragments("menu", [
   "SurfaceManager.close", "Keys.onEscapePressed", "dock.menu.new_window", "dock.menu.pin",
   "dock.menu.unpin", "dock.menu.close_active", "root.item?.runningCount > 0",
-  "height: menuColumn.implicitHeight + menuPanel.padding * 2",
+  "height: root.menuBounds.height", "DockMenuGeometry.panelRect",
   "DockService.launchNew", "DockService.togglePin", "DockService.closeActive", "returnFocus",
 ]);
 requireFragments("qmldir", ["module qs.Titonium.Dock", "DockHost 1.0 DockHost.qml"]);

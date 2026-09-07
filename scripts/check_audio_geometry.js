@@ -14,7 +14,7 @@ const helperSource = fs.readFileSync(helperPath, "utf8").replace(/^\.pragma libr
 const geometry = vm.createContext({ Math, Number });
 vm.runInContext(helperSource, geometry, { filename: helperPath });
 const source = fs.readFileSync(
-    path.join(root, "Titonium/Overlays/Audio/AudioPopupSurface.qml"), "utf8");
+    path.join(root, "Titonium/Overlays/Audio/ClassicAudioPopupSurface.qml"), "utf8");
 
 function outerHeight(fixedContentHeight, streamHeight, padding, cap) {
     return Math.min(cap, fixedContentHeight + streamHeight + padding * 2);

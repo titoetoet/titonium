@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import json
+import math
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -31,16 +33,48 @@ def validate_settings(data: Any) -> list[str]:
     errors: list[str] = []
     if set(data) != REQUIRED_SETTINGS_KEYS:
         errors.append("settings keys do not match the protected contract")
-    if data.get("$schema") != "titonium.settings/v7" or data.get("schemaVersion") != 7:
-        errors.append("settings schema must be titonium.settings/v7")
+    if data.get("$schema") != "titonium.settings/v8" or data.get("schemaVersion") != 8:
+        errors.append("settings schema must be titonium.settings/v8")
     if data.get("locale") not in {"vi", "en"}:
         errors.append("locale must be vi or en")
 
     appearance = data.get("appearance")
-    if not isinstance(appearance, dict) or set(appearance) != {"mode"}:
-        errors.append("appearance must contain only mode")
-    elif appearance.get("mode") not in {"dark", "light"}:
-        errors.append("appearance.mode must be dark or light")
+    themes = {"glassmorphism", "material", "liquid-glass", "modern-flat", "neumorphism",
+              "neutral", "glass", "soft", "graphite"}
+    if not isinstance(appearance, dict) or set(appearance) != {"mode", "themeId", "themeOverrides", "wallpaper"}:
+        errors.append("appearance has an invalid shape")
+    else:
+        if appearance.get("mode") not in {"dark", "light", "system"}:
+            errors.append("appearance.mode is invalid")
+        if appearance.get("themeId") not in themes:
+            errors.append("appearance.themeId is invalid")
+        wallpaper = appearance.get("wallpaper")
+        if (not isinstance(wallpaper, dict) or set(wallpaper) != {"policy", "customPath"}
+                or wallpaper.get("policy") not in {"keep", "theme", "custom"}
+                or not isinstance(wallpaper.get("customPath"), str)):
+            errors.append("appearance.wallpaper is invalid")
+        ranges = {"backgroundOpacity": (.85, 1), "borderStrength": (0, 1),
+                  "shadowStrength": (0, 1), "sheenStrength": (0, 1),
+                  "radiusScale": (.75, 1.25), "motionScale": (.5, 1.5)}
+        overrides = appearance.get("themeOverrides")
+        if not isinstance(overrides, dict) or not set(overrides).issubset(themes):
+            errors.append("appearance.themeOverrides is invalid")
+        else:
+            for theme in overrides.values():
+                if not isinstance(theme, dict) or not set(theme).issubset({"light", "dark"}):
+                    errors.append("appearance override modes are invalid")
+                    continue
+                for fields in theme.values():
+                    if not isinstance(fields, dict) or not set(fields).issubset(set(ranges) | {"accent"}):
+                        errors.append("appearance override fields are invalid")
+                        continue
+                    for key, value in fields.items():
+                        if key == "accent":
+                            if not isinstance(value, str) or not re.fullmatch(r"#[0-9a-fA-F]{6}", value):
+                                errors.append("appearance accent is invalid")
+                        elif (isinstance(value, bool) or not isinstance(value, (int, float))
+                              or not math.isfinite(value) or not ranges[key][0] <= value <= ranges[key][1]):
+                            errors.append("appearance override range is invalid")
 
     accessibility = data.get("accessibility")
     if not isinstance(accessibility, dict) or set(accessibility) != {"reducedMotion"}:
@@ -63,7 +97,7 @@ def validate_settings(data: Any) -> list[str]:
     modules = data.get("modules")
     expected_modules = {"spotlight", "bar", "dock", "notifications", "clock", "audio"}
     if not isinstance(modules, dict) or set(modules) != expected_modules:
-        errors.append("modules must contain the exact v7 module preferences")
+        errors.append("modules must contain the exact v8 module preferences")
         return errors
     spotlight = modules.get("spotlight")
     if not isinstance(spotlight, dict) or set(spotlight) != {"pageTransition", "transitionDuration"}:
@@ -75,9 +109,16 @@ def validate_settings(data: Any) -> list[str]:
         if not isinstance(duration, int) or isinstance(duration, bool) or not 0 <= duration <= 500:
             errors.append("modules.spotlight.transitionDuration must be an integer from 0 to 500")
     bar = modules.get("bar")
-    if not isinstance(bar, dict) or set(bar) != {"workspaceCount", "autoHide", "mascotEnabled", "style"}:
+    required_bar = {"workspaceCount", "autoHide", "mascotEnabled", "style"}
+    if (not isinstance(bar, dict) or not required_bar.issubset(bar)
+            or not set(bar).issubset(required_bar | {"height", "mascot"})):
         errors.append("modules.bar has an invalid shape")
     else:
+        height = bar.get("height", 44)
+        if not isinstance(height, int) or isinstance(height, bool) or not 40 <= height <= 64:
+            errors.append("modules.bar.height must be an integer from 40 to 64")
+        if bar.get("mascot", "pig") not in {"pig", "pig-lavender", "dog"}:
+            errors.append("modules.bar.mascot is invalid")
         count = bar.get("workspaceCount")
         if not isinstance(count, int) or isinstance(count, bool) or not 1 <= count <= 8:
             errors.append("modules.bar.workspaceCount must be an integer from 1 to 8")
@@ -88,11 +129,13 @@ def validate_settings(data: Any) -> list[str]:
         if bar.get("style") not in {"connected", "classic"}:
             errors.append("modules.bar.style is invalid")
     dock = modules.get("dock")
-    if not isinstance(dock, dict) or set(dock) != {"visibilityMode", "pinnedIds"}:
+    if not isinstance(dock, dict) or set(dock) not in ({"visibilityMode", "pinnedIds"}, {"visibilityMode", "pinnedIds", "style"}):
         errors.append("modules.dock has an invalid shape")
     else:
         if dock.get("visibilityMode") not in {"auto-hide", "always-visible", "reserve-space", "hidden"}:
             errors.append("modules.dock.visibilityMode is invalid")
+        if dock.get("style", "follow-topbar") not in {"follow-topbar", "connected", "classic"}:
+            errors.append("modules.dock.style is invalid")
         pinned_ids = dock.get("pinnedIds")
         if not isinstance(pinned_ids, list):
             errors.append("modules.dock.pinnedIds must be an array")

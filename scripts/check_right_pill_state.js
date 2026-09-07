@@ -23,7 +23,7 @@ const plain = value => JSON.parse(JSON.stringify(value));
 assert.equal(state.normalizeState(false), "compact");
 assert.equal(state.normalizeState(true), "menu");
 assert.equal(state.menuHeight(300, 900), 332);
-assert.equal(state.menuHeight(900, 900), 440);
+assert.equal(state.menuHeight(900, 900), 680);
 assert.equal(state.menuHeight(900, 360), 360);
 assert.equal(state.menuHeight(900, 100), 100,
     "menu height must not exceed a 100px output");

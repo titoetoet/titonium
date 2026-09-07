@@ -24,7 +24,6 @@ REQUIRED_FILES = (
 REQUIRED_OVERLAY_FILES = (
     "Titonium/Overlays/Audio/qmldir",
     "Titonium/Overlays/Audio/AudioPopupCoordinator.qml",
-    "Titonium/Overlays/Audio/AudioPopupSurface.qml",
     "Titonium/Overlays/Audio/ClassicAudioPopupSurface.qml",
     "Titonium/Overlays/Audio/AudioControlRow.qml",
     "Titonium/Overlays/Audio/AudioOutputDeviceRow.qml",
@@ -58,7 +57,7 @@ REQUIRED_FRAGMENTS = (
     "function setStreamVolume(nodeId: int, value: real): bool",
     "function toggleStreamMute(nodeId: int): bool",
     "function onVolumesChanged(): void { root.observeOutputPresentation(); }",
-    "function onOutputAvailableChanged(): void { root.resetOutputPresentation(); }",
+    "onOutputAvailableChanged: root.resetOutputPresentation()",
     "readonly property int invalidVolumeWarningLimit: 3",
     "function warnInvalidVolume(target: string): void",
     "function requestBluetoothOutput(address: string): bool",
@@ -341,7 +340,7 @@ def main() -> int:
         "BarPopupRouting.existingOpenAction(owner,",
         "RightPillCoordinator.toggleConnectedSurface(owner)",
     ), "Audio popup coordinator")
-    require_fragments(errors, OVERLAY_ROOT / "AudioPopupSurface.qml", (
+    require_fragments(errors, OVERLAY_ROOT / "ClassicAudioPopupSurface.qml", (
         "TapHandler {",
         "Keys.onEscapePressed",
         "width: 380",
@@ -390,7 +389,7 @@ def main() -> int:
         if len(re.findall(r"\bactiveFocusOnTab\s*:", slider_source)) != 1:
             errors.append("Audio slider must expose exactly one tab stop on the inner Slider")
 
-    popup_path = OVERLAY_ROOT / "AudioPopupSurface.qml"
+    popup_path = OVERLAY_ROOT / "ClassicAudioPopupSurface.qml"
     if popup_path.is_file():
         popup_source = popup_path.read_text(encoding="utf-8")
         if "Math.max(160" in popup_source:
@@ -429,7 +428,7 @@ def main() -> int:
         "Shared.SystemIcon {",
         'sourceName: root.stream?.icon || "audio-x-generic"',
         'fallbackName: "audio-x-generic"',
-        "liveUpdate: false",
+        "liveUpdate: true",
         "AudioService.setStreamVolume",
         "AudioService.toggleStreamMute",
         'I18n.tr(root.muted ? "audio.unmute.accessible" : "audio.mute.accessible", {',

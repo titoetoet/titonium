@@ -23,3 +23,15 @@ function normalizePage(pageId) {
     const normalized = typeof pageId === "string" ? pageId.trim().toLowerCase() : "";
     return pageIds().indexOf(normalized) >= 0 ? normalized : "general";
 }
+
+// Only paths owned by editable pages; unknown pages never reset General.
+function resetPaths(pageId) {
+    const paths = {
+        general: ["locale", "accessibility"],
+        appearance: ["appearance", "accessibility"],
+        spotlight: ["modules.spotlight", "applications"],
+        bar: ["modules.bar"], dock: ["modules.dock"],
+        notifications: ["modules.notifications"], audio: ["modules.audio"]
+    };
+    return Object.prototype.hasOwnProperty.call(paths, pageId) ? paths[pageId].slice() : [];
+}

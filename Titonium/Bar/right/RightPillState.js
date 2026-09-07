@@ -11,7 +11,7 @@ function normalizeState(active) {
 function menuHeight(contentHeight, outputHeight) {
     const output = Number(outputHeight);
     const available = Number.isFinite(output) ? Math.max(0, output) : 36;
-    const requested = Math.max(120, Math.min(440,
+    const requested = Math.max(120, Math.min(680,
         Math.max(0, Number(contentHeight) || 0) + 32));
     return Math.min(available, requested);
 }

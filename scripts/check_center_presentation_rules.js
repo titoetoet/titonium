@@ -149,93 +149,36 @@ assert.deepEqual(secondaryFailures, [], secondaryFailures.join("\n"));
 console.log("PASS secondary indicator motion observes first activation and exit reactivation");
 
 for (const file of ["CenterRenderer.qml", ...["Pill", "Notch", "Connected", "Classic"]
-    .flatMap(name => [`presentations/${name}/${name}Renderer.qml`,
-        `presentations/${name}/${name}Profile.js`])])
+    .map(name => `presentations/${name}/${name}Renderer.qml`)])
     assert.equal(fs.existsSync(path.join(path.dirname(rulesPath), file)), true, `missing ${file}`);
-const centerRoot = path.dirname(rulesPath);
-const secondaryPillPath = path.join(centerRoot, "CenterSecondaryPill.qml");
-assert.equal(fs.existsSync(secondaryPillPath), true,
-    "Center must own a focused secondary-pill presentation component");
-const secondaryPill = fs.readFileSync(secondaryPillPath, "utf8");
-const centerQmldir = fs.readFileSync(path.join(centerRoot, "qmldir"), "utf8");
-assert.match(centerQmldir, /CenterSecondaryPill 1\.0 CenterSecondaryPill\.qml/,
-    "Center qmldir must export its secondary pill");
-for (const fragment of [
-    "required property var indicator",
-    "required property bool rendererVisible",
-    "readonly property rect visualBounds",
-    "readonly property rect interactiveBounds",
-    'name: "notifications"',
-    "root.displayedIndicator.count",
-    "root.displayedIndicator.accessibleName",
-    "loops: 3",
-    "Motion.reduced",
-    "wobble.stop()",
-    "PresentationRules.secondaryIndicatorTransition",
-    "property var indicatorObservation",
-])
-    assert.ok(secondaryPill.includes(fragment),
-        `Center secondary pill missing bounded presentation behavior: ${fragment}`);
-assert.doesNotMatch(secondaryPill,
-    /Services\.Notifications|NotificationCoordinator|NotificationService/,
-    "Center secondary pill must consume only immutable indicator data");
-assert.doesNotMatch(secondaryPill, /TapHandler|MouseArea|onClicked|intentRequested/,
-    "Center secondary pill must not add notification-history click behavior");
-assert.doesNotMatch(secondaryPill, /ConnectedPillShape|shoulderSize/,
-    "Center secondary pill must not own Connected concave shoulders");
-assert.doesNotMatch(secondaryPill, /Animation\.Infinite/,
-    "Center secondary motion must always be bounded");
-assert.match(secondaryPill,
-    /function clearPresentation\(\): void\s*\{[\s\S]*?exitAnimation\.stop\(\)[\s\S]*?root\.stopMotion\(\)/,
-    "hidden and Reduced Motion clears must stop the exit animation as well as wobble");
-
 const renderer = fs.readFileSync(path.join(path.dirname(rulesPath),
     "presentations/Connected/ConnectedRenderer.qml"), "utf8");
 assert.match(renderer, /Shared\.ConnectedPillShape\s*\{/,
     "Center must render the shared symmetric top-connected shoulder contour");
-assert.match(renderer,
-    /Shared\.SystemIcon\s*\{[\s\S]*?sourceName:\s*root\.displayedContext\?\.icon\s*\|\|\s*""[\s\S]*?fallbackName:\s*root\.displayedContext\?\.icon\s*\|\|\s*"center_focus_strong"/,
+const normalBanner = fs.readFileSync(path.join(path.dirname(rulesPath), "NormalBannerContent.qml"), "utf8");
+assert.match(normalBanner,
+    /Shared\.SystemIcon\s*\{[\s\S]*?sourceName:\s*root\.context\?\.icon\s*\|\|\s*""[\s\S]*?fallbackName:\s*root\.context\?\.icon\s*\|\|\s*"center_focus_strong"/,
     "Center context icons must render image paths while retaining semantic glyph fallbacks");
-for (const fragment of ["bodyWidth: root.bodyWidth", "shoulderSize: root.shoulderSize"])
+for (const fragment of ["bodyWidth: root.popup ? root.bodyWidth : compactCapsule.width", "shoulderSize: root.shoulderSize"])
     assert.ok(renderer.includes(fragment), `Center contour contract missing: ${fragment}`);
 for (const fragment of ["required property var snapshot", "required property var viewState",
     "required property var profile", "signal intentRequested(var intent)",
     "signal transitionFinished(int generation)", "readonly property rect visualBounds",
     "readonly property rect interactiveBounds"])
     assert.ok(renderer.includes(fragment), `Connected renderer missing ${fragment}`);
-for (const fragment of ["property var displayedContext", "id: contentStage",
-    "SequentialAnimation", "PresentationRules.contextTransition",
-    "HoverHandler", '"pause-timeout"', '"resume-timeout"',
-    "function deadlineIntent(type: string): var", "generation: root.viewState.generation",
-    "contextId: root.viewState.selectedContextId",
-    "deadline: root.viewState.deadlineToken", "id: activationArea", "id: actionRow",
-    "parent: activationArea", "gesturePolicy: TapHandler.ReleaseWithinBounds",
-    'I18n.tr("menubar.center.title")'])
-    assert.ok(renderer.includes(fragment), `Connected renderer missing FIFO presentation: ${fragment}`);
+for (const fragment of ["ExpandedContent {", "NormalBannerContent {", "root.viewState.previewContext"])
+    assert.ok(renderer.includes(fragment), `Connected content contract missing: ${fragment}`);
+for (const fragment of ["preview-enter", "preview-leave", "activate-preview", 'I18n.tr("menubar.center.title")'])
+    assert.ok(normalBanner.includes(fragment), `Normal Banner contract missing: ${fragment}`);
 assert.doesNotMatch(renderer, /\|\| "Center"/,
     "Center fallback labels must use the locale service");
-assert.doesNotMatch(renderer, /Loader\s*\{/,
-    "FIFO content replacement must not replace the mounted banner owner");
+assert.match(renderer, /active: root\.visible && root\.viewState\.mode === "expanded"/,
+    "Expanded content is lazy and tab-owned");
 assert.doesNotMatch(renderer, /Services\.(Capture|Mpris|Notifications|AgentApproval|Center)/);
 assert.doesNotMatch(renderer, /\b(Process|FileView|Timer)\s*\{/);
-assert.match(renderer, /CenterSecondaryPill\s*\{/,
-    "Connected Center must compose the notification secondary pill");
-for (const fragment of [
-    'item => item.id === "notification:unread"',
-    "indicator: root.notificationIndicator",
-    "rendererVisible: root.visible",
-    "x: shape.x + shape.width + Metrics.spacingSmall",
-    "topLeftRadius: root.profile.compact.radius",
-    "bottomLeftRadius: root.profile.compact.radius",
-    "topRightRadius: root.profile.compact.radius",
-    "bottomRightRadius: root.profile.compact.radius",
-    "readonly property rect primaryVisualBounds:",
-    "PresentationRules.combinedVisualBounds(root.primaryVisualBounds,",
-    "secondaryPill.visualBounds, secondaryPill.visible)",
-    "readonly property rect interactiveBounds: root.primaryVisualBounds",
-])
-    assert.ok(renderer.includes(fragment),
-        `Connected secondary-pill composition missing: ${fragment}`);
+assert.match(renderer, /CenterCompactCapsule\s*\{/, "Connected uses the shared oval capsule");
+assert.match(renderer, /compactCapsule.visualBounds/);
+assert.doesNotMatch(renderer, /CenterSecondaryPill\s*\{/, "no detached compact satellite");
 console.log("PASS Connected renderer exposes neutral state and intent contract");
 
 const classicRenderer = fs.readFileSync(path.join(path.dirname(rulesPath),
@@ -243,7 +186,7 @@ const classicRenderer = fs.readFileSync(path.join(path.dirname(rulesPath),
 assert.doesNotMatch(classicRenderer,
     /Connected\.ConnectedRenderer|ConnectedPillShape|shoulderSize/,
     "Classic renderer must not reuse Connected shoulder geometry");
-assert.match(classicRenderer, /Shared\.Surface\s*\{/,
+assert.match(classicRenderer, /CenterCompactCapsule\s*\{/,
     "Classic renderer must render its own rounded surface");
 assert.match(classicRenderer,
     /readonly property rect visualBounds:[\s\S]*?classicBody/,
@@ -253,22 +196,8 @@ for (const fragment of ["required property var snapshot", "required property var
     "signal transitionFinished(int generation)", "readonly property rect visualBounds",
     "readonly property rect interactiveBounds"])
     assert.ok(classicRenderer.includes(fragment), `Classic renderer missing ${fragment}`);
-assert.match(classicRenderer, /CenterSecondaryPill\s*\{/,
-    "Classic Center must compose the notification secondary pill");
-for (const fragment of [
-    'item => item.id === "notification:unread"',
-    "indicator: root.notificationIndicator",
-    "rendererVisible: root.presentationActive",
-    "x: classicBody.x + classicBody.width + Metrics.spacingSmall",
-    "readonly property rect compactPrimaryBounds:",
-    "PresentationRules.combinedVisualBounds(root.compactPrimaryBounds,",
-    "secondaryPill.visualBounds, secondaryPill.visible)",
-    "readonly property rect interactiveBounds: Qt.rect(root.composedCompactBounds.x,",
-])
-    assert.ok(classicRenderer.includes(fragment),
-        `Classic secondary-pill composition missing: ${fragment}`);
-assert.doesNotMatch(classicRenderer, /secondary[\s\S]*?ConnectedPillShape/,
-    "Classic secondary pill must remain detached and shoulder-free");
+assert.match(classicRenderer, /CenterCompactCapsule\s*\{/);
+assert.doesNotMatch(classicRenderer, /CenterSecondaryPill\s*\{/);
 for (const fragment of [
     "readonly property bool popupMode:",
     "readonly property real popupTop: Metrics.barHeight + Metrics.barSpacing",
@@ -280,7 +209,6 @@ for (const fragment of [
     "PopupRules.transition",
     "PopupRules.complete",
     "required property bool transitionOwner",
-    "rendererVisible: root.presentationActive && root.viewState.mode === \"compact\"",
 ])
     assert.ok(classicRenderer.includes(fragment),
         `Classic detached popup contract missing: ${fragment}`);
@@ -299,8 +227,8 @@ assert.match(classicRenderer,
 assert.doesNotMatch(classicRenderer,
     /id:\s*bannerContextTransition[\s\S]*?target:\s*standardContent[\s\S]*?id:\s*popupEntrance/,
     "Classic banner crossfade must not target the hidden expanded/compact layer");
-assert.doesNotMatch(renderer, /readonly property rect interactiveBounds:\s*root\.visualBounds/,
-    "Connected secondary visuals must not expand the primary-only input bounds");
+assert.match(renderer, /compactCapsule\.visualBounds/,
+    "Connected compact input includes both interactive primary and satellite targets");
 console.log("PASS Classic renderer keeps the neutral contract without Connected shoulders");
 
 const topbarBell = fs.readFileSync(path.join(root, "Titonium", "Bar", "widgets",
@@ -308,11 +236,11 @@ const topbarBell = fs.readFileSync(path.join(root, "Titonium", "Bar", "widgets",
 assert.doesNotMatch(topbarBell,
     /SequentialAnimation|ParallelAnimation|property:\s*"rotation"|loops:\s*3/,
     "the fixed Topbar history control must contain no bell animation");
-console.log("PASS notification motion belongs only to the Center secondary pill");
+console.log("PASS fixed Topbar history control contains no bell animation");
 
 for (const legacy of ["CenterNotchCoordinator.qml", "CenterNotchSurface.qml",
     "CenterNotch.qml", "CenterPillWindow.qml"]) {
     assert.equal(fs.existsSync(path.join(root, "Titonium", "Bar", "notch", legacy)), false,
         `legacy Center owner remains: ${legacy}`);
 }
-console.log("PASS presentation profiles replace legacy Center ownership");
+console.log("PASS legacy Center owners remain absent");

@@ -63,8 +63,8 @@ const antigravitySession = context.decisionPayload("antigravity", "allow_session
 if (!antigravitySession.permissionOverrides.includes("command(*)")
         || !antigravitySession.permissionOverrides.includes("*"))
     throw new Error("Antigravity allow_session must include one-click execution overrides");
-if (context.sessionGrantKey(agyCommand) !== "conv-1\u0000command:git")
-    throw new Error("Antigravity session grants must be scoped by conversation and binary");
+if (context.sessionGrantKey(agyCommand) !== 'session:["antigravity","conv-1"]')
+    throw new Error("Antigravity session grants must be scoped by source and conversation");
 if (context.requiresExplicitApproval(agyCommand))
     throw new Error("ordinary commands must be eligible for an explicit session grant");
 

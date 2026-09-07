@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import copy
+import math
 import ast
 import json
 import re
@@ -15,8 +16,9 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_PATH = ROOT / "config/schemas/settings.schema.json"
 DEFAULTS_PATH = ROOT / "config/defaults/settings.json"
-V7_FIXTURE_PATH = ROOT / "tests/fixtures/settings-v7-runtime.json"
+V8_FIXTURE_PATH = ROOT / "tests/fixtures/settings-v8-runtime.json"
 VALIDATOR_PATH = ROOT / "scripts/validate_config.py"
+SCHEMA_DOCUMENT: dict[str, Any] = {}
 
 
 def load(path: Path) -> Any:
@@ -32,6 +34,8 @@ def type_matches(value: Any, expected: str) -> bool:
         return isinstance(value, str)
     if expected == "boolean":
         return isinstance(value, bool)
+    if expected == "number":
+        return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
     if expected == "integer":
         return isinstance(value, int) and not isinstance(value, bool)
     raise ValueError(f"unsupported JSON Schema type: {expected}")
@@ -40,6 +44,11 @@ def type_matches(value: Any, expected: str) -> bool:
 def validate(value: Any, schema: dict[str, Any], path: str = "$") -> list[str]:
     """Evaluate the standard JSON Schema keywords used by settings.schema.json."""
     errors: list[str] = []
+    if "$ref" in schema:
+        target: Any = SCHEMA_DOCUMENT
+        for part in schema["$ref"].removeprefix("#/").split("/"):
+            target = target[part]
+        return validate(value, target, path)
     expected_type = schema.get("type")
     if expected_type is not None and not type_matches(value, expected_type):
         return [f"{path}: expected {expected_type}"]
@@ -51,7 +60,7 @@ def validate(value: Any, schema: dict[str, Any], path: str = "$") -> list[str]:
         errors.append(f"{path}: must have at least {schema['minLength']} characters")
     if isinstance(value, str) and "pattern" in schema and re.search(schema["pattern"], value) is None:
         errors.append(f"{path}: must match {schema['pattern']!r}")
-    if isinstance(value, int) and not isinstance(value, bool):
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
         if "minimum" in schema and value < schema["minimum"]:
             errors.append(f"{path}: must be at least {schema['minimum']}")
         if "maximum" in schema and value > schema["maximum"]:
@@ -96,11 +105,13 @@ def require_valid(name: str, value: Any, schema: dict[str, Any]) -> None:
 
 
 def main() -> int:
+    global SCHEMA_DOCUMENT
     schema = load(SCHEMA_PATH)
+    SCHEMA_DOCUMENT = schema
     defaults = load(DEFAULTS_PATH)
-    fixture = load(V7_FIXTURE_PATH)
+    fixture = load(V8_FIXTURE_PATH)
     require_valid("shipped defaults", defaults, schema)
-    require_valid("v7 runtime fixture", fixture, schema)
+    require_valid("v8 runtime fixture", fixture, schema)
 
     hidden_dock = copy.deepcopy(defaults)
     hidden_dock["modules"]["dock"]["visibilityMode"] = "hidden"
@@ -120,6 +131,24 @@ def main() -> int:
         },
     })
     require_valid("custom notification policy fixture", custom_notifications, schema)
+
+    theme_ids = ["glassmorphism", "material", "liquid-glass", "modern-flat", "neumorphism",
+                 "neutral", "glass", "soft", "graphite"]
+    schema_ids = schema["properties"]["appearance"]["properties"]["themeId"]["enum"]
+    if schema_ids != theme_ids:
+        raise AssertionError(f"Appearance theme IDs are not canonical: {schema_ids!r}")
+    for theme_id in theme_ids:
+        candidate = copy.deepcopy(defaults)
+        candidate["appearance"]["themeId"] = theme_id
+        candidate["appearance"]["themeOverrides"] = {theme_id: {"dark": {"motionScale": 1.25}}}
+        require_valid(f"Appearance theme {theme_id}", candidate, schema)
+    malformed_theme = copy.deepcopy(defaults)
+    malformed_theme["appearance"]["themeOverrides"] = {
+        "modern-flat": {"dark": {"motionScale": "fast"}}
+    }
+    if not any(error.startswith("$.appearance.themeOverrides.modern-flat.dark.motionScale:")
+               for error in validate(malformed_theme, schema)):
+        raise AssertionError("malformed public theme override was accepted")
 
     schema_modes = set(schema["properties"]["modules"]["properties"]["dock"]
                        ["properties"]["visibilityMode"]["enum"])
@@ -160,7 +189,7 @@ def main() -> int:
         if not any(error.startswith("$.modules.notifications.applicationOverrides.<propertyName>:")
                    for error in errors):
             raise AssertionError(f"unsafe notification override ID was accepted: {app_id!r}")
-    print("PASS settings v7 JSON Schema defaults, notification policy, hidden-Dock parity, fixture, and invalid-style rejection")
+    print("PASS settings v8 JSON Schema defaults, notification policy, hidden-Dock parity, fixture, and invalid-style rejection")
     return 0
 
 

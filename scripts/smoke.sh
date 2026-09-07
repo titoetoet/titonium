@@ -23,7 +23,7 @@ if ! rg -q 'Configuration Loaded' "$log_file"; then
     exit 1
 fi
 
-if rg -i '\b(ERROR|TypeError|duplicate id|missing method|Illegal method name)\b|Type .* unavailable' "$log_file"; then
+if rg -i '\b(ERROR|TypeError|duplicate id|missing method|Illegal method name)\b|Type .* unavailable|Binding loop detected' "$log_file"; then
     sed -n '1,240p' "$log_file" >&2
     echo "FAIL runtime error found" >&2
     exit 1

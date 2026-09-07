@@ -63,18 +63,21 @@ def main() -> int:
             if fragment not in source:
                 errors.append(f"MprisService missing contract: {fragment}")
         for forbidden in (
-            "Process {",
-            "Timer {",
             "FileView {",
             "Quickshell.execDetached",
             "import qs.Titonium.Bar",
             "import qs.Titonium.Overlays",
             "priority:",
             "ttl:",
-            "position:",
         ):
             if forbidden in source:
                 errors.append(f"MprisService has forbidden ownership: {forbidden}")
+        # Approved Music details add one read-only TrackList signal adapter and a
+        # visible-only clock reading Quickshell's interpolated position (no DBus poll).
+        if source.count("Process {") != 1 or source.count("Timer {") != 1:
+            errors.append("MPRIS details must retain one queue reader and one position clock")
+        if "running: root.detailsActive && root.playing" not in source:
+            errors.append("MPRIS position clock must stop outside visible playing details")
         if re.search(r"readonly\s+property\s+var\s+(?:native|playerObject|rawPlayer)", source):
             errors.append("MprisService must not expose a native player object")
 

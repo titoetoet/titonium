@@ -20,16 +20,15 @@ Item {
         root.toggleRequested(root.screen, root);
     }
 
-    Rectangle {
+    Shared.InteractionFeedback {
         anchors.centerIn: parent
         width: 28
         height: 28
-        radius: Metrics.radiusSmall
-        color: bellHover.hovered || bellTap.pressed
-            ? Theme.surfaceInteractive : "transparent"
-        border.width: root.activeFocus ? Metrics.borderWidth : 0
-        border.color: root.activeFocus ? Theme.focus : "transparent"
-        Behavior on color { ColorAnimation { duration: Motion.fast } }
+        hovered: bellHover.hovered
+        pressed: bellTap.pressed
+        selected: NotificationCoordinator.panelOpen
+        warning: !!NotificationCoordinator.currentCritical
+        focused: root.activeFocus
     }
 
     Shared.Icon {
@@ -38,18 +37,6 @@ Item {
         name: root.iconName
         size: 19
         tone: "primary"
-        scale: Motion.reduced ? 1 : (bellTap.pressed ? 0.96
-            : (bellHover.hovered ? 1.08 : 1))
-        transformOrigin: Item.Top
-        transform: Translate { y: !Motion.reduced && bellHover.hovered ? -1 : 0 }
-
-        Behavior on scale {
-            NumberAnimation {
-                duration: Motion.reduced ? 0 : 140
-                easing.type: Easing.BezierSpline
-                easing.bezierCurve: Motion.springDamped
-            }
-        }
     }
 
     Rectangle {

@@ -233,3 +233,32 @@ assert.deepEqual(plain(rules.unreadIndicator(0,
     active: false,
 });
 console.log("PASS passive unread indicator");
+
+let boundedNativeState = rules.clearState();
+for (let id = 1; id <= 1000; id++)
+    boundedNativeState = rules.refreshState(boundedNativeState,
+        rules.descriptor({ id, summary: 'Notification ' + id }, id), true);
+assert.equal(boundedNativeState.notifications.length, 100);
+assert.equal(boundedNativeState.unreadKeys.length, 100,
+    'native unread keys must be bounded by retained history after 1000 arrivals');
+assert.deepEqual(plain(boundedNativeState.unreadKeys),
+    plain(boundedNativeState.notifications.map(item => item.key)),
+    'history eviction must evict the matching unread key');
+assert.equal(Object.isFrozen(boundedNativeState.unreadKeys), true);
+const previouslyReadState = { ...boundedNativeState, unreadKeys: [] };
+let unreadAgain = rules.refreshState(previouslyReadState,
+    rules.descriptor({ id: 950, summary: 'Updated' }, 1001), false);
+assert.deepEqual(plain(unreadAgain.unreadKeys), ['native:950'],
+    'replacement marks only its own read descriptor unread');
+unreadAgain = rules.refreshState(unreadAgain,
+    rules.descriptor({ id: 1001 }, 1002), false);
+assert.deepEqual(plain(unreadAgain.unreadKeys), ['native:1001', 'native:950'],
+    'retained read descriptors must remain read during pruning');
+const retiredUnread = rules.retireState(unreadAgain, 'native:950', 'expired');
+assert.deepEqual(plain(retiredUnread.unreadKeys), plain(unreadAgain.unreadKeys),
+    'expiry preserves unread state for retained history');
+const dismissedUnread = rules.dismissState(retiredUnread, 'native:950');
+assert.deepEqual(plain(dismissedUnread.unreadKeys), ['native:1001'],
+    'dismissal removes only the target unread key');
+assert.equal(dismissedUnread.notifications.length, 99);
+console.log('PASS native unread keys follow bounded retained history across arrival, read, replacement, expiry and dismissal');

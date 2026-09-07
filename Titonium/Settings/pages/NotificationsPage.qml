@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Controls as Controls
 import QtQuick.Layouts
 import qs.Titonium.Core.Runtime
 import qs.Titonium.Services.Notifications
@@ -44,22 +45,18 @@ Item {
     }
 
     Flickable {
+        id: scroll
         anchors.fill: parent
         contentWidth: width
         contentHeight: contentColumn.implicitHeight
         clip: true
         boundsBehavior: Flickable.StopAtBounds
+        Controls.ScrollBar.vertical: Controls.ScrollBar {}
 
         ColumnLayout {
             id: contentColumn
-            width: parent.width
+            width: scroll.width - 12
             spacing: Metrics.spacingMedium
-
-            Shared.TextLabel {
-                Layout.fillWidth: true
-                text: I18n.tr("settings.notifications.title")
-                variant: "titleLarge"
-            }
 
             Shared.TextLabel {
                 Layout.fillWidth: true
@@ -235,6 +232,7 @@ Item {
                     clip: true
                     spacing: Metrics.spacingXSmall
                     boundsBehavior: Flickable.StopAtBounds
+        Controls.ScrollBar.vertical: Controls.ScrollBar {}
                     reuseItems: true
 
                     delegate: Shared.Surface {

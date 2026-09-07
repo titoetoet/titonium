@@ -1,0 +1,10 @@
+module qs.Titonium.Shared.styles
+PaintShape 1.0 PaintShape.qml
+SoftShadow 1.0 SoftShadow.qml
+FlatPaint 1.0 FlatPaint.qml
+MaterialPaint 1.0 MaterialPaint.qml
+FrostedPaint 1.0 FrostedPaint.qml
+LiquidPaint 1.0 LiquidPaint.qml
+NeumorphicPaint 1.0 NeumorphicPaint.qml
+PaintTransition 1.0 PaintTransition.qml
+BezelStroke 1.0 BezelStroke.qml

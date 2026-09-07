@@ -1,0 +1,2 @@
+module qs.Titonium.Services.Appearance
+singleton AppearanceService 1.0 AppearanceService.qml

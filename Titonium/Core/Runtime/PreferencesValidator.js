@@ -1,3 +1,5 @@
+.import "../../Services/Appearance/AppearanceRules.js" as AppearanceRules
+
 function record(value) {
     return value !== null && typeof value === "object" && !Array.isArray(value)
         ? value : {};
@@ -105,7 +107,7 @@ function project(document, defaults, legacyDock) {
     const notifications = record(sourceModules.notifications);
     const clock = record(sourceModules.clock);
     const audio = record(sourceModules.audio);
-    const currentDock = source.schemaVersion === 7
+    const currentDock = (source.schemaVersion === 7 || source.schemaVersion === 8)
         && Object.prototype.hasOwnProperty.call(sourceModules, "dock")
         ? record(sourceModules.dock) : null;
     const dock = currentDock || (record(legacyDock).schemaVersion === 1
@@ -115,14 +117,11 @@ function project(document, defaults, legacyDock) {
         } : fallbackDock);
 
     return {
-        $schema: "titonium.settings/v7",
-        schemaVersion: 7,
+        $schema: "titonium.settings/v8",
+        schemaVersion: 8,
         locale: oneOf(source.locale, ["vi", "en"],
             oneOf(fallback.locale, ["vi", "en"], "vi")),
-        appearance: {
-            mode: oneOf(record(source.appearance).mode, ["dark", "light"],
-                oneOf(fallbackAppearance.mode, ["dark", "light"], "dark")),
-        },
+        appearance: AppearanceRules.normalize(source.appearance, fallbackAppearance),
         accessibility: {
             reducedMotion: boolean(record(source.accessibility).reducedMotion,
                 boolean(fallbackAccessibility.reducedMotion, false)),
@@ -144,6 +143,9 @@ function project(document, defaults, legacyDock) {
                     integer(fallbackSpotlight.transitionDuration, 220, 0, 500), 0, 500),
             },
             bar: {
+                height: integer(bar.height, integer(fallbackBar.height, 44, 40, 64), 40, 64),
+                mascot: oneOf(bar.mascot, ["pig", "pig-lavender", "dog"],
+                    oneOf(fallbackBar.mascot, ["pig", "pig-lavender", "dog"], "pig")),
                 workspaceCount: integer(bar.workspaceCount,
                     integer(fallbackBar.workspaceCount, 5, 1, 8), 1, 8),
                 autoHide: boolean(bar.autoHide, boolean(fallbackBar.autoHide, false)),
@@ -153,6 +155,8 @@ function project(document, defaults, legacyDock) {
                     oneOf(fallbackBar.style, ["connected", "classic"], "connected")),
             },
             dock: {
+                style: oneOf(dock.style, ["follow-topbar", "connected", "classic"],
+                    oneOf(fallbackDock.style, ["follow-topbar", "connected", "classic"], "follow-topbar")),
                 visibilityMode: oneOf(dock.visibilityMode,
                     ["auto-hide", "always-visible", "reserve-space", "hidden"],
                     oneOf(fallbackDock.visibilityMode,

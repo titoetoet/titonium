@@ -36,7 +36,7 @@ assert.deepEqual(JSON.parse(JSON.stringify(rules.presentation(
     { appName: "Telegram", title: "Telegram system title", hasContext: true });
 assert.deepEqual(JSON.parse(JSON.stringify(rules.presentation(
     "Firefox", "", "MDN — Firefox", false))),
-    { appName: "Firefox", title: "MDN — Firefox", hasContext: true });
+    { appName: "Firefox", title: "MDN", hasContext: true });
 assert.deepEqual(JSON.parse(JSON.stringify(rules.presentation(
     "", "", "", false))),
     { appName: "Titonium", title: "", hasContext: false });
@@ -68,7 +68,7 @@ for (const fragment of [
     "ApplicationService.nameForAppId",
     "SystemTrayService.menuContextForApp",
     "ActiveWindowRules.label",
-    "implicitWidth: Math.min(520",
+    "implicitWidth: Math.min(380",
     "activityRow.implicitWidth",
     "readonly property var presentation:",
     "id: appNameLabel",

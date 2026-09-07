@@ -65,41 +65,44 @@ Item {
 
         Shared.Button {
             id: networkButton
+            selected: NetworkPopupCoordinator.active
             visible: root.showDiagnostics
             width: root.controlSize
             height: root.controlSize
             iconName: NetworkService.iconName
-            iconHoverMotion: true
+            barFeedback: true
             variant: "quiet"
             size: "small"
-            showFocusRing: false
+            showFocusRing: true
             enabled: NetworkService.available
             accessibleName: root.networkAccessibleName
             onTriggered: NetworkPopupCoordinator.toggle(root.screen, networkButton)
         }
         Shared.Button {
             id: bluetoothButton
+            selected: BluetoothPopupCoordinator.active
             visible: root.showDiagnostics
             width: root.controlSize
             height: root.controlSize
             iconName: root.bluetoothIconName
-            iconHoverMotion: true
+            barFeedback: true
             iconColor: root.bluetoothIconColor
             variant: "quiet"
             size: "small"
-            showFocusRing: false
+            showFocusRing: true
             accessibleName: root.bluetoothAccessibleName
             onTriggered: BluetoothPopupCoordinator.toggle(root.screen, bluetoothButton)
         }
         Shared.Button {
             id: audioButton
+            selected: AudioPopupCoordinator.active
             width: root.controlSize
             height: root.controlSize
             iconName: AudioService.outputIcon
-            iconHoverMotion: true
+            barFeedback: true
             variant: "quiet"
             size: "small"
-            showFocusRing: false
+            showFocusRing: true
             accessibleName: root.audioAccessibleName
             onTriggered: AudioPopupCoordinator.toggle(root.screen, audioButton)
 

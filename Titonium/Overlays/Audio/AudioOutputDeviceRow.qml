@@ -32,9 +32,22 @@ FocusScope {
 
     Rectangle {
         anchors.fill: parent
+        visible: Theme.legacy
         radius: Metrics.radiusSmall
         color: root.hovered || root.activeFocus ? Theme.surfaceInteractive : "transparent"
         Behavior on color { ColorAnimation { duration: Motion.fast } }
+    }
+
+
+    Shared.StylePaint {
+        anchors.fill: parent
+        visible: !Theme.legacy
+        tokens: Theme.tokens
+        role: "menu-row"
+        radius: Metrics.radiusSmall
+        outlined: false
+        interaction: ({ hovered: root.hovered, focused: root.activeFocus,
+            selected: root.checked })
     }
 
     RowLayout {

@@ -6,3 +6,4 @@ CenterActionDispatcher 1.0 CenterActionDispatcher.qml
 singleton CenterFocusStore 1.0 CenterFocusStore.qml
 singleton CenterJobService 1.0 CenterJobService.qml
 singleton CenterTimerService 1.0 CenterTimerService.qml
+singleton FocusSessionService 1.0 FocusSessionService.qml

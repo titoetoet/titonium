@@ -2,10 +2,12 @@ pragma Singleton
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import Quickshell.Io
 import Quickshell.Services.Mpris
 import qs.Titonium.Core.Runtime
 import qs.Titonium.Services.Center
 import "MprisRules.js" as MprisRules
+import "MprisControls.js" as Controls
 
 QtObject {
     id: root
@@ -13,6 +15,79 @@ QtObject {
     property var projection: null
     property var changeTimes: ({})
     property var playerSignatures: ({})
+    property bool detailsActive: false
+    property int positionRevision: 0
+    property var queue: ({})
+    property bool queueRestartPending: false
+    readonly property string selectedIdentity: root.projection?.identity || ""
+    readonly property var playbackDetails: root.readPlaybackDetails()
+
+    function readPlaybackDetails(): var {
+        const revision = root.positionRevision;
+        const player = root.selectedNativePlayer();
+        if (!player) return Object.freeze({});
+        const trackId = Controls.trackId(player.metadata?.["mpris:trackid"]);
+        const queueMatches = root.queue.identity === root.selectedIdentity && root.queue.trackId === trackId;
+        return Object.freeze({ identity: root.selectedIdentity, trackToken: player.uniqueId,
+            source: Controls.sourceDetails(player.identity, player.metadata?.["xesam:url"]),
+            canRaise: player.canRaise === true,
+            trackId: trackId, length: player.lengthSupported ? Math.max(0, player.length) : 0,
+            position: player.positionSupported ? Math.max(0, player.position) : 0,
+            canSeek: player.canSeek === true && player.positionSupported === true,
+            nextTrack: queueMatches ? root.queue.nextTrack : null,
+            queueStatus: queueMatches ? root.queue.status : "unavailable" });
+    }
+
+    function seekTo(identity: string, token: int, fraction: real): bool {
+        const player = root.selectedNativePlayer();
+        if (!player) return false;
+        const position = Controls.seekPosition(identity, token, {
+            identity: root.playerKey(player), trackToken: player.uniqueId,
+            canSeek: player.canSeek === true && player.positionSupported === true,
+            length: player.lengthSupported ? player.length : 0
+        }, fraction);
+        if (position === null) return false;
+        player.position = position;
+        root.positionRevision++;
+        return true;
+    }
+
+    function startQueueReader(): void {
+        root.queueRestartPending = false;
+        if (!root.detailsActive || !root.selectedIdentity) return;
+        queueReader.command = ["python3", Qt.resolvedUrl("track_list.py").toString().replace("file://", ""), root.selectedIdentity];
+        queueReader.running = true;
+    }
+    function updateQueueReader(): void {
+        root.queue = ({});
+        root.queueRestartPending = root.detailsActive && !!root.selectedIdentity;
+        if (queueReader.running) queueReader.running = false;
+        else root.startQueueReader();
+    }
+    onDetailsActiveChanged: root.updateQueueReader()
+    onSelectedIdentityChanged: root.updateQueueReader()
+    property Timer positionClock: Timer {
+        interval: 1000; repeat: true
+        running: root.detailsActive && root.playing
+        onTriggered: root.positionRevision++
+    }
+    property Process queueReader: Process {
+        id: queueReader
+        stdout: SplitParser {
+            onRead: line => {
+                try {
+                    const value = JSON.parse(line);
+                    if (root.detailsActive && !root.queueRestartPending
+                            && value.identity === root.selectedIdentity)
+                        root.queue = value;
+                } catch (_) { root.queue = ({}); }
+            }
+        }
+        onExited: {
+            root.queue = ({});
+            if (root.queueRestartPending) root.startQueueReader();
+        }
+    }
 
     readonly property var playerFacts: Mpris.players.values.map(player => root.factForPlayer(player))
     readonly property var selectedPlayer: root.projection
@@ -35,7 +110,7 @@ QtObject {
             trackArtist: player.trackArtist || "",
             trackArtUrl: player.trackArtUrl || "",
             trackLength: Number(player.length) > 0 ? Number(player.length) : 0,
-            trackPosition: Number(player.trackPosition) >= 0 ? Number(player.trackPosition) : 0,
+            trackPosition: player.positionSupported && Number(player.position) >= 0 ? Number(player.position) : 0,
             canTogglePlaying: player.canTogglePlaying === true,
             canGoPrevious: player.canGoPrevious === true,
             canGoNext: player.canGoNext === true,
@@ -78,6 +153,16 @@ QtObject {
         if (player === null || player.canTogglePlaying !== true)
             return false;
         player.togglePlaying();
+        return true;
+    }
+
+    function adjustVolume(identity: string, delta: real): bool {
+        if (!identity || root.projection?.identity !== identity || !Number.isFinite(delta))
+            return false;
+        const player = root.selectedNativePlayer();
+        if (!player || player.volumeSupported !== true || !Number.isFinite(player.volume))
+            return false;
+        player.volume = Math.max(0, Math.min(1, player.volume + delta));
         return true;
     }
 
@@ -204,6 +289,9 @@ QtObject {
             function onPlaybackStateChanged(): void { root.markChanged(modelData); }
             function onPositionChanged(): void { root.markChanged(modelData); }
             function onLengthChanged(): void { root.markChanged(modelData); }
+            function onCanTogglePlayingChanged(): void { root.markChanged(modelData); }
+            function onCanGoPreviousChanged(): void { root.markChanged(modelData); }
+            function onCanGoNextChanged(): void { root.markChanged(modelData); }
         }
     }
 

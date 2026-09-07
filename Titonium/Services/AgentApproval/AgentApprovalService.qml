@@ -156,7 +156,7 @@ QtObject {
         try {
             const payload = JSON.parse(line);
             const descriptor = ApprovalRules.normalize(payload);
-            if (!descriptor.requestId || root.clients[descriptor.requestId] !== undefined
+            if (!descriptor || !descriptor.requestId || root.clients[descriptor.requestId] !== undefined
                     || root.pending.length >= 32) {
                 client.write(JSON.stringify({ "decision": "deny" }) + "\n");
                 client.flush();
@@ -164,10 +164,8 @@ QtObject {
                 return;
             }
             const grantKey = ApprovalRules.sessionGrantKey(descriptor);
-            const convKey = descriptor.conversationId ? ("conv:" + descriptor.conversationId) : "";
             const keys = ApprovalRules.sessionKeys ? ApprovalRules.sessionKeys(descriptor) : [];
-            let isGranted = (grantKey && root.sessionGrants[grantKey] === true)
-                || (convKey && root.sessionGrants[convKey] === true);
+            let isGranted = grantKey && root.sessionGrants[grantKey] === true;
             if (!isGranted && keys.length > 0) {
                 for (let i = 0; i < keys.length; i++) {
                     if (root.sessionGrants[keys[i]] === true) {
@@ -198,18 +196,20 @@ QtObject {
     }
 
     function disconnected(client: var): void {
-        const requestId = Object.keys(root.clients).find(id => root.clients[id] === client);
-        if (!requestId)
+        const requestIds = Object.keys(root.clients).filter(id => root.clients[id] === client);
+        if (requestIds.length === 0)
             return;
         const nextClients = Object.assign({}, root.clients);
-        delete nextClients[requestId];
+        requestIds.forEach(id => { delete nextClients[id]; });
         root.clients = nextClients;
-        root.pending = Object.freeze(root.pending.filter(item => item.requestId !== requestId));
+        root.pending = Object.freeze(root.pending.filter(item => requestIds.indexOf(item.requestId) < 0));
         root.updatePopupScreenAfterRemoval();
         root.syncCenterAttention();
     }
 
     function decide(requestId: string, decision: string): bool {
+        if (!ApprovalRules.validDecision(decision))
+            return false;
         const descriptor = root.pending.find(item => item.requestId === requestId);
         const client = root.clients[requestId];
         if (!descriptor || !client)
@@ -234,19 +234,14 @@ QtObject {
 
     function rememberSessionGrant(descriptor: var): bool {
         const grantKey = ApprovalRules.sessionGrantKey(descriptor);
-        const convKey = descriptor.conversationId ? ("conv:" + descriptor.conversationId) : "";
         const keys = ApprovalRules.sessionKeys ? ApprovalRules.sessionKeys(descriptor) : [];
-        if ((!grantKey && !convKey && keys.length === 0) || ApprovalRules.requiresExplicitApproval(descriptor))
+        if ((!grantKey && keys.length === 0) || ApprovalRules.requiresExplicitApproval(descriptor))
             return false;
         const nextGrants = Object.assign({}, root.sessionGrants);
         let nextOrder = root.sessionGrantOrder.slice();
         if (grantKey) {
             nextOrder = nextOrder.filter(key => key !== grantKey).concat([grantKey]);
             nextGrants[grantKey] = true;
-        }
-        if (convKey) {
-            nextOrder = nextOrder.filter(key => key !== convKey).concat([convKey]);
-            nextGrants[convKey] = true;
         }
         for (let i = 0; i < keys.length; i++) {
             const k = keys[i];

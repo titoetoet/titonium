@@ -11,9 +11,28 @@ QtObject {
     readonly property bool recording: root.running
     readonly property real elapsedSeconds: root.recording && root.startedAt > 0
         ? Math.max(0, (root.now - root.startedAt) / 1000) : 0
+    property var recorderSessions: []
+    readonly property bool canStop: root.recording && root.recorderSessions.length > 0 && !stopProcess.running
+    function stopRecording(): bool {
+        if (!root.canStop) return false;
+        stopProcess.command = ["python3", Qt.resolvedUrl("recorder_control.py").toString().replace("file://", ""),
+            "stop", JSON.stringify(root.recorderSessions)];
+        stopProcess.running = true;
+        return true;
+    }
+    property Process stopProcess: Process {
+        onExited: root.probe.running = true
+    }
     property bool running: false
     property double startedAt: 0
     property double now: Date.now()
+
+    function applySessions(next: var): void {
+        const added = next.some(item => !root.recorderSessions.some(old => old.pid === item.pid && old.start === item.start));
+        root.recorderSessions = next;
+        if (added) root.startedAt = Date.now();
+        root.sync(next.length ? 0 : 1);
+    }
 
     function sync(code: int): void {
         const next = code === 0;
@@ -33,10 +52,18 @@ QtObject {
     }
 
     property Process probe: Process {
-        command: ["pidof", "wf-recorder"]
+        command: ["python3", Qt.resolvedUrl("recorder_control.py").toString().replace("file://", "")]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    const next = JSON.parse(text);
+                    root.applySessions(next);
+                } catch (_) { root.recorderSessions = []; root.sync(1); }
+            }
+        }
         running: true
         onExited: code => {
-            root.sync(code);
+            if (code !== 0) { root.recorderSessions = []; root.sync(1); }
             root.poll.running = true;
         }
     }

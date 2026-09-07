@@ -9,11 +9,15 @@ import socket
 import subprocess
 import sys
 import time
+import threading
 import uuid
 from pathlib import Path
 from typing import Any
 
+from approval_bridge_logging import log_bridge
+
 MAX_MESSAGE = 1024 * 1024
+MAX_PENDING_APPROVALS = 8
 APPROVAL_METHODS = {
     "item/commandExecution/requestApproval",
     "item/fileChange/requestApproval",
@@ -61,12 +65,15 @@ def is_quickshell_running() -> bool:
     return False
 
 
-def exchange(payload: dict[str, Any], timeout: float = 300.0) -> dict[str, Any]:
+def exchange(payload: dict[str, Any], timeout: float = 300.0,
+             stop_event: threading.Event | None = None) -> dict[str, Any]:
     path = socket_path()
     encoded = (json.dumps(payload, separators=(",", ":")) + "\n").encode()
     if len(encoded) > MAX_MESSAGE:
         raise ValueError("approval request is too large")
 
+    stop_event = stop_event or threading.Event()
+    overall_deadline = time.monotonic() + timeout
     client: socket.socket | None = None
     retry_window = min(timeout, 15.0)
     start_time = time.monotonic()
@@ -75,12 +82,15 @@ def exchange(payload: dict[str, Any], timeout: float = 300.0) -> dict[str, Any]:
     last_error: Exception | None = None
 
     while True:
+        if stop_event.is_set():
+            raise ConnectionError("approval cancelled")
+        candidate = None
         try:
             stat = os.stat(path)
             if stat.st_uid != os.getuid():
                 raise PermissionError("approval socket is not owned by the current user")
             candidate = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-            candidate.settimeout(timeout)
+            candidate.settimeout(max(0.001, min(0.25, overall_deadline - time.monotonic())))
             candidate.connect(path)
             client = candidate
             break
@@ -102,7 +112,10 @@ def exchange(payload: dict[str, Any], timeout: float = 300.0) -> dict[str, Any]:
                 break
             if time.monotonic() >= deadline:
                 break
-            time.sleep(0.2)
+            stop_event.wait(0.2)
+        finally:
+            if candidate is not None and candidate is not client:
+                candidate.close()
 
     if client is None:
         if last_error is not None:
@@ -110,10 +123,20 @@ def exchange(payload: dict[str, Any], timeout: float = 300.0) -> dict[str, Any]:
         raise ConnectionError("failed to connect to approval socket")
 
     with client:
+        client.settimeout(max(0.001, overall_deadline - time.monotonic()))
         client.sendall(encoded)
         response = bytearray()
         while b"\n" not in response:
-            chunk = client.recv(4096)
+            if stop_event.is_set():
+                raise ConnectionError("approval cancelled")
+            remaining = overall_deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError("approval decision timed out")
+            client.settimeout(min(0.25, remaining))
+            try:
+                chunk = client.recv(4096)
+            except socket.timeout:
+                continue
             if not chunk:
                 raise ConnectionError("approval socket closed without a decision")
             response.extend(chunk)
@@ -123,15 +146,6 @@ def exchange(payload: dict[str, Any], timeout: float = 300.0) -> dict[str, Any]:
     if not isinstance(result, dict):
         raise ValueError("approval response must be an object")
     return result
-
-
-def log_bridge(msg: str) -> None:
-    try:
-        import time
-        with open("/tmp/titonium-approval-bridge.log", "a", encoding="utf-8") as f:
-            f.write(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] {msg}\n")
-    except Exception:
-        pass
 
 
 def antigravity_hook() -> int:
@@ -148,17 +162,14 @@ def antigravity_hook() -> int:
         payload = json.loads(raw)
         if not isinstance(payload, dict):
             raise ValueError("approval payload must be an object")
-        tool_call = payload.get("toolCall", {})
-        tool_name = tool_call.get("name", "")
-        tool_args = tool_call.get("args", {})
-        log_bridge(f"HOOK START: tool={tool_name} args={tool_args}")
+        log_bridge("hook_request", "received")
 
         payload.update({
             "source": "antigravity",
             "requestId": str(uuid.uuid4()),
         })
         result = exchange(payload, timeout=120)
-        log_bridge(f"HOOK RESULT: {result}")
+
         decision = result.get("decision")
         if decision not in {"allow", "deny", "ask", "force_ask"}:
             raise ValueError(f"invalid Antigravity decision: {decision}")
@@ -168,11 +179,10 @@ def antigravity_hook() -> int:
         if "permissionOverrides" in result:
             response["permissionOverrides"] = result["permissionOverrides"]
         out_str = json.dumps(response)
-        log_bridge(f"HOOK STDOUT: {out_str}")
+        log_bridge("hook_result", decision)
         print(out_str)
-    except Exception as error:  # Native Antigravity review remains the fallback.
-        log_bridge(f"HOOK EXCEPTION: {error}")
-        print(f"titonium approval bridge: {error}", file=sys.stderr)
+    except Exception:  # Native Antigravity review remains the fallback.
+        log_bridge("hook_error", "unavailable")
         print(json.dumps({
             "decision": "force_ask",
             "reason": "Titonium unavailable; review in Antigravity",
@@ -184,12 +194,39 @@ def real_codex_path() -> str:
     return os.environ.get("TITONIUM_REAL_CODEX", "/usr/lib/chatgpt/resources/codex")
 
 
-def forward_stream(source: Any, destination: Any) -> None:
+def write_bytes(destination: Any, data: bytes) -> None:
+    """Unbuffered pipes may accept fewer bytes than requested."""
+    remaining = memoryview(data)
+    while remaining:
+        written = destination.write(remaining)
+        if not written:
+            raise BrokenPipeError("stream closed")
+        remaining = remaining[written:]
+    destination.flush()
+
+
+def forward_stream(source: Any, destination: Any, lock: Any = None) -> None:
+    # Hold the shared writer lock through a complete client JSON-RPC frame,
+    # including fragments, so an approval reply cannot splice into that frame.
+    held = False
     try:
         while chunk := os.read(source.fileno(), 65536):
-            destination.write(chunk)
-            destination.flush()
+            if lock is None:
+                write_bytes(destination, chunk)
+                continue
+            for part in chunk.splitlines(keepends=True):
+                if not held:
+                    lock.acquire()
+                    held = True
+                write_bytes(destination, part)
+                if part.endswith(b"\n"):
+                    lock.release()
+                    held = False
+    except (BrokenPipeError, OSError, ValueError):
+        pass
     finally:
+        if held:
+            lock.release()
         destination.close()
 
 
@@ -203,54 +240,90 @@ def codex_proxy(argv: list[str]) -> int:
         stderr=None, bufsize=0,
     )
     assert child.stdin is not None and child.stdout is not None
+    input_lock = threading.Lock()
+    output_lock = threading.Lock()
+    stopping = threading.Event()
+    slots = threading.BoundedSemaphore(MAX_PENDING_APPROVALS)
 
-    import threading
+    def forward_output(raw_line: bytes) -> None:
+        with output_lock:
+            if not stopping.is_set():
+                write_bytes(sys.stdout.buffer, raw_line)
+
+    def resolve_approval(message: dict[str, Any], raw_line: bytes) -> None:
+        try:
+            request = {
+                "source": "chatgpt", "requestId": str(uuid.uuid4()),
+                "rpcId": message["id"], "method": message["method"],
+                "params": message.get("params", {}),
+            }
+            try:
+                result = exchange(request, stop_event=stopping)
+                decision = result.get("decision")
+                if decision == "delegate":
+                    forward_output(raw_line)
+                    return
+                if decision not in {"accept", "acceptForSession", "decline"}:
+                    decision = "decline"
+            except Exception:
+                log_bridge("proxy_error", "unavailable")
+                decision = "decline"
+            response = {"id": message["id"], "result": {"decision": decision}}
+            with input_lock:
+                if not stopping.is_set():
+                    write_bytes(child.stdin,
+                        (json.dumps(response, separators=(",", ":")) + "\n").encode())
+            log_bridge("proxy_result", decision)
+        except (BrokenPipeError, OSError, ValueError):
+            log_bridge("proxy_error", "cancel")
+        finally:
+            slots.release()
+
     input_thread = threading.Thread(
-        target=forward_stream, args=(sys.stdin.buffer, child.stdin), daemon=True
+        target=forward_stream, args=(sys.stdin.buffer, child.stdin, input_lock), daemon=True
     )
     input_thread.start()
-
-    for raw_line in iter(child.stdout.readline, b""):
-        try:
-            message = json.loads(raw_line)
-        except (json.JSONDecodeError, UnicodeDecodeError):
-            sys.stdout.buffer.write(raw_line)
-            sys.stdout.buffer.flush()
-            continue
-
-        if (not approval_enabled() or message.get("method") not in APPROVAL_METHODS
-                or "id" not in message):
-            sys.stdout.buffer.write(raw_line)
-            sys.stdout.buffer.flush()
-            continue
-
-        params = message.get("params", {})
-        method = message.get("method")
-
-        request = {
-            "source": "chatgpt",
-            "requestId": str(uuid.uuid4()),
-            "rpcId": message["id"],
-            "method": method,
-            "params": params,
-        }
-        try:
-            result = exchange(request)
-            decision = result.get("decision")
-            if decision == "delegate":
-                sys.stdout.buffer.write(raw_line)
-                sys.stdout.buffer.flush()
+    try:
+        for raw_line in iter(child.stdout.readline, b""):
+            try:
+                message = json.loads(raw_line)
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                forward_output(raw_line)
                 continue
-            if decision not in {"accept", "acceptForSession", "decline"}:
-                decision = "decline"
-        except Exception as error:
-            print(f"titonium approval bridge: {error}", file=sys.stderr)
-            decision = "decline"
-        response = {"id": message["id"], "result": {"decision": decision}}
-        child.stdin.write((json.dumps(response, separators=(",", ":")) + "\n").encode())
-        child.stdin.flush()
-
-    return child.wait()
+            # Permission requests have a different response contract. Keep their
+            # complete native review path instead of fabricating a generic decision.
+            if (not approval_enabled() or not isinstance(message, dict)
+                    or not isinstance(message.get("method"), str)
+                    or message.get("method") not in APPROVAL_METHODS
+                    or message.get("method") == "item/permissions/requestApproval"
+                    or "id" not in message):
+                forward_output(raw_line)
+                continue
+            if not slots.acquire(blocking=False):
+                forward_output(raw_line)
+                log_bridge("proxy_result", "delegate")
+                continue
+            log_bridge("proxy_request", "received")
+            worker = threading.Thread(target=resolve_approval,
+                args=(message, raw_line), daemon=True)
+            try:
+                worker.start()
+            except RuntimeError:
+                slots.release()
+                forward_output(raw_line)
+        return child.wait()
+    finally:
+        stopping.set()
+        if child.poll() is None:
+            child.terminate()
+            try:
+                child.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                child.kill()
+                child.wait()
+        child.stdout.close()
+        child.stdin.close()
+        log_bridge("proxy_exit", "completed")
 
 
 def main() -> int:

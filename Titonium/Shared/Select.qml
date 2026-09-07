@@ -6,6 +6,8 @@ import qs.Titonium.Theme
 
 FocusScope {
     id: root
+    property var tokens: Theme.tokens
+    readonly property bool legacyPaint: tokens.legacy !== false
 
     property var model: []
     property int currentIndex: -1
@@ -36,7 +38,6 @@ FocusScope {
         rightPadding: Metrics.controlHeight
 
         onActivated: index => {
-            root.currentIndex = index;
             const item = index >= 0 && index < root.model.length ? root.model[index] : null;
             root.selected(index, item?.value);
         }
@@ -44,7 +45,7 @@ FocusScope {
         contentItem: TextLabel {
             text: root.displayText
             variant: "label"
-            tone: root.enabled ? "primary" : "disabled"
+            color: root.enabled ? root.tokens.colors.textPrimary : root.tokens.colors.textDisabled
             verticalAlignment: Text.AlignVCenter
             elide: Text.ElideRight
         }
@@ -57,12 +58,24 @@ FocusScope {
             tone: root.enabled ? "secondary" : "disabled"
         }
 
-        background: Rectangle {
+        background: Item {
+          Rectangle {
+            anchors.fill: parent
+            visible: root.legacyPaint
             radius: Metrics.radiusMedium
-            color: control.down ? Theme.surfaceInteractive : Theme.surfaceElevated
+            color: control.down ? root.tokens.colors.surfaceInteractive : root.tokens.colors.surfaceElevated
             border.width: Metrics.borderWidth
-            border.color: control.activeFocus ? Theme.focus : Theme.border
+            border.color: control.activeFocus ? root.tokens.colors.focus : root.tokens.colors.border
             Behavior on color { ColorAnimation { duration: Motion.fast } }
+          }
+          StylePaint {
+            anchors.fill: parent
+            visible: !root.legacyPaint
+            tokens: root.tokens
+            role: "field"
+            radius: root.tokens.design.controlRadius < 0 ? 10 : root.tokens.design.controlRadius
+            interaction: ({enabled:root.enabled,pressed:control.down,hovered:control.hovered,focused:control.activeFocus})
+          }
         }
 
         delegate: QtControls.ItemDelegate {
@@ -83,7 +96,7 @@ FocusScope {
             }
 
             background: Rectangle {
-                color: option.highlighted ? Theme.surfaceInteractive : Theme.surface
+                color: option.highlighted ? root.tokens.colors.surfaceInteractive : root.tokens.colors.surface
                 radius: Metrics.radiusSmall
             }
         }
@@ -103,11 +116,23 @@ FocusScope {
                 reuseItems: true
             }
 
-            background: Rectangle {
-                color: Theme.surface
-                radius: Metrics.radiusMedium
-                border.width: Metrics.borderWidth
-                border.color: Theme.borderStrong
+            background: Item {
+                Rectangle {
+                    objectName: "legacySelectPopupPaint"
+                    anchors.fill: parent
+                    visible: root.legacyPaint
+                    color: root.tokens.colors.surface
+                    radius: Metrics.radiusMedium
+                    border.width: Metrics.borderWidth
+                    border.color: root.tokens.colors.borderStrong
+                }
+                Surface {
+                    anchors.fill: parent
+                    visible: !root.legacyPaint
+                    tokens: root.tokens
+                    radius: root.tokens.design.panelRadius
+                    borderColor: root.tokens.colors.borderStrong
+                }
             }
         }
     }

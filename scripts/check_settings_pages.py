@@ -39,14 +39,20 @@ def main() -> int:
     components_qmldir = source(COMPONENTS / "qmldir", errors)
 
     require(appearance, "AppearancePage", (
-        'Preferences.patch("appearance.mode", "dark")',
-        'Preferences.patch("appearance.mode", "light")',
-        "Preferences.restoreAppearance()", "settings.appearance.identity",
-        "settings.appearance.solid", "settings.appearance.restore",
+        "AppearanceCoordinator.selectTheme", "AppearanceCoordinator.setMode",
+        "AppearanceCoordinator.startTrial()", "AppearanceCoordinator.keepTrial()",
+        "AppearanceCoordinator.cancelTrial()", "AppearanceCoordinator.undoLastApply()",
+        "active: AppearanceCoordinator.advancedOpen", "ThemePreview {", "ThemeCard {",
+        "AppearanceAdvanced {", "Flickable {", "settings.appearance.system",
     ), errors)
-    for forbidden in ("themeId", "density", "glass", "blur", "materialBackend", "MultiEffect"):
+    for forbidden in ("Preferences.patch", "Preferences.restoreAppearance", "Process", "FileView"):
         if forbidden in appearance:
-            errors.append(f"AppearancePage exposes deferred control: {forbidden}")
+            errors.append(f"AppearancePage bypasses candidate boundary: {forbidden}")
+    preview = source(COMPONENTS / "ThemePreview.qml", errors)
+    for forbidden in ("Theme.", "Services", "Preferences", "Timer {", "Process", "FileView"):
+        if forbidden in preview:
+            errors.append(f"ThemePreview must render explicit tokens only: {forbidden}")
+    require(preview, "ThemePreview", ("property var tokens", "tokens.colors", "tokens.material"), errors)
 
     require(spotlight, "SpotlightPage", (
         '"slide-fade"', '"fade"', '"none"', "Shared.Select", "Shared.Slider",

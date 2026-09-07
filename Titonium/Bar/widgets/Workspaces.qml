@@ -176,8 +176,7 @@ Item {
                     visible: workspaceItem.modelData.occupied && !workspaceItem.visuallyActive
                     height: WorkspaceVisualRules.pillHeight(workspaceItem.visuallyActive)
                     radius: Metrics.radiusLarge
-                    color: hoverHandler.hovered
-                        ? Qt.lighter(workspaceItem.baseColor, 1.12) : workspaceItem.baseColor
+                    color: workspaceItem.baseColor
                     opacity: 0.76
                     border.width: workspaceItem.modelData.urgent ? Metrics.borderWidth : 0
                     border.color: workspaceItem.modelData.urgent ? Theme.warning : "transparent"
@@ -201,6 +200,14 @@ Item {
                     border.color: Theme.warning
                 }
 
+                Shared.InteractionFeedback {
+                    anchors.fill: parent
+                    radius: height / 2
+                    hovered: hoverHandler.hovered
+                    pressed: workspaceTap.pressed
+                    warning: workspaceItem.modelData.urgent
+                }
+
                 Row {
                     anchors.centerIn: parent
                     spacing: root.appSpacing
@@ -216,17 +223,6 @@ Item {
                             size: root.appIconSize
                             tone: "primary"
                             accessibleName: ""
-                            scale: Motion.reduced ? 1 : (workspaceTap.pressed ? 0.96
-                                : (hoverHandler.hovered ? 1.08 : 1))
-                            transform: Translate { y: !Motion.reduced && hoverHandler.hovered ? -1 : 0 }
-
-                            Behavior on scale {
-                                NumberAnimation {
-                                    duration: Motion.reduced ? 0 : 140
-                                    easing.type: Easing.BezierSpline
-                                    easing.bezierCurve: Motion.springDamped
-                                }
-                            }
                         }
                     }
                 }

@@ -1,0 +1,5 @@
+module qs.Titonium.Shared.Mascots.Pig
+SleepyPig 1.0 SleepyPig.qml
+CoffeePig 1.0 CoffeePig.qml
+CoderPig 1.0 CoderPig.qml
+WalkingPig 1.0 WalkingPig.qml

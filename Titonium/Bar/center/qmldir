@@ -1,3 +1,19 @@
 module qs.Titonium.Bar.center
 CenterRenderer 1.0 CenterRenderer.qml
-CenterSecondaryPill 1.0 CenterSecondaryPill.qml
+CenterCompactCapsule 1.0 CenterCompactCapsule.qml
+CompactActivityIcon 1.0 CompactActivityIcon.qml
+IdleMascot 1.0 IdleMascot.qml
+CompactMediaTitle 1.0 CompactMediaTitle.qml
+MusicPlayerContent 1.0 MusicPlayerContent.qml
+MusicArtwork 1.0 MusicArtwork.qml
+MusicSpectrum 1.0 MusicSpectrum.qml
+MusicSeek 1.0 MusicSeek.qml
+
+MusicTransitionTitle 1.0 MusicTransitionTitle.qml
+ScreenshotPreviewContent 1.0 ScreenshotPreviewContent.qml
+NormalBannerContent 1.0 NormalBannerContent.qml
+ExpandedContent 1.0 ExpandedContent.qml
+DashboardContent 1.0 DashboardContent.qml
+TasksContent 1.0 TasksContent.qml
+MonitoringContent 1.0 MonitoringContent.qml
+WallpapersContent 1.0 WallpapersContent.qml

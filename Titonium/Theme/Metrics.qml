@@ -5,7 +5,7 @@ import QtQuick
 
 QtObject {
     readonly property int grid: 4
-    readonly property int barHeight: 44
+    property int barHeight: 44
     readonly property int barPadding: 8
     readonly property int barSpacing: 8
     readonly property int controlHeightSmall: 28

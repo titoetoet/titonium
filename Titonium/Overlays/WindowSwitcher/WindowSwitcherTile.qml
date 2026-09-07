@@ -32,10 +32,23 @@ FocusScope {
 
     Rectangle {
         anchors.fill: parent
+        visible: Theme.legacy
         radius: Metrics.radiusMedium
         color: root.hovered ? Qt.lighter(root.tileColor, 1.12) : root.tileColor
         border.width: 0
         Behavior on color { ColorAnimation { duration: Motion.fast } }
+    }
+
+
+    Shared.StylePaint {
+        anchors.fill: parent
+        visible: !Theme.legacy
+        tokens: Theme.tokens
+        role: "button"
+        radius: Metrics.radiusMedium
+        customColor: root.tileColor
+        outlined: false
+        interaction: ({ hovered: root.hovered, selected: root.selected })
     }
 
     ColumnLayout {

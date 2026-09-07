@@ -18,6 +18,7 @@ QtObject {
     property bool pendingApplyWrite: false
     property int pendingRuntimeWrites: 0
     property string lastError: ""
+    signal applyFinished(bool success)
     property bool ready: false
     property bool warnedRuntimeCorruption: false
 
@@ -36,6 +37,8 @@ QtObject {
     readonly property var bar: root.effectiveState.modules?.bar || ({})
     readonly property string barStyle: root.bar.style === "classic" ? "classic" : "connected"
     readonly property var dock: root.effectiveState.modules?.dock || ({})
+    readonly property string dockStyle: root.dock.style === "classic" ? "classic"
+        : (root.dock.style === "connected" ? "connected" : root.barStyle)
     readonly property var notifications:
         root.effectiveState.modules?.notifications || ({})
     readonly property bool use24Hour:
@@ -75,7 +78,7 @@ QtObject {
         root.pendingApplyWrite = false;
         root.lastError = "";
         root.ready = true;
-        Logger.info("preferences", "settings v7 preferences loaded");
+        Logger.info("preferences", "settings v8 preferences loaded");
     }
 
     function beginPreview(): bool {
@@ -103,6 +106,17 @@ QtObject {
         }
     }
 
+    function stageAppearance(candidate: var, base: var): bool {
+        if (root.savePending || (!root.previewActive && !root.beginPreview())) return false;
+        const next = Validator.clone(root.previewState);
+        if (!Validator.same(candidate.appearance, base.appearance))
+            next.appearance = Validator.clone(candidate.appearance);
+        if (candidate.reducedMotion !== base.reducedMotion)
+            next.accessibility.reducedMotion = candidate.reducedMotion === true;
+        root.previewState = Validator.project(next, root.shippedDefaults, null);
+        return true;
+    }
+
     function beginRuntimeWrite(): void {
         root.pendingRuntimeWrites += 1;
     }
@@ -120,6 +134,7 @@ QtObject {
             root.pendingApplyState = null;
             root.pendingApplyWrite = false;
             root.savePending = false;
+            root.applyFinished(success);
         } else if (!success) {
             root.lastError = failure || "Unable to save settings";
         }
@@ -146,6 +161,20 @@ QtObject {
         root.previewActive = false;
         root.pendingApplyWrite = false;
         root.lastError = "";
+    }
+
+    function restorePaths(paths: var): bool {
+        if (root.savePending || !root.previewActive)
+            return false;
+        let next = Validator.clone(root.previewState);
+        for (const path of paths) {
+            const value = path.split(".").reduce((object, key) => object?.[key], root.shippedDefaults);
+            if (value === undefined) return false;
+            next = Validator.setPath(next, path, Validator.clone(value));
+        }
+        root.previewState = Validator.project(next, root.shippedDefaults, null);
+        root.lastError = "";
+        return true;
     }
 
     function restoreAppearance(): bool {
@@ -188,12 +217,14 @@ QtObject {
 
     property FileView runtimeFile: FileView {
         path: root.runtimePath
-        preload: false
+        preload: true
         blockLoading: true
         printErrors: false
         atomicWrites: true
         watchChanges: !root.previewActive && root.pendingRuntimeWrites === 0
-        onFileChanged: root.reload()
+        // A filesystem notification does not invalidate FileView's cached text.
+        onFileChanged: root.runtimeFile.reload()
+        onLoaded: if (root.ready) root.reload()
         onSaved: root.finishRuntimeWrite(true, "")
         onSaveFailed: failure => root.finishRuntimeWrite(false, String(failure))
     }

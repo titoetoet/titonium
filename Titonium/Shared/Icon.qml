@@ -14,7 +14,7 @@ Item {
     property color color: root.resolvedColor
     readonly property string resolvedName: IconRules.semanticName(root.name, "image")
     readonly property color resolvedColor: ({ primary: Theme.textPrimary,
-        secondary: Theme.textSecondary, disabled: Theme.textDisabled, accent: Theme.accent,
+        secondary: Theme.textSecondary, disabled: Theme.textDisabled, accent: Theme.accentForeground,
         success: Theme.success, warning: Theme.warning, danger: Theme.danger })[root.tone]
         || Theme.textPrimary
 

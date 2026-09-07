@@ -19,7 +19,6 @@ REQUIRED = (
     "Titonium/Services/Network/NetworkService.qml",
     "Titonium/Services/Network/qmldir",
     "Titonium/Overlays/Network/NetworkPopupCoordinator.qml",
-    "Titonium/Overlays/Network/NetworkPopupSurface.qml",
     "Titonium/Overlays/Network/ClassicNetworkPopupSurface.qml",
     "Titonium/Overlays/Network/WifiNetworkRow.qml",
     "Titonium/Overlays/Network/qmldir",
@@ -115,7 +114,7 @@ def service_errors(value: str) -> list[str]:
 def presentation_errors() -> list[str]:
     errors = []
     coordinator = source(OVERLAY_ROOT / "NetworkPopupCoordinator.qml")
-    popup = source(OVERLAY_ROOT / "NetworkPopupSurface.qml")
+    popup = source(OVERLAY_ROOT / "ClassicNetworkPopupSurface.qml")
     classic_popup = source(OVERLAY_ROOT / "ClassicNetworkPopupSurface.qml")
     row = source(OVERLAY_ROOT / "WifiNetworkRow.qml")
     qmldir = source(OVERLAY_ROOT / "qmldir")
@@ -185,7 +184,6 @@ def presentation_errors() -> list[str]:
     if "module qs.Titonium.Overlays.Network" not in qmldir:
         errors.append("Wi-Fi overlay qmldir module name is missing")
     for export in ("singleton NetworkPopupCoordinator 1.0 NetworkPopupCoordinator.qml",
-                   "NetworkPopupSurface 1.0 NetworkPopupSurface.qml",
                    "ClassicNetworkPopupSurface 1.0 ClassicNetworkPopupSurface.qml",
                    "WifiNetworkRow 1.0 WifiNetworkRow.qml"):
         if export not in qmldir:

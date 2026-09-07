@@ -28,7 +28,7 @@ Item {
                 text: root.title
                 variant: "label"
                 strong: true
-                elide: Text.ElideRight
+                wrapMode: Text.WordWrap
             }
 
             Shared.TextLabel {
@@ -43,7 +43,8 @@ Item {
 
         Item {
             id: controlSlot
-            Layout.preferredWidth: Math.max(180, childrenRect.width)
+            // Child positions depend on this slot: measure intrinsic width only.
+            Layout.preferredWidth: Math.max(180, ...Array.from(children).map(child => child.implicitWidth || child.width))
             Layout.fillHeight: true
         }
     }

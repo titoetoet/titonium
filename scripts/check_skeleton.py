@@ -131,7 +131,7 @@ def main() -> int:
     ) if ipc_root.is_dir() else ""
     expected_targets = {
         "agentApproval", "app", "audio", "bluetooth", "center", "centerNotch", "dock",
-        "job", "mpris", "network", "notifications", "settings", "spotlight", "timer",
+        "focus", "job", "mpris", "network", "notifications", "settings", "spotlight", "timer",
         "window-switcher",
     }
     actual_targets = re.findall(r'\btarget\s*:\s*"([^"]+)"', ipc_source)

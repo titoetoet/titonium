@@ -1,0 +1,23 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const vm = require('node:vm');
+const path = require('node:path');
+function load(name) { const c=vm.createContext({}); vm.runInContext(fs.readFileSync(path.join(__dirname,'../Titonium/Core/Surfaces/Center/',name),'utf8').replace(/^\.pragma library\s*/,''),c); return c; }
+const p=load('CenterPreviewRules.js');
+let s=p.initial();
+s=p.enter(s,'primary','focus:session',1000,true);
+assert.equal(p.due(s,1299),''); assert.equal(p.due(s,1300),'open');
+s=p.leave(s,'primary',1200); assert.equal(p.due(s,1600),'close');
+s=p.enter(s,'banner','focus:session',1300,false); assert.equal(p.due(s,1600),'');
+s=p.leave(s,'banner',2000); assert.equal(p.due(s,2249),''); assert.equal(p.due(s,2250),'close');
+s=p.enter(s,'primary','focus:session',2200,false); s=p.enter(s,'banner','focus:session',2201,false);
+s=p.leave(s,'primary',2202); assert.equal(p.due(s,2600),'');
+const n=load('ExpandedNavigation.js');
+assert.equal(n.route({source:'media'},'wallpapers').tab,'dashboard');
+assert.equal(n.route({source:'focus'},'dashboard').tab,'tasks');
+assert.equal(n.route({source:'job',severity:'critical'},'monitoring').tab,'tasks');
+assert.equal(n.route({source:'monitoring',severity:'critical'},'tasks').tab,'monitoring');
+assert.equal(n.route({source:'notification',severity:'critical'},'monitoring').tab,'dashboard');
+assert.equal(n.route(null,'wallpapers').tab,'wallpapers');
+assert.equal(n.route(null,'music').tab,'dashboard');
+console.log('PASS hover dwell, shared region/grace, and content-based Expanded navigation');

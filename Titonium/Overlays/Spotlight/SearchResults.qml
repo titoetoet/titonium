@@ -38,12 +38,26 @@ FocusScope {
 
             Rectangle {
                 anchors.fill: parent
+                visible: Theme.legacy
                 radius: Metrics.radiusMedium
                 color: resultRow.index === (root.spotlightModel?.selectedIndex || 0)
                     || resultRow.activeFocus || hoverHandler.hovered
                     ? Theme.surfaceInteractive : "transparent"
                 border.width: resultRow.activeFocus ? Metrics.borderWidth : 0
                 border.color: Theme.focus
+            }
+
+
+            Controls.StylePaint {
+                anchors.fill: parent
+                visible: !Theme.legacy
+                tokens: Theme.tokens
+                role: "menu-row"
+                radius: Metrics.radiusMedium
+                outlined: false
+                interaction: ({ hovered: hoverHandler.hovered,
+                    focused: resultRow.activeFocus,
+                    selected: resultRow.index === (root.spotlightModel?.selectedIndex || 0) })
             }
 
             RowLayout {

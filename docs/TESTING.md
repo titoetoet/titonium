@@ -468,3 +468,103 @@ Settings/Spotlight mutual exclusion, outside/Escape collapse and exact input-mas
 Run `./scripts/system_monitor_acceptance.sh`. It verifies a legacy Monitoring request normalizes to
 Overview and that the detached service remains inactive: no sampling, discovery, GPU-info, storage
 or process command may start. There is currently no System Monitoring view to review manually.
+
+
+## Center Banner / Expanded acceptance — 2026-09-06
+
+The implemented Center uses content-based routing and shared tab content for Connected
+and Classic. `check_center_preview.js` covers dwell/shared-region timing and tab routes;
+`check_center_deadline.py` runs the actual controller against service fixtures (19 checks,
+including deferred content versus approval, expired context, stale timer and tab demand).
+`check_expanded_content.py` covers real tab views, selected detail/actions, screenshot,
+keyboard navigation, retained Focus sessions, 320px headers and animated zero-size opening
+(12 checks). The existing compact/music/screenshot suites now assert the read-only Banner
+and Expanded composition. `check_wallpapers.py` covers catalog/preview/Apply with an isolated
+backend and local socket (12 checks), without changing a live wallpaper.
+
+Final `check.sh`, `smoke.sh` and `protected_acceptance.sh` exited zero. Smoke/protected ran
+from `/tmp/titonium-expanded-acceptance-final` to keep the resident shell alive. The live
+notification acceptance substep was skipped because the session D-Bus name already had
+an owner; notification model/dispatch fixtures passed. `hyprctl configerrors` was empty.
+
+The resident Connected panel was opened on DP-1 and visually inspected after reload;
+no new runtime sizing warning remained. Classic geometry and Reduced Motion were exercised
+by fixtures, not a separate live style/scale switch. Monitor disappearance/demand cleanup
+is covered in controller/screen fixtures, not by physically unplugging a screen. Real
+media transport and real wallpaper Apply were intentionally not invoked. Hyprpaper was
+not running during inspection, so live backend rendering remains unverified. Its service
+reports unavailability while permitting local image preview. Success records are not
+automatically restored on login.
+
+
+## Appearance / Advanced checkpoint
+
+Focused checks: `node scripts/check_appearance_rules.js`, `node scripts/check_appearance_transaction.js`, `python3 scripts/check_appearance_coordinator.py`, `python3 scripts/check_appearance_ui.py`, `python3 scripts/check_appearance_material.py`, `python3 scripts/check_wallpaper_transaction.py`. All are registered in `check.sh`; retain the existing Center `check_wallpapers.py` tests. Private Unix-socket fixture tests require a sandbox permitting local sockets.
+
+Coverage includes v6/v7→v8 migration, per-theme/per-mode custom isolation, explicit/System mode resolution, local candidate versus runtime trial, return-to-original after Keep, unrelated General changes, Apply failure/retry, owner loss during save, canonical journal equality, stale generations, commit-finalization retry, scoped undo, trial baseline cleanup, Advanced keyboard/validation/variant pinning, paint-only opacity, focus visibility and unchanged Connected geometry. Wallpaper tests use fake backend responses for trial/save/recovery/auto-follow and preserve the real Center API.
+
+Manual acceptance: review Neutral/Glass/Soft/Graphite in Light/Dark and Connected/Classic at scale 1/1.5, including Settings, Center, Dock, popups and notifications. Verify Keep is not a persisted Apply and that closing Advanced preserves custom values. When Hyprpaper baseline detection is unavailable, verify theme changes with Keep-current wallpaper and the explicit retry message; do not mark live wallpaper rollback verified from the fake tests alone.
+
+
+## Pixel Stage Dog checkpoint — 2026-09-06
+
+`check_preferences.js` covers Dog preference projection. The compact Qt fixture
+now has 18 passing checks, including real pointer hover/click, no repeated hover
+action, nonrepeating next selection, Reduced Motion, hidden unload, approach/turn/
+retreat, both Bar styles at heights 40/64, halfway-turn hover, and the standalone
+Mascot showcase controls. These checks are part of the existing `check.sh` gate.
+
+The full static gate passed; final changed-QML lint and focused Qt checks passed
+after review fixes. Smoke passed with Dog selected in a temporary project copy
+and isolated XDG directories. Protected acceptance passed from that copy; the
+live notification subtest skipped because the resident shell owns the D-Bus name.
+`hyprctl configerrors` was empty. The resident shell and its saved mascot selection
+were preserved. A native DP-1 screenshot at scale 1.5 confirmed the front pose,
+curtains, stars and paw overhang. The standalone Mascot showcase loaded offscreen
+without diagnostics.
+
+
+### Wallpaper configuration follow-up (2026-09-06)
+
+Managed baseline coverage adds initialization, socket identity changes, journal-first
+restart recovery, ambiguous IPC invalidation, committed/trial baseline separation,
+and large JPEG decoding. 26 transaction tests and 13 Center wallpaper tests pass.
+`check_wallpaper_recovery.py` exercises the actual QML service with inert I/O:
+five cases cover unavailable startup, pending journals, bounded retries and
+preventing stale recovery timers from taking an interactive trial lease.
+
+Manual DP-1 acceptance: explicit initialization with
+`/home/cole/Pictures/Wallpapers/5.jpg`, trial apply of `glass-dark.png`, and rollback
+all returned success. Final probe reports managed and baseline available with no
+remaining journal lease; a single Hyprpaper process remains. IPC acknowledgement
+does not constitute rendered-frame verification. Hyprland config files were not
+modified.
+
+Full check.sh passed; the added recovery fixture and final backend/help regressions also passed. Foreground smoke and protected acceptance passed from an isolated source snapshot to avoid the running main-shell duplicate guard. Native notification acceptance was skipped because the session D-Bus name was already owned. Final hyprctl configerrors output was empty.
+
+### Mascot hover versus activity preview
+
+The compact view only sends preview-enter for a non-idle primary with an explicit
+context ID; a primary becoming idle while hovered sends preview-leave. The
+controller also rejects empty-context compact hover rather than reusing a stale
+selected Focus context. Regression fixtures reproduced the original Focus banner
+opening before the fix. Final compact UI 19/19 and controller 20/20 checks pass,
+along with the full static gate, smoke and protected acceptance (resident
+notification D-Bus skip). A native hover probe kept the idle preview closed after
+one second and restored the cursor and temporary shell afterward.
+
+### Unpinned topbar hover retention
+
+`python3 scripts/check_bar_hover_ui.py` sends Qt mouse events through the production
+BarSurface hover/timer logic with native window properties replaced by an Item and
+inert islands. It holds the pointer in gaps beyond the 250ms hide delay for both
+Connected and Classic, covers compact Center hover handoff and per-screen isolation,
+and verifies hiding after leaving. `--surface-source PATH` can run a saved BarSurface
+to reproduce the pre-fix failures. Native layer input delivery is not simulated by
+this fixture.
+
+While an unpinned bar is revealed, its hover/input band spans the full bar height,
+including gaps. Gap clicks are intercepted in that state so hover stays continuous.
+Pinned gaps remain click-through; hidden bars retain the 2px reveal strip. Compact
+Center forwards hover from its own native host and clears it on hide/destruction.
+The existing explicit-Unpin immediate hide behavior remains unchanged.

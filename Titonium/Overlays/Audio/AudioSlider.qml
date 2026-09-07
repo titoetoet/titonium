@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Controls as QtControls
+import qs.Titonium.Shared as Shared
 import qs.Titonium.Theme
 
 FocusScope {
@@ -39,31 +40,62 @@ FocusScope {
                 root.syncFromService();
         }
 
-        background: Rectangle {
+        background: Item {
             x: slider.leftPadding
             y: slider.topPadding + slider.availableHeight / 2 - height / 2
             width: slider.availableWidth
             height: 4
-            radius: 2
-            color: Theme.surfaceInteractive
+
+            Rectangle {
+                anchors.fill: parent
+                visible: Theme.legacy
+                radius: 2
+                color: Theme.surfaceInteractive
+            }
+
+            Shared.StylePaint {
+                anchors.fill: parent
+                visible: !Theme.legacy
+                tokens: Theme.tokens
+                role: "field"
+                radius: 2
+                customColor: Theme.surfaceInteractive
+                outlined: false
+                showFocus: false
+            }
 
             Rectangle {
                 width: slider.visualPosition * parent.width
                 height: parent.height
-                radius: parent.radius
+                radius: 2
                 color: Theme.accent
             }
         }
 
-        handle: Rectangle {
+        handle: Item {
             x: slider.leftPadding + slider.visualPosition * (slider.availableWidth - width)
             y: slider.topPadding + slider.availableHeight / 2 - height / 2
             width: 14
             height: 14
-            radius: width / 2
-            color: slider.pressed ? Theme.accent : Theme.textPrimary
-            border.width: slider.activeFocus ? Metrics.borderWidth : 0
-            border.color: Theme.focus
+
+            Rectangle {
+                anchors.fill: parent
+                visible: Theme.legacy
+                radius: width / 2
+                color: slider.pressed ? Theme.accent : Theme.textPrimary
+                border.width: slider.activeFocus ? Metrics.borderWidth : 0
+                border.color: Theme.focus
+            }
+
+            Shared.StylePaint {
+                anchors.fill: parent
+                visible: !Theme.legacy
+                tokens: Theme.tokens
+                role: "button"
+                radius: width / 2
+                customColor: slider.pressed ? Theme.accent : Theme.textPrimary
+                interaction: ({ pressed: slider.pressed, focused: slider.activeFocus })
+            }
         }
 
         Accessible.name: root.accessibleName

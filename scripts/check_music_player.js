@@ -1,0 +1,34 @@
+#!/usr/bin/env node
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const vm = require('node:vm');
+const path = require('node:path');
+const file = path.join(__dirname, '../Titonium/Bar/center/MusicPlayerRules.js');
+assert.ok(fs.existsSync(file), 'Music content needs viewport-safe sizing and stale-seek rules');
+const r = vm.createContext({});
+vm.runInContext(fs.readFileSync(file, 'utf8').replace(/^\.pragma library\s*/, ''), r);
+vm.runInContext(fs.readFileSync(path.join(__dirname, '../Titonium/Services/Mpris/MprisControls.js'), 'utf8').replace(/^\.pragma library\s*/, ''), r);
+const wide = r.geometry(1200, 600);
+assert.ok(wide.width < 1000 && wide.width > 600);
+assert.ok(wide.height <= 152 && !wide.stacked);
+assert.ok(wide.width <= 640, "Music should fit a compact 640px envelope");
+const narrow = r.geometry(430, 800);
+assert.ok(narrow.width <= 406 && narrow.stacked);
+assert.ok(narrow.height > wide.height);
+assert.ok(r.geometry(430, 150).height <= 126, 'short output must clamp and scroll');
+assert.equal(r.duration(102), '1:42');
+assert.equal(r.duration(NaN), '0:00');
+assert.equal(r.seekPosition('a', 8, {identity:'a', trackToken:8, canSeek:true, length:200}, 1.5), 200);
+assert.equal(r.seekPosition('a', 7, {identity:'a', trackToken:8, canSeek:true, length:200}, .5), null);
+assert.equal(r.seekPosition('b', 8, {identity:'a', trackToken:8, canSeek:true, length:200}, .5), null);
+assert.equal(r.seekPosition('a', 8, {identity:'a', trackToken:8, canSeek:false, length:200}, .5), null);
+assert.equal(r.seekPosition('a', 8, {identity:'a', trackToken:8, canSeek:true, length:0}, .5), null);
+assert.equal(r.seekPosition('a', 8, {identity:'a', trackToken:8, canSeek:true, length:200}, NaN), null);
+assert.equal(r.trackId('/track/one'), '/track/one');
+assert.equal(r.trackId('QVariant(QDBusObjectPath, QDBusObjectPath("/track/one"))'), '/track/one');
+assert.equal(r.trackId('invalid'), '');
+console.log('PASS Music geometry, duration and stale/capability-checked seek');
+
+assert.equal(r.sourceDetails('Chromium', 'https://www.youtube.com/watch?v=1').label, 'YouTube · Chromium');
+assert.equal(r.sourceDetails('Chromium', '').label, 'Chromium');
+assert.equal(r.sourceDetails('VLC', 'https://youtube.com.evil.test/video').label, 'VLC');

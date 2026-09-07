@@ -1,0 +1,2 @@
+module qs.Titonium.Services.MediaSpectrum
+singleton MediaSpectrumService 1.0 MediaSpectrumService.qml

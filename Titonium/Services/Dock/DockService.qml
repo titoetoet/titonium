@@ -14,7 +14,7 @@ QtObject {
     property var projectedItems: []
     property int workspaceWindowCount: 0
     property var firstSeenIds: []
-    property var cycleIndexesByAppId: ({})
+    property var cyclesByAppId: ({})
     property var mutationWarningCounts: ({})
 
     readonly property var items: root.projectedItems
@@ -49,9 +49,14 @@ QtObject {
         root.firstSeenIds = root.firstSeenIds.concat([appId]);
     }
 
+    function canonicalAppId(appId: string): string {
+        return DockRules.canonicalAppId(appId, root.entryForAppId(appId));
+    }
+
     function windowsForAppId(appId: string): var {
-        const key = root.appKey(appId);
-        return HyprlandService.windows.filter(window => root.appKey(window?.appId) === key);
+        const key = root.appKey(root.canonicalAppId(appId));
+        return HyprlandService.windows.filter(window =>
+            root.appKey(root.canonicalAppId(window?.appId || "")) === key);
     }
 
     function recompute(): void {
@@ -76,7 +81,7 @@ QtObject {
             if (!sourceId)
                 continue;
             const entry = root.entryForAppId(sourceId);
-            const appId = root.normalizedAppId(entry?.id || sourceId);
+            const appId = DockRules.canonicalAppId(sourceId, entry);
             const key = root.appKey(appId);
             if (!key)
                 continue;
@@ -97,6 +102,14 @@ QtObject {
         const groups = [];
         for (let index = 0; index < order.length; index++)
             groups.push(groupsById[order[index]]);
+        const liveCycles = {};
+        const activeId = source.find(window => window?.active === true)?.id || "";
+        for (let index = 0; index < order.length; index++) {
+            const key = order[index];
+            if (root.cyclesByAppId[key])
+                liveCycles[key] = DockRules.observeCycleFocus(root.cyclesByAppId[key], activeId);
+        }
+        root.cyclesByAppId = liveCycles;
         root.workspaceWindowCount = HyprlandService.activeWorkspaceWindowCount;
         root.projectedItems = DockRules.mergeItems(
             DockStore.pinnedIds, groups, entriesById, root.firstSeenIds,
@@ -115,28 +128,20 @@ QtObject {
     }
 
     function activateOrLaunch(appId: string): bool {
-        const key = root.appKey(appId);
+        const key = root.appKey(root.canonicalAppId(appId));
         const windows = root.windowsForAppId(appId);
         if (windows.length === 0)
             return root.launchNew(appId);
-        const previousIndex = root.cycleIndexesByAppId[key];
-        let selectedIndex = Number.isInteger(previousIndex) && previousIndex >= 0
-            && previousIndex < windows.length ? (previousIndex + 1) % windows.length : 0;
-        if (!Number.isInteger(previousIndex)) {
-            for (let index = 0; index < windows.length; index++) {
-                if (windows[index]?.active === true) {
-                    selectedIndex = index;
-                    break;
-                }
-            }
-        }
-        if (!HyprlandService.focusWindow(windows[selectedIndex].id)) {
+        const cycle = DockRules.nextWindowCycle(root.cyclesByAppId[key], windows);
+        const previousCycles = root.cyclesByAppId;
+        const nextCycles = Object.assign({}, previousCycles);
+        nextCycles[key] = cycle;
+        root.cyclesByAppId = nextCycles;
+        if (!HyprlandService.focusWindow(cycle.lastId)) {
+            root.cyclesByAppId = previousCycles;
             root.warnMutation("activate", appId);
             return false;
         }
-        const nextCycles = Object.assign({}, root.cycleIndexesByAppId);
-        nextCycles[key] = selectedIndex;
-        root.cycleIndexesByAppId = nextCycles;
         return true;
     }
 

@@ -10,6 +10,7 @@ import qs.Titonium.Theme
 FocusScope {
     id: root
 
+    readonly property bool connected: Preferences.dockStyle === "connected"
     property bool revealed: true
     required property var screenModel
     readonly property int bodyHeight: 56
@@ -53,14 +54,38 @@ FocusScope {
     Rectangle {
         id: dockPanel
         x: 12
-        y: 8
+        y: root.connected ? 8 : 0
         width: dockRow.implicitWidth + 24
         height: root.bodyHeight
         radius: Metrics.radiusLarge
-        color: Theme.surface
+        visible: !root.connected && Theme.legacy
+        color: Theme.surfaceElevated
         border.width: Metrics.borderWidth
         border.color: Theme.border
 
+    }
+
+    Shared.StylePaint {
+        x: dockPanel.x
+        y: dockPanel.y
+        width: dockPanel.width
+        height: dockPanel.height
+        visible: !root.connected && !Theme.legacy
+        tokens: Theme.tokens
+        role: "panel"
+        radius: Metrics.radiusLarge
+    }
+
+    Shared.ConnectedPillShape {
+        x: dockPanel.x - shoulderSize
+        y: dockPanel.y
+        bodyWidth: dockPanel.width
+        bodyHeight: root.bodyHeight
+        shoulderSize: 12
+        bottomRadius: 20
+        rotation: 180
+        visible: root.connected
+        color: Theme.connectedSurface
     }
 
     Row {
@@ -80,11 +105,22 @@ FocusScope {
             Rectangle {
                 anchors.fill: parent
                 radius: Metrics.radiusMedium
+                visible: Theme.legacy
                 color: applicationsHover.hovered || applicationsButton.activeFocus
                     ? Theme.surfaceInteractive : "transparent"
                 border.width: applicationsButton.activeFocus ? Metrics.borderWidth : 0
                 border.color: Theme.focus
                 Behavior on color { ColorAnimation { duration: Motion.fast } }
+            }
+
+            Shared.StylePaint {
+                anchors.fill: parent
+                visible: !Theme.legacy
+                tokens: Theme.tokens
+                role: "button"
+                radius: Metrics.radiusMedium
+                interaction: ({ hovered: applicationsHover.hovered,
+                    focused: applicationsButton.activeFocus, quiet: true })
             }
 
             Shared.Icon {
@@ -145,9 +181,22 @@ FocusScope {
         Rectangle {
             anchors.fill: parent
             radius: width / 2
+            visible: Theme.legacy
             color: pinHover.hovered ? Theme.surfaceInteractive : Theme.surfaceElevated
             border.width: Metrics.borderWidth
             border.color: DockStore.pinnedOpen ? Theme.accent : Theme.border
+        }
+
+
+        Shared.StylePaint {
+            anchors.fill: parent
+            visible: !Theme.legacy
+            tokens: Theme.tokens
+            role: "button"
+            radius: width / 2
+            borderColor: DockStore.pinnedOpen ? Theme.accent : Theme.border
+            interaction: ({ hovered: pinHover.hovered, selected: DockStore.pinnedOpen,
+                quiet: true })
         }
 
         Shared.Icon {

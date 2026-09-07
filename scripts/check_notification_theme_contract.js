@@ -93,14 +93,6 @@ assert.throws(() => assertNotificationBellIsFinalControl(`
 /final direct End-island Row control/,
 "an appended Topbar control must invalidate the rightmost Notification Center contract");
 
-const secondary = read("Titonium/Bar/center/CenterSecondaryPill.qml");
-assert.match(secondary, /name:\s*"notifications"/,
-    "the Center secondary pill must own the bell glyph");
-assert.match(secondary, /id:\s*wobble[\s\S]*?loops:\s*3/,
-    "the Center secondary pill must bound bell wobble to three cycles");
-assert.match(secondary, /transition\.wobble\s*&&\s*!Motion\.reduced/,
-    "Reduced Motion must suppress only the Center secondary-pill wobble");
-
 const classicCenter = read("Titonium/Bar/center/presentations/Classic/ClassicRenderer.qml");
 assert.doesNotMatch(classicCenter, /ConnectedPillShape|shoulderSize|bodyWidth\s*:[^\n]*shoulder/,
     "Classic Center must remain a shoulder-free detached surface");

@@ -3,12 +3,14 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import qs.Titonium.Core.Runtime
 import qs.Titonium.Bar.center
 import qs.Titonium.Core.Surfaces
 import "CenterSurfacePresentationRules.js" as PresentationRules
 
 PanelWindow {
     id: window
+    readonly property bool pointerHovered: window.visible && compactHover.hovered
     required property ShellScreen screenModel
     required property var snapshot
     required property var viewState
@@ -17,7 +19,7 @@ PanelWindow {
         && (window.viewState.mode === "banner" || window.viewState.mode === "expanded")
     readonly property bool dismissing: window.viewState.exitingScreenName === window.screenModel.name
     readonly property var windowPlan: PresentationRules.windowPlan(
-        window.profile.id, window.viewState, window.screenModel.name)
+        window.profile.id, window.viewState, window.screenModel.name, BarVisibilityState.revealed)
     readonly property rect visualBounds: renderer.visualBounds
     readonly property string focusOwnerId: "center:" + window.screenModel.name
     property string focusLease: ""
@@ -121,6 +123,7 @@ PanelWindow {
     }
     Item {
         id: compactInput
+        HoverHandler { id: compactHover; parent: renderer; enabled: window.effectiveInputMode === "compact" }
         x: renderer.interactiveBounds.x
         y: renderer.interactiveBounds.y
         width: window.effectiveInputMode === "compact"
@@ -156,7 +159,8 @@ PanelWindow {
         transitionOwner: window.classicTransitionOwner
         presentationActive: window.profile.id === "classic"
             ? (window.windowPlan.presentationActive || window.classicTransitionPending)
-            : (window.ownsOverlay || window.dismissing)
+            : (window.profile.id === "connected" ? window.windowPlan.presentationActive
+                : (window.ownsOverlay || window.dismissing))
         onIntentRequested: intent => CenterSurfaceController.dispatch(intent)
         onTransitionFinished: generation => {
             if (window.classicTransitionPending

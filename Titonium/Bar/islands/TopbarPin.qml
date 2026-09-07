@@ -16,12 +16,13 @@ Item {
         width: Metrics.controlHeightSmall
         height: Metrics.controlHeightSmall
         iconName: BarVisibilityState.pinned ? "keep" : "keep_off"
-        iconHoverMotion: true
+        barFeedback: true
+        selected: BarVisibilityState.pinned
         backgroundVisible: false
         variant: "quiet"
         size: "small"
         iconColor: BarVisibilityState.pinned ? Theme.accent : Theme.textPrimary
-        showFocusRing: false
+        showFocusRing: true
         backgroundRadius: Metrics.radiusLarge
         accessibleName: I18n.tr(BarVisibilityState.pinned
             ? "menubar.bar_pin.autohide" : "menubar.bar_pin.pin")

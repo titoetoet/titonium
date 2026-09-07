@@ -15,6 +15,13 @@ QtObject {
         function monitorState(): string { return SystemMonitorService.state(); }
     }
 
+    property IpcHandler focusHandler: IpcHandler {
+        target: "focus"
+        function state(): string { return JSON.stringify(FocusSessionService.session); }
+        function start(durationSeconds: int): bool { return FocusSessionService.start(durationSeconds); }
+        function cancel(): void { FocusSessionService.cancel(); }
+    }
+
     property IpcHandler mprisHandler: IpcHandler {
         target: "mpris"
         function state(): string { return MprisService.snapshot(); }

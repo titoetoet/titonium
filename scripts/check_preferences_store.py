@@ -37,7 +37,8 @@ def main() -> int:
         'Quickshell.dataPath("dock.json")',
         "atomicWrites: true",
         "watchChanges: !root.previewActive && root.pendingRuntimeWrites === 0",
-        "onFileChanged: root.reload()",
+        "onFileChanged: root.runtimeFile.reload()",
+        "onLoaded: if (root.ready) root.reload()",
         "onSaved:",
         "onSaveFailed:",
     )

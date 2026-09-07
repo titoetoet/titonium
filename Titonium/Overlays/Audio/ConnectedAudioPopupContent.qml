@@ -11,7 +11,7 @@ import "AudioGeometry.js" as AudioGeometry
 Item {
     id: root
 
-    property bool streamsExpanded: false
+    property bool streamsExpanded: true
     property real availableViewportHeight: 440
     readonly property int maximumHeight: 520
     readonly property real implicitContentWidth: 380
@@ -24,12 +24,10 @@ Item {
         + (root.hasStreams ? Metrics.borderWidth + applicationsButton.implicitHeight : 0)
         + Metrics.spacingMedium * (root.hasStreams ? 5 : 3)
         + (root.hasStreams && root.streamsExpanded ? Metrics.spacingMedium : 0)
-    readonly property real maximumStreamHeight: Math.max(0,
-        Math.min(root.maximumHeight, root.availableViewportHeight)
-            - root.fixedContentHeight - 32)
-    readonly property real streamContentHeight: Math.max(0, streamList.contentHeight)
+    // Natural request must not depend on the animated parent viewport: otherwise
+    // expanding Applications cannot grow the chassis and clips its own controls.
     readonly property real streamHeight: root.streamsExpanded
-        ? Math.min(root.streamContentHeight, root.maximumStreamHeight) : 0
+        ? AudioGeometry.streamListHeight(streamList.count, 72, Metrics.spacingSmall) : 0
     readonly property real implicitContentHeight: contentColumn.implicitHeight + 32
     implicitWidth: implicitContentWidth
     implicitHeight: implicitContentHeight
@@ -123,13 +121,13 @@ Item {
                     anchors.fill: parent
                     clip: true
                     spacing: Metrics.spacingSmall
-                    model: AudioService.playbackStreams
+                    model: AudioService.playbackStreamIds
                     boundsBehavior: Flickable.StopAtBounds
 
                     delegate: AudioStreamRow {
                         required property var modelData
                         width: streamList.width
-                        stream: modelData
+                        stream: AudioService.playbackStreams.find(item => item.id === modelData) || null
                     }
                 }
             }

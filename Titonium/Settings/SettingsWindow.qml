@@ -34,8 +34,8 @@ PanelWindow {
     screen: window.screenModel
     visible: window.ownsSettings
     color: "transparent"
-    implicitWidth: 980
-    implicitHeight: 700
+    implicitWidth: Math.min(980, window.screenModel.width - 48)
+    implicitHeight: Math.min(700, window.screenModel.height - 48)
     aboveWindows: true
     exclusiveZone: 0
     WlrLayershell.namespace: "titonium-settings"
@@ -58,6 +58,6 @@ PanelWindow {
         FocusDiagnostics.observe(window.focusOwnerId, window.focusLease, false,
             { mode: "destroyed" });
         if (window.ownsSettings)
-            SettingsCoordinator.forceCancelAndClose();
+            SettingsCoordinator.closeForOwnerLoss();
     }
 }
